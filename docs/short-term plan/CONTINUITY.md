@@ -1,0 +1,32 @@
+- Goal (incl. success criteria):
+  - Goal: Audit and improve the Vidya Connect SaaS application to make it production-ready and at its absolute best while ensuring 100% lovable-compatibility.
+  - Success Criteria: Zero compilation errors, proper TypeScript types, smooth and robust payments checkout, robust webhook verification, complete database integration, premium styling with rich micro-animations, and full responsiveness.
+- Constraints/Assumptions:
+  - Lovable compatibility is critical (must preserve lovable's structural conventions so changes can be synced back smoothly).
+  - Stay in the local folder, keep building on the current branch `feat/razorpay-backend-hardening-2026-05-22` until the user requests creating a new branch and pushing.
+  - Razorpay billing needs proper credentials to run, but client/server code must handle fallback/missing keys gracefully.
+- Key decisions:
+  - Establish a comprehensive audit of current pages and endpoints.
+  - Repair missing imports or logical bugs discovered during the initial build phase (e.g., dashboard missing `CreditCard` import).
+  - Verify Razorpay backend hardening.
+- State:
+  - Done:
+    - Checked out project files and structure.
+    - Identified that the project is a React + TypeScript + TanStack Start SaaS application.
+    - Inspected `package.json`, local git status, and recent diffs.
+  - Now:
+    - Running the build command (`npm run build`) in the background to check for compilation/type errors.
+    - Setting up the Continuity Ledger and planning the audit phase.
+  - Next:
+    - Identify and fix any compiler errors reported by the build command.
+    - Perform a thorough code search and review for high-impact backend and frontend files.
+    - Check Razorpay sync, webhook verification, and database schemas.
+- Open questions:
+  - Are there any specific issues, bugs, or feature additions the user wants to prioritize, or should I proceed with a full diagnostic review and optimization? (UNCONFIRMED)
+- Working set (files/ids/commands):
+  - Files:
+    - `src/routes/_authenticated/dashboard.tsx`
+    - `package.json`
+    - `docs/short-term-plan/CONTINUITY.md`
+  - Commands:
+    - `npm run build`

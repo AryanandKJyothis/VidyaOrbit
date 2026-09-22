@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.enforce_student_limit() CASCADE;
