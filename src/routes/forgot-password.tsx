@@ -22,13 +22,17 @@ function ForgotPassword() {
     const parsed = emailSchema.safeParse({ email });
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      parsed.data.email,
+      {
+        redirectTo: `${window.location.origin}/reset-password`,
+      },
+    );
     setLoading(false);
     // Always show success — never reveal whether email exists
     setSent(true);
-    if (error && error.status && error.status >= 500) toast.error("Something went wrong");
+    if (error && error.status && error.status >= 500)
+      toast.error("Something went wrong");
   };
 
   return (
@@ -46,10 +50,13 @@ function ForgotPassword() {
 
         {sent ? (
           <div className="space-y-4 rounded-xl border bg-card p-6">
-            <h2 className="font-display text-xl font-semibold">Check your inbox</h2>
+            <h2 className="font-display text-xl font-semibold">
+              Check your inbox
+            </h2>
             <p className="text-sm text-muted-foreground">
-              If an account exists for <span className="font-medium text-foreground">{email}</span>,
-              we sent a password reset link. It expires in 1 hour.
+              If an account exists for{" "}
+              <span className="font-medium text-foreground">{email}</span>, we
+              sent a password reset link. It expires in 1 hour.
             </p>
             <Link
               to="/login"
@@ -59,8 +66,13 @@ function ForgotPassword() {
             </Link>
           </div>
         ) : (
-          <form onSubmit={submit} className="space-y-4 rounded-xl border bg-card p-6">
-            <h2 className="font-display text-xl font-semibold">Forgot your password?</h2>
+          <form
+            onSubmit={submit}
+            className="space-y-4 rounded-xl border bg-card p-6"
+          >
+            <h2 className="font-display text-xl font-semibold">
+              Forgot your password?
+            </h2>
             <p className="text-sm text-muted-foreground">
               Enter the email on your account and we'll send a reset link.
             </p>

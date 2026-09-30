@@ -64,7 +64,11 @@ export function useOnboarding() {
   }, []);
 
   const resetChecklist = useCallback(() => {
-    persist({ ...cache, dismissedChecklist: false, checklistDismissedAt: undefined });
+    persist({
+      ...cache,
+      dismissedChecklist: false,
+      checklistDismissedAt: undefined,
+    });
   }, []);
 
   return useMemo(

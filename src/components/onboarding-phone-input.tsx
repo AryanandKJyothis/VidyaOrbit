@@ -55,7 +55,7 @@ export function OnboardingPhoneInput({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange(e.target.value);
     },
-    [onChange]
+    [onChange],
   );
 
   const borderColorClass = cn(
@@ -63,7 +63,7 @@ export function OnboardingPhoneInput({
     isFocused && "border-primary/40",
     isValid && "border-success/50 bg-success/5",
     isInvalid && "border-destructive/50 bg-destructive/5",
-    isPartial && "border-warning/50 bg-warning/5"
+    isPartial && "border-warning/50 bg-warning/5",
   );
 
   const focusRingClass = cn(
@@ -71,13 +71,14 @@ export function OnboardingPhoneInput({
     isValid && "focus:ring-success/30",
     isInvalid && "focus:ring-destructive/30",
     isPartial && "focus:ring-warning/30",
-    !isValid && !isInvalid && !isPartial && "focus:ring-primary/30"
+    !isValid && !isInvalid && !isPartial && "focus:ring-primary/30",
   );
 
   const getErrorMessage = () => {
     if (error) return error;
     if (isPartial) return "Phone number too short (minimum 6 digits)";
-    if (isInvalid) return "Enter a valid phone number (6–20 digits, can include +, -, (), spaces)";
+    if (isInvalid)
+      return "Enter a valid phone number (6–20 digits, can include +, -, (), spaces)";
     return null;
   };
 
@@ -94,7 +95,9 @@ export function OnboardingPhoneInput({
         <Phone className="h-4 w-4 text-muted-foreground" />
         <span>
           {label}
-          {required && <span className="ml-1 text-destructive font-semibold">*</span>}
+          {required && (
+            <span className="ml-1 text-destructive font-semibold">*</span>
+          )}
         </span>
       </Label>
 
@@ -113,10 +116,12 @@ export function OnboardingPhoneInput({
             "pr-10 pl-4",
             borderColorClass,
             focusRingClass,
-            disabled && "opacity-50 cursor-not-allowed"
+            disabled && "opacity-50 cursor-not-allowed",
           )}
           aria-invalid={isInvalid || isPartial}
-          aria-describedby={errorMsg ? "phone-error" : helperText ? "phone-helper" : undefined}
+          aria-describedby={
+            errorMsg ? "phone-error" : helperText ? "phone-helper" : undefined
+          }
           inputMode="tel"
         />
 
@@ -137,7 +142,10 @@ export function OnboardingPhoneInput({
                   animate={{ rotate: 0 }}
                   transition={{ type: "spring", stiffness: 400 }}
                 >
-                  <CheckCircle2 className="h-5 w-5 text-success" aria-label="Phone number is valid" />
+                  <CheckCircle2
+                    className="h-5 w-5 text-success"
+                    aria-label="Phone number is valid"
+                  />
                 </motion.div>
               )}
               {isInvalid && (
@@ -146,7 +154,10 @@ export function OnboardingPhoneInput({
                   animate={{ rotate: 0 }}
                   transition={{ type: "spring", stiffness: 400 }}
                 >
-                  <AlertCircle className="h-5 w-5 text-destructive" aria-label="Phone number is invalid" />
+                  <AlertCircle
+                    className="h-5 w-5 text-destructive"
+                    aria-label="Phone number is invalid"
+                  />
                 </motion.div>
               )}
               {isPartial && !isFocused && (
@@ -170,10 +181,13 @@ export function OnboardingPhoneInput({
             className={cn(
               "flex items-start gap-2 text-xs rounded-md p-2.5",
               isPartial && "bg-warning/10 text-warning/80",
-              isInvalid && "bg-destructive/10 text-destructive/80"
+              isInvalid && "bg-destructive/10 text-destructive/80",
             )}
           >
-            <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+            <AlertCircle
+              className="h-3.5 w-3.5 shrink-0 mt-0.5"
+              aria-hidden="true"
+            />
             <span className="leading-snug">{errorMsg}</span>
           </motion.div>
         )}

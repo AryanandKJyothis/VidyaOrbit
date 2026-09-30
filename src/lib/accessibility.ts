@@ -4,7 +4,10 @@ import { cn } from "@/lib/utils";
  * Utility for creating accessible status badges that include both color and text.
  * Prevents color-only status indicators that fail accessibility standards.
  */
-export function createStatusLabel(status: string): { label: string; variant: string } {
+export function createStatusLabel(status: string): {
+  label: string;
+  variant: string;
+} {
   const statuses: Record<string, { label: string; variant: string }> = {
     active: { label: "Active", variant: "default" },
     archived: { label: "Archived", variant: "secondary" },
@@ -30,7 +33,11 @@ export const TOUCH_TARGET_SIZE = "min-h-12 min-w-12";
 /**
  * Generates aria-label for common UI elements.
  */
-export function createAriaLabel(action: string, subject: string, extra?: string): string {
+export function createAriaLabel(
+  action: string,
+  subject: string,
+  extra?: string,
+): string {
   const parts = [action, subject, extra].filter(Boolean);
   return parts.join(": ");
 }

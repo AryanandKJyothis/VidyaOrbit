@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /students
+Disallow: /fees
+Disallow: /attendance
+Disallow: /batches
+Disallow: /analytics
+Disallow: /billing
+Disallow: /settings
+Disallow: /admin
+
+Sitemap: https://vidyaorbit.in/sitemap.xml

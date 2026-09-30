@@ -48,7 +48,10 @@ type Spotlight = {
   progressHint: string;
 };
 
-const toneStyles: Record<Tone, { ring: string; bar: string; chip: string; glow: string; iconBg: string }> = {
+const toneStyles: Record<
+  Tone,
+  { ring: string; bar: string; chip: string; glow: string; iconBg: string }
+> = {
   danger: {
     ring: "border-destructive/30",
     bar: "from-destructive via-brand-coral to-destructive",
@@ -93,7 +96,8 @@ function pickSpotlight(i: SpotlightInput): Spotlight {
       tone: "danger",
       eyebrow: "Needs attention now",
       title: `${formatINR(i.overdueAmount)} overdue across ${i.overdueCount} ${i.overdueCount === 1 ? "student" : "students"}`,
-      subtitle: "Send a polite reminder or record a payment to clear these dues.",
+      subtitle:
+        "Send a polite reminder or record a payment to clear these dues.",
       metric: formatINR(i.overdueAmount),
       metricLabel: "Overdue balance",
       icon: AlertTriangle,
@@ -109,7 +113,8 @@ function pickSpotlight(i: SpotlightInput): Spotlight {
       tone: "warning",
       eyebrow: "Watch closely",
       title: `Attendance is ${i.attendancePct}% — below the 75% safety line`,
-      subtitle: "Students missing classes often quit. Identify at-risk batches before next week.",
+      subtitle:
+        "Students missing classes often quit. Identify at-risk batches before next week.",
       metric: `${i.attendancePct}%`,
       metricLabel: "Last 30 days",
       icon: CalendarX,
@@ -134,7 +139,12 @@ function pickSpotlight(i: SpotlightInput): Spotlight {
       metricLabel: "This month",
       icon: TrendingDown,
       cta: { label: "Review fees", to: "/fees" },
-      progress: Math.max(10, Math.round((i.monthCollected / Math.max(1, i.prevMonthCollected)) * 100)),
+      progress: Math.max(
+        10,
+        Math.round(
+          (i.monthCollected / Math.max(1, i.prevMonthCollected)) * 100,
+        ),
+      ),
       progressHint: `Last month: ${formatINR(i.prevMonthCollected)}`,
     };
   }
@@ -165,7 +175,8 @@ function pickSpotlight(i: SpotlightInput): Spotlight {
       tone: "celebrate",
       eyebrow: "Healthy classroom",
       title: `${i.attendancePct}% attendance — your students show up`,
-      subtitle: "High attendance is the #1 predictor of renewals. Excellent retention signal.",
+      subtitle:
+        "High attendance is the #1 predictor of renewals. Excellent retention signal.",
       metric: `${i.attendancePct}%`,
       metricLabel: "Last 30 days",
       icon: PartyPopper,
@@ -176,9 +187,15 @@ function pickSpotlight(i: SpotlightInput): Spotlight {
   }
 
   // Priority 6 — New admissions momentum
-  if (i.newAdmissionsThisMonth > 0 && i.newAdmissionsThisMonth >= i.prevAdmissions) {
+  if (
+    i.newAdmissionsThisMonth > 0 &&
+    i.newAdmissionsThisMonth >= i.prevAdmissions
+  ) {
     const delta = i.prevAdmissions
-      ? Math.round(((i.newAdmissionsThisMonth - i.prevAdmissions) / i.prevAdmissions) * 100)
+      ? Math.round(
+          ((i.newAdmissionsThisMonth - i.prevAdmissions) / i.prevAdmissions) *
+            100,
+        )
       : 100;
     return {
       tone: "growth",
@@ -221,7 +238,8 @@ function pickSpotlight(i: SpotlightInput): Spotlight {
       i.classesToday > 0
         ? `${i.classesToday} ${i.classesToday === 1 ? "class" : "classes"} today, no dues outstanding`
         : "No dues outstanding and a calm day ahead",
-    subtitle: "Nothing on fire. Use the breathing room to plan next month's batches.",
+    subtitle:
+      "Nothing on fire. Use the breathing room to plan next month's batches.",
     metric: String(i.totalStudents),
     metricLabel: "Active students",
     icon: PartyPopper,
@@ -242,7 +260,12 @@ export function DashboardSpotlight(props: SpotlightInput) {
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       className="mb-6"
     >
-      <Card className={cn("card-premium relative overflow-hidden border-2", styles.ring)}>
+      <Card
+        className={cn(
+          "card-premium relative overflow-hidden border-2",
+          styles.ring,
+        )}
+      >
         <span
           aria-hidden
           className={cn(
@@ -272,15 +295,24 @@ export function DashboardSpotlight(props: SpotlightInput) {
             <h2 className="mt-3 font-display text-xl sm:text-2xl font-bold leading-tight tracking-tight">
               {s.title}
             </h2>
-            <p className="mt-1.5 text-sm text-muted-foreground max-w-prose">{s.subtitle}</p>
+            <p className="mt-1.5 text-sm text-muted-foreground max-w-prose">
+              {s.subtitle}
+            </p>
 
             <div className="mt-4 flex items-center gap-3">
               <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                 <motion.span
                   initial={{ width: 0 }}
                   animate={{ width: `${s.progress}%` }}
-                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
-                  className={cn("absolute inset-y-0 left-0 bg-gradient-to-r", styles.bar)}
+                  transition={{
+                    duration: 0.9,
+                    ease: [0.16, 1, 0.3, 1],
+                    delay: 0.15,
+                  }}
+                  className={cn(
+                    "absolute inset-y-0 left-0 bg-gradient-to-r",
+                    styles.bar,
+                  )}
                 />
               </div>
               <span className="shrink-0 text-[11px] font-medium text-muted-foreground tabular-nums">
@@ -306,7 +338,6 @@ export function DashboardSpotlight(props: SpotlightInput) {
             </Button>
           </div>
         </div>
-
       </Card>
     </motion.div>
   );

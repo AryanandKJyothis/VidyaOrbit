@@ -26,7 +26,10 @@ export function optionalText(max: number) {
 
 /** Nullable text for DB columns: blank/null → SQL null. */
 export function nullableText(max: number) {
-  return z.preprocess(coalesceEmptyToNull, z.union([z.null(), trimmedString(max)]));
+  return z.preprocess(
+    coalesceEmptyToNull,
+    z.union([z.null(), trimmedString(max)]),
+  );
 }
 
 /** Optional phone — blank/null allowed; validates when provided. */
@@ -44,7 +47,10 @@ export function optionalPhone() {
 export function optionalDate() {
   return z.preprocess(
     coalesceEmpty,
-    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid date (YYYY-MM-DD).").optional(),
+    z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid date (YYYY-MM-DD).")
+      .optional(),
   );
 }
 
@@ -70,7 +76,11 @@ export const studentSchema = z.object({
     (v) => (v === "" || v === null || v === undefined ? null : v),
     z.union([z.null(), z.string().uuid("Pick a valid batch")]).optional(),
   ),
-  fee_total: z.number().min(0, "Fee cannot be negative").max(10_000_000).optional(),
+  fee_total: z
+    .number()
+    .min(0, "Fee cannot be negative")
+    .max(10_000_000)
+    .optional(),
   fee_due_date: nullableDate(),
   notes: nullableText(1000),
 });
@@ -92,15 +102,25 @@ export const batchSchema = z.object({
   teacher_name: nullableText(120),
   timing: nullableText(80),
   days_of_week: z.array(z.string().max(10)).max(7).optional(),
-  capacity: z.number().int().min(1, "Capacity must be at least 1").max(1000).optional(),
+  capacity: z
+    .number()
+    .int()
+    .min(1, "Capacity must be at least 1")
+    .max(1000)
+    .optional(),
   is_active: z.boolean().optional(),
   notes: nullableText(1000),
 });
 
 export const paymentSchema = z.object({
   student_id: z.string().uuid("Select a student"),
-  amount: z.number().positive("Amount must be greater than zero").max(10_000_000),
-  payment_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid payment date"),
+  amount: z
+    .number()
+    .positive("Amount must be greater than zero")
+    .max(10_000_000),
+  payment_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid payment date"),
   method: z.enum(["cash", "upi", "card", "bank", "other"]),
   reference: nullableText(120),
   notes: nullableText(1000),
@@ -120,7 +140,10 @@ export const instituteSchema = z.object({
   ),
   contact_email: z.preprocess(
     coalesceEmptyToNull,
-    z.union([z.null(), z.string().trim().email("Enter a valid email address").max(255)]),
+    z.union([
+      z.null(),
+      z.string().trim().email("Enter a valid email address").max(255),
+    ]),
   ),
   address: nullableText(500),
   receipt_prefix: z.preprocess(
@@ -139,27 +162,26 @@ export const credentialsSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters")
     .max(72)
-    .refine((s) => !/\s/.test(s), { message: "Password must not contain spaces" }),
+    .refine((s) => !/\s/.test(s), {
+      message: "Password must not contain spaces",
+    }),
 });
 
 /** Required phone for signup — validated strict. */
 export function requiredPhone() {
-  return z.preprocess(
-    (v) => {
-      if (v === null || v === undefined) return undefined;
-      if (typeof v === "string") return v.trim();
-      return v;
-    },
-    z
-      .string()
-      .min(1, "Phone number is required")
-      .regex(phoneRegex, "Enter a valid phone number (6–20 digits)")
-      .max(20),
-  );
+  return z.preprocess((v) => {
+    if (v === null || v === undefined) return undefined;
+    if (typeof v === "string") return v.trim();
+    return v;
+  }, z.string().min(1, "Phone number is required").regex(phoneRegex, "Enter a valid phone number (6–20 digits)").max(20));
 }
 
 export const signupSchema = credentialsSchema.extend({
-  institute_name: z.string().trim().min(2, "Institute name is required").max(160),
+  institute_name: z
+    .string()
+    .trim()
+    .min(2, "Institute name is required")
+    .max(160),
   phone: requiredPhone(),
 });
 
@@ -172,5 +194,7 @@ export const newPasswordSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters")
     .max(72)
-    .refine((s) => !/\s/.test(s), { message: "Password must not contain spaces" }),
+    .refine((s) => !/\s/.test(s), {
+      message: "Password must not contain spaces",
+    }),
 });

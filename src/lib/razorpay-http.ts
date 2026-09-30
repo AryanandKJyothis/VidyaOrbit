@@ -53,7 +53,11 @@ export type RzCustomerCreate = {
   id: string;
 };
 
-export async function rzCreateCustomer(params: { email: string; name: string; ownerId: string }) {
+export async function rzCreateCustomer(params: {
+  email: string;
+  name: string;
+  ownerId: string;
+}) {
   return razorpayFetch<RzCustomerCreate>("/customers", {
     method: "POST",
     body: JSON.stringify({
@@ -105,15 +109,20 @@ export async function rzCreateSubscription(params: {
 }
 
 export async function rzGetSubscription(subscriptionId: string) {
-  return razorpayFetch<RzSubscriptionSnapshot>(`/subscriptions/${subscriptionId}`, {
-    method: "GET",
-  });
+  return razorpayFetch<RzSubscriptionSnapshot>(
+    `/subscriptions/${subscriptionId}`,
+    {
+      method: "GET",
+    },
+  );
 }
 
 export async function rzGetPlan(planId: string) {
   return razorpayFetch<RzPlanSnapshot>(`/plans/${planId}`, { method: "GET" });
 }
-export async function rzCancelSubscription(subscriptionId: string): Promise<void> {
+export async function rzCancelSubscription(
+  subscriptionId: string,
+): Promise<void> {
   await razorpayFetch(`/subscriptions/${subscriptionId}/cancel`, {
     method: "POST",
     body: JSON.stringify({ cancel_at_cycle_end: 0 }),

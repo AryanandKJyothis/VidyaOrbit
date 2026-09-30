@@ -17,7 +17,9 @@ const PLAN_ENV_KEYS: Record<SubscribablePlanEnvKey, string> = {
   pro: "RAZORPAY_PLAN_PRO",
 };
 
-export function getOptionalRazorpayEnv(): Partial<RazorpayEnv> & { configured: boolean } {
+export function getOptionalRazorpayEnv(): Partial<RazorpayEnv> & {
+  configured: boolean;
+} {
   const keyId = trimEnv("RAZORPAY_KEY_ID");
   const keySecret = trimEnv("RAZORPAY_KEY_SECRET");
   const webhookSecret = trimEnv("RAZORPAY_WEBHOOK_SECRET");
@@ -28,7 +30,12 @@ export function getOptionalRazorpayEnv(): Partial<RazorpayEnv> & { configured: b
   };
 
   const allHaveValues =
-    !!keyId && !!keySecret && !!webhookSecret && !!plans.starter && !!plans.growth && !!plans.pro;
+    !!keyId &&
+    !!keySecret &&
+    !!webhookSecret &&
+    !!plans.starter &&
+    !!plans.growth &&
+    !!plans.pro;
 
   if (!allHaveValues)
     return {
@@ -94,15 +101,23 @@ function buildMissingEnvList(): string[] {
   return need.filter((k) => !trimEnv(k));
 }
 
-export function razorpayPlanIdFor(plan: SubscribablePlanEnvKey, env?: RazorpayEnv): string {
+export function razorpayPlanIdFor(
+  plan: SubscribablePlanEnvKey,
+  env?: RazorpayEnv,
+): string {
   const e = env ?? requireRazorpayEnv();
   return e.plans[plan];
 }
 
-export function planFromRazorpayPlanId(planId: string): SubscribablePlanEnvKey | null {
+export function planFromRazorpayPlanId(
+  planId: string,
+): SubscribablePlanEnvKey | null {
   try {
     const e = requireRazorpayEnv();
-    const entries = Object.entries(e.plans) as [SubscribablePlanEnvKey, string][];
+    const entries = Object.entries(e.plans) as [
+      SubscribablePlanEnvKey,
+      string,
+    ][];
     for (const [code, pid] of entries) if (pid === planId) return code;
     return null;
   } catch {

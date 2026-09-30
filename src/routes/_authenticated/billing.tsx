@@ -10,7 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStudents } from "@/hooks/use-data";
-import { useSubscription, PLANS, PLAN_RANK, type PlanCode } from "@/hooks/use-subscription";
+import {
+  useSubscription,
+  PLANS,
+  PLAN_RANK,
+  type PlanCode,
+} from "@/hooks/use-subscription";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +29,10 @@ export const Route = createFileRoute("/_authenticated/billing")({
   component: BillingPage,
 });
 
-const CHECKOUT_PENDING_STATUSES = new Set(["pending_checkout", "processing_checkout"]);
+const CHECKOUT_PENDING_STATUSES = new Set([
+  "pending_checkout",
+  "processing_checkout",
+]);
 
 const SUPPORT_PHONE = "+91 7025063047";
 const SUPPORT_EMAIL = "aryanandkjyothis4@gmail.com";
@@ -52,7 +60,8 @@ function emailUrl(planName: string, currentPlan: string) {
 async function billingAuthFetch(path: string, init?: RequestInit) {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
-  if (!token) return { res: null as Response | null, token: null as string | null };
+  if (!token)
+    return { res: null as Response | null, token: null as string | null };
   const res = await fetch(path, {
     ...init,
     headers: {
@@ -85,15 +94,20 @@ function BillingPage() {
   const currentRank = PLAN_RANK[effectivePlan];
   const limit = sub.data?.limit ?? 25;
   const used = students.data?.length ?? 0;
-  const pct = Number.isFinite(limit) ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  const pct = Number.isFinite(limit)
+    ? Math.min(100, Math.round((used / limit) * 100))
+    : 0;
   const planMeta = PLANS.find((p) => p.code === effectivePlan);
 
   const syncSubscription = useCallback(async () => {
     setSyncing(true);
     try {
-      const { res, token } = await billingAuthFetch("/api/billing/sync-subscription", {
-        method: "POST",
-      });
+      const { res, token } = await billingAuthFetch(
+        "/api/billing/sync-subscription",
+        {
+          method: "POST",
+        },
+      );
       if (!token) {
         toast.error("Please sign in again to continue.");
         return;
@@ -141,11 +155,11 @@ function BillingPage() {
       {sub.data && !sub.data.isOwner && (
         <Card className="mb-6 border-primary/30 bg-primary/5">
           <CardContent className="py-3 text-sm text-muted-foreground">
-            You're viewing the institute owner's billing. Only the owner can change the plan — please ask them to contact support.
+            You're viewing the institute owner's billing. Only the owner can
+            change the plan — please ask them to contact support.
           </CardContent>
         </Card>
       )}
-
 
       <Card className="mb-6 overflow-hidden border-primary/20">
         <CardContent className="grid gap-6 p-6 lg:grid-cols-[1fr_auto] lg:items-center">
@@ -157,24 +171,32 @@ function BillingPage() {
               <Badge variant="secondary" className="capitalize">
                 {planMeta?.name ?? effectivePlan}
               </Badge>
-              <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+              <Badge
+                variant="outline"
+                className="text-[10px] uppercase tracking-wide"
+              >
                 {billingLabel}
               </Badge>
             </div>
             <h2 className="mt-1 font-display text-2xl font-semibold">
               {planMeta?.name} —{" "}
               <span className="text-muted-foreground">
-                {planMeta?.price === 0 ? "Free" : `₹${planMeta?.price.toLocaleString("en-IN")}/mo`}
+                {planMeta?.price === 0
+                  ? "Free"
+                  : `₹${planMeta?.price.toLocaleString("en-IN")}/mo`}
               </span>
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">{planMeta?.tagline}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {planMeta?.tagline}
+            </p>
 
             {checkoutPending && (
               <div className="mt-4 space-y-2 rounded-lg border border-amber-500/35 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground">
                 <p>
-                  Finish Razorpay checkout in the tab we opened (or start checkout again if you
-                  closed it). Your plan unlocks automatically after payment — we also check with
-                  Razorpay every few seconds.
+                  Finish Razorpay checkout in the tab we opened (or start
+                  checkout again if you closed it). Your plan unlocks
+                  automatically after payment — we also check with Razorpay
+                  every few seconds.
                 </p>
                 <Button
                   type="button"
@@ -186,7 +208,8 @@ function BillingPage() {
                 >
                   {syncing ? (
                     <>
-                      <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> Checking payment…
+                      <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />{" "}
+                      Checking payment…
                     </>
                   ) : (
                     "Refresh payment status"
@@ -199,13 +222,17 @@ function BillingPage() {
               <div className="mb-1.5 flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Students</span>
                 <span className="font-medium">
-                  {students.isLoading ? "—" : used} / {Number.isFinite(limit) ? limit : "∞"}
+                  {students.isLoading ? "—" : used} /{" "}
+                  {Number.isFinite(limit) ? limit : "∞"}
                 </span>
               </div>
               {students.isLoading ? (
                 <Skeleton className="h-2" />
               ) : (
-                <Progress value={pct} className={cn(pct >= 90 && "[&>div]:bg-destructive")} />
+                <Progress
+                  value={pct}
+                  className={cn(pct >= 90 && "[&>div]:bg-destructive")}
+                />
               )}
               {pct >= 100 && (
                 <p className="mt-2 text-xs text-destructive">
@@ -221,7 +248,12 @@ function BillingPage() {
           </div>
 
           <div className="flex flex-col items-stretch gap-2 md:w-[220px]">
-            <Button asChild variant="outline" size="sm" className="w-full gap-2">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+            >
               <Link to="/settings">
                 <CreditCard className="h-4 w-4" /> Institute & billing email
               </Link>
@@ -254,17 +286,25 @@ function BillingPage() {
               <CardContent className="flex flex-1 flex-col gap-4 p-5">
                 <div>
                   <div className="flex items-center justify-between">
-                    <h3 className="font-display text-lg font-semibold">{p.name}</h3>
+                    <h3 className="font-display text-lg font-semibold">
+                      {p.name}
+                    </h3>
                     {isCurrent && <Badge variant="secondary">Active</Badge>}
                   </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{p.tagline}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {p.tagline}
+                  </p>
                 </div>
                 <div>
                   <div className="flex items-baseline gap-1">
                     <span className="font-display text-3xl font-bold">
-                      {p.price === 0 ? "Free" : `₹${p.price.toLocaleString("en-IN")}`}
+                      {p.price === 0
+                        ? "Free"
+                        : `₹${p.price.toLocaleString("en-IN")}`}
                     </span>
-                    {p.price !== 0 && <span className="text-xs text-muted-foreground">/mo</span>}
+                    {p.price !== 0 && (
+                      <span className="text-xs text-muted-foreground">/mo</span>
+                    )}
                   </div>
                 </div>
                 <ul className="flex-1 space-y-2 text-sm">
@@ -288,12 +328,17 @@ function BillingPage() {
                   <div className="flex flex-col gap-2">
                     <Button asChild className="w-full gap-2">
                       <a
-                        href={whatsappUrl(p.name, planMeta?.name ?? effectivePlan)}
+                        href={whatsappUrl(
+                          p.name,
+                          planMeta?.name ?? effectivePlan,
+                        )}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
                         <MessageCircle className="h-4 w-4" />
-                        {isDowngrade ? "Request downgrade" : "Upgrade on WhatsApp"}
+                        {isDowngrade
+                          ? "Request downgrade"
+                          : "Upgrade on WhatsApp"}
                       </a>
                     </Button>
                     <Button asChild variant="outline" className="w-full gap-2">
@@ -317,20 +362,31 @@ function BillingPage() {
       <Card className="mt-8 overflow-hidden border-primary/20">
         <CardContent className="grid gap-6 p-6 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
-            <h3 className="font-display text-lg font-semibold">Need to change your plan?</h3>
+            <h3 className="font-display text-lg font-semibold">
+              Need to change your plan?
+            </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Reach out directly and we&apos;ll upgrade or downgrade your subscription right away.
+              Reach out directly and we&apos;ll upgrade or downgrade your
+              subscription right away.
             </p>
           </div>
           <div className="flex flex-col items-stretch gap-2 md:w-[240px]">
             <Button asChild className="w-full gap-2">
-              <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer">
+              <a
+                href={`https://wa.me/${WHATSAPP_NUMBER}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <MessageCircle className="h-4 w-4" />
                 WhatsApp {SUPPORT_PHONE}
               </a>
             </Button>
             <Button asChild variant="outline" className="w-full gap-2">
-              <a href={`mailto:${SUPPORT_EMAIL}`} target="_blank" rel="noopener noreferrer">
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Mail className="h-4 w-4" />
                 Email support
               </a>
@@ -340,8 +396,8 @@ function BillingPage() {
       </Card>
 
       <p className="mt-6 text-center text-[11px] text-muted-foreground leading-relaxed max-w-xl mx-auto">
-        Existing Razorpay subscriptions are still synced automatically. New plan changes are handled
-        by contacting support.
+        Existing Razorpay subscriptions are still synced automatically. New plan
+        changes are handled by contacting support.
       </p>
     </div>
   );

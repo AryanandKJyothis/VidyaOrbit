@@ -4,7 +4,14 @@ import { randomBytes } from "crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const RESOURCES = ["students", "batches", "attendance", "fees", "settings", "billing"] as const;
+const RESOURCES = [
+  "students",
+  "batches",
+  "attendance",
+  "fees",
+  "settings",
+  "billing",
+] as const;
 const PERMISSION_LEVELS = ["none", "read", "write"] as const;
 const ROLES = ["owner", "manager", "staff", "viewer"] as const;
 
@@ -19,18 +26,47 @@ const permissionsSchema = z.object({
 export type Permissions = z.infer<typeof permissionsSchema>;
 export type WorkspaceRole = (typeof ROLES)[number];
 
-export const PERMISSION_PRESETS: Record<Exclude<WorkspaceRole, "owner">, Permissions> = {
-  manager: { students: "write", batches: "write", attendance: "write", fees: "write", settings: "write", billing: "none" },
-  staff: { students: "write", batches: "read", attendance: "write", fees: "write", settings: "none", billing: "none" },
-  viewer: { students: "read", batches: "read", attendance: "read", fees: "read", settings: "none", billing: "none" },
+export const PERMISSION_PRESETS: Record<
+  Exclude<WorkspaceRole, "owner">,
+  Permissions
+> = {
+  manager: {
+    students: "write",
+    batches: "write",
+    attendance: "write",
+    fees: "write",
+    settings: "write",
+    billing: "none",
+  },
+  staff: {
+    students: "write",
+    batches: "read",
+    attendance: "write",
+    fees: "write",
+    settings: "none",
+    billing: "none",
+  },
+  viewer: {
+    students: "read",
+    batches: "read",
+    attendance: "read",
+    fees: "read",
+    settings: "none",
+    billing: "none",
+  },
 };
 
-export function permissionsMatchPreset(p: Permissions, role: Exclude<WorkspaceRole, "owner">): boolean {
+export function permissionsMatchPreset(
+  p: Permissions,
+  role: Exclude<WorkspaceRole, "owner">,
+): boolean {
   const preset = PERMISSION_PRESETS[role];
   return RESOURCES.every((k) => p[k] === preset[k]);
 }
 
-export function detectPresetOrCustom(p: Permissions): Exclude<WorkspaceRole, "owner"> | "custom" {
+export function detectPresetOrCustom(
+  p: Permissions,
+): Exclude<WorkspaceRole, "owner"> | "custom" {
   for (const r of ["manager", "staff", "viewer"] as const) {
     if (permissionsMatchPreset(p, r)) return r;
   }
@@ -38,7 +74,8 @@ export function detectPresetOrCustom(p: Permissions): Exclude<WorkspaceRole, "ow
 }
 
 async function assertOwner(ownerId: string, userId: string) {
-  if (ownerId !== userId) throw new Error("Only the workspace owner can perform this action");
+  if (ownerId !== userId)
+    throw new Error("Only the workspace owner can perform this action");
 }
 
 // ============ Workspaces a user belongs to ============
@@ -59,7 +96,9 @@ export const listMyWorkspaces = createServerFn({ method: "GET" })
         .from("institutes")
         .select("owner_id, name")
         .in("owner_id", ownerIds);
-      names = Object.fromEntries((insts ?? []).map((i) => [i.owner_id, i.name]));
+      names = Object.fromEntries(
+        (insts ?? []).map((i) => [i.owner_id, i.name]),
+      );
     }
     return (members ?? []).map((m) => ({
       ownerId: m.owner_id,
@@ -75,7 +114,9 @@ export const listMyWorkspaces = createServerFn({ method: "GET" })
 // Owner sees everything; non-owners see active members only (no invite tokens).
 export const listTeam = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { ownerId: string }) => z.object({ ownerId: z.string().uuid() }).parse(input))
+  .inputValidator((input: { ownerId: string }) =>
+    z.object({ ownerId: z.string().uuid() }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     // Permission: must be the owner OR a member of this workspace
     const { data: callerMembership } = await supabaseAdmin
@@ -101,7 +142,10 @@ export const listTeam = createServerFn({ method: "POST" })
     const lastSignIn: Record<string, string | null> = {};
     if (idSet.size > 0) {
       // 200 should cover any realistic workspace; we could paginate if needed.
-      const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+      const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 200,
+      });
       for (const u of usersPage?.users ?? []) {
         if (idSet.has(u.id)) {
           emails[u.id] = u.email ?? "";
@@ -150,7 +194,9 @@ export const listTeam = createServerFn({ method: "POST" })
     if (isOwner) {
       const { data: invites } = await supabaseAdmin
         .from("workspace_invites")
-        .select("id, email, role, permissions, status, expires_at, created_at, token")
+        .select(
+          "id, email, role, permissions, status, expires_at, created_at, token",
+        )
         .eq("owner_id", data.ownerId)
         .eq("status", "pending")
         .order("created_at", { ascending: false });
@@ -161,7 +207,10 @@ export const listTeam = createServerFn({ method: "POST" })
         email: i.email,
         role: i.role as WorkspaceRole,
         permissions: i.permissions as Permissions,
-        status: new Date(i.expires_at).getTime() <= now ? ("expired" as const) : ("pending" as const),
+        status:
+          new Date(i.expires_at).getTime() <= now
+            ? ("expired" as const)
+            : ("pending" as const),
         token: i.token,
         expiresAt: i.expires_at,
         createdAt: i.created_at,
@@ -194,7 +243,10 @@ export const inviteMember = createServerFn({ method: "POST" })
       .eq("owner_id", data.ownerId);
     if (existingMembers && existingMembers.length > 0) {
       const idSet = new Set(existingMembers.map((m) => m.user_id));
-      const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+      const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 200,
+      });
       const existingEmails = new Set(
         (usersPage?.users ?? [])
           .filter((u) => idSet.has(u.id))
@@ -246,7 +298,9 @@ export const resendInvite = createServerFn({ method: "POST" })
     await assertOwner(invite.owner_id, context.userId);
 
     const token = randomBytes(32).toString("base64url");
-    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const expires = new Date(
+      Date.now() + 7 * 24 * 60 * 60 * 1000,
+    ).toISOString();
     const { error } = await supabaseAdmin
       .from("workspace_invites")
       .update({ token, expires_at: expires, status: "pending" })
@@ -257,7 +311,9 @@ export const resendInvite = createServerFn({ method: "POST" })
 
 export const revokeInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { inviteId: string }) => z.object({ inviteId: z.string().uuid() }).parse(input))
+  .inputValidator((input: { inviteId: string }) =>
+    z.object({ inviteId: z.string().uuid() }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { data: invite } = await supabaseAdmin
       .from("workspace_invites")
@@ -291,7 +347,10 @@ export const previewInvite = createServerFn({ method: "POST" })
     if (!invite) return { ok: false as const, reason: "not_found" as const };
     const expired = new Date(invite.expires_at).getTime() <= Date.now();
     if (invite.status !== "pending") {
-      return { ok: false as const, reason: invite.status as "accepted" | "revoked" | "expired" };
+      return {
+        ok: false as const,
+        reason: invite.status as "accepted" | "revoked" | "expired",
+      };
     }
     if (expired) return { ok: false as const, reason: "expired" as const };
 
@@ -330,7 +389,9 @@ export const listMyPendingInvites = createServerFn({ method: "GET" })
         .from("institutes")
         .select("owner_id, name")
         .in("owner_id", ownerIds);
-      names = Object.fromEntries((insts ?? []).map((i) => [i.owner_id, i.name]));
+      names = Object.fromEntries(
+        (insts ?? []).map((i) => [i.owner_id, i.name]),
+      );
     }
     return (invites ?? [])
       .filter((i) => new Date(i.expires_at) > new Date())
@@ -353,9 +414,13 @@ export const acceptInvite = createServerFn({ method: "POST" })
       .eq("token", data.token)
       .maybeSingle();
     if (!invite) throw new Error("Invite not found");
-    if (invite.status !== "pending") throw new Error("Invite is no longer valid");
+    if (invite.status !== "pending")
+      throw new Error("Invite is no longer valid");
     if (new Date(invite.expires_at) <= new Date()) {
-      await supabaseAdmin.from("workspace_invites").update({ status: "expired" }).eq("id", invite.id);
+      await supabaseAdmin
+        .from("workspace_invites")
+        .update({ status: "expired" })
+        .eq("id", invite.id);
       throw new Error("Invite has expired");
     }
     if (invite.email.toLowerCase() !== userEmail) {
@@ -378,7 +443,11 @@ export const acceptInvite = createServerFn({ method: "POST" })
 
     await supabaseAdmin
       .from("workspace_invites")
-      .update({ status: "accepted", accepted_by: context.userId, accepted_at: new Date().toISOString() })
+      .update({
+        status: "accepted",
+        accepted_by: context.userId,
+        accepted_at: new Date().toISOString(),
+      })
       .eq("id", invite.id);
 
     return { ok: true, ownerId: invite.owner_id };
@@ -397,9 +466,14 @@ export const declineInvite = createServerFn({ method: "POST" })
       .eq("token", data.token)
       .maybeSingle();
     if (!invite) throw new Error("Invite not found");
-    if (invite.email.toLowerCase() !== userEmail) throw new Error("Not your invite");
-    if (invite.status !== "pending") throw new Error("Invite is no longer pending");
-    await supabaseAdmin.from("workspace_invites").update({ status: "revoked" }).eq("id", invite.id);
+    if (invite.email.toLowerCase() !== userEmail)
+      throw new Error("Not your invite");
+    if (invite.status !== "pending")
+      throw new Error("Invite is no longer pending");
+    await supabaseAdmin
+      .from("workspace_invites")
+      .update({ status: "revoked" })
+      .eq("id", invite.id);
     return { ok: true };
   });
 
@@ -423,7 +497,8 @@ export const updateMember = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!m) throw new Error("Member not found");
     await assertOwner(m.owner_id, context.userId);
-    if (m.role === "owner") throw new Error("Cannot modify the workspace owner");
+    if (m.role === "owner")
+      throw new Error("Cannot modify the workspace owner");
     const { error } = await supabaseAdmin
       .from("workspace_members")
       .update({ role: data.role, permissions: data.permissions })
@@ -446,7 +521,8 @@ export const removeMember = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!m) throw new Error("Member not found");
     await assertOwner(m.owner_id, context.userId);
-    if (m.role === "owner") throw new Error("Cannot remove the workspace owner");
+    if (m.role === "owner")
+      throw new Error("Cannot remove the workspace owner");
     const { error } = await supabaseAdmin
       .from("workspace_members")
       .delete()
@@ -466,7 +542,9 @@ export const leaveWorkspace = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     if (data.ownerId === context.userId) {
-      throw new Error("You can't leave your own institute. Contact support to delete it.");
+      throw new Error(
+        "You can't leave your own institute. Contact support to delete it.",
+      );
     }
     const { error } = await supabaseAdmin
       .from("workspace_members")

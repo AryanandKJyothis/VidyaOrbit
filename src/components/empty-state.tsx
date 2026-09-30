@@ -10,7 +10,13 @@ type Props = {
   className?: string;
 };
 
-export function EmptyState({ icon: Icon, title, description, children, className }: Props) {
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  children,
+  className,
+}: Props) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}

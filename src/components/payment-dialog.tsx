@@ -75,7 +75,9 @@ export function PaymentDialog({
       onOpenChange(false);
       navigate({ to: "/receipts/$paymentId", params: { paymentId: p.id } });
     } catch (error: unknown) {
-      toast.error(formatUserError(error, "Could not record payment. Please try again."));
+      toast.error(
+        formatUserError(error, "Could not record payment. Please try again."),
+      );
     }
   };
 
@@ -123,14 +125,19 @@ export function PaymentDialog({
               <Input
                 type="date"
                 value={form.payment_date}
-                onChange={(e) => setForm({ ...form, payment_date: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, payment_date: e.target.value })
+                }
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Method</Label>
-              <Select value={form.method} onValueChange={(v) => setForm({ ...form, method: v })}>
+              <Select
+                value={form.method}
+                onValueChange={(v) => setForm({ ...form, method: v })}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -147,7 +154,9 @@ export function PaymentDialog({
               <Label>Reference (optional)</Label>
               <Input
                 value={form.reference}
-                onChange={(e) => setForm({ ...form, reference: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, reference: e.target.value })
+                }
                 placeholder="UPI ref, cheque no."
               />
             </div>
@@ -161,11 +170,17 @@ export function PaymentDialog({
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={mut.isPending}>
-              {mut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {mut.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Record &amp; generate receipt
             </Button>
           </DialogFooter>

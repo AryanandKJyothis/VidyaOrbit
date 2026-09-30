@@ -46,9 +46,12 @@ export function WelcomeBackBanner() {
           <Sparkles className="h-4 w-4" />
         </div>
         <div className="flex-1">
-          <p className="font-semibold">Welcome back — it's been {daysAway} days 👋</p>
+          <p className="font-semibold">
+            Welcome back — it's been {daysAway} days 👋
+          </p>
           <p className="text-sm text-muted-foreground">
-            Pick up where you left off. Add a student or mark today's attendance in a tap.
+            Pick up where you left off. Add a student or mark today's attendance
+            in a tap.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button asChild size="sm">

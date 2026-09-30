@@ -70,5 +70,7 @@ async function walk(dir) {
 await walk(root);
 
 if (repaired.length > 0) {
-  console.log(`Repaired seroval production ESM entry in ${repaired.length} package(s).`);
+  console.log(
+    `Repaired seroval production ESM entry in ${repaired.length} package(s).`,
+  );
 }

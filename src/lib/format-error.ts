@@ -52,7 +52,10 @@ export function formatZodError(error: z.ZodError): string {
   const fieldLabel = labelForPath(issue.path as (string | number)[]);
 
   if (!isOpaqueZodMessage(issue.message)) {
-    if (fieldLabel && !issue.message.toLowerCase().includes(fieldLabel.toLowerCase())) {
+    if (
+      fieldLabel &&
+      !issue.message.toLowerCase().includes(fieldLabel.toLowerCase())
+    ) {
       return `${fieldLabel}: ${issue.message}`;
     }
     return issue.message;

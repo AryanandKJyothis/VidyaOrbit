@@ -2,7 +2,12 @@ import { Link } from "@tanstack/react-router";
 import { Lock, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useSubscription, hasMinPlan, type PlanCode, PLANS } from "@/hooks/use-subscription";
+import {
+  useSubscription,
+  hasMinPlan,
+  type PlanCode,
+  PLANS,
+} from "@/hooks/use-subscription";
 import { BILLING_DISABLED } from "@/lib/feature-flags";
 
 export function PlanGate({

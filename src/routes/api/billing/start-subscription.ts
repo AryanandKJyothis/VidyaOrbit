@@ -16,6 +16,7 @@ import {
   rzGetSubscription,
 } from "@/lib/razorpay-http";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { allowRequest, clientAddress, tooManyRequests } from "@/lib/rate-limit";
 import { parseBearerUserId } from "@/server/require-bearer-user";
 import {
   markCheckoutPending,
@@ -26,16 +27,29 @@ const bodySchema = z.object({
   planCode: z.enum(["starter", "growth", "pro"]),
 });
 
-const CHECKOUT_LOCK_STATUSES = new Set(["pending_checkout", "processing_checkout"]);
+const CHECKOUT_LOCK_STATUSES = new Set([
+  "pending_checkout",
+  "processing_checkout",
+]);
 
 export const Route = createFileRoute("/api/billing/start-subscription")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        if (
+          !allowRequest(`billing-start:${clientAddress(request)}`, 10, 60_000)
+        ) {
+          return tooManyRequests();
+        }
         const { BILLING_DISABLED } = await import("@/lib/feature-flags");
         if (BILLING_DISABLED) {
           return Response.json(
-            { ok: false, code: "DISABLED", message: "Billing is temporarily disabled. Contact your administrator." },
+            {
+              ok: false,
+              code: "DISABLED",
+              message:
+                "Billing is temporarily disabled. Contact your administrator.",
+            },
             { status: 503 },
           );
         }
@@ -47,15 +61,26 @@ export const Route = createFileRoute("/api/billing/start-subscription")({
           body = bodySchema.parse(await request.json());
         } catch {
           return Response.json(
-            { ok: false, code: "BAD_REQUEST", message: "Invalid plan selection." },
+            {
+              ok: false,
+              code: "BAD_REQUEST",
+              message: "Invalid plan selection.",
+            },
             { status: 400 },
           );
         }
 
         if (!getOptionalRazorpayEnv().configured) {
-          console.error("[billing/start-subscription]", billingNotConfiguredDetails());
+          console.error(
+            "[billing/start-subscription]",
+            billingNotConfiguredDetails(),
+          );
           return Response.json(
-            { ok: false, code: "NOT_CONFIGURED", message: billingNotConfiguredReason() },
+            {
+              ok: false,
+              code: "NOT_CONFIGURED",
+              message: billingNotConfiguredReason(),
+            },
             { status: 503 },
           );
         }
@@ -72,12 +97,19 @@ export const Route = createFileRoute("/api/billing/start-subscription")({
         if (instErr) {
           console.error(instErr);
           return Response.json(
-            { ok: false, code: "INSTITUTE_READ", message: "Could not load institute details." },
+            {
+              ok: false,
+              code: "INSTITUTE_READ",
+              message: "Could not load institute details.",
+            },
             { status: 500 },
           );
         }
 
-        const email = typeof inst?.contact_email === "string" ? inst.contact_email.trim() : "";
+        const email =
+          typeof inst?.contact_email === "string"
+            ? inst.contact_email.trim()
+            : "";
 
         if (!email) {
           return Response.json(
@@ -136,7 +168,10 @@ export const Route = createFileRoute("/api/billing/start-subscription")({
               );
             }
           } catch (planErr) {
-            console.error("[billing/start-subscription] plan validation failed:", planErr);
+            console.error(
+              "[billing/start-subscription] plan validation failed:",
+              planErr,
+            );
             return Response.json(
               {
                 ok: false,
@@ -164,7 +199,11 @@ export const Route = createFileRoute("/api/billing/start-subscription")({
             plan_code: body.planCode,
           });
 
-          const okPersist = await markCheckoutPending(userId, customerId!, sub.id);
+          const okPersist = await markCheckoutPending(
+            userId,
+            customerId!,
+            sub.id,
+          );
           if (!okPersist) {
             try {
               await rzCancelSubscription(sub.id);
@@ -218,12 +257,20 @@ export const Route = createFileRoute("/api/billing/start-subscription")({
             );
           }
 
-          return Response.json({ ok: true, short_url: shortUrl, razorpay_subscription_id: sub.id });
+          return Response.json({
+            ok: true,
+            short_url: shortUrl,
+            razorpay_subscription_id: sub.id,
+          });
         } catch (e: unknown) {
           await resetCheckoutState(userId);
           console.error("[billing/start-subscription]", e);
           return Response.json(
-            { ok: false, code: "RAZORPAY_ERROR", message: friendlyRazorpayError(e) },
+            {
+              ok: false,
+              code: "RAZORPAY_ERROR",
+              message: friendlyRazorpayError(e),
+            },
             { status: 502 },
           );
         }

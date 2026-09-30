@@ -5,7 +5,9 @@ import writeXlsxFile, { type SheetData } from "write-excel-file/browser";
 export const IMPORT_PHONE_REGEX = /^[0-9+\-\s()]{6,20}$/;
 
 /** Last 10 digits for dedupe (India-style). */
-export function normalizePhoneKey(phone: string | null | undefined): string | null {
+export function normalizePhoneKey(
+  phone: string | null | undefined,
+): string | null {
   if (!phone) return null;
   const digits = phone.replace(/\D/g, "");
   if (digits.length >= 10) return digits.slice(-10);
@@ -19,7 +21,8 @@ function normKeyFromRow(phone: string | null, name: string): string {
   return `n:${name.trim().toLowerCase()}`;
 }
 
-export type ImportRowIssue = "none" | "invalid_phone" | "invalid_name" | "dup_file" | "dup_db";
+export type ImportRowIssue =
+  "none" | "invalid_phone" | "invalid_name" | "dup_file" | "dup_db";
 
 export type PreparedImportRow = {
   sourceRow: number;
@@ -40,7 +43,8 @@ export type PreparedImportRow = {
 
 // ── Field mapping ───────────────────────────────────────────────────
 
-export type ImportField = "name" | "phone" | "guardian" | "batch" | "fee" | "joining_date";
+export type ImportField =
+  "name" | "phone" | "guardian" | "batch" | "fee" | "joining_date";
 
 export const FIELD_LABELS: Record<ImportField, string> = {
   name: "Name",
@@ -95,7 +99,16 @@ export const FIELD_ALIASES: Record<ImportField, string[]> = {
     "amma",
   ],
   batch: ["batch", "batch name", "class", "section", "course", "grade"],
-  fee: ["fee", "fee total", "total fee", "tuition", "tuition fee", "amount", "fees", "course fee"],
+  fee: [
+    "fee",
+    "fee total",
+    "total fee",
+    "tuition",
+    "tuition fee",
+    "amount",
+    "fees",
+    "course fee",
+  ],
   joining_date: [
     "joining date",
     "join date",
@@ -129,7 +142,9 @@ export function detectHeaderRow(matrix: unknown[][]): number {
   const limit = Math.min(matrix.length, 15);
   for (let i = 0; i < limit; i++) {
     const row = matrix[i] ?? [];
-    const cells = row.map((c) => (c == null ? "" : String(c).trim())).filter(Boolean);
+    const cells = row
+      .map((c) => (c == null ? "" : String(c).trim()))
+      .filter(Boolean);
     if (cells.length < 2) continue;
     let score = 0;
     for (const c of cells) {
@@ -182,7 +197,10 @@ export function rowsFromMatrix(
 export function guessColumnMapping(headers: string[]): ColumnMapping {
   const out: ColumnMapping = {};
   const used = new Set<string>();
-  const normHeaders = headers.map((h) => ({ raw: h, norm: normalizeHeader(h) }));
+  const normHeaders = headers.map((h) => ({
+    raw: h,
+    norm: normalizeHeader(h),
+  }));
   (Object.keys(FIELD_ALIASES) as ImportField[]).forEach((field) => {
     const aliases = FIELD_ALIASES[field].map(normalizeHeader);
     // exact match first
@@ -228,7 +246,10 @@ function parseDateCell(v: unknown): string | null {
   return null;
 }
 
-function pick(row: Record<string, unknown>, header: string | undefined): unknown {
+function pick(
+  row: Record<string, unknown>,
+  header: string | undefined,
+): unknown {
   if (!header) return "";
   const v = row[header];
   return v ?? "";
@@ -331,7 +352,9 @@ export function prepareStudentImportRows(
     const guardian = String(pick(r, m.guardian) ?? "").trim() || null;
     const feeCell = pick(r, m.fee);
     const feeNum =
-      feeCell === "" || feeCell == null ? opts.defaultFee : Math.max(0, Number(feeCell) || 0);
+      feeCell === "" || feeCell == null
+        ? opts.defaultFee
+        : Math.max(0, Number(feeCell) || 0);
     const join = parseDateCell(pick(r, m.joining_date));
     const batchName = String(pick(r, m.batch) ?? "").trim();
     let batchId = opts.defaultBatchId;
@@ -347,7 +370,8 @@ export function prepareStudentImportRows(
 
     let issue: ImportRowIssue = "none";
     if (!nameRaw || nameRaw.length > 120) issue = "invalid_name";
-    else if (phoneRaw && !IMPORT_PHONE_REGEX.test(phoneRaw)) issue = "invalid_phone";
+    else if (phoneRaw && !IMPORT_PHONE_REGEX.test(phoneRaw))
+      issue = "invalid_phone";
 
     const key = normKeyFromRow(phone, nameRaw);
     if (issue === "none") {
@@ -374,7 +398,8 @@ export function prepareStudentImportRows(
     let existingStudentId: string | undefined;
     if (issue === "none") {
       const k = normalizePhoneKey(phone);
-      if (k && existing.byPhone.has(k)) existingStudentId = existing.byPhone.get(k)!.id;
+      if (k && existing.byPhone.has(k))
+        existingStudentId = existing.byPhone.get(k)!.id;
       else if (!k) {
         const byName = existing.byName.get(nameRaw.toLowerCase());
         if (byName) existingStudentId = byName.id;
@@ -417,7 +442,10 @@ export function issueLabel(issue: ImportRowIssue): string {
 /** Download an .xlsx of just the rejected rows, with a Reason column. */
 export async function downloadRejectedRows(rows: PreparedImportRow[]) {
   const rejected = rows.filter(
-    (r) => r.issue === "invalid_name" || r.issue === "invalid_phone" || r.issue === "dup_file",
+    (r) =>
+      r.issue === "invalid_name" ||
+      r.issue === "invalid_phone" ||
+      r.issue === "dup_file",
   );
   if (!rejected.length) return;
   const data = rejected.map((r) => ({
@@ -438,7 +466,9 @@ export async function downloadRejectedRows(rows: PreparedImportRow[]) {
     headers.map((value) => ({ value, fontWeight: "bold" as const })),
     ...data.map((row) => headers.map((h) => row[h as keyof typeof row] ?? "")),
   ];
-  const blob = await writeXlsxFile([{ sheet: "Rejected rows", data: sheet }]).toBlob();
+  const blob = await writeXlsxFile([
+    { sheet: "Rejected rows", data: sheet },
+  ]).toBlob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

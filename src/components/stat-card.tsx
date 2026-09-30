@@ -38,7 +38,13 @@ const toneSpark: Record<string, string> = {
   destructive: "stroke-[oklch(0.62_0.20_28)]",
 };
 
-function Sparkline({ data, className }: { data: number[]; className?: string }) {
+function Sparkline({
+  data,
+  className,
+}: {
+  data: number[];
+  className?: string;
+}) {
   if (data.length < 2) return null;
   const w = 80;
   const h = 24;
@@ -47,7 +53,10 @@ function Sparkline({ data, className }: { data: number[]; className?: string }) 
   const range = max - min || 1;
   const step = w / (data.length - 1);
   const points = data
-    .map((v, i) => `${(i * step).toFixed(1)},${(h - ((v - min) / range) * h).toFixed(1)}`)
+    .map(
+      (v, i) =>
+        `${(i * step).toFixed(1)},${(h - ((v - min) / range) * h).toFixed(1)}`,
+    )
     .join(" ");
   return (
     <svg
@@ -128,7 +137,11 @@ export function StatCard({
       ref={ref}
       initial={{ opacity: 0, y: 12 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.4, delay: index * 0.05, ease: [0.16, 1, 0.3, 1] }}
+      transition={{
+        duration: 0.4,
+        delay: index * 0.05,
+        ease: [0.16, 1, 0.3, 1],
+      }}
       whileHover={{ y: -3 }}
       className="group h-full"
     >
@@ -166,7 +179,12 @@ export function StatCard({
           <div className="flex items-end justify-between gap-2">
             <div className="flex flex-col gap-1 min-w-0">
               {typeof deltaPct === "number" && (
-                <span className={cn("pill", deltaUp ? "pill-success" : "pill-danger")}>
+                <span
+                  className={cn(
+                    "pill",
+                    deltaUp ? "pill-success" : "pill-danger",
+                  )}
+                >
                   {deltaUp ? (
                     <ArrowUpRight className="h-3 w-3" aria-hidden />
                   ) : (
@@ -176,7 +194,9 @@ export function StatCard({
                 </span>
               )}
               {hint && (
-                <div className="text-xs text-muted-foreground/80 font-medium truncate">{hint}</div>
+                <div className="text-xs text-muted-foreground/80 font-medium truncate">
+                  {hint}
+                </div>
               )}
             </div>
             {sparkline && sparkline.length > 1 && (

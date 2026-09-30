@@ -41,7 +41,12 @@ export function QueryStateContainer({
   }
 
   if (isEmpty) {
-    return <QueryEmptyState title="No data" description="There's nothing to display here yet." />;
+    return (
+      <QueryEmptyState
+        title="No data"
+        description="There's nothing to display here yet."
+      />
+    );
   }
 
   return <>{children}</>;
@@ -60,7 +65,11 @@ export function QueryLoadingSkeleton({
   return (
     <div className={cn("space-y-3", className)} {...LOADING_ARIA_LIVE}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="h-12 rounded-md bg-muted animate-pulse" aria-hidden="true" />
+        <div
+          key={i}
+          className="h-12 rounded-md bg-muted animate-pulse"
+          aria-hidden="true"
+        />
       ))}
     </div>
   );
@@ -78,7 +87,8 @@ export function QueryErrorState({
   onRetry?: () => void;
   title?: string;
 }) {
-  const message = error?.message || "An unexpected error occurred. Please try again.";
+  const message =
+    error?.message || "An unexpected error occurred. Please try again.";
 
   return (
     <div
@@ -129,8 +139,14 @@ export function QueryEmptyState({
         </div>
       )}
       <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      <p className="mt-1 max-w-sm text-xs text-muted-foreground leading-relaxed">{description}</p>
-      {children && <div className="mt-5 flex flex-wrap justify-center gap-2">{children}</div>}
+      <p className="mt-1 max-w-sm text-xs text-muted-foreground leading-relaxed">
+        {description}
+      </p>
+      {children && (
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

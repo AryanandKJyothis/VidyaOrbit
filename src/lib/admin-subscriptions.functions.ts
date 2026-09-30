@@ -27,7 +27,9 @@ export const checkAdmin = createServerFn({ method: "GET" })
 
 export const listInstitutes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ search: z.string().max(120).optional() }).parse(i))
+  .inputValidator((i) =>
+    z.object({ search: z.string().max(120).optional() }).parse(i),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { data: rows, error } = await supabaseAdmin.rpc(
@@ -111,7 +113,11 @@ export const getSubscriptionDetail = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const [{ data: sub }, { data: inst }, { data: audit }] = await Promise.all([
-      supabaseAdmin.from("subscriptions").select("*").eq("owner_id", data.owner_id).maybeSingle(),
+      supabaseAdmin
+        .from("subscriptions")
+        .select("*")
+        .eq("owner_id", data.owner_id)
+        .maybeSingle(),
       supabaseAdmin
         .from("institutes")
         .select("name, contact_email, admin_notes" as never)
@@ -128,7 +134,13 @@ export const getSubscriptionDetail = createServerFn({ method: "POST" })
   });
 
 const planEnum = z.enum(["free", "starter", "growth", "pro"]);
-const statusEnum = z.enum(["active", "trialing", "past_due", "canceled", "pending_checkout"]);
+const statusEnum = z.enum([
+  "active",
+  "trialing",
+  "past_due",
+  "canceled",
+  "pending_checkout",
+]);
 
 type ApplyResult =
   | {
@@ -215,7 +227,12 @@ export const updateSubscription = createServerFn({ method: "POST" })
 export const extendSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
-    z.object({ owner_id: z.string().uuid(), days: z.number().int().min(1).max(3650) }).parse(i),
+    z
+      .object({
+        owner_id: z.string().uuid(),
+        days: z.number().int().min(1).max(3650),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
@@ -228,7 +245,9 @@ export const extendSubscription = createServerFn({ method: "POST" })
       before?.expiry_date && new Date(before.expiry_date) > new Date()
         ? new Date(before.expiry_date)
         : new Date();
-    const newExpiry = new Date(base.getTime() + data.days * 86400_000).toISOString();
+    const newExpiry = new Date(
+      base.getTime() + data.days * 86400_000,
+    ).toISOString();
     const res = await applyChange({
       owner_id: data.owner_id,
       changed_by: context.userId,
@@ -264,7 +283,9 @@ export const grantTrial = createServerFn({ method: "POST" })
       .maybeSingle();
     const plan = data.plan ?? (before?.plan as string) ?? "starter";
     const start = new Date();
-    const expiry = new Date(start.getTime() + data.days * 86400_000).toISOString();
+    const expiry = new Date(
+      start.getTime() + data.days * 86400_000,
+    ).toISOString();
     return applyChange({
       owner_id: data.owner_id,
       changed_by: context.userId,
@@ -283,7 +304,10 @@ export const updateInstituteAdminNotes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
     z
-      .object({ owner_id: z.string().uuid(), admin_notes: z.string().max(5000).nullable() })
+      .object({
+        owner_id: z.string().uuid(),
+        admin_notes: z.string().max(5000).nullable(),
+      })
       .parse(i),
   )
   .handler(async ({ data, context }) => {

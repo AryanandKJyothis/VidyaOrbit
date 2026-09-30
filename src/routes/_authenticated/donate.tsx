@@ -49,7 +49,9 @@ function DonatePage() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div>
-              <Label className="text-xs text-muted-foreground">Choose an amount</Label>
+              <Label className="text-xs text-muted-foreground">
+                Choose an amount
+              </Label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {PRESETS.map((v) => (
                   <Button
@@ -83,12 +85,14 @@ function DonatePage() {
                 </a>
               </Button>
               <Button asChild size="lg" variant="outline" className="w-full">
-                <a href={upiLink.replace("upi://", "gpay://upi/")}>Pay with Google Pay</a>
+                <a href={upiLink.replace("upi://", "gpay://upi/")}>
+                  Pay with Google Pay
+                </a>
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              The UPI button works with Google Pay, PhonePe, Paytm, BHIM and any UPI app on your
-              phone. On desktop, scan the QR with your phone.
+              The UPI button works with Google Pay, PhonePe, Paytm, BHIM and any
+              UPI app on your phone. On desktop, scan the QR with your phone.
             </p>
 
             <div className="rounded-lg border border-dashed p-4 text-sm">
@@ -125,7 +129,9 @@ function DonatePage() {
               {numericAmount > 0 ? (
                 <>
                   Pre-filled with{" "}
-                  <span className="font-medium text-foreground">₹{numericAmount}</span>
+                  <span className="font-medium text-foreground">
+                    ₹{numericAmount}
+                  </span>
                 </>
               ) : (
                 "Enter any amount in your UPI app"
@@ -136,7 +142,8 @@ function DonatePage() {
       </div>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        Donations are voluntary and non-refundable. Thank you for supporting independent software ❤️
+        Donations are voluntary and non-refundable. Thank you for supporting
+        independent software ❤️
       </p>
     </div>
   );
@@ -156,11 +163,17 @@ function Row({
   return (
     <div className="flex items-center justify-between gap-2">
       <div className="min-w-0">
-        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+          {label}
+        </div>
         <div className="truncate font-mono text-sm">{value}</div>
       </div>
       <Button size="sm" variant="ghost" onClick={onCopy}>
-        {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+        {copied ? (
+          <Check className="h-3.5 w-3.5" />
+        ) : (
+          <Copy className="h-3.5 w-3.5" />
+        )}
       </Button>
     </div>
   );

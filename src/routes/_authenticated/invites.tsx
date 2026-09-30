@@ -1,4 +1,8 @@
-import { createFileRoute, useSearch, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useSearch,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -6,7 +10,13 @@ import { toast } from "sonner";
 import { Check, X, Mail } from "lucide-react";
 import { z } from "zod";
 import { PageHeader } from "@/components/page-header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
@@ -70,11 +80,16 @@ function InvitesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Invites" description="Workspaces you&apos;ve been invited to join." />
+      <PageHeader
+        title="Invites"
+        description="Workspaces you've been invited to join."
+      />
 
       {invites.isLoading ? (
         <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">Loading…</CardContent>
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+            Loading…
+          </CardContent>
         </Card>
       ) : (invites.data ?? []).length === 0 ? (
         <Card>
@@ -90,7 +105,9 @@ function InvitesPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">{i.workspaceName}</CardTitle>
                 <CardDescription>
-                  <Badge variant="secondary" className="mr-2">{i.role}</Badge>
+                  <Badge variant="secondary" className="mr-2">
+                    {i.role}
+                  </Badge>
                   Expires {new Date(i.expires_at).toLocaleDateString()}
                 </CardDescription>
               </CardHeader>

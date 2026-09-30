@@ -180,7 +180,6 @@ export function useInstitute() {
   });
 }
 
-
 export function useUpsertStudent() {
   const qc = useQueryClient();
   const ownerId = useOwnerId();
@@ -198,7 +197,9 @@ export function useUpsertStudent() {
           .eq("owner_id", ownerId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("students").insert(payload as never);
+        const { error } = await supabase
+          .from("students")
+          .insert(payload as never);
         if (error) throw error;
       }
     },
@@ -225,7 +226,9 @@ export function useUpsertBatch() {
           .eq("owner_id", ownerId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("batches").insert(payload as never);
+        const { error } = await supabase
+          .from("batches")
+          .insert(payload as never);
         if (error) throw error;
       }
     },

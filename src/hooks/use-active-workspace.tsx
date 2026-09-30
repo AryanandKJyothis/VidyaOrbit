@@ -1,8 +1,19 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
-import { listMyWorkspaces, type Permissions, type WorkspaceRole } from "@/lib/workspace.functions";
+import {
+  listMyWorkspaces,
+  type Permissions,
+  type WorkspaceRole,
+} from "@/lib/workspace.functions";
 
 export type Workspace = {
   ownerId: string;
@@ -48,7 +59,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // Default active = own workspace
   useEffect(() => {
     if (!query.data || query.data.length === 0) return;
-    const exists = activeOwnerId && query.data.find((w) => w.ownerId === activeOwnerId);
+    const exists =
+      activeOwnerId && query.data.find((w) => w.ownerId === activeOwnerId);
     if (!exists) {
       const own = query.data.find((w) => w.isOwn) ?? query.data[0];
       setActiveOwnerId(own.ownerId);
@@ -82,7 +94,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
 export const useActiveWorkspace = () => useContext(WorkspaceCtx);
 
-export function useCan(resource: keyof Permissions, level: "read" | "write" = "read"): boolean {
+export function useCan(
+  resource: keyof Permissions,
+  level: "read" | "write" = "read",
+): boolean {
   const { active } = useActiveWorkspace();
   if (!active) return false;
   const p = active.permissions[resource];
