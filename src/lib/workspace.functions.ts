@@ -82,8 +82,8 @@ async function assertOwner(ownerId: string, userId: string) {
 export const listMyWorkspaces = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { userId } = context;
-    const { data: members, error } = await supabaseAdmin
+    const { supabase, userId } = context;
+    const { data: members, error } = await supabase
       .from("workspace_members")
       .select("owner_id, role, permissions, created_at")
       .eq("user_id", userId);
@@ -92,7 +92,7 @@ export const listMyWorkspaces = createServerFn({ method: "GET" })
     const ownerIds = (members ?? []).map((m) => m.owner_id);
     let names: Record<string, string> = {};
     if (ownerIds.length > 0) {
-      const { data: insts } = await supabaseAdmin
+      const { data: insts } = await supabase
         .from("institutes")
         .select("owner_id, name")
         .in("owner_id", ownerIds);
@@ -375,7 +375,7 @@ export const listMyPendingInvites = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const email = String(context.claims.email ?? "").toLowerCase();
     if (!email) return [];
-    const { data: invites, error } = await supabaseAdmin
+    const { data: invites, error } = await context.supabase
       .from("workspace_invites")
       .select("id, owner_id, role, permissions, expires_at, created_at, token")
       .eq("status", "pending")
@@ -385,7 +385,7 @@ export const listMyPendingInvites = createServerFn({ method: "GET" })
     const ownerIds = (invites ?? []).map((i) => i.owner_id);
     let names: Record<string, string> = {};
     if (ownerIds.length > 0) {
-      const { data: insts } = await supabaseAdmin
+      const { data: insts } = await context.supabase
         .from("institutes")
         .select("owner_id, name")
         .in("owner_id", ownerIds);
