@@ -41,6 +41,15 @@ const WorkspaceCtx = createContext<Ctx>({
 
 const STORAGE_KEY = "vidya.active-workspace";
 
+const OWNER_PERMISSIONS: Permissions = {
+  students: "write",
+  batches: "write",
+  attendance: "write",
+  fees: "write",
+  settings: "write",
+  billing: "write",
+};
+
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const fetchWorkspaces = useServerFn(listMyWorkspaces);
@@ -51,6 +60,21 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     staleTime: 30_000,
   });
 
+  // The signed-in owner still gets a full menu if the workspace request fails.
+  const workspaces = useMemo<Workspace[]>(() => {
+    if (query.data && query.data.length > 0) return query.data;
+    if (!query.isError || !user) return [];
+    return [
+      {
+        ownerId: user.id,
+        role: "owner",
+        permissions: OWNER_PERMISSIONS,
+        name: "My Institute",
+        isOwn: true,
+      },
+    ];
+  }, [query.data, query.isError, user]);
+
   const [activeOwnerId, setActiveOwnerId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return localStorage.getItem(STORAGE_KEY);
@@ -58,14 +82,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   // Default active = own workspace
   useEffect(() => {
-    if (!query.data || query.data.length === 0) return;
+    if (workspaces.length === 0) return;
     const exists =
-      activeOwnerId && query.data.find((w) => w.ownerId === activeOwnerId);
+      activeOwnerId && workspaces.find((w) => w.ownerId === activeOwnerId);
     if (!exists) {
-      const own = query.data.find((w) => w.isOwn) ?? query.data[0];
+      const own = workspaces.find((w) => w.isOwn) ?? workspaces[0];
       setActiveOwnerId(own.ownerId);
     }
-  }, [query.data, activeOwnerId]);
+  }, [workspaces, activeOwnerId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -73,14 +97,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [activeOwnerId]);
 
   const active = useMemo(
-    () => query.data?.find((w) => w.ownerId === activeOwnerId) ?? null,
-    [query.data, activeOwnerId],
+    () => workspaces.find((w) => w.ownerId === activeOwnerId) ?? null,
+    [workspaces, activeOwnerId],
   );
 
   return (
     <WorkspaceCtx.Provider
       value={{
-        workspaces: query.data ?? [],
+        workspaces,
         active,
         setActiveOwnerId,
         loading: query.isLoading,
