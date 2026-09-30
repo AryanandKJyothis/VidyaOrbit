@@ -46,7 +46,8 @@ export function SetupPrompt() {
         <DialogHeader>
           <DialogTitle>Welcome to Vidya!</DialogTitle>
           <DialogDescription>
-            Let's set up your institute. What's the name of your coaching centre or institution?
+            Let's set up your institute. What's the name of your coaching centre
+            or institution?
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
@@ -62,11 +63,17 @@ export function SetupPrompt() {
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
               Later
             </Button>
             <Button type="submit" disabled={mut.isPending}>
-              {mut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {mut.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Save
             </Button>
           </DialogFooter>

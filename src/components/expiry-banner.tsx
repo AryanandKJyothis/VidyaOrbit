@@ -53,7 +53,6 @@ export function ExpiryBanner() {
         "mb-4",
         severity === "danger" && "border-destructive/40 bg-destructive/5",
         severity === "warning" && "border-amber-500/40 bg-amber-500/5",
-        
       )}
     >
       <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
@@ -73,7 +72,11 @@ export function ExpiryBanner() {
           </div>
         </div>
         <div className="flex shrink-0 gap-2">
-          <Button asChild size="sm" variant={severity === "danger" ? "default" : "outline"}>
+          <Button
+            asChild
+            size="sm"
+            variant={severity === "danger" ? "default" : "outline"}
+          >
             <Link to={BILLING_DISABLED ? "/plan" : "/billing"}>
               {expired ? "Renew now" : "Renew"}
             </Link>

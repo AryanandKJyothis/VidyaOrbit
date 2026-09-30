@@ -55,7 +55,8 @@ export function StudentDialog({
         guardian_name: student?.guardian_name ?? "",
         guardian_phone: student?.guardian_phone ?? "",
         address: student?.address ?? "",
-        joining_date: student?.joining_date ?? new Date().toISOString().slice(0, 10),
+        joining_date:
+          student?.joining_date ?? new Date().toISOString().slice(0, 10),
         status: student?.status ?? "active",
         batch_id: student?.batch_id ?? "",
         fee_total: String(student?.fee_total ?? 0),
@@ -96,7 +97,10 @@ export function StudentDialog({
         <DialogHeader>
           <DialogTitle>{student ? "Edit student" : "Add student"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={submit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <form
+          onSubmit={submit}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+        >
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Full name *</Label>
             <Input
@@ -116,14 +120,18 @@ export function StudentDialog({
             <Label>Guardian name (optional)</Label>
             <Input
               value={form.guardian_name}
-              onChange={(e) => setForm({ ...form, guardian_name: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, guardian_name: e.target.value })
+              }
             />
           </div>
           <div className="space-y-1.5">
             <Label>Guardian phone (optional)</Label>
             <Input
               value={form.guardian_phone}
-              onChange={(e) => setForm({ ...form, guardian_phone: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, guardian_phone: e.target.value })
+              }
             />
           </div>
           <div className="space-y-1.5">
@@ -131,7 +139,9 @@ export function StudentDialog({
             <Input
               type="date"
               value={form.joining_date}
-              onChange={(e) => setForm({ ...form, joining_date: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, joining_date: e.target.value })
+              }
             />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
@@ -145,7 +155,9 @@ export function StudentDialog({
             <Label>Batch (optional)</Label>
             <Select
               value={form.batch_id || "_none"}
-              onValueChange={(v) => setForm({ ...form, batch_id: v === "_none" ? "" : v })}
+              onValueChange={(v) =>
+                setForm({ ...form, batch_id: v === "_none" ? "" : v })
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select batch" />
@@ -162,7 +174,10 @@ export function StudentDialog({
           </div>
           <div className="space-y-1.5">
             <Label>Status</Label>
-            <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+            <Select
+              value={form.status}
+              onValueChange={(v) => setForm({ ...form, status: v })}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -188,7 +203,9 @@ export function StudentDialog({
             <Input
               type="date"
               value={form.fee_due_date}
-              onChange={(e) => setForm({ ...form, fee_due_date: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, fee_due_date: e.target.value })
+              }
             />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
@@ -200,11 +217,17 @@ export function StudentDialog({
             />
           </div>
           <DialogFooter className="sm:col-span-2 mt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={mut.isPending}>
-              {mut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {mut.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               {student ? "Save changes" : "Add student"}
             </Button>
           </DialogFooter>

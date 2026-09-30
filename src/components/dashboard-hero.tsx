@@ -59,12 +59,15 @@ export function DashboardHero({
             {format(today, "EEEE, d MMMM")}
           </p>
           <h1 className="mt-1 font-display text-2xl sm:text-3xl lg:text-[2.25rem] font-bold tracking-tight leading-tight">
-            {greeting},{" "}
-            <span className="gradient-text">{displayName}</span>
+            {greeting}, <span className="gradient-text">{displayName}</span>
           </h1>
           {instituteName && (
             <p className="mt-1 text-sm text-muted-foreground">
-              Here's what's happening at <span className="font-medium text-foreground">{instituteName}</span> today.
+              Here's what's happening at{" "}
+              <span className="font-medium text-foreground">
+                {instituteName}
+              </span>{" "}
+              today.
             </p>
           )}
 
@@ -77,7 +80,8 @@ export function DashboardHero({
             </span>
             <span className="pill pill-muted">
               <Users className="h-3 w-3" aria-hidden />
-              {studentsActive} active {studentsActive === 1 ? "student" : "students"}
+              {studentsActive} active{" "}
+              {studentsActive === 1 ? "student" : "students"}
             </span>
             {duesWeekAmount > 0 && (
               <span className="pill pill-danger">

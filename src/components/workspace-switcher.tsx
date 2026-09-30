@@ -22,12 +22,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useActiveWorkspace, type Workspace } from "@/hooks/use-active-workspace";
+import {
+  useActiveWorkspace,
+  type Workspace,
+} from "@/hooks/use-active-workspace";
 import { leaveWorkspace } from "@/lib/workspace.functions";
 import { cn } from "@/lib/utils";
 
 export function WorkspaceSwitcher() {
-  const { workspaces, active, setActiveOwnerId, refresh } = useActiveWorkspace();
+  const { workspaces, active, setActiveOwnerId, refresh } =
+    useActiveWorkspace();
   const [toRemove, setToRemove] = useState<Workspace | null>(null);
   const [busy, setBusy] = useState(false);
   const leaveFn = useServerFn(leaveWorkspace);
@@ -50,7 +54,9 @@ export function WorkspaceSwitcher() {
       refresh();
       qc.invalidateQueries();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to remove workspace");
+      toast.error(
+        e instanceof Error ? e.message : "Failed to remove workspace",
+      );
     } finally {
       setBusy(false);
     }
@@ -67,8 +73,13 @@ export function WorkspaceSwitcher() {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="w-full justify-between px-2 h-9">
             <span className="flex items-center gap-2 min-w-0">
-              <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-              <span className="truncate text-sm font-medium">{active.name}</span>
+              <Building2
+                className="h-4 w-4 shrink-0 text-muted-foreground"
+                aria-hidden
+              />
+              <span className="truncate text-sm font-medium">
+                {active.name}
+              </span>
             </span>
             <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
           </Button>
@@ -126,13 +137,22 @@ export function WorkspaceSwitcher() {
   return (
     <>
       {trigger}
-      <AlertDialog open={!!toRemove} onOpenChange={(o) => !o && setToRemove(null)}>
+      <AlertDialog
+        open={!!toRemove}
+        onOpenChange={(o) => !o && setToRemove(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove this workspace from your list?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Remove this workspace from your list?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              You'll lose access to <span className="font-medium text-foreground">{toRemove?.name}</span>
-              {" "}and it will disappear from your switcher. No data is deleted — the owner can invite you back anytime.
+              You'll lose access to{" "}
+              <span className="font-medium text-foreground">
+                {toRemove?.name}
+              </span>{" "}
+              and it will disappear from your switcher. No data is deleted — the
+              owner can invite you back anytime.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

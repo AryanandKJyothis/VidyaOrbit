@@ -46,7 +46,8 @@ export function DigestReminderBootstrap({
         <div className="w-[min(100vw-2rem,380px)] rounded-xl border border-border bg-popover p-4 shadow-lg">
           <div className="text-sm font-semibold">Weekly institute digest</div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Quick snapshot — share this in staff meetings or follow up with parents.
+            Quick snapshot — share this in staff meetings or follow up with
+            parents.
           </p>
           <ul className="mt-3 space-y-1.5 text-xs">
             <li className="flex justify-between gap-2">
@@ -55,11 +56,15 @@ export function DigestReminderBootstrap({
             </li>
             <li className="flex justify-between gap-2">
               <span className="text-muted-foreground">Overdue balance</span>
-              <span className="font-mono font-medium">{formatINR(overdueAmount)}</span>
+              <span className="font-mono font-medium">
+                {formatINR(overdueAmount)}
+              </span>
             </li>
             <li className="flex justify-between gap-2">
               <span className="text-muted-foreground">Fees due in 7 days</span>
-              <span className="font-mono font-medium">{formatINR(duesWeekAmount)}</span>
+              <span className="font-mono font-medium">
+                {formatINR(duesWeekAmount)}
+              </span>
             </li>
             <li className="flex justify-between gap-2">
               <span className="text-muted-foreground">Attendance (30d)</span>

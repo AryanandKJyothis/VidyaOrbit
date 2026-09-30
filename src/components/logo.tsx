@@ -18,7 +18,11 @@ export function Logo({ className, size = 32, animated = false }: LogoProps) {
       alt="Vidya"
       width={size}
       height={size}
-      className={cn("object-contain shrink-0 select-none", animated && "animate-float", className)}
+      className={cn(
+        "object-contain shrink-0 select-none",
+        animated && "animate-float",
+        className,
+      )}
       draggable={false}
     />
   );

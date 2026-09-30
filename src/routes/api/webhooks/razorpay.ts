@@ -3,6 +3,7 @@ import { BILLING_DISABLED } from "@/lib/feature-flags";
 import { getWebhookSecret } from "@/lib/razorpay-env";
 import { verifyRazorpayWebhookSignature } from "@/lib/razorpay-webhook-verify";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { allowRequest, clientAddress, tooManyRequests } from "@/lib/rate-limit";
 import { createHash } from "node:crypto";
 import {
   activatePaidSubscription,
@@ -15,6 +16,15 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        if (
+          !allowRequest(
+            `razorpay-webhook:${clientAddress(request)}`,
+            60,
+            60_000,
+          )
+        ) {
+          return tooManyRequests();
+        }
         if (BILLING_DISABLED) {
           return Response.json({ ok: false, disabled: true }, { status: 503 });
         }
@@ -26,7 +36,11 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
 
         const rawBody = await request.text();
         const sig = request.headers.get("x-razorpay-signature");
-        const okSig = await verifyRazorpayWebhookSignature(secret, rawBody, sig);
+        const okSig = await verifyRazorpayWebhookSignature(
+          secret,
+          rawBody,
+          sig,
+        );
         if (!okSig) {
           console.warn("[Razorpay webhook] Signature mismatch");
           return Response.json({ error: "BAD_SIGNATURE" }, { status: 400 });
@@ -44,7 +58,9 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
           typeof payload.subscription === "object" &&
           payload.subscription !== null &&
           "entity" in payload.subscription
-            ? ((payload.subscription as { entity?: RzWebhookSubscriptionEntity }).entity ?? null)
+            ? ((
+                payload.subscription as { entity?: RzWebhookSubscriptionEntity }
+              ).entity ?? null)
             : null;
 
         // Compute a stable delivery hash of the raw body + signature to dedupe deliveries
@@ -60,7 +76,10 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
             .eq("delivery_hash", deliveryHash)
             .maybeSingle();
           if (existingErr) {
-            console.error("[Razorpay webhook] failed reading deliveries table:", existingErr);
+            console.error(
+              "[Razorpay webhook] failed reading deliveries table:",
+              existingErr,
+            );
             // continue — do not block processing solely on observability errors
           }
           if (existing?.handled) {
@@ -101,7 +120,11 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
                   }),
                 );
                 if (insErr.code === "23505") {
-                  return Response.json({ ok: true, ignored: true, reason: "concurrent_duplicate" });
+                  return Response.json({
+                    ok: true,
+                    ignored: true,
+                    reason: "concurrent_duplicate",
+                  });
                 }
               }
             } catch (e) {
@@ -120,10 +143,13 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
 
         const ownerResolved = await resolveSubscriptionOwnerId(entity);
         if (!entity?.id || !ownerResolved) {
-          console.warn("[Razorpay webhook] Missing subscription id or owner mapping", {
-            event: envelope.event,
-            subscriptionId: entity?.id,
-          });
+          console.warn(
+            "[Razorpay webhook] Missing subscription id or owner mapping",
+            {
+              event: envelope.event,
+              subscriptionId: entity?.id,
+            },
+          );
           return Response.json({ ok: true, ignored: true });
         }
 
@@ -136,14 +162,20 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
             eventName === "subscription.charged" ||
             eventName === "subscription.resumed"
           ) {
-            const activated = await activatePaidSubscription(entity, ownerResolved);
+            const activated = await activatePaidSubscription(
+              entity,
+              ownerResolved,
+            );
             if (!activated) {
-              console.error("[Razorpay webhook] activatePaidSubscription failed", {
-                event: eventName,
-                subscriptionId: entity.id,
-                ownerId: ownerResolved,
-                plan_id: entity.plan_id,
-              });
+              console.error(
+                "[Razorpay webhook] activatePaidSubscription failed",
+                {
+                  event: eventName,
+                  subscriptionId: entity.id,
+                  ownerId: ownerResolved,
+                  plan_id: entity.plan_id,
+                },
+              );
               return new Response("", { status: 500 });
             }
           } else if (
@@ -166,7 +198,11 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
           try {
             await supabaseAdmin
               .from("razorpay_webhook_deliveries")
-              .update({ handled: true, handled_at: new Date().toISOString(), error: String(e) })
+              .update({
+                handled: true,
+                handled_at: new Date().toISOString(),
+                error: String(e),
+              })
               .eq(
                 "delivery_hash",
                 createHash("sha256")
@@ -192,7 +228,10 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
             .update({ handled: true, handled_at: new Date().toISOString() })
             .eq("delivery_hash", deliveryHash);
         } catch (e) {
-          console.error("[Razorpay webhook] failed updating delivery handled flag:", e);
+          console.error(
+            "[Razorpay webhook] failed updating delivery handled flag:",
+            e,
+          );
         }
 
         return Response.json({ ok: true });
@@ -214,6 +253,7 @@ function normalizeOwner(v: unknown): string | null {
   if (typeof v !== "string") return null;
   const id = v.trim();
   if (!id) return null;
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   return uuidRegex.test(id) ? id : null;
 }

@@ -1,4 +1,10 @@
-import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Heart, Home, Users, Wallet, CreditCard } from "lucide-react";
@@ -23,7 +29,8 @@ function AuthenticatedLayout() {
     if (!loading && !session) navigate({ to: "/login" });
   }, [loading, session, navigate]);
 
-  if (loading || !session) return <LoadingScreen label="Preparing your workspace…" />;
+  if (loading || !session)
+    return <LoadingScreen label="Preparing your workspace…" />;
 
   return (
     <WorkspaceProvider>
@@ -42,11 +49,15 @@ function AuthenticatedLayout() {
                   className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors hover:underline"
                 >
                   <Heart className="h-3 w-3 opacity-70" aria-hidden />
-                  <span className="hidden sm:inline">Support Vidya&apos;s development</span>
+                  <span className="hidden sm:inline">
+                    Support Vidya&apos;s development
+                  </span>
                   <span className="sm:hidden">Support development</span>
                 </Link>
                 <span className="mx-2 opacity-40">·</span>
-                <span className="hidden sm:inline">Billing lives under Plans — donations are optional.</span>
+                <span className="hidden sm:inline">
+                  Billing lives under Plans — donations are optional.
+                </span>
                 <span className="sm:hidden">Donations optional.</span>
               </footer>
             </main>
@@ -104,7 +115,11 @@ function MobileNav() {
     { label: "Dashboard", to: "/dashboard", icon: Home },
     { label: "Students", to: "/students", icon: Users },
     { label: "Fees", to: "/fees", icon: Wallet },
-    { label: "Plan", to: BILLING_DISABLED ? "/plan" : "/billing", icon: CreditCard },
+    {
+      label: "Plan",
+      to: BILLING_DISABLED ? "/plan" : "/billing",
+      icon: CreditCard,
+    },
   ];
 
   return (
@@ -112,7 +127,8 @@ function MobileNav() {
       <div className="mx-auto flex max-w-5xl items-stretch justify-between gap-1.5">
         {items.map((item, idx) => {
           const Icon = item.icon;
-          const active = pathname === item.to || pathname.startsWith(item.to + "/");
+          const active =
+            pathname === item.to || pathname.startsWith(item.to + "/");
           return (
             <motion.div
               key={item.to}

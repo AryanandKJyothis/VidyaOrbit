@@ -32,7 +32,10 @@ export const Route = createFileRoute("/")({
         content:
           "One simple dashboard for Indian coaching centres: students, batches, attendance, fee receipts and analytics. Replace your spreadsheets in a single afternoon.",
       },
-      { property: "og:title", content: "Vidya Orbit — Coaching centre management, made calm" },
+      {
+        property: "og:title",
+        content: "Vidya Orbit — Coaching centre management, made calm",
+      },
       {
         property: "og:description",
         content:
@@ -191,9 +194,24 @@ function ProductPreview() {
         </div>
 
         <div className="grid gap-4 p-4 sm:grid-cols-3 sm:p-6">
-          <PreviewStat label="Active students" value="184" trend="+12 this week" tone="teal" />
-          <PreviewStat label="Collected this month" value="₹2,48,500" trend="+18% vs last" tone="saffron" />
-          <PreviewStat label="Attendance today" value="92%" trend="156 / 170 present" tone="coral" />
+          <PreviewStat
+            label="Active students"
+            value="184"
+            trend="+12 this week"
+            tone="teal"
+          />
+          <PreviewStat
+            label="Collected this month"
+            value="₹2,48,500"
+            trend="+18% vs last"
+            tone="saffron"
+          />
+          <PreviewStat
+            label="Attendance today"
+            value="92%"
+            trend="156 / 170 present"
+            tone="coral"
+          />
 
           <div className="sm:col-span-2 rounded-xl border border-border bg-card p-5">
             <div className="mb-3 flex items-center justify-between">
@@ -206,7 +224,10 @@ function ProductPreview() {
                 ["Priya Menon", "₹2,800", "3 days"],
                 ["Rohan Iyer", "₹4,500", "1 day"],
               ].map(([n, a, d]) => (
-                <li key={n} className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2">
+                <li
+                  key={n}
+                  className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2"
+                >
                   <span className="font-medium">{n}</span>
                   <span className="flex items-center gap-3 text-muted-foreground">
                     <span>{a}</span>
@@ -230,7 +251,9 @@ function ProductPreview() {
                 />
               ))}
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">Attendance trend</p>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Attendance trend
+            </p>
           </div>
         </div>
       </div>
@@ -257,9 +280,16 @@ function PreviewStat({
         : "var(--brand-coral)";
   return (
     <div className="rounded-xl border border-border bg-card p-5">
-      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-2 font-display text-2xl font-bold tracking-tight">{value}</p>
-      <p className="mt-1 text-xs font-medium" style={{ color: `color-mix(in oklab, ${color} 85%, black)` }}>
+      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-2 font-display text-2xl font-bold tracking-tight">
+        {value}
+      </p>
+      <p
+        className="mt-1 text-xs font-medium"
+        style={{ color: `color-mix(in oklab, ${color} 85%, black)` }}
+      >
         {trend}
       </p>
     </div>
@@ -306,16 +336,24 @@ function Pains() {
           Stop running your centre out of a WhatsApp group.
         </h2>
         <p className="mt-3 text-muted-foreground">
-          You opened a coaching centre to teach. Vidya Orbit handles everything else.
+          You opened a coaching centre to teach. Vidya Orbit handles everything
+          else.
         </p>
       </div>
       <div className="mt-12 grid gap-5 md:grid-cols-3">
         {items.map((it) => (
-          <div key={it.pain} className="rounded-2xl border border-border bg-card p-6">
-            <p className="text-sm font-semibold text-[color:var(--brand-coral)]">The problem</p>
+          <div
+            key={it.pain}
+            className="rounded-2xl border border-border bg-card p-6"
+          >
+            <p className="text-sm font-semibold text-[color:var(--brand-coral)]">
+              The problem
+            </p>
             <p className="mt-1 text-base font-medium">{it.pain}</p>
             <div className="my-4 h-px bg-border" />
-            <p className="text-sm font-semibold text-[color:var(--brand-teal)]">With Vidya Orbit</p>
+            <p className="text-sm font-semibold text-[color:var(--brand-teal)]">
+              With Vidya Orbit
+            </p>
             <p className="mt-1 text-base text-muted-foreground">{it.fix}</p>
           </div>
         ))}
@@ -365,7 +403,8 @@ function FeatureGrid() {
             Everything your centre runs on. In one orbit.
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Designed for owners who have 200 things on their plate and 0 minutes for a steep learning curve.
+            Designed for owners who have 200 things on their plate and 0 minutes
+            for a steep learning curve.
           </p>
         </div>
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -376,7 +415,10 @@ function FeatureGrid() {
             >
               <div
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl"
-                style={{ background: "color-mix(in oklab, var(--brand-teal) 18%, transparent)" }}
+                style={{
+                  background:
+                    "color-mix(in oklab, var(--brand-teal) 18%, transparent)",
+                }}
               >
                 <f.icon className="h-5 w-5 text-[color:var(--brand-teal)]" />
               </div>
@@ -397,7 +439,11 @@ function WorkflowStrip() {
   const steps = [
     { n: "1", t: "Add your institute", d: "Two fields. 30 seconds." },
     { n: "2", t: "Import your students", d: "Paste from Excel or upload CSV." },
-    { n: "3", t: "Start collecting", d: "Mark attendance, record fees, share receipts." },
+    {
+      n: "3",
+      t: "Start collecting",
+      d: "Mark attendance, record fees, share receipts.",
+    },
   ];
   return (
     <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
@@ -407,7 +453,8 @@ function WorkflowStrip() {
             You'll be running your centre on it by this evening.
           </h2>
           <p className="mt-3 text-muted-foreground">
-            No training, no onboarding calls, no "implementation partner". Sign in, paste your student list, done.
+            No training, no onboarding calls, no "implementation partner". Sign
+            in, paste your student list, done.
           </p>
           <ul className="mt-6 space-y-3 text-sm">
             {[
@@ -425,7 +472,10 @@ function WorkflowStrip() {
         </div>
         <ol className="space-y-3">
           {steps.map((s) => (
-            <li key={s.n} className="flex gap-4 rounded-2xl border border-border bg-card p-5">
+            <li
+              key={s.n}
+              className="flex gap-4 rounded-2xl border border-border bg-card p-5"
+            >
               <div
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-lg font-bold text-primary-foreground"
                 style={{ background: "var(--primary)" }}
@@ -446,9 +496,21 @@ function WorkflowStrip() {
 
 function ProofStrip() {
   const items = [
-    { icon: Zap, t: "Set up in 5 minutes", d: "From signup to first attendance marked." },
-    { icon: HeartHandshake, t: "Built with real centres", d: "Shaped by coaching owners across South India." },
-    { icon: ShieldCheck, t: "Your data is yours", d: "Daily encrypted backups. Export anytime." },
+    {
+      icon: Zap,
+      t: "Set up in 5 minutes",
+      d: "From signup to first attendance marked.",
+    },
+    {
+      icon: HeartHandshake,
+      t: "Built with real centres",
+      d: "Shaped by coaching owners across South India.",
+    },
+    {
+      icon: ShieldCheck,
+      t: "Your data is yours",
+      d: "Daily encrypted backups. Export anytime.",
+    },
   ];
   return (
     <section className="border-y border-border/60 bg-card/30">
@@ -457,7 +519,10 @@ function ProofStrip() {
           <div key={it.t} className="flex items-start gap-3">
             <div
               className="flex h-10 w-10 items-center justify-center rounded-xl"
-              style={{ background: "color-mix(in oklab, var(--brand-saffron) 22%, transparent)" }}
+              style={{
+                background:
+                  "color-mix(in oklab, var(--brand-saffron) 22%, transparent)",
+              }}
             >
               <it.icon className="h-5 w-5 text-[color:var(--brand-saffron)]" />
             </div>
@@ -494,7 +559,11 @@ function Pricing() {
       name: "Pro",
       price: "See plans",
       sub: "For multi-batch academies",
-      features: ["Up to 1,000 students", "Advanced analytics", "Dedicated help"],
+      features: [
+        "Up to 1,000 students",
+        "Advanced analytics",
+        "Dedicated help",
+      ],
       cta: "View pricing",
       highlight: false,
     },
@@ -506,7 +575,8 @@ function Pricing() {
           Honest pricing. Start free.
         </h2>
         <p className="mt-3 text-muted-foreground">
-          Pay only when your centre grows. No setup fees, no hidden charges, no commitments.
+          Pay only when your centre grows. No setup fees, no hidden charges, no
+          commitments.
         </p>
       </div>
       <div className="mt-12 grid gap-5 md:grid-cols-3">
@@ -536,7 +606,10 @@ function Pricing() {
               ))}
             </ul>
             <Link to="/login" className="mt-6 block">
-              <Button className="w-full" variant={t.highlight ? "default" : "outline"}>
+              <Button
+                className="w-full"
+                variant={t.highlight ? "default" : "outline"}
+              >
                 {t.cta}
               </Button>
             </Link>
@@ -577,7 +650,9 @@ function FAQ() {
             <details key={f.q} className="group p-5">
               <summary className="flex cursor-pointer list-none items-center justify-between font-medium">
                 {f.q}
-                <span className="ml-4 text-muted-foreground transition group-open:rotate-45">+</span>
+                <span className="ml-4 text-muted-foreground transition group-open:rotate-45">
+                  +
+                </span>
               </summary>
               <p className="mt-3 text-sm text-muted-foreground">{f.a}</p>
             </details>
@@ -612,7 +687,7 @@ function CTA() {
             </Button>
           </Link>
           <a
-            href="https://wa.me/?text=I'd%20like%20to%20learn%20more%20about%20Vidya%20Orbit"
+            href="https://wa.me/917025063047?text=I%27d%20like%20to%20learn%20more%20about%20Vidya%20Orbit"
             target="_blank"
             rel="noreferrer"
           >

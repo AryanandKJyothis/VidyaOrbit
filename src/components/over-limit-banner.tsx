@@ -25,12 +25,12 @@ export function OverLimitBanner() {
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
           <div className="space-y-1">
             <p className="text-sm font-semibold">
-              You have {sub.data.student_count} students on the {planName} plan (limit{" "}
-              {sub.data.limit}).
+              You have {sub.data.student_count} students on the {planName} plan
+              (limit {sub.data.limit}).
             </p>
             <p className="text-xs text-muted-foreground">
-              Your data is safe and fully accessible — you just can't add new students until
-              you upgrade or archive some.
+              Your data is safe and fully accessible — you just can't add new
+              students until you upgrade or archive some.
             </p>
           </div>
         </div>

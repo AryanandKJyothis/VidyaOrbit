@@ -3,7 +3,14 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, formatDistanceToNowStrict } from "date-fns";
-import { Search, Loader2, AlertTriangle, Clock, TrendingUp, Users } from "lucide-react";
+import {
+  Search,
+  Loader2,
+  AlertTriangle,
+  Clock,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,8 +65,16 @@ export const Route = createFileRoute("/_authenticated/admin/subscriptions")({
 });
 
 type Row = Awaited<ReturnType<typeof listInstitutes>>[number];
-type Filter = "all" | "expiring" | "over_limit" | "at_risk" | "inactive" | "trials" | "free";
-type Sort = "expiring" | "most_students" | "least_active" | "recently_active" | "name";
+type Filter =
+  | "all"
+  | "expiring"
+  | "over_limit"
+  | "at_risk"
+  | "inactive"
+  | "trials"
+  | "free";
+type Sort =
+  "expiring" | "most_students" | "least_active" | "recently_active" | "name";
 
 function AdminSubscriptionsPage() {
   const [search, setSearch] = useState("");
@@ -76,20 +91,24 @@ function AdminSubscriptionsPage() {
     refetchOnWindowFocus: false,
   });
 
-  const rows = (list.data ?? []) as Row[];
+  const rows = useMemo(() => (list.data ?? []) as Row[], [list.data]);
 
   const kpis = useMemo(() => {
     const now = Date.now();
     const inDays = (d: string | null, n: number) =>
-      !!d && new Date(d).getTime() - now <= n * 86400_000 && new Date(d).getTime() - now > 0;
+      !!d &&
+      new Date(d).getTime() - now <= n * 86400_000 &&
+      new Date(d).getTime() - now > 0;
     return {
       paying: rows.filter(
         (r) =>
           r.sub?.plan && r.sub.plan !== "free" && r.sub.status !== "canceled",
       ).length,
-      expiring30: rows.filter((r) => inDays(r.sub?.expiry_date ?? null, 30)).length,
+      expiring30: rows.filter((r) => inDays(r.sub?.expiry_date ?? null, 30))
+        .length,
       trialsEnding: rows.filter(
-        (r) => r.sub?.status === "trialing" && inDays(r.sub?.expiry_date ?? null, 7),
+        (r) =>
+          r.sub?.status === "trialing" && inDays(r.sub?.expiry_date ?? null, 7),
       ).length,
       overLimit: rows.filter((r) => r.student_count > r.plan_limit).length,
     };
@@ -115,20 +134,27 @@ function AdminSubscriptionsPage() {
       });
     } else if (filter === "inactive") {
       out = out.filter(
-        (r) => !r.last_active_at || now - new Date(r.last_active_at).getTime() > 30 * 86400_000,
+        (r) =>
+          !r.last_active_at ||
+          now - new Date(r.last_active_at).getTime() > 30 * 86400_000,
       );
     } else if (filter === "trials") {
       out = out.filter((r) => r.sub?.status === "trialing");
     } else if (filter === "free") {
       out = out.filter((r) => (r.sub?.plan ?? "free") === "free");
     }
-    const num = (n: number | null | undefined) => (n == null ? Number.POSITIVE_INFINITY : n);
-    const ts = (s: string | null | undefined) => (s ? new Date(s).getTime() : 0);
+    const num = (n: number | null | undefined) =>
+      n == null ? Number.POSITIVE_INFINITY : n;
+    const ts = (s: string | null | undefined) =>
+      s ? new Date(s).getTime() : 0;
     out.sort((a, b) => {
-      if (sort === "expiring") return num(a.days_until_expiry) - num(b.days_until_expiry);
+      if (sort === "expiring")
+        return num(a.days_until_expiry) - num(b.days_until_expiry);
       if (sort === "most_students") return b.student_count - a.student_count;
-      if (sort === "least_active") return ts(a.last_active_at) - ts(b.last_active_at);
-      if (sort === "recently_active") return ts(b.last_active_at) - ts(a.last_active_at);
+      if (sort === "least_active")
+        return ts(a.last_active_at) - ts(b.last_active_at);
+      if (sort === "recently_active")
+        return ts(b.last_active_at) - ts(a.last_active_at);
       return a.name.localeCompare(b.name);
     });
     return out;
@@ -142,7 +168,12 @@ function AdminSubscriptionsPage() {
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiTile icon={TrendingUp} label="Paying customers" value={kpis.paying} tone="growth" />
+        <KpiTile
+          icon={TrendingUp}
+          label="Paying customers"
+          value={kpis.paying}
+          tone="growth"
+        />
         <KpiTile
           icon={Clock}
           label="Expiring in 30 days"
@@ -205,7 +236,9 @@ function AdminSubscriptionsPage() {
               ))}
             </div>
             <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
-              <SelectTrigger className="h-8 w-[200px] text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8 w-[200px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="expiring">Expiring soonest</SelectItem>
                 <SelectItem value="most_students">Most students</SelectItem>
@@ -221,14 +254,22 @@ function AdminSubscriptionsPage() {
       <Card>
         <CardContent className="p-0">
           {list.isLoading ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">Loading…</div>
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              Loading…
+            </div>
           ) : (
             <div className="divide-y">
               {filtered.map((row) => (
-                <InstituteRow key={row.owner_id} row={row} onOpen={() => setSelected(row.owner_id)} />
+                <InstituteRow
+                  key={row.owner_id}
+                  row={row}
+                  onOpen={() => setSelected(row.owner_id)}
+                />
               ))}
               {filtered.length === 0 && (
-                <div className="p-8 text-center text-sm text-muted-foreground">No institutes match.</div>
+                <div className="p-8 text-center text-sm text-muted-foreground">
+                  No institutes match.
+                </div>
               )}
             </div>
           )}
@@ -276,10 +317,14 @@ function KpiTile({
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        <span className="text-xs font-medium text-muted-foreground">
+          {label}
+        </span>
         <Icon className={cn("h-4 w-4", toneClass)} />
       </div>
-      <p className={cn("mt-2 text-3xl font-semibold tabular-nums", toneClass)}>{value}</p>
+      <p className={cn("mt-2 text-3xl font-semibold tabular-nums", toneClass)}>
+        {value}
+      </p>
     </button>
   );
 }
@@ -315,7 +360,10 @@ const toneText: Record<"neutral" | "warning" | "danger", string> = {
 };
 
 function InstituteRow({ row, onOpen }: { row: Row; onOpen: () => void }) {
-  const usagePct = Math.min(100, Math.round((row.student_count / Math.max(1, row.plan_limit)) * 100));
+  const usagePct = Math.min(
+    100,
+    Math.round((row.student_count / Math.max(1, row.plan_limit)) * 100),
+  );
   const usageTone =
     row.student_count >= row.plan_limit
       ? "bg-red-500"
@@ -347,7 +395,8 @@ function InstituteRow({ row, onOpen }: { row: Row; onOpen: () => void }) {
             title={row.member_emails.join(", ")}
           >
             <span className="font-medium text-muted-foreground">
-              {row.member_emails.length} member{row.member_emails.length === 1 ? "" : "s"}:
+              {row.member_emails.length} member
+              {row.member_emails.length === 1 ? "" : "s"}:
             </span>{" "}
             {row.member_emails.join(", ")}
           </p>
@@ -355,7 +404,9 @@ function InstituteRow({ row, onOpen }: { row: Row; onOpen: () => void }) {
       </div>
 
       <div className="col-span-6 flex flex-wrap items-center gap-1.5 md:col-span-2">
-        <Badge variant="outline" className="capitalize">{row.sub?.plan ?? "free"}</Badge>
+        <Badge variant="outline" className="capitalize">
+          {row.sub?.plan ?? "free"}
+        </Badge>
         <Badge
           variant={
             row.sub?.status === "active" || row.sub?.status === "trialing"
@@ -375,13 +426,23 @@ function InstituteRow({ row, onOpen }: { row: Row; onOpen: () => void }) {
           <span className="text-muted-foreground">{usagePct}%</span>
         </div>
         <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div className={cn("h-full", usageTone)} style={{ width: `${usagePct}%` }} />
+          <div
+            className={cn("h-full", usageTone)}
+            style={{ width: `${usagePct}%` }}
+          />
         </div>
       </div>
-      <div className={cn("col-span-4 text-xs tabular-nums md:col-span-2", toneText[expTone])}>
+      <div
+        className={cn(
+          "col-span-4 text-xs tabular-nums md:col-span-2",
+          toneText[expTone],
+        )}
+      >
         {expiryText}
       </div>
-      <div className={cn("col-span-4 text-xs md:col-span-1", toneText[actTone])}>
+      <div
+        className={cn("col-span-4 text-xs md:col-span-1", toneText[actTone])}
+      >
         {relTime(row.last_active_at)}
       </div>
       <div className="col-span-4 text-xs text-muted-foreground md:col-span-1">
@@ -418,10 +479,20 @@ function EditDialog({
   });
 
   const sub = detail.data?.sub as
-    | { plan: string; status: string; start_date: string | null; expiry_date: string | null; plan_price: number | null; notes: string | null }
+    | {
+        plan: string;
+        status: string;
+        start_date: string | null;
+        expiry_date: string | null;
+        plan_price: number | null;
+        notes: string | null;
+      }
     | null
     | undefined;
-  const inst = detail.data?.inst as { name: string; contact_email: string; admin_notes: string | null } | null | undefined;
+  const inst = detail.data?.inst as
+    | { name: string; contact_email: string; admin_notes: string | null }
+    | null
+    | undefined;
   const audit = (detail.data?.audit ?? []) as Array<{
     changed_at: string;
     old_plan: string | null;
@@ -442,9 +513,12 @@ function EditDialog({
   const [adminNotes, setAdminNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
-  const [confirmOverLimit, setConfirmOverLimit] = useState<
-    { student_count: number; new_limit: number; over_by: number; new_plan: string } | null
-  >(null);
+  const [confirmOverLimit, setConfirmOverLimit] = useState<{
+    student_count: number;
+    new_limit: number;
+    over_by: number;
+    new_plan: string;
+  } | null>(null);
 
   const initialized = useState({ done: false })[0];
   if (detail.data && !initialized.done) {
@@ -464,11 +538,22 @@ function EditDialog({
     onSaved();
   };
 
-  const normalizeStatus = (s: string): "active" | "trialing" | "past_due" | "canceled" | "pending_checkout" => {
+  const normalizeStatus = (
+    s: string,
+  ): "active" | "trialing" | "past_due" | "canceled" | "pending_checkout" => {
     if (s === "trial") return "trialing";
     if (s === "expired" || s === "suspended") return "canceled";
-    if (["active", "trialing", "past_due", "canceled", "pending_checkout"].includes(s)) {
-      return s as "active" | "trialing" | "past_due" | "canceled" | "pending_checkout";
+    if (
+      [
+        "active",
+        "trialing",
+        "past_due",
+        "canceled",
+        "pending_checkout",
+      ].includes(s)
+    ) {
+      return s as
+        "active" | "trialing" | "past_due" | "canceled" | "pending_checkout";
     }
     return "active";
   };
@@ -488,8 +573,16 @@ function EditDialog({
           confirm,
         },
       });
-      if (res && (res as { requires_confirmation?: boolean }).requires_confirmation) {
-        const r = res as { student_count: number; new_limit: number; over_by: number; new_plan: string };
+      if (
+        res &&
+        (res as { requires_confirmation?: boolean }).requires_confirmation
+      ) {
+        const r = res as {
+          student_count: number;
+          new_limit: number;
+          over_by: number;
+          new_plan: string;
+        };
         setConfirmOverLimit({
           student_count: r.student_count,
           new_limit: r.new_limit,
@@ -498,7 +591,9 @@ function EditDialog({
         });
         return;
       }
-      await notesFn({ data: { owner_id: ownerId, admin_notes: adminNotes || null } });
+      await notesFn({
+        data: { owner_id: ownerId, admin_notes: adminNotes || null },
+      });
       toast.success("Subscription updated");
       setConfirmOverLimit(null);
       refresh();
@@ -511,14 +606,33 @@ function EditDialog({
 
   const save = () => performSave(false);
 
-  const quick = async (kind: "trial30" | "trial90" | "ext30" | "ext90" | "ext365") => {
+  const quick = async (
+    kind: "trial30" | "trial90" | "ext30" | "ext90" | "ext365",
+  ) => {
     setBusy(kind);
     try {
-      if (kind === "trial30") await trialFn({ data: { owner_id: ownerId, days: 30, plan: (plan as never) ?? "starter" } });
-      else if (kind === "trial90") await trialFn({ data: { owner_id: ownerId, days: 90, plan: (plan as never) ?? "starter" } });
-      else if (kind === "ext30") await extendFn({ data: { owner_id: ownerId, days: 30 } });
-      else if (kind === "ext90") await extendFn({ data: { owner_id: ownerId, days: 90 } });
-      else if (kind === "ext365") await extendFn({ data: { owner_id: ownerId, days: 365 } });
+      if (kind === "trial30")
+        await trialFn({
+          data: {
+            owner_id: ownerId,
+            days: 30,
+            plan: (plan as never) ?? "starter",
+          },
+        });
+      else if (kind === "trial90")
+        await trialFn({
+          data: {
+            owner_id: ownerId,
+            days: 90,
+            plan: (plan as never) ?? "starter",
+          },
+        });
+      else if (kind === "ext30")
+        await extendFn({ data: { owner_id: ownerId, days: 30 } });
+      else if (kind === "ext90")
+        await extendFn({ data: { owner_id: ownerId, days: 90 } });
+      else if (kind === "ext365")
+        await extendFn({ data: { owner_id: ownerId, days: 365 } });
       toast.success("Done");
       initialized.done = false;
       refresh();
@@ -532,22 +646,32 @@ function EditDialog({
   // Health derivations
   const h = (health.data ?? {}) as Record<string, number | string | null>;
   const num = (k: string) => Number(h[k] ?? 0);
-  const lastActive = [
-    h.last_attendance_at,
-    h.last_payment_at,
-    h.last_student_at,
-    h.last_batch_at,
-  ]
-    .filter((x): x is string => typeof x === "string")
-    .sort()
-    .pop() ?? null;
+  const lastActive =
+    [
+      h.last_attendance_at,
+      h.last_payment_at,
+      h.last_student_at,
+      h.last_batch_at,
+    ]
+      .filter((x): x is string => typeof x === "string")
+      .sort()
+      .pop() ?? null;
   const daysLeft = expiryDate
     ? Math.ceil((new Date(expiryDate).getTime() - Date.now()) / 86400_000)
     : null;
   const studentTotal = num("total_students");
   const planLimitFromForm =
-    plan === "pro" ? 1000 : plan === "growth" ? 500 : plan === "starter" ? 100 : 25;
-  const usagePct = Math.min(100, Math.round((studentTotal / Math.max(1, planLimitFromForm)) * 100));
+    plan === "pro"
+      ? 1000
+      : plan === "growth"
+        ? 500
+        : plan === "starter"
+          ? 100
+          : 25;
+  const usagePct = Math.min(
+    100,
+    Math.round((studentTotal / Math.max(1, planLimitFromForm)) * 100),
+  );
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -558,43 +682,82 @@ function EditDialog({
         </DialogHeader>
 
         {detail.isLoading ? (
-          <div className="py-8 text-center text-sm text-muted-foreground">Loading…</div>
+          <div className="py-8 text-center text-sm text-muted-foreground">
+            Loading…
+          </div>
         ) : (
           <div className="space-y-5">
             {/* Activity & usage */}
             <div className="rounded-lg border bg-muted/20 p-4">
               <div className="grid gap-4 sm:grid-cols-3">
                 <div>
-                  <p className="text-xs text-muted-foreground">Days until downgrade</p>
+                  <p className="text-xs text-muted-foreground">
+                    Days until downgrade
+                  </p>
                   <p
                     className={cn(
                       "text-3xl font-semibold tabular-nums",
-                      daysLeft != null && daysLeft <= 7 && "text-red-600 dark:text-red-500",
-                      daysLeft != null && daysLeft > 7 && daysLeft <= 30 && "text-amber-600 dark:text-amber-500",
+                      daysLeft != null &&
+                        daysLeft <= 7 &&
+                        "text-red-600 dark:text-red-500",
+                      daysLeft != null &&
+                        daysLeft > 7 &&
+                        daysLeft <= 30 &&
+                        "text-amber-600 dark:text-amber-500",
                     )}
                   >
-                    {daysLeft == null ? "—" : daysLeft < 0 ? `expired ${Math.abs(daysLeft)}d` : daysLeft}
+                    {daysLeft == null
+                      ? "—"
+                      : daysLeft < 0
+                        ? `expired ${Math.abs(daysLeft)}d`
+                        : daysLeft}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Student usage</p>
                   <p className="text-3xl font-semibold tabular-nums">
                     {studentTotal}
-                    <span className="text-base text-muted-foreground"> / {planLimitFromForm}</span>
+                    <span className="text-base text-muted-foreground">
+                      {" "}
+                      / {planLimitFromForm}
+                    </span>
                   </p>
                   <Progress value={usagePct} className="mt-2 h-1.5" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Last active</p>
-                  <p className="text-3xl font-semibold">{relTime(lastActive)}</p>
+                  <p className="text-3xl font-semibold">
+                    {relTime(lastActive)}
+                  </p>
                 </div>
               </div>
 
               <div className="mt-4 grid gap-2 sm:grid-cols-4">
-                <StatPill icon={Users} label="Attendance" count30={num("attendance_30d")} count90={num("attendance_90d")} />
-                <StatPill icon={Users} label="Payments" count30={num("payments_30d")} count90={num("payments_90d")} sub={`₹${Number(h.payments_amount_30d ?? 0).toLocaleString("en-IN")}`} />
-                <StatPill icon={Users} label="New students" count30={num("students_30d")} count90={num("students_90d")} />
-                <StatPill icon={Users} label="Batch edits" count30={num("batches_30d")} count90={num("batches_90d")} />
+                <StatPill
+                  icon={Users}
+                  label="Attendance"
+                  count30={num("attendance_30d")}
+                  count90={num("attendance_90d")}
+                />
+                <StatPill
+                  icon={Users}
+                  label="Payments"
+                  count30={num("payments_30d")}
+                  count90={num("payments_90d")}
+                  sub={`₹${Number(h.payments_amount_30d ?? 0).toLocaleString("en-IN")}`}
+                />
+                <StatPill
+                  icon={Users}
+                  label="New students"
+                  count30={num("students_30d")}
+                  count90={num("students_90d")}
+                />
+                <StatPill
+                  icon={Users}
+                  label="Batch edits"
+                  count30={num("batches_30d")}
+                  count90={num("batches_90d")}
+                />
               </div>
 
               {/* Feature usage bars */}
@@ -612,7 +775,9 @@ function EditDialog({
               <div>
                 <Label>Plan</Label>
                 <Select value={plan} onValueChange={setPlan}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="free">Free</SelectItem>
                     <SelectItem value="starter">Starter</SelectItem>
@@ -624,27 +789,44 @@ function EditDialog({
               <div>
                 <Label>Status</Label>
                 <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="trialing">Trialing</SelectItem>
                     <SelectItem value="past_due">Past due</SelectItem>
                     <SelectItem value="canceled">Canceled</SelectItem>
-                    <SelectItem value="pending_checkout">Pending checkout</SelectItem>
+                    <SelectItem value="pending_checkout">
+                      Pending checkout
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label>Start date</Label>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
               </div>
               <div>
                 <Label>Expiry date</Label>
-                <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
+                <Input
+                  type="date"
+                  value={expiryDate}
+                  onChange={(e) => setExpiryDate(e.target.value)}
+                />
               </div>
               <div>
                 <Label>Plan price (₹)</Label>
-                <Input type="number" value={planPrice} onChange={(e) => setPlanPrice(e.target.value)} placeholder="e.g. 499" />
+                <Input
+                  type="number"
+                  value={planPrice}
+                  onChange={(e) => setPlanPrice(e.target.value)}
+                  placeholder="e.g. 499"
+                />
               </div>
             </div>
 
@@ -665,7 +847,9 @@ function EditDialog({
                     disabled={busy !== null}
                     onClick={() => quick(k as never)}
                   >
-                    {busy === k ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+                    {busy === k ? (
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    ) : null}
                     {label}
                   </Button>
                 ))}
@@ -674,7 +858,12 @@ function EditDialog({
 
             <div>
               <Label>User-visible notes</Label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Shown on /plan to the user" />
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+                placeholder="Shown on /plan to the user"
+              />
             </div>
 
             <div>
@@ -690,7 +879,9 @@ function EditDialog({
             <div>
               <Label>Audit log</Label>
               <div className="mt-1 max-h-56 space-y-2 overflow-y-auto rounded-md border bg-muted/20 p-2 text-xs">
-                {audit.length === 0 && <p className="text-muted-foreground">No changes yet.</p>}
+                {audit.length === 0 && (
+                  <p className="text-muted-foreground">No changes yet.</p>
+                )}
                 {audit.map((a, i) => (
                   <div key={i} className="rounded border bg-background p-2">
                     <p className="font-medium">
@@ -699,10 +890,14 @@ function EditDialog({
                     </p>
                     <p className="text-muted-foreground">
                       {format(new Date(a.changed_at), "d MMM yyyy HH:mm")}
-                      {a.new_expiry ? ` · expires ${format(new Date(a.new_expiry), "d MMM yyyy")}` : ""}
+                      {a.new_expiry
+                        ? ` · expires ${format(new Date(a.new_expiry), "d MMM yyyy")}`
+                        : ""}
                       {a.new_price != null ? ` · ₹${a.new_price}` : ""}
                     </p>
-                    {a.note && <p className="text-muted-foreground">“{a.note}”</p>}
+                    {a.note && (
+                      <p className="text-muted-foreground">“{a.note}”</p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -711,7 +906,9 @@ function EditDialog({
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button onClick={save} disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save changes
@@ -719,21 +916,32 @@ function EditDialog({
         </DialogFooter>
       </DialogContent>
 
-      <AlertDialog open={!!confirmOverLimit} onOpenChange={(open) => !open && setConfirmOverLimit(null)}>
+      <AlertDialog
+        open={!!confirmOverLimit}
+        onOpenChange={(open) => !open && setConfirmOverLimit(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Downgrade will exceed plan limit</AlertDialogTitle>
+            <AlertDialogTitle>
+              Downgrade will exceed plan limit
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmOverLimit && (
                 <>
-                  This workspace has <strong>{confirmOverLimit.student_count} students</strong>, but{" "}
-                  <strong className="capitalize">{confirmOverLimit.new_plan}</strong> only allows{" "}
-                  <strong>{confirmOverLimit.new_limit}</strong> (over by {confirmOverLimit.over_by}).
+                  This workspace has{" "}
+                  <strong>{confirmOverLimit.student_count} students</strong>,
+                  but{" "}
+                  <strong className="capitalize">
+                    {confirmOverLimit.new_plan}
+                  </strong>{" "}
+                  only allows <strong>{confirmOverLimit.new_limit}</strong>{" "}
+                  (over by {confirmOverLimit.over_by}).
                   <br />
                   <br />
-                  All existing student, batch, fee, and attendance data will be kept and remain
-                  fully accessible. The owner just won't be able to add new students until they
-                  upgrade or remove some. Proceed?
+                  All existing student, batch, fee, and attendance data will be
+                  kept and remain fully accessible. The owner just won't be able
+                  to add new students until they upgrade or remove some.
+                  Proceed?
                 </>
               )}
             </AlertDialogDescription>
@@ -788,17 +996,23 @@ function FeatureBars({ items }: { items: { label: string; value: number }[] }) {
   const max = Math.max(1, ...items.map((i) => i.value));
   return (
     <div className="mt-4 space-y-1.5">
-      <p className="text-xs font-medium text-muted-foreground">Feature usage (last 30 days)</p>
+      <p className="text-xs font-medium text-muted-foreground">
+        Feature usage (last 30 days)
+      </p>
       {items.map((it) => (
         <div key={it.label} className="flex items-center gap-2 text-xs">
-          <span className="w-20 shrink-0 text-muted-foreground">{it.label}</span>
+          <span className="w-20 shrink-0 text-muted-foreground">
+            {it.label}
+          </span>
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
             <div
               className="h-full bg-primary"
               style={{ width: `${(it.value / max) * 100}%` }}
             />
           </div>
-          <span className="w-10 shrink-0 text-right tabular-nums">{it.value}</span>
+          <span className="w-10 shrink-0 text-right tabular-nums">
+            {it.value}
+          </span>
         </div>
       ))}
     </div>

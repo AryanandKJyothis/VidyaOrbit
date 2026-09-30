@@ -38,7 +38,7 @@ export function OnboardingForm({
   title,
 }: OnboardingFormProps) {
   const [formData, setFormData] = useState<Record<string, string>>(
-    fields.reduce((acc, field) => ({ ...acc, [field.id]: "" }), {})
+    fields.reduce((acc, field) => ({ ...acc, [field.id]: "" }), {}),
   );
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -78,7 +78,7 @@ export function OnboardingForm({
 
       return null;
     },
-    [fields]
+    [fields],
   );
 
   const handleFieldChange = useCallback(
@@ -94,7 +94,7 @@ export function OnboardingForm({
         return next;
       });
     },
-    [validateField]
+    [validateField],
   );
 
   const handleFieldBlur = useCallback((fieldId: string) => {
@@ -110,8 +110,7 @@ export function OnboardingForm({
           return value && !errors[field.id];
         }
         return !errors[field.id];
-      }) &&
-      Object.keys(errors).every((key) => !errors[key])
+      }) && Object.keys(errors).every((key) => !errors[key])
     );
   }, [formData, errors, fields]);
 
@@ -164,8 +163,12 @@ export function OnboardingForm({
           transition={{ duration: 0.3 }}
           className="space-y-2 mb-6"
         >
-          {title && <h2 className="font-display text-2xl font-semibold">{title}</h2>}
-          {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+          {title && (
+            <h2 className="font-display text-2xl font-semibold">{title}</h2>
+          )}
+          {subtitle && (
+            <p className="text-sm text-muted-foreground">{subtitle}</p>
+          )}
         </motion.div>
       )}
 
@@ -181,7 +184,9 @@ export function OnboardingForm({
             <motion.div
               className="h-full bg-gradient-to-r from-brand-teal to-brand-saffron rounded-full"
               initial={{ width: 0 }}
-              animate={{ width: `${(completedFieldsCount / fields.length) * 100}%` }}
+              animate={{
+                width: `${(completedFieldsCount / fields.length) * 100}%`,
+              }}
               transition={{ duration: 0.4, ease: "easeOut" }}
             />
           </div>
@@ -221,12 +226,21 @@ export function OnboardingForm({
                   />
                 ) : (
                   <>
-                    <Label htmlFor={field.id} className="flex items-center gap-2">
+                    <Label
+                      htmlFor={field.id}
+                      className="flex items-center gap-2"
+                    >
                       <span>
                         {field.label}
-                        {field.required && <span className="text-destructive font-semibold">*</span>}
+                        {field.required && (
+                          <span className="text-destructive font-semibold">
+                            *
+                          </span>
+                        )}
                       </span>
-                      {isComplete && <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />}
+                      {isComplete && (
+                        <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                      )}
                     </Label>
 
                     <Input
@@ -235,14 +249,19 @@ export function OnboardingForm({
                       required={field.required}
                       minLength={field.minLength}
                       value={value}
-                      onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                      onChange={(e) =>
+                        handleFieldChange(field.id, e.target.value)
+                      }
                       onBlur={() => handleFieldBlur(field.id)}
                       placeholder={field.placeholder}
                       autoComplete={field.autoComplete}
                       className={cn(
                         "transition-all duration-200",
-                        isTouched && error && "border-destructive/50 bg-destructive/5 focus:ring-destructive/30",
-                        isComplete && "border-success/50 bg-success/5 focus:ring-success/30"
+                        isTouched &&
+                          error &&
+                          "border-destructive/50 bg-destructive/5 focus:ring-destructive/30",
+                        isComplete &&
+                          "border-success/50 bg-success/5 focus:ring-success/30",
                       )}
                       aria-invalid={isTouched && !!error}
                       aria-describedby={error ? `${field.id}-error` : undefined}
@@ -298,7 +317,7 @@ export function OnboardingForm({
           size="lg"
           className={cn(
             "w-full transition-all duration-200 flex items-center justify-center gap-2",
-            isFormValid && "shadow-md hover:shadow-lg"
+            isFormValid && "shadow-md hover:shadow-lg",
           )}
         >
           {isSubmitting || isLoading ? (

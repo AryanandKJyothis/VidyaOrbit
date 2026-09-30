@@ -167,21 +167,21 @@ export function useSubscription() {
       // Fallback: legacy direct-table read (e.g. if RPC not yet migrated)
       const { data, error } = await supabase
         .from("subscriptions")
-        .select("plan, status, current_period_end, start_date, expiry_date, plan_price, notes")
+        .select(
+          "plan, status, current_period_end, start_date, expiry_date, plan_price, notes",
+        )
         .eq("owner_id", ownerId!)
         .maybeSingle();
       if (error) throw error;
-      const row = data as
-        | {
-            plan: PlanCode;
-            status: string;
-            current_period_end: string | null;
-            start_date: string | null;
-            expiry_date: string | null;
-            plan_price: number | null;
-            notes: string | null;
-          }
-        | null;
+      const row = data as {
+        plan: PlanCode;
+        status: string;
+        current_period_end: string | null;
+        start_date: string | null;
+        expiry_date: string | null;
+        plan_price: number | null;
+        notes: string | null;
+      } | null;
       const plan = (row?.plan ?? "free") as PlanCode;
       const status = row?.status ?? "active";
       const expiry = row?.expiry_date ?? null;

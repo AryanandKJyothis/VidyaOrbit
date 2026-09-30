@@ -13,11 +13,36 @@ import {
 
 type PresetKey = Exclude<WorkspaceRole, "owner"> | "custom";
 
-const PRESETS: { key: PresetKey; label: string; description: string; icon: typeof Shield }[] = [
-  { key: "manager", label: "Manager", description: "Runs the institute — full access except billing.", icon: Shield },
-  { key: "staff", label: "Staff", description: "Day-to-day work — students, attendance, fees.", icon: Sparkles },
-  { key: "viewer", label: "Viewer", description: "Read-only access to everything.", icon: Eye },
-  { key: "custom", label: "Custom", description: "Pick exactly what they can see or change.", icon: Sliders },
+const PRESETS: {
+  key: PresetKey;
+  label: string;
+  description: string;
+  icon: typeof Shield;
+}[] = [
+  {
+    key: "manager",
+    label: "Manager",
+    description: "Runs the institute — full access except billing.",
+    icon: Shield,
+  },
+  {
+    key: "staff",
+    label: "Staff",
+    description: "Day-to-day work — students, attendance, fees.",
+    icon: Sparkles,
+  },
+  {
+    key: "viewer",
+    label: "Viewer",
+    description: "Read-only access to everything.",
+    icon: Eye,
+  },
+  {
+    key: "custom",
+    label: "Custom",
+    description: "Pick exactly what they can see or change.",
+    icon: Sliders,
+  },
 ];
 
 type Value = {
@@ -82,19 +107,27 @@ export function RolePermissionPicker({
               <div
                 className={cn(
                   "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
-                  active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground",
                 )}
               >
                 <Icon className="h-4 w-4" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium leading-tight">{p.label}</div>
-                <div className="mt-0.5 text-xs text-muted-foreground">{p.description}</div>
+                <div className="text-sm font-medium leading-tight">
+                  {p.label}
+                </div>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  {p.description}
+                </div>
               </div>
               <div
                 className={cn(
                   "mt-1 h-4 w-4 shrink-0 rounded-full border-2",
-                  active ? "border-primary bg-primary" : "border-muted-foreground/30",
+                  active
+                    ? "border-primary bg-primary"
+                    : "border-muted-foreground/30",
                 )}
               />
             </button>

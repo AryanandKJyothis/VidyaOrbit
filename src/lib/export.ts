@@ -2,7 +2,11 @@ import writeXlsxFile, { type SheetData } from "write-excel-file/browser";
 
 type ExportRow = Record<string, string | number | null | undefined>;
 
-export async function exportToExcel(rows: ExportRow[], fileName: string, sheetName = "Sheet1") {
+export async function exportToExcel(
+  rows: ExportRow[],
+  fileName: string,
+  sheetName = "Sheet1",
+) {
   const headers = rows.length ? Object.keys(rows[0]) : [];
   const data: SheetData = headers.length
     ? [
@@ -32,7 +36,9 @@ export function exportToCsv(rows: ExportRow[], fileName: string) {
     headers.map(csvEscape).join(","),
     ...rows.map((row) => headers.map((h) => csvEscape(row[h])).join(",")),
   ];
-  const blob = new Blob([`\ufeff${lines.join("\n")}`], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([`\ufeff${lines.join("\n")}`], {
+    type: "text/csv;charset=utf-8;",
+  });
   triggerDownload(blob, `${fileName}.csv`);
 }
 
@@ -80,7 +86,9 @@ export async function downloadStudentImportTemplate(batchNames: string[] = []) {
   const studentHeaders = Object.keys(students[0]);
   const studentSheet: SheetData = [
     studentHeaders.map((value) => ({ value, fontWeight: "bold" as const })),
-    ...students.map((row) => studentHeaders.map((h) => row[h as keyof typeof row] ?? "")),
+    ...students.map((row) =>
+      studentHeaders.map((h) => row[h as keyof typeof row] ?? ""),
+    ),
   ];
 
   // Sheet 2 — Instructions
@@ -88,15 +96,27 @@ export async function downloadStudentImportTemplate(batchNames: string[] = []) {
     ["Vidya — Student import template"],
     [],
     ["How to use / എങ്ങനെ ഉപയോഗിക്കാം"],
-    ["1.", "Fill the Students sheet — one row per student. Don't change the header names."],
+    [
+      "1.",
+      "Fill the Students sheet — one row per student. Don't change the header names.",
+    ],
     ["2.", "Name is required. Everything else is optional but recommended."],
-    ["3.", "Phone: any of 9876543210, +91 9876543210, 98765-43210 work. Leave blank if unknown."],
+    [
+      "3.",
+      "Phone: any of 9876543210, +91 9876543210, 98765-43210 work. Leave blank if unknown.",
+    ],
     [
       "4.",
       "Batch must match a name from the 'Your batches' sheet. Unknown batches will use the default batch you pick at import time.",
     ],
-    ["5.", "Joining date: DD/MM/YYYY (01/06/2025) or YYYY-MM-DD. Leave blank for today."],
-    ["6.", "Fee total: a number in ₹. Leave blank to use the default fee at import time."],
+    [
+      "5.",
+      "Joining date: DD/MM/YYYY (01/06/2025) or YYYY-MM-DD. Leave blank for today.",
+    ],
+    [
+      "6.",
+      "Fee total: a number in ₹. Leave blank to use the default fee at import time.",
+    ],
     [],
     ["മലയാളം"],
     ["•", "Name (പേര്) നിർബന്ധമാണ്."],
@@ -112,7 +132,9 @@ export async function downloadStudentImportTemplate(batchNames: string[] = []) {
   // Sheet 3 — Your batches (always present; empty if none yet)
   const batchRows: string[][] = [["Batch name"]];
   if (batchNames.length === 0) {
-    batchRows.push(["(no batches yet — create batches first, then re-download this template)"]);
+    batchRows.push([
+      "(no batches yet — create batches first, then re-download this template)",
+    ]);
   } else {
     batchNames.forEach((b) => batchRows.push([b]));
   }

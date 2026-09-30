@@ -21,7 +21,10 @@ export function LoadingScreen({ label = "Loading…" }: { label?: string }) {
 /** Inline 3-dot bouncer for buttons / inline contexts. */
 export function DotsLoader({ className = "" }: { className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-1 ${className}`} aria-label="Loading">
+    <span
+      className={`inline-flex items-center gap-1 ${className}`}
+      aria-label="Loading"
+    >
       <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse-soft [animation-delay:-0.3s]" />
       <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse-soft [animation-delay:-0.15s]" />
       <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse-soft" />

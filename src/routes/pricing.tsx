@@ -76,7 +76,11 @@ function PricingPage() {
           </Link>
           <div className="flex items-center gap-2">
             <Link to="/login">
-              <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hidden sm:inline-flex"
+              >
                 Sign in
               </Button>
             </Link>
@@ -106,8 +110,8 @@ function PricingPage() {
                 Simple, INR-first pricing
               </h1>
               <p className="mt-4 text-muted-foreground sm:text-lg">
-                Start free. Upgrade only when your centre grows. No setup fees, no hidden charges,
-                refundable within 7 days.
+                Start free. Upgrade only when your centre grows. No setup fees,
+                no hidden charges, refundable within 7 days.
               </p>
             </div>
           </div>
@@ -133,15 +137,23 @@ function PricingPage() {
                     </span>
                   )}
                   <div className="flex items-baseline justify-between">
-                    <h2 className="font-display text-xl font-semibold">{p.name}</h2>
+                    <h2 className="font-display text-xl font-semibold">
+                      {p.name}
+                    </h2>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{p.tagline}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {p.tagline}
+                  </p>
                   <div className="mt-5 flex items-baseline gap-1">
                     <span className="font-display text-3xl font-bold">
-                      {p.price === 0 ? "Free" : `₹${p.price.toLocaleString("en-IN")}`}
+                      {p.price === 0
+                        ? "Free"
+                        : `₹${p.price.toLocaleString("en-IN")}`}
                     </span>
                     {p.price !== 0 && (
-                      <span className="text-sm text-muted-foreground">/month</span>
+                      <span className="text-sm text-muted-foreground">
+                        /month
+                      </span>
                     )}
                   </div>
                   <ul className="mt-5 space-y-2.5 text-sm">
@@ -189,7 +201,9 @@ function PricingPage() {
                   className="group rounded-xl border border-border bg-card p-5 open:shadow-sm"
                 >
                   <summary className="cursor-pointer list-none text-sm font-semibold text-foreground">
-                    <span className="mr-2 inline-block transition group-open:rotate-90">›</span>
+                    <span className="mr-2 inline-block transition group-open:rotate-90">
+                      ›
+                    </span>
                     {f.q}
                   </summary>
                   <p className="mt-3 text-sm text-muted-foreground">{f.a}</p>
@@ -198,20 +212,26 @@ function PricingPage() {
             </div>
 
             <div className="mt-10 rounded-2xl border border-border bg-card p-6 text-center">
-              <h3 className="font-display text-xl font-semibold">Still have questions?</h3>
+              <h3 className="font-display text-xl font-semibold">
+                Still have questions?
+              </h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 We reply within a few hours. Pick whichever you prefer.
               </p>
               <div className="mt-4 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <a href="https://wa.me/919999999999" target="_blank" rel="noreferrer">
+                <a
+                  href="https://wa.me/917025063047"
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   <Button variant="outline" size="sm">
                     <MessageCircle className="mr-1.5 h-4 w-4" />
                     WhatsApp us
                   </Button>
                 </a>
-                <a href="mailto:hello@vidyaorbit.in">
+                <a href="mailto:aryanandkjyothis4@gmail.com">
                   <Button variant="ghost" size="sm">
-                    hello@vidyaorbit.in
+                    aryanandkjyothis4@gmail.com
                   </Button>
                 </a>
               </div>

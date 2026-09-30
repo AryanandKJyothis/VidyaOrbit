@@ -280,12 +280,12 @@ out-of-order webhooks, and subscription entitlement changes.
 
 ## Test Matrix
 
-| Persona | Scope exercised locally | External verification still required |
-| --- | --- | --- |
-| Unauthenticated visitor | Landing/login rendering, protected-route behavior from Phase 1/2, invalid invite route code review | Signup, confirmation, password recovery, expired sessions |
-| Workspace owner/admin | Workspace-aware source paths, team/invite error paths, owner-scoped writes | Authenticated CRUD, permissions, invite lifecycle, billing |
-| Workspace staff/member | Permission and workspace predicates reviewed in client/server paths | Read/write denial for each restricted resource |
-| Separate workspace/customer | Cross-tenant predicates and migration trigger coverage | Two real users/workspaces with URL-ID and direct-request attacks |
+| Persona                     | Scope exercised locally                                                                            | External verification still required                             |
+| --------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Unauthenticated visitor     | Landing/login rendering, protected-route behavior from Phase 1/2, invalid invite route code review | Signup, confirmation, password recovery, expired sessions        |
+| Workspace owner/admin       | Workspace-aware source paths, team/invite error paths, owner-scoped writes                         | Authenticated CRUD, permissions, invite lifecycle, billing       |
+| Workspace staff/member      | Permission and workspace predicates reviewed in client/server paths                                | Read/write denial for each restricted resource                   |
+| Separate workspace/customer | Cross-tenant predicates and migration trigger coverage                                             | Two real users/workspaces with URL-ID and direct-request attacks |
 
 ## Passed
 

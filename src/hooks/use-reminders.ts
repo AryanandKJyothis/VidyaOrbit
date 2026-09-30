@@ -19,7 +19,10 @@ function read(): ReminderPrefs {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultPrefs;
     const p = JSON.parse(raw) as Partial<ReminderPrefs>;
-    const wd = typeof p.digestWeekday === "number" ? Math.min(6, Math.max(0, p.digestWeekday)) : 2;
+    const wd =
+      typeof p.digestWeekday === "number"
+        ? Math.min(6, Math.max(0, p.digestWeekday))
+        : 2;
     return {
       digestWeekday: wd,
       enabled: p.enabled !== false,

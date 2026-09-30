@@ -3,6 +3,7 @@ import { getOptionalRazorpayEnv } from "@/lib/razorpay-env";
 import { friendlyRazorpayError } from "@/lib/razorpay-errors";
 import { rzGetSubscription } from "@/lib/razorpay-http";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { allowRequest, clientAddress, tooManyRequests } from "@/lib/rate-limit";
 import { parseBearerUserId } from "@/server/require-bearer-user";
 import {
   reconcileSubscriptionWithRazorpay,
@@ -13,10 +14,19 @@ export const Route = createFileRoute("/api/billing/sync-subscription")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        if (
+          !allowRequest(`billing-sync:${clientAddress(request)}`, 20, 60_000)
+        ) {
+          return tooManyRequests();
+        }
         const { BILLING_DISABLED } = await import("@/lib/feature-flags");
         if (BILLING_DISABLED) {
           return Response.json(
-            { ok: false, code: "DISABLED", message: "Billing is temporarily disabled." },
+            {
+              ok: false,
+              code: "DISABLED",
+              message: "Billing is temporarily disabled.",
+            },
             { status: 503 },
           );
         }
@@ -25,7 +35,11 @@ export const Route = createFileRoute("/api/billing/sync-subscription")({
 
         if (!getOptionalRazorpayEnv().configured) {
           return Response.json(
-            { ok: false, code: "NOT_CONFIGURED", message: "Billing is not configured yet." },
+            {
+              ok: false,
+              code: "NOT_CONFIGURED",
+              message: "Billing is not configured yet.",
+            },
             { status: 503 },
           );
         }
@@ -41,7 +55,11 @@ export const Route = createFileRoute("/api/billing/sync-subscription")({
         if (error) {
           console.error("[billing/sync-subscription]", error);
           return Response.json(
-            { ok: false, code: "READ_FAILED", message: "Could not read subscription." },
+            {
+              ok: false,
+              code: "READ_FAILED",
+              message: "Could not read subscription.",
+            },
             { status: 500 },
           );
         }
@@ -53,20 +71,29 @@ export const Route = createFileRoute("/api/billing/sync-subscription")({
           return Response.json({
             ok: true,
             plan: subRow?.plan ?? "free",
-            status: subRow?.status === "processing_checkout" ? "active" : (subRow?.status ?? "active"),
+            status:
+              subRow?.status === "processing_checkout"
+                ? "active"
+                : (subRow?.status ?? "active"),
             razorpay_status: null,
             synced: true,
           });
         }
 
         try {
-          const rzSub = await rzGetSubscription(subRow.razorpay_subscription_id);
+          const rzSub = await rzGetSubscription(
+            subRow.razorpay_subscription_id,
+          );
           const result = await reconcileSubscriptionWithRazorpay(userId, rzSub);
           return Response.json({ ok: true, ...result });
         } catch (e: unknown) {
           console.error("[billing/sync-subscription]", e);
           return Response.json(
-            { ok: false, code: "SYNC_FAILED", message: friendlyRazorpayError(e) },
+            {
+              ok: false,
+              code: "SYNC_FAILED",
+              message: friendlyRazorpayError(e),
+            },
             { status: 502 },
           );
         }

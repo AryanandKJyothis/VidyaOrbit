@@ -76,7 +76,7 @@ function AnalyticsPage() {
     },
   });
 
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
   const thisMonthStart = startOfMonth(now);
   const lastMonthStart = startOfMonth(subMonths(now, 1));
   const lastMonthEnd = endOfMonth(subMonths(now, 1));
@@ -98,7 +98,7 @@ function AnalyticsPage() {
       if (m) m.amount += Number(p.amount);
     }
     return months;
-  }, [payments.data]);
+  }, [payments.data, now]);
 
   const thisMonthRevenue = monthly[monthly.length - 1]?.amount ?? 0;
   const lastMonthRevenue = monthly[monthly.length - 2]?.amount ?? 0;
@@ -145,7 +145,7 @@ function AnalyticsPage() {
     }
     overdue.sort((a, b) => b.due - a.due);
     return { totalDue, list: overdue };
-  }, [students.data, payments.data]);
+  }, [students.data, payments.data, now]);
 
   // ---------- Students ----------
   const activeStudents = (students.data ?? []).filter(
@@ -192,7 +192,7 @@ function AnalyticsPage() {
       ...m,
       rate: m.total ? Math.round((m.present / m.total) * 100) : 0,
     }));
-  }, [att.data]);
+  }, [att.data, now]);
 
   const thisMonthAtt = attendanceTrend[attendanceTrend.length - 1];
   const lastMonthAtt = attendanceTrend[attendanceTrend.length - 2];

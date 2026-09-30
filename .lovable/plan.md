@@ -1,6 +1,6 @@
 # Highest-ROI Improvements for Vidya Orbit
 
-Right now `/` just redirects to `/dashboard` or `/login`. A first-time visitor sees a login form with no context, no proof, no reason to sign up. That is the single biggest leak. Below is a prioritized plan focused on *attract → convert → activate → retain* — the four levers that actually move usage.
+Right now `/` just redirects to `/dashboard` or `/login`. A first-time visitor sees a login form with no context, no proof, no reason to sign up. That is the single biggest leak. Below is a prioritized plan focused on _attract → convert → activate → retain_ — the four levers that actually move usage.
 
 ---
 
@@ -9,6 +9,7 @@ Right now `/` just redirects to `/dashboard` or `/login`. A first-time visitor s
 Today a curious visitor has nothing to look at. Replace the redirect with a focused, India-coaching-centre-targeted landing page.
 
 Sections:
+
 - **Hero** — clear value prop ("Run your coaching centre without spreadsheets"), one primary CTA ("Start free"), one secondary ("See a live demo"), product screenshot.
 - **Problem → Solution strip** — 3 pains (attendance chaos, fee follow-ups, no visibility) → 3 features.
 - **Feature grid** — Students, Batches, Attendance, Fees & receipts, Analytics, Team roles. Each with a real screenshot from the app, not stock icons.
@@ -23,7 +24,7 @@ Logged-in users still get auto-redirected to `/dashboard`; logged-out users see 
 
 ## 2. Frictionless onboarding (first 5 minutes decide everything)
 
-Goal: a brand-new sign-up should *see their own data* inside 3 minutes, not an empty dashboard.
+Goal: a brand-new sign-up should _see their own data_ inside 3 minutes, not an empty dashboard.
 
 - **Sample data toggle** on first login: "Explore with sample students" — pre-seed 8 students, 2 batches, a few attendance sessions and fee payments. One click to wipe and start fresh.
 - **Guided 4-step setup checklist** persisted on dashboard until complete: Add institute details → Create first batch → Add/import students → Mark first attendance.

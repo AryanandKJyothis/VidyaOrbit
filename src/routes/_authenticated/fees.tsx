@@ -68,7 +68,11 @@ function FeesPage() {
     .map((s) => {
       const paid = paidByStudent[s.id] ?? 0;
       const balance = Math.max(0, Number(s.fee_total) - paid);
-      const overdue = !!(s.fee_due_date && new Date(s.fee_due_date) < new Date() && balance > 0);
+      const overdue = !!(
+        s.fee_due_date &&
+        new Date(s.fee_due_date) < new Date() &&
+        balance > 0
+      );
       return { s, paid, balance, overdue };
     });
 
@@ -114,15 +118,22 @@ function FeesPage() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   onClick={async () => {
-                    const duesRows = filtered.map(({ s, paid, balance, overdue }) => ({
-                      Student: s.full_name,
-                      Batch: s.batch_id ? batchById[s.batch_id] : "",
-                      "Due date": s.fee_due_date ?? "",
-                      "Total fee": Number(s.fee_total),
-                      Paid: paid,
-                      Balance: balance,
-                      Status: balance === 0 ? "Paid" : overdue ? "Overdue" : "Pending",
-                    }));
+                    const duesRows = filtered.map(
+                      ({ s, paid, balance, overdue }) => ({
+                        Student: s.full_name,
+                        Batch: s.batch_id ? batchById[s.batch_id] : "",
+                        "Due date": s.fee_due_date ?? "",
+                        "Total fee": Number(s.fee_total),
+                        Paid: paid,
+                        Balance: balance,
+                        Status:
+                          balance === 0
+                            ? "Paid"
+                            : overdue
+                              ? "Overdue"
+                              : "Pending",
+                      }),
+                    );
                     await exportToExcel(duesRows, "fee-dues", "Dues");
                     toast.success(`Exported ${duesRows.length} dues (.xlsx)`);
                   }}
@@ -131,15 +142,22 @@ function FeesPage() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
-                    const duesRows = filtered.map(({ s, paid, balance, overdue }) => ({
-                      Student: s.full_name,
-                      Batch: s.batch_id ? batchById[s.batch_id] : "",
-                      "Due date": s.fee_due_date ?? "",
-                      "Total fee": Number(s.fee_total),
-                      Paid: paid,
-                      Balance: balance,
-                      Status: balance === 0 ? "Paid" : overdue ? "Overdue" : "Pending",
-                    }));
+                    const duesRows = filtered.map(
+                      ({ s, paid, balance, overdue }) => ({
+                        Student: s.full_name,
+                        Batch: s.batch_id ? batchById[s.batch_id] : "",
+                        "Due date": s.fee_due_date ?? "",
+                        "Total fee": Number(s.fee_total),
+                        Paid: paid,
+                        Balance: balance,
+                        Status:
+                          balance === 0
+                            ? "Paid"
+                            : overdue
+                              ? "Overdue"
+                              : "Pending",
+                      }),
+                    );
                     exportToCsv(duesRows, "fee-dues");
                     toast.success(`Exported ${duesRows.length} dues (.csv)`);
                   }}
@@ -156,14 +174,23 @@ function FeesPage() {
       />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-        <StatCard label="Total fee" value={formatINR(totals.totalFee)} icon={Wallet} />
+        <StatCard
+          label="Total fee"
+          value={formatINR(totals.totalFee)}
+          icon={Wallet}
+        />
         <StatCard
           label="Collected"
           value={formatINR(totals.paid)}
           icon={CheckCircle2}
           tone="success"
         />
-        <StatCard label="Pending" value={formatINR(totals.due)} icon={AlertCircle} tone="warning" />
+        <StatCard
+          label="Pending"
+          value={formatINR(totals.due)}
+          icon={AlertCircle}
+          tone="warning"
+        />
         <StatCard
           label="Overdue"
           value={formatINR(totals.overdue)}
@@ -222,7 +249,11 @@ function FeesPage() {
               {filtered.length === 0 ? (
                 <EmptyState
                   className="border-0 rounded-none bg-transparent"
-                  title={rows.length === 0 ? "No fee records yet" : "No matching dues"}
+                  title={
+                    rows.length === 0
+                      ? "No fee records yet"
+                      : "No matching dues"
+                  }
                   description={
                     rows.length === 0
                       ? "Add students with fee totals, then record payments from here."
@@ -267,7 +298,9 @@ function FeesPage() {
                         <td className="px-4 py-3 text-right font-mono">
                           {formatINR(Number(s.fee_total))}
                         </td>
-                        <td className="px-4 py-3 text-right font-mono">{formatINR(paid)}</td>
+                        <td className="px-4 py-3 text-right font-mono">
+                          {formatINR(paid)}
+                        </td>
                         <td className="px-4 py-3 text-right font-mono font-semibold">
                           {formatINR(balance)}
                         </td>
@@ -311,7 +344,9 @@ function FeesPage() {
                       Notes: p.notes ?? "",
                     }));
                     await exportToExcel(payRows, "payments", "Payments");
-                    toast.success(`Exported ${payRows.length} payments (.xlsx)`);
+                    toast.success(
+                      `Exported ${payRows.length} payments (.xlsx)`,
+                    );
                   }}
                 >
                   Payments (.xlsx)
@@ -364,7 +399,9 @@ function FeesPage() {
                   <tbody className="divide-y divide-border">
                     {payments.data!.map((p) => (
                       <tr key={p.id} className="hover:bg-muted/30">
-                        <td className="px-4 py-3 font-mono text-xs">{p.receipt_number}</td>
+                        <td className="px-4 py-3 font-mono text-xs">
+                          {p.receipt_number}
+                        </td>
                         <td className="px-4 py-3">
                           <Link
                             to="/students/$id"
@@ -377,13 +414,18 @@ function FeesPage() {
                         <td className="px-4 py-3 text-muted-foreground">
                           {formatDate(p.payment_date)}
                         </td>
-                        <td className="px-4 py-3 uppercase text-xs">{p.method}</td>
+                        <td className="px-4 py-3 uppercase text-xs">
+                          {p.method}
+                        </td>
                         <td className="px-4 py-3 text-right font-mono font-medium">
                           {formatINR(Number(p.amount))}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <Button asChild size="sm" variant="ghost">
-                            <Link to="/receipts/$paymentId" params={{ paymentId: p.id }}>
+                            <Link
+                              to="/receipts/$paymentId"
+                              params={{ paymentId: p.id }}
+                            >
                               <Receipt className="mr-1 h-3.5 w-3.5" />
                             </Link>
                           </Button>
