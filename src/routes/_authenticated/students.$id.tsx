@@ -104,7 +104,29 @@ function StudentDetail() {
   };
 
   if (student.isLoading) return <Skeleton className="h-64" />;
-  if (!student.data) return <p>Student not found.</p>;
+  
+  if (student.isError || !student.data) {
+    return (
+      <Card className="border-dashed">
+        <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <Users className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">Student not found</h3>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              This student doesn't exist or isn't visible to you.
+            </p>
+          </div>
+          <Button asChild variant="outline">
+            <Link to="/students">
+              <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to students
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const s = student.data;
   const attStats = (() => {
