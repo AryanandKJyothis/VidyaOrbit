@@ -42,7 +42,7 @@ import { PlanGate } from "@/components/plan-gate";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { useActiveWorkspace } from "@/hooks/use-active-workspace";
+import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   component: AnalyticsPage,
@@ -54,6 +54,7 @@ function AnalyticsPage() {
   const batches = useBatches();
   const payments = usePayments();
   const { active } = useActiveWorkspace();
+  const canViewFees = useCan("fees", "read");
 
   const locked = !sub.isLoading && !hasMinPlan(sub.data?.plan, "starter");
 
@@ -110,6 +111,12 @@ function AnalyticsPage() {
       : thisMonthRevenue > 0
         ? 100
         : 0;
+
+  const collectedYtd = useMemo(() => {
+    return payments.data?.reduce((sum, p) => sum + Number(p.amount), 0) ?? 0;
+  }, [payments.data]);
+
+  const totalPaymentsYtd = payments.data?.length ?? 0;
 
   // ---------- Outstanding dues ----------
   const dues = useMemo(() => {
@@ -269,12 +276,20 @@ function AnalyticsPage() {
               spark={monthly.map((m) => m.amount)}
             />
             <HeroKpi
-              label="Outstanding dues"
-              value={formatINR(dues.totalDue)}
-              hint={`${dues.list.length} student${dues.list.length === 1 ? "" : "s"} pending`}
-              icon={AlertTriangle}
-              tone={dues.totalDue > 0 ? "warning" : "success"}
+              label="Collected YTD"
+              value={formatINR(collectedYtd)}
+              hint={`${totalPaymentsYtd} payment${totalPaymentsYtd === 1 ? "" : "s"} recorded`}
+              icon={Wallet}
             />
+            {canViewFees && (
+              <HeroKpi
+                label="Outstanding dues"
+                value={formatINR(dues.totalDue)}
+                hint={`${dues.list.length} student${dues.list.length === 1 ? "" : "s"} pending`}
+                icon={AlertTriangle}
+                tone={dues.totalDue > 0 ? "warning" : "success"}
+              />
+            )}
             <HeroKpi
               label="New admissions"
               value={String(newThisMonth)}
@@ -456,65 +471,67 @@ function AnalyticsPage() {
 
           {/* Dues list + Top batches */}
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
-            <Card className="border-border/60">
-              <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <div>
-                  <CardTitle className="text-base">
-                    Students with pending fees
-                  </CardTitle>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Sorted by amount owed — chase these first
-                  </p>
-                </div>
-                <Button asChild size="sm" variant="ghost">
-                  <Link to="/fees">View all</Link>
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {dues.list.length === 0 ? (
-                  <EmptyHint text="No pending dues. Great job!" />
-                ) : (
-                  <ul className="divide-y divide-border/60">
-                    {dues.list.slice(0, 6).map((d) => (
-                      <li
-                        key={d.id}
-                        className="flex items-center justify-between py-3"
-                      >
-                        <div className="min-w-0">
-                          <Link
-                            to="/students/$id"
-                            params={{ id: d.id }}
-                            className="block truncate text-sm font-medium hover:underline"
-                          >
-                            {d.name}
-                          </Link>
-                          {d.dueDate && (
-                            <p className="mt-0.5 text-xs text-muted-foreground">
-                              {d.daysOverdue > 0
-                                ? `${d.daysOverdue} days overdue`
-                                : `Due in ${Math.abs(d.daysOverdue)} days`}
-                            </p>
-                          )}
-                        </div>
-                        <div className="ml-3 text-right">
-                          <p className="text-sm font-semibold tabular-nums">
-                            {formatINR(d.due)}
-                          </p>
-                          {d.daysOverdue > 0 && (
-                            <Badge
-                              variant="destructive"
-                              className="mt-0.5 text-[10px]"
+            {canViewFees && (
+              <Card className="border-border/60">
+                <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                  <div>
+                    <CardTitle className="text-base">
+                      Students with pending fees
+                    </CardTitle>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Sorted by amount owed — chase these first
+                    </p>
+                  </div>
+                  <Button asChild size="sm" variant="ghost">
+                    <Link to="/fees">View all</Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {dues.list.length === 0 ? (
+                    <EmptyHint text="No pending dues. Great job!" />
+                  ) : (
+                    <ul className="divide-y divide-border/60">
+                      {dues.list.slice(0, 6).map((d) => (
+                        <li
+                          key={d.id}
+                          className="flex items-center justify-between py-3"
+                        >
+                          <div className="min-w-0">
+                            <Link
+                              to="/students/$id"
+                              params={{ id: d.id }}
+                              className="block truncate text-sm font-medium hover:underline"
                             >
-                              Overdue
-                            </Badge>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
+                              {d.name}
+                            </Link>
+                            {d.dueDate && (
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                {d.daysOverdue > 0
+                                  ? `${d.daysOverdue} days overdue`
+                                  : `Due in ${Math.abs(d.daysOverdue)} days`}
+                              </p>
+                            )}
+                          </div>
+                          <div className="ml-3 text-right">
+                            <p className="text-sm font-semibold tabular-nums">
+                              {formatINR(d.due)}
+                            </p>
+                            {d.daysOverdue > 0 && (
+                              <Badge
+                                variant="destructive"
+                                className="mt-0.5 text-[10px]"
+                              >
+                                Overdue
+                              </Badge>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             <Card className="border-border/60">
               <CardHeader>

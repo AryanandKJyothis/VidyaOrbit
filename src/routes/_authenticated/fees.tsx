@@ -61,6 +61,30 @@ function FeesPageContent() {
   const [batchFilter, setBatchFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  const batchMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const b of batches.data ?? []) m[b.id] = b.name;
+    return m;
+  }, [batches.data]);
+
+  const studentTotalPaid = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const p of payments.data ?? [])
+      m[p.student_id] = (m[p.student_id] ?? 0) + Number(p.amount);
+    return m;
+  }, [payments.data]);
+
+  const studentsWithDues = useMemo(() => {
+    return (students.data ?? [])
+      .filter((s) => s.status !== "archived")
+      .map((s) => {
+        const feeTotal = Number(s.fee_total ?? 0);
+        const paid = studentTotalPaid[s.id] ?? 0;
+        const balance = feeTotal - paid;
+        return { ...s, feeTotal, paid, balance };
+      });
+  }, [students.data, studentTotalPaid]);
+
   const loading = students.isLoading || batches.isLoading || payments.isLoading;
 
   if (loading) {

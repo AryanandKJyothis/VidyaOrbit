@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -59,19 +59,18 @@ import {
 } from "@/lib/contact-config";
 
 export const Route = createFileRoute("/_authenticated/students")({
-  component: StudentsPage,
+  component: StudentsLayout,
 });
 
-function StudentsPage() {
-  // Check if we're on a child route (e.g., /students/$id)
-  const isChildRoute = Route.useMatch({
-    select: (match) => match.id !== "/_authenticated/students/",
-  });
-
-  if (isChildRoute) {
+function StudentsLayout() {
+  const childMatches = useChildMatches();
+  
+  // If there's a child route (e.g., /students/$id), render it
+  if (childMatches.length > 0) {
     return <Outlet />;
   }
-
+  
+  // Otherwise render the list
   return <StudentsList />;
 }
 
@@ -166,23 +165,31 @@ function StudentsList() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   onClick={async () => {
-                    const rows = filtered.map((s) => ({
-                      Name: s.full_name,
-                      Phone: s.phone ?? "",
-                      Guardian: s.guardian_name ?? "",
-                      "Guardian phone": s.guardian_phone ?? "",
-                      Batch: s.batch_id ? (batchById[s.batch_id] ?? "") : "",
-                      "Joining date": s.joining_date,
-                      Status: s.status,
-                      "Total fee": Number(s.fee_total),
-                      Paid: paidByStudent[s.id] ?? 0,
-                      Balance: Math.max(
-                        0,
-                        Number(s.fee_total) - (paidByStudent[s.id] ?? 0),
-                      ),
-                      "Due date": s.fee_due_date ?? "",
-                      Address: s.address ?? "",
-                    }));
+                    const rows = filtered.map((s) => {
+                      const baseRow: Record<string, string | number> = {
+                        Name: s.full_name,
+                        Phone: s.phone ?? "",
+                        Guardian: s.guardian_name ?? "",
+                        "Guardian phone": s.guardian_phone ?? "",
+                        Batch: s.batch_id ? (batchById[s.batch_id] ?? "") : "",
+                        "Joining date": s.joining_date,
+                        Status: s.status,
+                      };
+                      
+                      // Only include fee columns if user has fees permission
+                      if (canViewFees) {
+                        baseRow["Total fee"] = Number(s.fee_total);
+                        baseRow["Paid"] = paidByStudent[s.id] ?? 0;
+                        baseRow["Balance"] = Math.max(
+                          0,
+                          Number(s.fee_total) - (paidByStudent[s.id] ?? 0),
+                        );
+                        baseRow["Due date"] = s.fee_due_date ?? "";
+                      }
+                      
+                      baseRow["Address"] = s.address ?? "";
+                      return baseRow;
+                    });
                     await exportToExcel(rows, "students", "Students");
                     toast.success(`Exported ${rows.length} students (.xlsx)`);
                   }}
@@ -191,23 +198,30 @@ function StudentsList() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
-                    const rows = filtered.map((s) => ({
-                      Name: s.full_name,
-                      Phone: s.phone ?? "",
-                      Guardian: s.guardian_name ?? "",
-                      "Guardian phone": s.guardian_phone ?? "",
-                      Batch: s.batch_id ? (batchById[s.batch_id] ?? "") : "",
-                      "Joining date": s.joining_date,
-                      Status: s.status,
-                      "Total fee": Number(s.fee_total),
-                      Paid: paidByStudent[s.id] ?? 0,
-                      Balance: Math.max(
-                        0,
-                        Number(s.fee_total) - (paidByStudent[s.id] ?? 0),
-                      ),
-                      "Due date": s.fee_due_date ?? "",
-                      Address: s.address ?? "",
-                    }));
+                    const rows = filtered.map((s) => {
+                      const baseRow: Record<string, string | number> = {
+                        Name: s.full_name,
+                        Phone: s.phone ?? "",
+                        Guardian: s.guardian_name ?? "",
+                        "Guardian phone": s.guardian_phone ?? "",
+                        Batch: s.batch_id ? (batchById[s.batch_id] ?? "") : "",
+                        "Joining date": s.joining_date,
+                        Status: s.status,
+                      };
+                      
+                      if (canViewFees) {
+                        baseRow["Total fee"] = Number(s.fee_total);
+                        baseRow["Paid"] = paidByStudent[s.id] ?? 0;
+                        baseRow["Balance"] = Math.max(
+                          0,
+                          Number(s.fee_total) - (paidByStudent[s.id] ?? 0),
+                        );
+                        baseRow["Due date"] = s.fee_due_date ?? "";
+                      }
+                      
+                      baseRow["Address"] = s.address ?? "";
+                      return baseRow;
+                    });
                     exportToCsv(rows, "students");
                     toast.success(`Exported ${rows.length} students (.csv)`);
                   }}

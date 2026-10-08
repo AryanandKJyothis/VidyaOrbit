@@ -39,7 +39,7 @@ const WorkspaceCtx = createContext<Ctx>({
   refresh: () => {},
 });
 
-function getStorageKey(userId: string) {
+export function getStorageKey(userId: string) {
   return `vidya.active-workspace.${userId}`;
 }
 

@@ -1,7 +1,5 @@
--- Copy signup phone to institute contact_phone
--- Bug: When a user signs up with a phone number, it's stored in auth.users metadata
--- but not copied to the institutes.contact_phone field.
--- Fix: Update handle_new_user to extract phone from user metadata and set it on the institute.
+-- Migration 5: Copy signup phone to institute contact_phone
+-- Based on LIVE handle_new_user, changing only the institutes insert to include contact_phone.
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
  RETURNS trigger
@@ -9,47 +7,23 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-DECLARE
-  v_phone TEXT;
 BEGIN
-  -- Extract phone from user metadata if present
-  v_phone := NEW.raw_user_meta_data->>'phone';
+  -- Skip auto-creating an institute if the user is signing up to join a team
+  IF COALESCE((NEW.raw_user_meta_data->>'joining_team')::boolean, false) = false THEN
+    INSERT INTO public.institutes (owner_id, name, contact_email, contact_phone)
+    VALUES (
+      NEW.id, 
+      COALESCE(NEW.raw_user_meta_data->>'institute_name', 'My Institute'), 
+      NEW.email,
+      NULLIF(trim(NEW.raw_user_meta_data->>'phone'), '')
+    )
+    ON CONFLICT (owner_id) DO NOTHING;
+  END IF;
 
-  INSERT INTO public.institutes (
-    owner_id,
-    name,
-    contact_email,
-    contact_phone
-  )
-  VALUES (
-    NEW.id,
-    'My Institute',
-    NEW.email,
-    v_phone  -- Will be NULL if no phone in metadata
-  );
-
-  INSERT INTO public.subscriptions (
-    owner_id,
-    plan,
-    status,
-    start_date,
-    expiry_date,
-    limit_students,
-    notes
-  )
-  VALUES (
-    NEW.id,
-    'free',
-    'active',
-    CURRENT_DATE,
-    CURRENT_DATE + INTERVAL '365 days',
-    25,
-    'Free tier — 25 students, core features only.'
-  );
+  INSERT INTO public.subscriptions (owner_id, plan, status)
+  VALUES (NEW.id, 'free', 'active')
+  ON CONFLICT (owner_id) DO NOTHING;
 
   RETURN NEW;
 END;
 $function$;
-
--- Revoke remains the same
-REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
