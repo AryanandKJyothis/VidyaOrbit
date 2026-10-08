@@ -40,7 +40,7 @@ export function PlanGate({
   return (
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
-        <div className="flex h-12 w-12 items-center justify-between rounded-full bg-primary/10 text-primary">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
           <Lock className="h-5 w-5" />
         </div>
         <div>

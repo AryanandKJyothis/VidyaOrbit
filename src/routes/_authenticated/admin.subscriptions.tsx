@@ -46,6 +46,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import {
+  formatStudentLimit,
+  isUnlimitedLimit,
+  studentLimitForPlan,
+  type PlanCode,
+} from "@/lib/plan-limits";
+import {
   checkAdmin,
   listInstitutes,
   getSubscriptionDetail,
@@ -55,7 +61,7 @@ import {
   grantTrial,
   updateInstituteAdminNotes,
 } from "@/lib/admin-subscriptions.functions";
-import { PLAN_LIMITS, PLANS, type PlanCode } from "@/hooks/use-subscription";
+import { PLANS } from "@/hooks/use-subscription";
 
 export const Route = createFileRoute("/_authenticated/admin/subscriptions")({
   // Supabase session lives in the browser. Skip SSR so a direct load cannot
@@ -703,11 +709,13 @@ function EditDialog({
     ? Math.ceil((new Date(expiryDate).getTime() - Date.now()) / 86400_000)
     : null;
   const studentTotal = num("total_students");
-  const planLimitFromForm = PLAN_LIMITS[plan as PlanCode] ?? PLAN_LIMITS.free;
-  const usagePct = Math.min(
-    100,
-    Math.round((studentTotal / Math.max(1, planLimitFromForm)) * 100),
-  );
+  const planLimitFromForm = studentLimitForPlan((plan as PlanCode) || "free");
+  const usagePct = isUnlimitedLimit(planLimitFromForm)
+    ? 0
+    : Math.min(
+        100,
+        Math.round((studentTotal / Math.max(1, planLimitFromForm ?? 1)) * 100),
+      );
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -755,7 +763,7 @@ function EditDialog({
                     {studentTotal}
                     <span className="text-base text-muted-foreground">
                       {" "}
-                      / {planLimitFromForm}
+                      / {formatStudentLimit(planLimitFromForm)}
                     </span>
                   </p>
                   <Progress value={usagePct} className="mt-2 h-1.5" />

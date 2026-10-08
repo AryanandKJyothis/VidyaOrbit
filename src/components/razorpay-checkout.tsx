@@ -1,12 +1,14 @@
 /**
  * Razorpay checkout component for in-app plan purchases (tier + cycle).
- * Loads Razorpay checkout.js and handles the payment flow.
+ * Loads Razorpay checkout.js once per page and handles the payment flow.
  */
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getContactLabel, getContactLink } from "@/lib/contact-config";
+import { TIER_CHANGE_MESSAGE } from "@/lib/billing-guards";
 
 declare global {
   interface Window {
@@ -43,11 +45,59 @@ interface RazorpayInstance {
 type CheckoutProps = {
   tier: "starter" | "growth" | "large";
   cycle: "monthly" | "annual";
-  onSuccess?: () => void;
+  onSuccess?: () => void | Promise<unknown>;
   onError?: (error: Error) => void;
   buttonLabel?: string;
   disabled?: boolean;
 };
+
+let checkoutScriptPromise: Promise<void> | null = null;
+
+function loadRazorpayScript(): Promise<void> {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Razorpay checkout is browser-only"));
+  }
+  if (typeof window.Razorpay !== "undefined") {
+    return Promise.resolve();
+  }
+  if (checkoutScriptPromise) return checkoutScriptPromise;
+
+  checkoutScriptPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(
+      'script[src="https://checkout.razorpay.com/v1/checkout.js"]',
+    );
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener(
+        "error",
+        () => reject(new Error("Could not load payment system.")),
+        { once: true },
+      );
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      checkoutScriptPromise = null;
+      reject(new Error("Could not load payment system."));
+    };
+    document.body.appendChild(script);
+  });
+
+  return checkoutScriptPromise;
+}
+
+async function pollSubscriptionRefresh(
+  onSuccess: (() => void | Promise<unknown>) | undefined,
+) {
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    await onSuccess?.();
+    await new Promise((r) => setTimeout(r, 5_000));
+  }
+}
 
 export function RazorpayCheckout({
   tier,
@@ -58,31 +108,24 @@ export function RazorpayCheckout({
   disabled,
 }: CheckoutProps) {
   const [loading, setLoading] = useState(false);
-  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [scriptLoaded, setScriptLoaded] = useState(
+    typeof window !== "undefined" && typeof window.Razorpay !== "undefined",
+  );
 
-  // Load Razorpay checkout.js
   useEffect(() => {
-    if (typeof window.Razorpay !== "undefined") {
-      setScriptLoaded(true);
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    script.onload = () => setScriptLoaded(true);
-    script.onerror = () => {
-      toast.error("Could not load payment system.");
-      setScriptLoaded(false);
-    };
-    document.body.appendChild(script);
-
+    let cancelled = false;
+    loadRazorpayScript()
+      .then(() => {
+        if (!cancelled) setScriptLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setScriptLoaded(false);
+          toast.error("Could not load payment system.");
+        }
+      });
     return () => {
-      try {
-        document.body.removeChild(script);
-      } catch {
-        // Script already removed
-      }
+      cancelled = true;
     };
   }, []);
 
@@ -95,7 +138,6 @@ export function RazorpayCheckout({
     setLoading(true);
 
     try {
-      // Get session token
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
 
@@ -105,7 +147,6 @@ export function RazorpayCheckout({
         return;
       }
 
-      // Create order
       const orderRes = await fetch("/api/billing/create-order", {
         method: "POST",
         headers: {
@@ -115,20 +156,30 @@ export function RazorpayCheckout({
         body: JSON.stringify({ tier, cycle }),
       });
 
-      if (!orderRes.ok) {
-        const errorData = await orderRes.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `Order creation failed (${orderRes.status})`,
-        );
+      const errorData = await orderRes.json().catch(() => ({}));
+
+      if (!orderRes.ok || !errorData.ok) {
+        if (errorData.code === "TIER_CHANGE_CONTACT_SUPPORT") {
+          const link = getContactLink();
+          toast.error(errorData.message || TIER_CHANGE_MESSAGE, {
+            action: link
+              ? {
+                  label: getContactLabel(),
+                  onClick: () => window.open(link, "_blank", "noopener"),
+                }
+              : undefined,
+          });
+        } else {
+          throw new Error(
+            errorData.message || `Order creation failed (${orderRes.status})`,
+          );
+        }
+        setLoading(false);
+        return;
       }
 
-      const orderData = await orderRes.json();
+      const orderData = errorData;
 
-      if (!orderData.ok) {
-        throw new Error(orderData.message || "Order creation failed");
-      }
-
-      // Initialize Razorpay checkout
       const rzp = new window.Razorpay({
         key: orderData.keyId,
         amount: orderData.amount,
@@ -138,7 +189,6 @@ export function RazorpayCheckout({
         order_id: orderData.orderId,
         handler: async (response: RazorpayResponse) => {
           try {
-            // Verify payment
             const verifyRes = await fetch("/api/billing/verify-payment", {
               method: "POST",
               headers: {
@@ -153,9 +203,9 @@ export function RazorpayCheckout({
             });
 
             if (!verifyRes.ok) {
-              const errorData = await verifyRes.json().catch(() => ({}));
+              const verifyErr = await verifyRes.json().catch(() => ({}));
               throw new Error(
-                errorData.message || "Payment verification failed",
+                verifyErr.message || "Payment verification failed",
               );
             }
 
@@ -167,8 +217,15 @@ export function RazorpayCheckout({
               );
             }
 
-            toast.success("Payment successful! Your plan is now active.");
-            onSuccess?.();
+            if (verifyData.status === "pending") {
+              toast.info(
+                "Payment received, processing. We'll confirm shortly.",
+              );
+              void pollSubscriptionRefresh(onSuccess);
+            } else {
+              toast.success("Your plan is now active");
+              await onSuccess?.();
+            }
           } catch (e) {
             const error = e as Error;
             console.error("[Razorpay checkout] Verification error:", error);

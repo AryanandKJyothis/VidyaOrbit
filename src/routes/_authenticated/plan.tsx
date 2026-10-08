@@ -12,11 +12,21 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RenewalBanner } from "@/components/renewal-banner";
 import { RazorpayCheckout } from "@/components/razorpay-checkout";
-import { useAuth } from "@/hooks/use-auth";
-import { useSubscription } from "@/hooks/use-subscription";
+import {
+  useSubscription,
+  PLAN_RANK,
+  type PlanCode,
+} from "@/hooks/use-subscription";
 import { Check, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  formatStudentLimit,
+  PLAN_DISPLAY_NAMES,
+  planCodeForTier,
+} from "@/lib/plan-limits";
+import { getContactLabel, getContactLink } from "@/lib/contact-config";
 
 type BillingCycle = "monthly" | "annual";
 type PlanTier = "starter" | "growth" | "large";
@@ -42,28 +52,54 @@ export const Route = createFileRoute("/_authenticated/plan")({
 });
 
 function PlanPage() {
-  const { user } = useAuth();
   const subQuery = useSubscription();
   const [cycle, setCycle] = useState<BillingCycle>("annual");
   const [pricing, setPricing] = useState<PricingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [billingEnabled, setBillingEnabled] = useState(false);
   const [hasPaidSetup, setHasPaidSetup] = useState(false);
+  const [pricingError, setPricingError] = useState(false);
 
   const subscription = subQuery.data;
   const isOwner = subscription?.isOwner ?? false;
 
-  // Fetch pricing data (simplified - hasPaidSetup check would be added later)
   useEffect(() => {
-    fetch("/api/billing/pricing")
-      .then((res) => res.json())
-      .then((data) => {
-        setPricing(data);
-        setBillingEnabled(data.billingEnabled ?? false);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/billing/pricing");
+        if (!res.ok) throw new Error("pricing failed");
+        const data = await res.json();
+        if (!Array.isArray(data.tiers)) throw new Error("bad pricing shape");
+        if (!cancelled) {
+          setPricing(data);
+          setBillingEnabled(Boolean(data.billingEnabled));
+        }
+      } catch {
+        if (!cancelled) setPricingError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  useEffect(() => {
+    if (!isOwner) return;
+    let cancelled = false;
+    (async () => {
+      const { count, error } = await supabase
+        .from("billing_orders")
+        .select("id", { count: "exact", head: true })
+        .not("activated_at", "is", null);
+      if (!cancelled && !error) setHasPaidSetup((count ?? 0) > 0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOwner]);
 
   if (loading) {
     return (
@@ -108,7 +144,7 @@ function PlanPage() {
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Plan</span>
             <Badge variant="default" className="capitalize">
-              {currentPlan}
+              {PLAN_DISPLAY_NAMES[currentPlan as PlanCode] ?? currentPlan}
             </Badge>
           </div>
           {expiryDate && (
@@ -130,10 +166,7 @@ function PlanPage() {
               <span className="text-sm font-medium">Students</span>
               <span className="text-sm">
                 {subscription.student_count} /{" "}
-                {subscription.limit === Infinity ||
-                subscription.limit === 2147483647
-                  ? "Unlimited"
-                  : subscription.limit}
+                {formatStudentLimit(subscription.limit)}
               </span>
             </div>
           )}
@@ -163,28 +196,37 @@ function PlanPage() {
         </div>
       </div>
 
+      {pricingError && (
+        <Alert variant="destructive" className="mb-8">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Could not load plan prices. Please refresh the page.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Pricing cards */}
       <div className="grid gap-6 md:grid-cols-3 mb-8">
-        {pricing?.tiers.map((tier) => (
-          <PricingCard
-            key={tier.tier}
-            tier={tier}
-            cycle={cycle}
-            currentPlan={currentPlan}
-            isOwner={isOwner}
-            billingEnabled={billingEnabled}
-            hasPaidSetup={hasPaidSetup}
-            onSuccess={() => subQuery.refetch()}
-          />
-        ))}
+        {Array.isArray(pricing?.tiers) &&
+          pricing.tiers.map((tier) => (
+            <PricingCard
+              key={tier.tier}
+              tier={tier}
+              cycle={cycle}
+              currentPlan={currentPlan}
+              isOwner={isOwner}
+              billingEnabled={billingEnabled}
+              hasPaidSetup={hasPaidSetup}
+              onSuccess={() => subQuery.refetch()}
+            />
+          ))}
       </div>
 
       {/* GST notice */}
       <Alert className="max-w-2xl mx-auto">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          <strong>Note:</strong> GST calculations and invoicing are not yet
-          implemented. Prices shown are before tax.
+          Prices are exclusive of GST. GST invoicing is coming soon.
         </AlertDescription>
       </Alert>
     </div>
@@ -230,6 +272,16 @@ function PricingCard({
   const isCurrent =
     tier.tier === currentPlan ||
     (tier.tier === "large" && currentPlan === "pro");
+  const requestedPlan = planCodeForTier(tier.tier);
+  const currentRank = PLAN_RANK[(currentPlan as PlanCode) ?? "free"] ?? 0;
+  const isDowngrade = PLAN_RANK[requestedPlan] < currentRank;
+  const checkoutLabel = isCurrent
+    ? "Renew Plan"
+    : isDowngrade
+      ? "Switch plan"
+      : "Upgrade";
+  const contactLink = getContactLink();
+  const contactLabel = getContactLabel();
 
   return (
     <Card className={isCurrent ? "border-primary shadow-lg" : ""}>
@@ -301,12 +353,22 @@ function PricingCard({
           <RazorpayCheckout
             tier={tier.tier}
             cycle={cycle}
-            buttonLabel={isCurrent ? "Renew Plan" : "Upgrade"}
+            buttonLabel={checkoutLabel}
             onSuccess={onSuccess}
           />
+        ) : !isOwner ? (
+          <Button variant="outline" className="w-full" disabled>
+            Owner Only
+          </Button>
+        ) : contactLink ? (
+          <Button asChild className="w-full">
+            <a href={contactLink} target="_blank" rel="noopener noreferrer">
+              {contactLabel}
+            </a>
+          </Button>
         ) : (
-          <Button variant="outline" className="w-full" disabled={!isOwner}>
-            {!isOwner ? "Owner Only" : "Contact Us"}
+          <Button variant="outline" className="w-full" disabled>
+            Contact Us
           </Button>
         )}
       </CardFooter>

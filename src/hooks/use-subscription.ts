@@ -2,8 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 import { APPROVED_PRICING, type PlanDisplay } from "@/lib/pricing-display";
+import {
+  PLAN_STUDENT_LIMITS,
+  UNLIMITED_STUDENT_SENTINEL,
+  type PlanCode,
+} from "@/lib/plan-limits";
 
-export type PlanCode = "free" | "starter" | "growth" | "pro";
+export type { PlanCode };
 
 function toPlanCode(code: PlanDisplay["code"]): PlanCode {
   return code === "large" ? "pro" : code;
@@ -16,10 +21,10 @@ function toPlanCode(code: PlanDisplay["code"]): PlanCode {
 export const TRIAL_MODE = false;
 
 export const PLAN_LIMITS: Record<PlanCode, number> = {
-  free: 25,
-  starter: 100,
-  growth: 500,
-  pro: 1000,
+  free: PLAN_STUDENT_LIMITS.free ?? 25,
+  starter: PLAN_STUDENT_LIMITS.starter ?? 100,
+  growth: PLAN_STUDENT_LIMITS.growth ?? 500,
+  pro: UNLIMITED_STUDENT_SENTINEL,
 };
 
 export const PLAN_RANK: Record<PlanCode, number> = {
