@@ -144,12 +144,16 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
             // Get payment_id for activation
             let paymentId: string | null = null;
             if (eventName === "payment.captured" && payload.payment) {
-              paymentId = (payload.payment as { entity?: { id?: string } }).entity?.id ?? null;
+              paymentId =
+                (payload.payment as { entity?: { id?: string } }).entity?.id ??
+                null;
             } else if (eventName === "order.paid" && payload.order) {
               // For order.paid, fetch the payment from the order
-              const orderEntity = (payload.order as {
-                entity?: { payment_id?: string; first_payment_id?: string };
-              }).entity;
+              const orderEntity = (
+                payload.order as {
+                  entity?: { payment_id?: string; first_payment_id?: string };
+                }
+              ).entity;
               paymentId =
                 orderEntity?.payment_id ??
                 orderEntity?.first_payment_id ??
