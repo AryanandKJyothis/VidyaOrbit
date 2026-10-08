@@ -25,7 +25,7 @@ type TierConfig = {
   tier: PlanTier;
   name: string;
   description: string;
-  studentLimit: number;
+  studentLimit: number | null;
   monthlyPricePaise: number;
   annualPricePaise: number;
   setupFeePaise: number;
@@ -73,7 +73,7 @@ function PlanPage() {
     );
   }
 
-  const currentPlan = subscription?.plan ?? "starter";
+  const currentPlan = subscription?.plan ?? "free";
   const expiryDate = subscription?.expiry_date
     ? new Date(subscription.expiry_date)
     : null;
@@ -227,7 +227,9 @@ function PricingCard({
   const priceSavings =
     cycle === "annual" ? Math.floor((monthlyCost - annualCost) / 100) : 0;
 
-  const isCurrent = tier.tier === currentPlan;
+  const isCurrent =
+    tier.tier === currentPlan ||
+    (tier.tier === "large" && currentPlan === "pro");
 
   return (
     <Card className={isCurrent ? "border-primary shadow-lg" : ""}>
@@ -281,7 +283,7 @@ function PricingCard({
           <li className="flex items-start gap-2">
             <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
             <span>
-              {tier.studentLimit === 2147483647
+              {tier.studentLimit === null
                 ? "Unlimited students"
                 : `Up to ${tier.studentLimit} students`}
             </span>

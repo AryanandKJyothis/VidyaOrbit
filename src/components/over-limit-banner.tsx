@@ -1,9 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, Sparkles } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useSubscription, PLANS } from "@/hooks/use-subscription";
-import { BILLING_DISABLED } from "@/lib/feature-flags";
 
 /**
  * Banner shown when an institute's student count exceeds the plan limit
@@ -35,16 +34,9 @@ export function OverLimitBanner() {
           </div>
         </div>
         <div className="flex shrink-0 gap-2">
-          <Button asChild size="sm" variant="outline">
-            <Link to="/plan">View plan</Link>
+          <Button asChild size="sm">
+            <Link to="/plan">View &amp; Upgrade</Link>
           </Button>
-          {!BILLING_DISABLED && (
-            <Button asChild size="sm">
-              <Link to="/billing">
-                <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Upgrade
-              </Link>
-            </Button>
-          )}
         </div>
       </CardContent>
     </Card>

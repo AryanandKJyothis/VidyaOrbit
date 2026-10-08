@@ -34,12 +34,35 @@ export type TierConfig = {
   description: string;
 };
 
-// Helper to get env var with fallback
+// Helper to get env var with fallback and validation
 function getEnvInt(key: string, fallback: number): number {
   const val = process.env[key];
   if (!val) return fallback;
   const parsed = parseInt(val, 10);
-  return isNaN(parsed) ? fallback : parsed;
+  
+  // Validate: must be a positive integer >= 100 paise for prices, >= 0 for setup
+  if (isNaN(parsed)) {
+    console.warn(
+      `[billing-pricing] Invalid ${key}: "${val}" is not a number, using fallback ${fallback}`,
+    );
+    return fallback;
+  }
+  
+  if (key.includes("SETUP") && parsed < 0) {
+    console.warn(
+      `[billing-pricing] Invalid ${key}: ${parsed} is negative, using fallback ${fallback}`,
+    );
+    return fallback;
+  }
+  
+  if (!key.includes("SETUP") && parsed < 100) {
+    console.warn(
+      `[billing-pricing] Invalid ${key}: ${parsed} is less than 100 paise, using fallback ${fallback}`,
+    );
+    return fallback;
+  }
+  
+  return parsed;
 }
 
 export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
@@ -66,10 +89,7 @@ export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
   },
   large: {
     tier: "large",
-    student_limit: getEnvInt(
-      "BILLING_LARGE_STUDENT_LIMIT",
-      Number.MAX_SAFE_INTEGER,
-    ), // Unlimited
+    student_limit: getEnvInt("BILLING_LARGE_STUDENT_LIMIT", 2147483647), // Unlimited (use null in API)
     setup_fee_paise: getEnvInt("BILLING_LARGE_SETUP_FEE_PAISE", 500000), // ₹5,000 (monthly only)
     monthly_price_paise: getEnvInt("BILLING_LARGE_MONTHLY_PRICE_PAISE", 249900), // ₹2,499
     annual_price_paise: getEnvInt("BILLING_LARGE_ANNUAL_PRICE_PAISE", 2500000), // ₹25,000

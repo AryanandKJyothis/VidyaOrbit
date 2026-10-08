@@ -37,7 +37,7 @@ export function RenewalBanner({
     );
   }
 
-  if (daysLeft <= 7 && daysLeft > 0) {
+  if (daysLeft <= 7 && daysLeft >= 0) {
     return (
       <Alert className="mb-6 border-amber-500/50 bg-amber-500/10">
         <Clock className="h-4 w-4 text-amber-600" />

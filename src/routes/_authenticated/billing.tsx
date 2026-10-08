@@ -22,7 +22,6 @@ import { cn } from "@/lib/utils";
 import { getContactConfig } from "@/lib/contact-config";
 
 import { redirect } from "@tanstack/react-router";
-import { BILLING_DISABLED } from "@/lib/feature-flags";
 
 export const Route = createFileRoute("/_authenticated/billing")({
   beforeLoad: () => {

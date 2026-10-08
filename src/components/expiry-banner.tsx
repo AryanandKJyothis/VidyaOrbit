@@ -4,7 +4,6 @@ import { AlertTriangle, Clock, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useSubscription } from "@/hooks/use-subscription";
-import { BILLING_DISABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 
 function todayKey() {
@@ -77,7 +76,7 @@ export function ExpiryBanner() {
             size="sm"
             variant={severity === "danger" ? "default" : "outline"}
           >
-            <Link to={BILLING_DISABLED ? "/plan" : "/billing"}>
+            <Link to="/plan">
               {expired ? "Renew now" : "Renew"}
             </Link>
           </Button>
