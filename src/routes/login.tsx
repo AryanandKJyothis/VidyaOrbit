@@ -19,7 +19,7 @@ import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
 
 const searchSchema = z.object({
   invite: z.string().min(10).max(200).optional(),
-  mode: z.enum(["login", "signup"]).optional(),
+  mode: z.enum(["login", "signup"]).optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/login")({

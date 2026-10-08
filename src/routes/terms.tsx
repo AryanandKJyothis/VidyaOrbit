@@ -28,7 +28,7 @@ function TermsPage() {
         Terms of Service
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Last updated: 26 May 2026
+        Last updated: 8 October 2026
       </p>
 
       <div className="prose prose-sm mt-8 max-w-none space-y-6 text-foreground">
@@ -44,10 +44,13 @@ function TermsPage() {
           <p>
             Vidya Orbit is a software platform for coaching centres and tuition
             institutes to manage students, batches, attendance, fees and
-            receipts. A free tier is available with usage limits. Paid plans
-            (Free, Starter, Growth and Large) unlock higher student limits and
-            additional features. Current pricing is shown on the in-app Billing
-            page and may change with reasonable notice.
+            receipts. We offer a Free plan and paid plans (Starter, Growth and
+            Large). Paid plans unlock higher student limits and additional
+            features. Current pricing is shown on the{" "}
+            <Link to="/pricing" className="text-primary hover:underline">
+              pricing page
+            </Link>{" "}
+            and may change with reasonable notice.
           </p>
         </Section>
 
@@ -89,7 +92,8 @@ function TermsPage() {
             already paid are non-refundable except where required by law. If
             your subscription lapses or is cancelled, your account automatically
             reverts to the Free tier and data beyond the Free-tier limits
-            remains stored but read-only until you upgrade again.
+            remains stored and fully accessible; adding new students is paused
+            until you upgrade again.
           </p>
         </Section>
 

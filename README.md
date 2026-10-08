@@ -9,7 +9,7 @@ React, TanStack Start, Tailwind, Supabase. Hosting is the Vercel project `vidya-
 ## Local setup
 
 1. Install [Bun](https://bun.sh).
-2. Copy `env.example` to `.env` and fill in the Supabase URL and publishable key. Never commit `.env`.
+2. Copy `env.example` to `.env` and fill in the Supabase URL and publishable key. Never commit `.env`. Contact phone/WhatsApp/email default to the founder’s number and email; leave the `VITE_CONTACT_*` lines commented unless you need to override or hide them (an empty value hides that channel).
 3. `SUPABASE_SERVICE_ROLE_KEY` is server-only. Do not prefix it with `VITE_`.
 4. `bun install`
 5. `bun run dev`

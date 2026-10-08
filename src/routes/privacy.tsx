@@ -27,7 +27,7 @@ function PrivacyPage() {
         Privacy Policy
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Last updated: 26 May 2026
+        Last updated: 8 October 2026
       </p>
 
       <div className="mt-8 space-y-6">
