@@ -10,7 +10,6 @@ import {
   Download,
   ChevronDown,
 } from "lucide-react";
-import { RoutePermissionGate } from "@/components/route-permission-gate";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,14 +42,6 @@ export const Route = createFileRoute("/_authenticated/fees")({
 });
 
 function FeesPage() {
-  return (
-    <RoutePermissionGate resource="fees" level="read">
-      <FeesPageContent />
-    </RoutePermissionGate>
-  );
-}
-
-function FeesPageContent() {
   const students = useStudents();
   const batches = useBatches();
   const payments = usePayments();

@@ -29,7 +29,6 @@ export type PreparedImportRow = {
   full_name: string;
   phone: string | null;
   guardian_name: string | null;
-  guardian_phone: string | null;
   fee_total: number;
   joining_date: string | null;
   batch_id: string | null;
@@ -45,19 +44,12 @@ export type PreparedImportRow = {
 // ── Field mapping ───────────────────────────────────────────────────
 
 export type ImportField =
-  | "name"
-  | "phone"
-  | "guardian"
-  | "guardian_phone"
-  | "batch"
-  | "fee"
-  | "joining_date";
+  "name" | "phone" | "guardian" | "batch" | "fee" | "joining_date";
 
 export const FIELD_LABELS: Record<ImportField, string> = {
   name: "Name",
   phone: "Phone",
   guardian: "Guardian",
-  guardian_phone: "Guardian phone",
   batch: "Batch",
   fee: "Fee total",
   joining_date: "Joining date",
@@ -105,20 +97,6 @@ export const FIELD_ALIASES: Record<ImportField, string[]> = {
     "rakshakartha",
     "achan",
     "amma",
-  ],
-  guardian_phone: [
-    "guardian phone",
-    "guardian mobile",
-    "guardian number",
-    "parent phone",
-    "parent mobile",
-    "parent number",
-    "father phone",
-    "father mobile",
-    "mother phone",
-    "mother mobile",
-    "guardian contact",
-    "parent contact",
   ],
   batch: ["batch", "batch name", "class", "section", "course", "grade"],
   fee: [
@@ -372,8 +350,6 @@ export function prepareStudentImportRows(
     const nameRaw = String(pick(r, m.name) ?? "").trim();
     const phoneRaw = String(pick(r, m.phone) ?? "").trim();
     const guardian = String(pick(r, m.guardian) ?? "").trim() || null;
-    const guardianPhoneRaw =
-      String(pick(r, m.guardian_phone) ?? "").trim() || null;
     const feeCell = pick(r, m.fee);
     const feeNum =
       feeCell === "" || feeCell == null
@@ -392,10 +368,6 @@ export function prepareStudentImportRows(
     let phone: string | null = phoneRaw || null;
     if (phone && !IMPORT_PHONE_REGEX.test(phone)) phone = null;
 
-    let guardianPhone: string | null = guardianPhoneRaw;
-    if (guardianPhone && !IMPORT_PHONE_REGEX.test(guardianPhone))
-      guardianPhone = null;
-
     let issue: ImportRowIssue = "none";
     if (!nameRaw || nameRaw.length > 120) issue = "invalid_name";
     else if (phoneRaw && !IMPORT_PHONE_REGEX.test(phoneRaw))
@@ -411,7 +383,6 @@ export function prepareStudentImportRows(
           full_name: nameRaw.slice(0, 120),
           phone,
           guardian_name: guardian,
-          guardian_phone: guardianPhone,
           fee_total: feeNum,
           joining_date: join,
           batch_id: batchId,
@@ -441,7 +412,6 @@ export function prepareStudentImportRows(
       full_name: nameRaw ? nameRaw.slice(0, 120) : "",
       phone,
       guardian_name: guardian,
-      guardian_phone: guardianPhone,
       fee_total: feeNum,
       joining_date: join,
       batch_id: batchId,

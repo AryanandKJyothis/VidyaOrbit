@@ -16,12 +16,9 @@ function greetingFor(date = new Date()) {
   return "Good night";
 }
 
-function displayNameFor(
-  instituteName: string | null | undefined,
-  userFullName: string | null | undefined,
-): string {
-  if (instituteName && instituteName.trim()) return instituteName.trim();
-  if (userFullName) return userFullName.trim().split(/\s+/)[0];
+function firstName(full?: string | null, email?: string | null) {
+  if (full) return full.trim().split(/\s+/)[0];
+  if (email) return email.split("@")[0];
   return "there";
 }
 
@@ -37,9 +34,9 @@ export function DashboardHero({
   duesWeekAmount: number;
 }) {
   const { user } = useAuth();
-  const displayName = displayNameFor(
-    instituteName,
+  const displayName = firstName(
     (user?.user_metadata?.full_name as string | undefined) ?? null,
+    user?.email,
   );
   const today = useMemo(() => new Date(), []);
   const greeting = greetingFor(today);
@@ -66,7 +63,11 @@ export function DashboardHero({
           </h1>
           {instituteName && (
             <p className="mt-1 text-sm text-muted-foreground">
-              Here's what's happening today.
+              Here's what's happening at{" "}
+              <span className="font-medium text-foreground">
+                {instituteName}
+              </span>{" "}
+              today.
             </p>
           )}
 

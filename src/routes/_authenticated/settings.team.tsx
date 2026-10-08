@@ -13,7 +13,6 @@ import {
   MessageCircle,
   Mail,
 } from "lucide-react";
-import { RoutePermissionGate } from "@/components/route-permission-gate";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -130,14 +129,6 @@ function lastActiveLabel(iso: string | null) {
 }
 
 function TeamPage() {
-  return (
-    <RoutePermissionGate resource="settings" level="read">
-      <TeamPageContent />
-    </RoutePermissionGate>
-  );
-}
-
-function TeamPageContent() {
   const { active } = useActiveWorkspace();
   const ownerId = active?.ownerId ?? "";
 
