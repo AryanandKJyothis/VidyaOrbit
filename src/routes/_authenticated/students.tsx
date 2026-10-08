@@ -455,7 +455,7 @@ function StudentsList() {
                             </>
                           )}
                           <td className="px-4 py-3">
-                            {overdue ? (
+                            {canViewFees && overdue ? (
                               <Badge variant="destructive">Overdue</Badge>
                             ) : s.status === "active" ? (
                               <Badge variant="secondary">Active</Badge>
@@ -515,7 +515,7 @@ function StudentsList() {
                             <span className="truncate font-medium">
                               {s.full_name}
                             </span>
-                            {overdue ? (
+                            {canViewFees && overdue ? (
                               <Badge
                                 variant="destructive"
                                 className="text-[10px] px-1.5 py-0"

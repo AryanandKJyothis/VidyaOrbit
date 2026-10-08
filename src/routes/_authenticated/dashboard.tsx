@@ -364,10 +364,10 @@ function Dashboard() {
         )}
       </div>
 
-      {/* Today's batches + Collection chart */}
+      {/* Fee collection chart */}
       {canViewFees && (
-        <div className="mt-6 sm:mt-8 grid gap-6 lg:grid-cols-3 auto-rows-max">
-          <Card className="card-premium lg:col-span-2">
+        <div className="mt-6 sm:mt-8">
+          <Card className="card-premium">
             <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4">
               <div className="min-w-0">
                 <CardTitle className="text-base sm:text-lg">
@@ -469,8 +469,11 @@ function Dashboard() {
             )}
           </CardContent>
         </Card>
+      </div>
+      )}
 
-        {/* Today's batches */}
+      {/* Today's batches */}
+      <div className="mt-6 sm:mt-8">
         <Card className="card-premium">
           <CardHeader className="flex flex-row items-center justify-between pb-4">
             <div className="min-w-0">
@@ -540,7 +543,6 @@ function Dashboard() {
           </CardContent>
         </Card>
       </div>
-      )}
 
       {/* Overdue + Recent payments */}
       {canViewFees && (

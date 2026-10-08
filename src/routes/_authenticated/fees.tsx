@@ -61,29 +61,62 @@ function FeesPageContent() {
   const [batchFilter, setBatchFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const batchMap = useMemo(() => {
-    const m: Record<string, string> = {};
-    for (const b of batches.data ?? []) m[b.id] = b.name;
-    return m;
-  }, [batches.data]);
-
-  const studentTotalPaid = useMemo(() => {
+  const paidByStudent = useMemo(() => {
     const m: Record<string, number> = {};
     for (const p of payments.data ?? [])
       m[p.student_id] = (m[p.student_id] ?? 0) + Number(p.amount);
     return m;
   }, [payments.data]);
 
-  const studentsWithDues = useMemo(() => {
+  const batchById = useMemo(
+    () => Object.fromEntries((batches.data ?? []).map((b) => [b.id, b.name])),
+    [batches.data],
+  );
+
+  const rows = useMemo(() => {
     return (students.data ?? [])
       .filter((s) => s.status !== "archived")
       .map((s) => {
-        const feeTotal = Number(s.fee_total ?? 0);
-        const paid = studentTotalPaid[s.id] ?? 0;
-        const balance = feeTotal - paid;
-        return { ...s, feeTotal, paid, balance };
+        const paid = paidByStudent[s.id] ?? 0;
+        const balance = Math.max(0, Number(s.fee_total) - paid);
+        const overdue = !!(
+          s.fee_due_date &&
+          new Date(s.fee_due_date) < new Date() &&
+          balance > 0
+        );
+        return { s, paid, balance, overdue };
       });
-  }, [students.data, studentTotalPaid]);
+  }, [students.data, paidByStudent]);
+
+  const totals = useMemo(() => {
+    return rows.reduce(
+      (acc, r) => {
+        acc.totalFee += Number(r.s.fee_total);
+        acc.paid += r.paid;
+        acc.due += r.balance;
+        if (r.overdue) acc.overdue += r.balance;
+        return acc;
+      },
+      { totalFee: 0, paid: 0, due: 0, overdue: 0 },
+    );
+  }, [rows]);
+
+  const filtered = useMemo(() => {
+    return rows.filter(({ s, balance, overdue }) => {
+      if (q && !s.full_name.toLowerCase().includes(q.toLowerCase()))
+        return false;
+      if (batchFilter !== "all" && s.batch_id !== batchFilter) return false;
+      if (statusFilter === "paid" && balance > 0) return false;
+      if (statusFilter === "pending" && balance === 0) return false;
+      if (statusFilter === "overdue" && !overdue) return false;
+      return true;
+    });
+  }, [rows, q, batchFilter, statusFilter]);
+
+  const studentById = useMemo(
+    () => Object.fromEntries((students.data ?? []).map((s) => [s.id, s])),
+    [students.data],
+  );
 
   const loading = students.isLoading || batches.isLoading || payments.isLoading;
 
@@ -104,56 +137,6 @@ function FeesPageContent() {
       </div>
     );
   }
-
-  const paidByStudent = useMemo(() => {
-    const m: Record<string, number> = {};
-    for (const p of payments.data ?? [])
-      m[p.student_id] = (m[p.student_id] ?? 0) + Number(p.amount);
-    return m;
-  }, [payments.data]);
-
-  const batchById = useMemo(
-    () => Object.fromEntries((batches.data ?? []).map((b) => [b.id, b.name])),
-    [batches.data],
-  );
-
-  const rows = (students.data ?? [])
-    .filter((s) => s.status !== "archived")
-    .map((s) => {
-      const paid = paidByStudent[s.id] ?? 0;
-      const balance = Math.max(0, Number(s.fee_total) - paid);
-      const overdue = !!(
-        s.fee_due_date &&
-        new Date(s.fee_due_date) < new Date() &&
-        balance > 0
-      );
-      return { s, paid, balance, overdue };
-    });
-
-  const totals = rows.reduce(
-    (acc, r) => {
-      acc.totalFee += Number(r.s.fee_total);
-      acc.paid += r.paid;
-      acc.due += r.balance;
-      if (r.overdue) acc.overdue += r.balance;
-      return acc;
-    },
-    { totalFee: 0, paid: 0, due: 0, overdue: 0 },
-  );
-
-  const filtered = rows.filter(({ s, balance, overdue }) => {
-    if (q && !s.full_name.toLowerCase().includes(q.toLowerCase())) return false;
-    if (batchFilter !== "all" && s.batch_id !== batchFilter) return false;
-    if (statusFilter === "paid" && balance > 0) return false;
-    if (statusFilter === "pending" && balance === 0) return false;
-    if (statusFilter === "overdue" && !overdue) return false;
-    return true;
-  });
-
-  const studentById = useMemo(
-    () => Object.fromEntries((students.data ?? []).map((s) => [s.id, s])),
-    [students.data],
-  );
 
   return (
     <div>

@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   LayoutDashboard,
@@ -89,6 +89,7 @@ const baseItems: NavItem[] = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const qc = useQueryClient();
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   // "Best-prefix" match: only the most specific item lights up. Avoids
   // `/settings/team` highlighting both Team and Settings simultaneously.
@@ -254,7 +255,11 @@ export function AppSidebar() {
               tooltip="Sign out"
               onClick={async () => {
                 const { error } = await supabase.auth.signOut();
-                if (error) toast.error("Could not sign out. Please try again.");
+                if (error) {
+                  toast.error("Could not sign out. Please try again.");
+                } else {
+                  qc.clear();
+                }
               }}
               className="group text-sidebar-foreground/80 hover:text-sidebar-foreground"
             >

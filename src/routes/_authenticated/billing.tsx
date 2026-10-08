@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Check, Loader2, CreditCard, MessageCircle, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
+import { RoutePermissionGate } from "@/components/route-permission-gate";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -146,11 +147,12 @@ function BillingPage() {
   }, [checkoutPending, syncSubscription]);
 
   return (
-    <div>
-      <PageHeader
-        title="Billing & plans"
-        description="Compare all Vidya plans. To upgrade, downgrade, or change your subscription, contact us directly on WhatsApp or email and we'll handle it for you."
-      />
+    <RoutePermissionGate resource="billing" level="read">
+      <div>
+        <PageHeader
+          title="Billing & plans"
+          description="Compare all Vidya plans. To upgrade, downgrade, or change your subscription, contact us directly on WhatsApp or email and we'll handle it for you."
+        />
 
       {sub.data && !sub.data.isOwner && (
         <Card className="mb-6 border-primary/30 bg-primary/5">
@@ -400,5 +402,6 @@ function BillingPage() {
         changes are handled by contacting support.
       </p>
     </div>
+    </RoutePermissionGate>
   );
 }

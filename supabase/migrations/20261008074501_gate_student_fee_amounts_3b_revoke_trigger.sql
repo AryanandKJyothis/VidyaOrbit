@@ -17,9 +17,21 @@ SECURITY DEFINER
 SET search_path TO 'public'
 AS $$
 BEGIN
-  -- If fee fields are being changed, check fees permission
-  IF (NEW.fee_total IS DISTINCT FROM OLD.fee_total) OR 
-     (NEW.fee_due_date IS DISTINCT FROM OLD.fee_due_date) THEN
+  -- Allow service_role and superuser writes (admin operations, background jobs, seeding)
+  IF auth.role() = 'service_role' OR current_user IN ('postgres', 'supabase_admin') THEN
+    RETURN NEW;
+  END IF;
+
+  -- On INSERT, only check if fee fields are being set to non-null values
+  IF TG_OP = 'INSERT' THEN
+    IF (NEW.fee_total IS NOT NULL OR NEW.fee_due_date IS NOT NULL) THEN
+      IF NOT public.has_resource_access(NEW.owner_id, auth.uid(), 'fees', true) THEN
+        RAISE EXCEPTION 'Unauthorized: fees:write permission required to set fee fields';
+      END IF;
+    END IF;
+  -- On UPDATE, check if fee fields are being changed
+  ELSIF (NEW.fee_total IS DISTINCT FROM OLD.fee_total) OR 
+        (NEW.fee_due_date IS DISTINCT FROM OLD.fee_due_date) THEN
     IF NOT public.has_resource_access(NEW.owner_id, auth.uid(), 'fees', true) THEN
       RAISE EXCEPTION 'Unauthorized: fees:write permission required to modify fee fields';
     END IF;

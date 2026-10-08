@@ -2,7 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { LockKeyhole } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useCan } from "@/hooks/use-active-workspace";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useCan, useActiveWorkspace } from "@/hooks/use-active-workspace";
 import type { Permissions } from "@/lib/workspace.functions";
 
 export function RoutePermissionGate({
@@ -14,7 +15,17 @@ export function RoutePermissionGate({
   level?: "read" | "write";
   children: React.ReactNode;
 }) {
+  const { loading } = useActiveWorkspace();
   const canAccess = useCan(resource, level);
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-12 w-64" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
 
   if (!canAccess) {
     return (
