@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, formatDistanceToNowStrict } from "date-fns";
@@ -57,12 +57,43 @@ import {
 } from "@/lib/admin-subscriptions.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/subscriptions")({
-  beforeLoad: async () => {
-    const res = await checkAdmin();
-    if (!res.admin) throw redirect({ to: "/dashboard" });
-  },
+  // Supabase session lives in the browser. Skip SSR so a direct load cannot
+  // call JWT-backed admin checks without a session (which previously 500'd).
+  ssr: false,
   component: AdminSubscriptionsPage,
 });
+
+function AdminSubscriptionsPage() {
+  const checkAdminFn = useServerFn(checkAdmin);
+  const admin = useQuery({
+    queryKey: ["admin-check"],
+    queryFn: async () => {
+      try {
+        return await checkAdminFn();
+      } catch {
+        // No JWT on the client yet (or an invalid one). Treat as not admin;
+        // `_authenticated` already sends signed-out visitors to /login.
+        return { admin: false };
+      }
+    },
+    staleTime: 60_000,
+    retry: false,
+  });
+
+  if (admin.isLoading) {
+    return (
+      <div className="p-8 text-center text-sm text-muted-foreground">
+        Loading…
+      </div>
+    );
+  }
+
+  if (!admin.data?.admin) {
+    return <Navigate to="/dashboard" />;
+  }
+
+  return <AdminSubscriptionsManager />;
+}
 
 type Row = Awaited<ReturnType<typeof listInstitutes>>[number];
 type Filter =
@@ -80,7 +111,7 @@ type Sort =
   | "recently_active"
   | "name";
 
-function AdminSubscriptionsPage() {
+function AdminSubscriptionsManager() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<Sort>("expiring");
