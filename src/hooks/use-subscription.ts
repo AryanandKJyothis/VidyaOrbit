@@ -132,9 +132,7 @@ export function useSubscription() {
           expired: h.expired,
           trial: false,
           setup_fee_paid: Boolean(
-            h.setup_fee_paid ||
-              h.raw_plan !== "free" ||
-              !!h.expiry_date,
+            h.setup_fee_paid || h.raw_plan !== "free" || !!h.expiry_date,
           ),
           isOwner,
         };

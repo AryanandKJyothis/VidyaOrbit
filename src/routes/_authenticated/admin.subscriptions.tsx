@@ -960,8 +960,8 @@ function EditDialog({
                 <div>
                   <Label htmlFor="setup-fee-paid">Setup fee already paid</Label>
                   <p className="text-xs text-muted-foreground">
-                    Invoice and previous online payments. When on, checkout
-                    will not charge ₹5,000 setup again.
+                    Invoice and previous online payments. When on, checkout will
+                    not charge ₹5,000 setup again.
                   </p>
                 </div>
                 <Switch

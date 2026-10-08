@@ -78,11 +78,9 @@ export async function activateOrderOnce(
       | "amount_or_currency_mismatch"
       | "tier_change_needs_review"
       | "rpc_error";
-    return {
-      success: false,
-      reason,
-      needsReview: result.reason === "tier_change_needs_review",
-    };
+    return result.reason === "tier_change_needs_review"
+      ? { success: false, reason, needsReview: true }
+      : { success: false, reason };
   }
 
   return {

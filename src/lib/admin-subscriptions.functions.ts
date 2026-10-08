@@ -245,7 +245,9 @@ export const updateSubscription = createServerFn({ method: "POST" })
 export const dismissBillingReview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
-    z.object({ owner_id: z.string().uuid(), order_id: z.string().uuid() }).parse(i),
+    z
+      .object({ owner_id: z.string().uuid(), order_id: z.string().uuid() })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);

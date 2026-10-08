@@ -90,10 +90,7 @@ function loadRazorpayScript(): Promise<void> {
   return checkoutScriptPromise;
 }
 
-function planIsActiveForTier(
-  data: unknown,
-  expectedPlan: string,
-): boolean {
+function planIsActiveForTier(data: unknown, expectedPlan: string): boolean {
   if (!data || typeof data !== "object") return false;
   const row = data as {
     plan?: string;
@@ -253,10 +250,7 @@ export function RazorpayCheckout({
               toast.info(
                 "Payment received, processing. We'll confirm shortly.",
               );
-              void pollSubscriptionRefresh(
-                onSuccess,
-                planCodeForTier(tier),
-              );
+              void pollSubscriptionRefresh(onSuccess, planCodeForTier(tier));
             } else {
               toast.success("Your plan is now active");
               await onSuccess?.();
