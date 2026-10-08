@@ -53,21 +53,6 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
           return Response.json({ error: "MISSING_EVENT_ID" }, { status: 400 });
         }
 
-        // Check for duplicate event_id (dedupe on unique x-razorpay-event-id)
-        const { data: existing } = await supabaseAdmin
-          .from("razorpay_webhook_deliveries")
-          .select("id, handled")
-          .eq("delivery_hash", eventId)
-          .maybeSingle();
-
-        if (existing?.handled) {
-          return Response.json({
-            ok: true,
-            ignored: true,
-            reason: "already_handled",
-          });
-        }
-
         let envelope: RzEnvelope;
         try {
           envelope = JSON.parse(rawBody) as RzEnvelope;
@@ -78,112 +63,171 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
         const eventName = envelope.event ?? "";
         const payload = envelope.payload ?? {};
 
-        // Insert or update delivery record
-        const deliveryRecord = {
-          delivery_hash: eventId,
-          event_type: eventName,
-          subscription_id: null as string | null,
-          owner_id: null as string | null,
-          signature: sig ?? null,
-          raw_body: envelope,
-          handled: false,
-          received_at: new Date().toISOString(),
+        // Extract payment entity (same location for both payment.captured and order.paid)
+        const paymentEntity = payload.payment?.entity;
+        const orderId =
+          paymentEntity?.order_id ?? payload.order?.entity?.id ?? null;
+        const paymentId = paymentEntity?.id ?? null;
+
+        // Store minimal data (no PII)
+        const minimalPayload = {
+          event: eventName,
+          payment: paymentEntity
+            ? {
+                id: paymentEntity.id,
+                order_id: paymentEntity.order_id,
+                amount: paymentEntity.amount,
+                currency: paymentEntity.currency,
+                status: paymentEntity.status,
+                method: paymentEntity.method,
+              }
+            : null,
+          order: payload.order?.entity?.id
+            ? { id: payload.order.entity.id }
+            : null,
         };
 
-        // Extract order_id from payload for payment.captured / order.paid
-        let orderId: string | null = null;
+        // Upsert delivery record with ignoreDuplicates
+        const { error: upsertErr } = await supabaseAdmin
+          .from("razorpay_webhook_deliveries")
+          .upsert(
+            {
+              delivery_hash: eventId,
+              event_type: eventName,
+              subscription_id: null,
+              owner_id: normalizeOwner(paymentEntity?.notes?.owner_id),
+              signature: sig ?? null,
+              raw_body: minimalPayload,
+              handled: false,
+            },
+            {
+              onConflict: "delivery_hash",
+              ignoreDuplicates: true,
+            },
+          );
 
-        if (eventName === "payment.captured" && payload.payment) {
-          const paymentEntity = (payload.payment as any).entity;
-          orderId = paymentEntity?.order_id ?? null;
-          deliveryRecord.owner_id = normalizeOwner(
-            paymentEntity?.notes?.owner_id,
-          );
-        } else if (eventName === "order.paid" && payload.order) {
-          const orderEntity = (payload.order as any).entity;
-          orderId = orderEntity?.id ?? null;
-          deliveryRecord.owner_id = normalizeOwner(
-            orderEntity?.notes?.owner_id,
-          );
+        if (upsertErr) {
+          console.error("[Razorpay webhook] Upsert delivery failed:", upsertErr);
+          return Response.json({ error: "DB_UPSERT_FAILED" }, { status: 500 });
         }
 
-        // Insert delivery record
-        const { error: insErr } = await supabaseAdmin
+        // Check if already handled
+        const { data: delivery } = await supabaseAdmin
           .from("razorpay_webhook_deliveries")
-          .insert({
-            delivery_hash: eventId,
-            event_type: eventName,
-            subscription_id: null,
-            owner_id: deliveryRecord.owner_id,
-            signature: sig ?? null,
-            raw_body: envelope,
-            handled: false,
-          });
+          .select("handled")
+          .eq("delivery_hash", eventId)
+          .single();
 
-        if (insErr) {
-          if (insErr.code === "23505") {
-            // Duplicate event_id
-            return Response.json({
-              ok: true,
-              ignored: true,
-              reason: "concurrent_duplicate",
-            });
-          }
-          console.error("[Razorpay webhook] Insert delivery failed:", insErr);
-          return Response.json({ error: "DB_INSERT_FAILED" }, { status: 500 });
+        if (delivery?.handled) {
+          console.log("[Razorpay webhook] Event already handled:", eventId);
+          return Response.json({
+            ok: true,
+            ignored: true,
+            reason: "already_handled",
+          });
         }
 
         // Process event
         try {
           if (eventName === "payment.captured" || eventName === "order.paid") {
-            if (!orderId) {
-              console.warn("[Razorpay webhook] No order_id in payload");
+            if (!paymentEntity) {
+              console.warn(
+                "[Razorpay webhook] No payment entity in payload:",
+                eventName,
+              );
               return Response.json({ ok: true, ignored: true });
             }
 
-            // Get payment_id for activation
-            let paymentId: string | null = null;
-            if (eventName === "payment.captured" && payload.payment) {
-              paymentId =
-                (payload.payment as { entity?: { id?: string } }).entity?.id ??
-                null;
-            } else if (eventName === "order.paid" && payload.order) {
-              // For order.paid, fetch the payment from the order
-              const orderEntity = (
-                payload.order as {
-                  entity?: { payment_id?: string; first_payment_id?: string };
-                }
-              ).entity;
-              paymentId =
-                orderEntity?.payment_id ??
-                orderEntity?.first_payment_id ??
-                null;
+            if (!orderId || !paymentId) {
+              console.warn(
+                "[Razorpay webhook] Missing order_id or payment_id:",
+                { orderId, paymentId },
+              );
+              return Response.json({ ok: true, ignored: true });
             }
 
-            if (!paymentId) {
-              console.warn("[Razorpay webhook] No payment_id in payload");
-              return Response.json({ ok: true, ignored: true });
+            // Only activate when status is captured
+            if (paymentEntity.status !== "captured") {
+              console.log(
+                `[Razorpay webhook] Payment status ${paymentEntity.status}, not activating`,
+              );
+              return Response.json({
+                ok: true,
+                ignored: true,
+                reason: "not_captured",
+              });
+            }
+
+            // Find the order by razorpay_order_id
+            const { data: order } = await supabaseAdmin
+              .from("billing_orders")
+              .select("id, amount_paise, currency")
+              .eq("razorpay_order_id", orderId)
+              .maybeSingle();
+
+            if (!order) {
+              console.log(
+                "[Razorpay webhook] Order not found (may be from another environment):",
+                orderId,
+              );
+              return Response.json({
+                ok: true,
+                ignored: true,
+                reason: "order_not_found",
+              });
+            }
+
+            // Check amount and currency match
+            if (
+              paymentEntity.amount !== order.amount_paise ||
+              paymentEntity.currency.toUpperCase() !==
+                order.currency.toUpperCase()
+            ) {
+              console.error(
+                "[Razorpay webhook] Amount or currency mismatch:",
+                {
+                  expected: {
+                    amount: order.amount_paise,
+                    currency: order.currency,
+                  },
+                  received: {
+                    amount: paymentEntity.amount,
+                    currency: paymentEntity.currency,
+                  },
+                },
+              );
+              // Return 200 but log as alert (don't retry)
+              return Response.json({
+                ok: true,
+                ignored: true,
+                reason: "amount_or_currency_mismatch",
+              });
             }
 
             // Activate order idempotently
             const activation = await activateOrderOnce(
               supabaseAdmin,
-              orderId,
+              order.id,
               paymentId,
+              paymentEntity.amount,
+              paymentEntity.currency,
             );
 
             if (
               !activation.success &&
               activation.reason !== "already_activated"
             ) {
+              // Throw to trigger retry (500)
               throw new Error(`Activation failed: ${activation.reason}`);
             }
 
             console.log(
               `[Razorpay webhook] ${activation.success ? "Activated" : "Already activated"} order ${orderId}`,
             );
+          } else {
+            // Ignore other events
+            console.log("[Razorpay webhook] Ignoring event:", eventName);
           }
-          // Ignore other events (legacy subscription events are deprecated)
         } catch (e) {
           console.error("[Razorpay webhook] Handler error:", e);
 
@@ -191,7 +235,7 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
           await supabaseAdmin
             .from("razorpay_webhook_deliveries")
             .update({ error: String(e) })
-            .eq("event_type", eventId);
+            .eq("delivery_hash", eventId);
 
           return Response.json({ error: "PROCESSING_FAILED" }, { status: 500 });
         }
@@ -200,7 +244,7 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
         await supabaseAdmin
           .from("razorpay_webhook_deliveries")
           .update({ handled: true, handled_at: new Date().toISOString() })
-          .eq("event_type", eventId);
+          .eq("delivery_hash", eventId);
 
         return Response.json({ ok: true });
       },
@@ -211,10 +255,29 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
 type RzEnvelope = {
   event?: string;
   payload?: {
-    payment?: { entity?: any };
-    order?: { entity?: any };
-    [key: string]: any;
+    payment?: { entity?: PaymentEntity };
+    order?: { entity?: OrderEntity };
+    [key: string]: unknown;
   };
+};
+
+type PaymentEntity = {
+  id: string;
+  order_id?: string;
+  amount: number;
+  currency: string;
+  status: string;
+  method?: string;
+  notes?: {
+    owner_id?: unknown;
+    [key: string]: unknown;
+  };
+};
+
+type OrderEntity = {
+  id: string;
+  payment_id?: string;
+  first_payment_id?: string;
 };
 
 function normalizeOwner(v: unknown): string | null {

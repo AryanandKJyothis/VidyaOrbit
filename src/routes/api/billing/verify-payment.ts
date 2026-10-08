@@ -71,7 +71,20 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
         const userId = authResult.userId;
 
         // Parse and validate body
-        const rawBody = await request.json();
+        let rawBody: unknown;
+        try {
+          rawBody = await request.json();
+        } catch {
+          return Response.json(
+            {
+              ok: false,
+              code: "INVALID_JSON",
+              message: "Malformed JSON in request body.",
+            },
+            { status: 400 },
+          );
+        }
+
         const parsed = bodySchema.safeParse(rawBody);
 
         if (!parsed.success) {
@@ -131,7 +144,7 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
 
         // Fetch payment from Razorpay API to validate amount & currency
         const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
-        let payment: any;
+        let payment: Razorpay.Payments.RazorpayPayment;
 
         try {
           payment = await rzp.payments.fetch(razorpay_payment_id);
@@ -147,8 +160,38 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
           );
         }
 
-        // Validate payment matches order
-        if (payment.status !== "captured" && payment.status !== "authorized") {
+        // Defense in depth: verify payment.order_id matches
+        if (payment.order_id !== razorpay_order_id) {
+          console.error(
+            `[verify-payment] Order ID mismatch: expected ${razorpay_order_id}, got ${payment.order_id}`,
+          );
+          return Response.json(
+            {
+              ok: false,
+              code: "ORDER_ID_MISMATCH",
+              message: "Payment order ID does not match.",
+            },
+            { status: 400 },
+          );
+        }
+
+        // Only activate when status is 'captured'
+        if (payment.status === "authorized") {
+          console.log(
+            "[verify-payment] Payment authorized but not captured, returning pending",
+          );
+          return Response.json(
+            {
+              ok: true,
+              status: "pending",
+              message:
+                "Payment authorized. Activation will complete when webhook confirms capture.",
+            },
+            { status: 200 },
+          );
+        }
+
+        if (payment.status !== "captured") {
           console.error(
             "[verify-payment] Payment not captured:",
             payment.status,
@@ -191,11 +234,13 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
           );
         }
 
-        // Activate order idempotently
+        // Activate order idempotently with fetched payment details
         const activation = await activateOrderOnce(
           supabaseAdmin,
-          razorpay_order_id,
+          order.id,
           razorpay_payment_id,
+          payment.amount,
+          payment.currency,
         );
 
         if (!activation.success) {
