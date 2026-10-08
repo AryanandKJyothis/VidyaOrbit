@@ -5,7 +5,6 @@ import { format } from "date-fns";
 import { ArrowRight, CalendarCheck, Wallet, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { useCan } from "@/hooks/use-active-workspace";
 import { formatINR } from "@/lib/format";
 
 function greetingFor(date = new Date()) {
@@ -17,12 +16,9 @@ function greetingFor(date = new Date()) {
   return "Good night";
 }
 
-function displayNameFor(
-  instituteName: string | null | undefined,
-  userFullName: string | null | undefined,
-): string {
-  if (instituteName && instituteName.trim()) return instituteName.trim();
-  if (userFullName) return userFullName.trim().split(/\s+/)[0];
+function firstName(full?: string | null, email?: string | null) {
+  if (full) return full.trim().split(/\s+/)[0];
+  if (email) return email.split("@")[0];
   return "there";
 }
 
@@ -38,10 +34,9 @@ export function DashboardHero({
   duesWeekAmount: number;
 }) {
   const { user } = useAuth();
-  const canViewFees = useCan("fees", "read");
-  const displayName = displayNameFor(
-    instituteName,
+  const displayName = firstName(
     (user?.user_metadata?.full_name as string | undefined) ?? null,
+    user?.email,
   );
   const today = useMemo(() => new Date(), []);
   const greeting = greetingFor(today);
@@ -68,7 +63,11 @@ export function DashboardHero({
           </h1>
           {instituteName && (
             <p className="mt-1 text-sm text-muted-foreground">
-              Here's what's happening today.
+              Here's what's happening at{" "}
+              <span className="font-medium text-foreground">
+                {instituteName}
+              </span>{" "}
+              today.
             </p>
           )}
 
@@ -84,7 +83,7 @@ export function DashboardHero({
               {studentsActive} active{" "}
               {studentsActive === 1 ? "student" : "students"}
             </span>
-            {canViewFees && duesWeekAmount > 0 && (
+            {duesWeekAmount > 0 && (
               <span className="pill pill-danger">
                 <Wallet className="h-3 w-3" aria-hidden />
                 {formatINR(duesWeekAmount)} due this week
@@ -100,14 +99,12 @@ export function DashboardHero({
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </Button>
-          {canViewFees && (
-            <Button asChild size="sm" className="gap-1.5">
-              <Link to="/fees">
-                Record payment
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          )}
+          <Button asChild size="sm" className="gap-1.5">
+            <Link to="/fees">
+              Record payment
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
         </div>
       </div>
     </motion.section>

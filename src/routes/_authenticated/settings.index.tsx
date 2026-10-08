@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Save, Loader2, LogOut, Bell } from "lucide-react";
-import { RoutePermissionGate } from "@/components/route-permission-gate";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,14 +28,6 @@ export const Route = createFileRoute("/_authenticated/settings/")({
 });
 
 function SettingsPage() {
-  return (
-    <RoutePermissionGate resource="settings" level="read">
-      <SettingsPageContent />
-    </RoutePermissionGate>
-  );
-}
-
-function SettingsPageContent() {
   const { user } = useAuth();
   const inst = useInstitute();
   const mut = useUpdateInstitute();
