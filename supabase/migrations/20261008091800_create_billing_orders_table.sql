@@ -6,14 +6,15 @@ CREATE TABLE IF NOT EXISTS public.billing_orders (
   owner_id uuid NOT NULL,
   razorpay_order_id text UNIQUE NOT NULL,
   razorpay_payment_id text UNIQUE,
-  intent text NOT NULL, -- 'activate' or 'renew'
+  intent text NOT NULL,
   amount_paise integer NOT NULL CHECK (amount_paise > 0),
   currency text NOT NULL DEFAULT 'INR',
   status text NOT NULL DEFAULT 'created' CHECK (status IN ('created', 'paid', 'failed')),
-  line_items jsonb, -- e.g. [{"item": "setup_fee", "amount": 500000}, {"item": "annual_plan", "amount": 1000000}]
+  line_items jsonb,
   
   created_at timestamptz NOT NULL DEFAULT now(),
   paid_at timestamptz,
+  activated_at timestamptz,
   
   CONSTRAINT fk_billing_orders_owner 
     FOREIGN KEY (owner_id) 

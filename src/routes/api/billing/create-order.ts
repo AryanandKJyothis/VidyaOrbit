@@ -124,6 +124,38 @@ export const Route = createFileRoute("/api/billing/create-order")({
         const tier = body.tier as PlanTier;
         const cycle = body.cycle as BillingCycle;
 
+        // Check for comped or special accounts
+        const { data: sub } = await supabaseAdmin
+          .from("subscriptions")
+          .select("plan, plan_price, notes, expiry_date")
+          .eq("owner_id", userId)
+          .maybeSingle();
+
+        if (sub) {
+          if (sub.plan_price === 0) {
+            return Response.json(
+              {
+                ok: false,
+                code: "COMPED_ACCOUNT",
+                message:
+                  "Your account has a complimentary plan. Please contact support to make changes.",
+              },
+              { status: 400 },
+            );
+          }
+          if (sub.expiry_date === null) {
+            return Response.json(
+              {
+                ok: false,
+                code: "NO_EXPIRY_ACCOUNT",
+                message:
+                  "Your account has a special no-expiry plan. Please contact support to make changes.",
+              },
+              { status: 400 },
+            );
+          }
+        }
+
         // Check that the user is the workspace owner
         const { data: inst, error: instErr } = await supabaseAdmin
           .from("institutes")

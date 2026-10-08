@@ -457,7 +457,10 @@ function InstituteRow({ row, onOpen }: { row: Row; onOpen: () => void }) {
       <div className="col-span-6 md:col-span-3">
         <div className="flex items-center justify-between text-xs">
           <span className="tabular-nums">
-            {row.student_count} / {row.plan_limit}
+            {row.student_count} /{" "}
+            {row.plan_limit >= 2147483647 || row.plan_limit === null
+              ? "Unlimited"
+              : row.plan_limit}
           </span>
           <span className="text-muted-foreground">{usagePct}%</span>
         </div>

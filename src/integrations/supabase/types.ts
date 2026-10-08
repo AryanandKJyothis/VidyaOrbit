@@ -141,6 +141,7 @@ export type Database = {
       };
       billing_orders: {
         Row: {
+          activated_at: string | null;
           amount_paise: number;
           created_at: string;
           currency: string;
@@ -154,6 +155,7 @@ export type Database = {
           status: string;
         };
         Insert: {
+          activated_at?: string | null;
           amount_paise: number;
           created_at?: string;
           currency?: string;
@@ -167,6 +169,7 @@ export type Database = {
           status?: string;
         };
         Update: {
+          activated_at?: string | null;
           amount_paise?: number;
           created_at?: string;
           currency?: string;

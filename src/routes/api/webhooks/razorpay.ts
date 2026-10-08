@@ -4,97 +4,18 @@ import { getWebhookSecret } from "@/lib/razorpay-env";
 import { verifyRazorpayWebhookSignature } from "@/lib/razorpay-webhook-verify";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { allowRequest, clientAddress, tooManyRequests } from "@/lib/rate-limit";
+import { activateOrderOnce } from "@/lib/billing-activation";
 
 /**
- * Activate subscription idempotently from a paid order.
- * Used by both verify-payment and webhooks.
+ * POST /api/webhooks/razorpay
+ * Razorpay webhook handler for payment events.
+ * Backup activation path when verify-payment is not called.
  */
-async function activateFromOrder(
-  orderId: string,
-): Promise<{ ok: boolean; error?: string }> {
-  const { data: order } = await supabaseAdmin
-    .from("billing_orders")
-    .select("*")
-    .eq("razorpay_order_id", orderId)
-    .eq("status", "paid")
-    .maybeSingle();
-
-  if (!order) {
-    return { ok: false, error: "Order not found or not paid" };
-  }
-
-  const { isValidTier, isValidCycle, getSubscriptionPlanCode } = await import(
-    "@/lib/billing-pricing"
-  );
-
-  // Parse tier and cycle from stored intent
-  const intentParts = order.intent.split("_");
-  if (intentParts.length !== 2) {
-    return { ok: false, error: `Invalid intent format: ${order.intent}` };
-  }
-
-  const [tier, cycle] = intentParts;
-
-  if (!isValidTier(tier) || !isValidCycle(cycle)) {
-    return { ok: false, error: `Invalid tier or cycle: ${tier}, ${cycle}` };
-  }
-
-  try {
-    const { data: currentSub } = await supabaseAdmin
-      .from("subscriptions")
-      .select("expiry_date")
-      .eq("owner_id", order.owner_id)
-      .maybeSingle();
-
-    const now = new Date();
-    let baseDate = now;
-
-    // Extend from current expiry if it's in the future
-    if (currentSub?.expiry_date) {
-      const currentExpiry = new Date(currentSub.expiry_date);
-      if (currentExpiry > now) {
-        baseDate = currentExpiry;
-      }
-    }
-
-    // Add months based on cycle
-    const monthsToAdd = cycle === "monthly" ? 1 : 12;
-    const expiryDate = new Date(baseDate);
-    expiryDate.setMonth(expiryDate.getMonth() + monthsToAdd);
-
-    // Map tier to subscription plan code
-    const planCode = getSubscriptionPlanCode(tier);
-
-    const { error } = await supabaseAdmin.rpc(
-      "apply_subscription_change" as never,
-      {
-        _owner: order.owner_id,
-        _changed_by: order.owner_id,
-        _plan: planCode,
-        _status: "active",
-        _start: now.toISOString(),
-        _expiry: expiryDate.toISOString(),
-        _price: null,
-        _notes: `${tier} ${cycle} plan activated`,
-        _note: `Razorpay payment: ${order.razorpay_payment_id ?? orderId}`,
-        _confirm: true,
-      } as never,
-    );
-
-    if (error) {
-      return { ok: false, error: error.message };
-    }
-
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: String(e) };
-  }
-}
 
 export const Route = createFileRoute("/api/webhooks/razorpay")({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      POST: async ({ request }: { request: Request }) => {
         if (
           !allowRequest(
             `razorpay-webhook:${clientAddress(request)}`,
@@ -135,11 +56,11 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
           );
         }
 
-        // Check for duplicate event_id
+        // Check for duplicate event_id (dedupe on unique x-razorpay-event-id)
         const { data: existing } = await supabaseAdmin
           .from("razorpay_webhook_deliveries")
           .select("id, handled")
-          .eq("event_type", eventId)
+          .eq("delivery_hash", eventId)
           .maybeSingle();
 
         if (existing?.handled) {
@@ -184,7 +105,15 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
         // Insert delivery record
         const { error: insErr } = await supabaseAdmin
           .from("razorpay_webhook_deliveries")
-          .insert(deliveryRecord);
+          .insert({
+            delivery_hash: eventId,
+            event_type: eventName,
+            subscription_id: null,
+            owner_id: deliveryRecord.owner_id,
+            signature: sig ?? null,
+            raw_body: envelope,
+            handled: false,
+          });
 
         if (insErr) {
           if (insErr.code === "23505") {
@@ -210,12 +139,33 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
               return Response.json({ ok: true, ignored: true });
             }
 
-            // Activate subscription from the paid order
-            const result = await activateFromOrder(orderId);
-
-            if (!result.ok) {
-              throw new Error(result.error || "Activation failed");
+            // Get payment_id for activation
+            let paymentId: string | null = null;
+            if (eventName === "payment.captured" && payload.payment) {
+              paymentId = (payload.payment as any).entity?.id ?? null;
+            } else if (eventName === "order.paid" && payload.order) {
+              // For order.paid, fetch the payment from the order
+              const orderEntity = (payload.order as any).entity;
+              paymentId = orderEntity?.payment_id ?? orderEntity?.first_payment_id ?? null;
             }
+
+            if (!paymentId) {
+              console.warn("[Razorpay webhook] No payment_id in payload");
+              return Response.json({ ok: true, ignored: true });
+            }
+
+            // Activate order idempotently
+            const activation = await activateOrderOnce(
+              supabaseAdmin,
+              orderId,
+              paymentId,
+            );
+
+            if (!activation.success && activation.reason !== "already_activated") {
+              throw new Error(`Activation failed: ${activation.reason}`);
+            }
+
+            console.log(`[Razorpay webhook] ${activation.success ? "Activated" : "Already activated"} order ${orderId}`);
           }
           // Ignore other events (legacy subscription events are deprecated)
         } catch (e) {
