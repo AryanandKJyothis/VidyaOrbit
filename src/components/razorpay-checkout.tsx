@@ -151,7 +151,11 @@ async function pollSubscriptionRefresh(args: {
   }
 
   const last = await tick();
-  if (last === "held") toastHeldPlanChange();
+  if (last === "held") {
+    toastHeldPlanChange();
+    return;
+  }
+  if (last === "success") toast.success("Your plan is now active");
 }
 
 export function RazorpayCheckout({

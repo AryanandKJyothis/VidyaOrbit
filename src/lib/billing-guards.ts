@@ -123,8 +123,9 @@ export const TIER_CHANGE_HELD_MESSAGE =
 export type PendingFollowup = "success" | "held" | "wait";
 
 /**
- * Same-tier renewals must wait until expiry moves (or a held order is
- * flagged). Upgrades succeed when the purchased plan becomes active.
+ * Same-tier renewals succeed when expiry moves past its old value or the
+ * order shows activated. Held orders surface needs-review instead of a
+ * silent timeout. Upgrades succeed when the purchased plan becomes active.
  */
 export function evaluatePendingFollowup(args: {
   expectedPlan: string;
@@ -159,7 +160,6 @@ export function evaluatePendingFollowup(args: {
     args.subscription?.status === "active" &&
     args.subscription?.expired === false;
 
-  if (upgraded || expiryMoved) return "success";
-  if (args.order?.activated_at && expiryMoved) return "success";
+  if (upgraded || expiryMoved || args.order?.activated_at) return "success";
   return "wait";
 }

@@ -80,7 +80,7 @@ Race this closes: Starter with ≤7 days left, open Large checkout (tab A), buy 
 4. Verify: HMAC of `order_id|payment_id` with **byte-length**-checked `timingSafeEqual`, fetch payment, require `payment.order_id` match, amount/currency match, owner match. Order lookup DB errors return **500** (not 404).
    - `captured` + applied → `activate_billing_order`. UI: "Your plan is now active".
    - `captured` + hold (`tier_change_needs_review`, or `already_activated` with `needs_review` when the webhook won the race) → 200 `{ok:true, needsReview:true}`. UI: "Payment received. We'll contact you to switch your plan and adjust your remaining time" plus the contact link.
-   - `authorized` → `{ok:true,status:"pending"}`. UI: "Payment received, processing. We'll confirm shortly." Then poll until expiry moves (same-tier renewal) or the purchased plan becomes active, or the order is `needs_review` (held message). Does not claim success on timeout.
+   - `authorized` → `{ok:true,status:"pending"}`. UI: "Payment received, processing. We'll confirm shortly." Then poll until expiry moves (same-tier renewal), the order shows `activated_at`, the purchased plan becomes active, or the order is `needs_review` (held message instead of a silent timeout). Does not claim success on timeout unless one of those succeeded.
 5. Webhook (`payment.captured` / `order.paid`): signature over **raw** `request.text()`, dedupe `x-razorpay-event-id` into `delivery_hash` (upsert ignoreDuplicates; reprocess if `handled` is false). Payment is `payload.payment.entity` for both events. DB errors on order lookup return **500**. Genuine unknown order ids return 200 `order_not_found`. Stored `raw_body` is ids/event/amount/currency/status/method only (no customer PII).
 
 ## create-order rules

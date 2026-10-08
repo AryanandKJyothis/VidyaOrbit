@@ -213,6 +213,23 @@ describe("evaluatePendingFollowup", () => {
     ).toBe("success");
   });
 
+  it("succeeds a same-tier renewal when the order is activated even if expiry is stale", () => {
+    expect(
+      evaluatePendingFollowup({
+        expectedPlan: "growth",
+        previousPlan: "growth",
+        previousExpiry: "2026-11-01T00:00:00Z",
+        subscription: {
+          plan: "growth",
+          status: "active",
+          expired: false,
+          expiry_date: "2026-11-01T00:00:00Z",
+        },
+        order: { needs_review: false, activated_at: "2026-10-08T00:00:00Z" },
+      }),
+    ).toBe("success");
+  });
+
   it("returns held when the order is flagged needs_review", () => {
     expect(
       evaluatePendingFollowup({

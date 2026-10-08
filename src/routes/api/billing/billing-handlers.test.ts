@@ -520,6 +520,37 @@ describe("POST /api/billing/verify-payment", () => {
     expect(body.message).toMatch(/We'll contact you to switch your plan/i);
   });
 
+  it("returns needsReview when webhook holds between order fetch and activate", async () => {
+    fromMock.mockImplementation(() =>
+      thenable({ data: storedOrder, error: null }),
+    );
+    paymentsFetch.mockResolvedValue({
+      id: RZ_PAY,
+      order_id: RZ_ORDER,
+      status: "captured",
+      amount: 99900,
+      currency: "INR",
+    });
+    rpcMock.mockResolvedValue({
+      data: {
+        activated: false,
+        reason: "already_activated",
+        needs_review: true,
+      },
+      error: null,
+    });
+    const res = await postVerify({
+      razorpay_order_id: RZ_ORDER,
+      razorpay_payment_id: RZ_PAY,
+      razorpay_signature: checkoutSig(RZ_ORDER, RZ_PAY),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.needsReview).toBe(true);
+    expect(body.message).toMatch(/We'll contact you to switch your plan/i);
+  });
+
   it("returns needsReview when the webhook held the order first (already_activated)", async () => {
     fromMock.mockImplementation(() =>
       thenable({
