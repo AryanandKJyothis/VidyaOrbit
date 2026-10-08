@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import crypto from "node:crypto";
 import {
+  evaluatePendingFollowup,
   getBillingSupportContact,
   isCompedSubscription,
   isTierChangeBlocked,
@@ -174,6 +175,59 @@ describe("isTierChangeBlocked (Asia/Kolkata calendar days)", () => {
     // (Asia/Kolkata days > 7 and different paid tier) and marks the paid
     // order needs_review instead of extending Large from the new expiry.
     expect(isTierChangeBlocked(afterAnnual, "large", now)).toBe(true);
+  });
+});
+
+describe("evaluatePendingFollowup", () => {
+  it("does not treat a same-tier renewal as success until expiry moves", () => {
+    expect(
+      evaluatePendingFollowup({
+        expectedPlan: "growth",
+        previousPlan: "growth",
+        previousExpiry: "2026-11-01T00:00:00Z",
+        subscription: {
+          plan: "growth",
+          status: "active",
+          expired: false,
+          expiry_date: "2026-11-01T00:00:00Z",
+        },
+        order: { needs_review: false, activated_at: null },
+      }),
+    ).toBe("wait");
+  });
+
+  it("succeeds a same-tier renewal once expiry moves past the old value", () => {
+    expect(
+      evaluatePendingFollowup({
+        expectedPlan: "growth",
+        previousPlan: "growth",
+        previousExpiry: "2026-11-01T00:00:00Z",
+        subscription: {
+          plan: "growth",
+          status: "active",
+          expired: false,
+          expiry_date: "2026-12-01T00:00:00Z",
+        },
+        order: { needs_review: false, activated_at: "2026-10-08T00:00:00Z" },
+      }),
+    ).toBe("success");
+  });
+
+  it("returns held when the order is flagged needs_review", () => {
+    expect(
+      evaluatePendingFollowup({
+        expectedPlan: "pro",
+        previousPlan: "starter",
+        previousExpiry: "2026-11-01T00:00:00Z",
+        subscription: {
+          plan: "starter",
+          status: "active",
+          expired: false,
+          expiry_date: "2026-11-01T00:00:00Z",
+        },
+        order: { needs_review: true, activated_at: "2026-10-08T00:00:00Z" },
+      }),
+    ).toBe("held");
   });
 });
 

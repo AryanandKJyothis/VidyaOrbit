@@ -70,6 +70,110 @@ type HealthRow = {
   setup_fee_paid?: boolean;
 };
 
+const FALLBACK_SUBSCRIPTION_COLUMNS =
+  "plan, status, current_period_end, start_date, expiry_date, plan_price, notes";
+
+type SubscriptionRpcClient = {
+  rpc: (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: unknown }>;
+  from: (table: string) => {
+    select: (cols: string) => {
+      eq: (
+        col: string,
+        val: string,
+      ) => {
+        maybeSingle: () => Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+  };
+};
+
+/** Exported for tests: staff must call RPC with the workspace owner id. */
+export async function fetchSubscriptionForOwner(
+  supabase: SubscriptionRpcClient,
+  ownerId: string,
+  isOwner: boolean,
+) {
+  const { data: healthRaw, error: healthErr } = await supabase.rpc(
+    "subscription_health",
+    { _uid: ownerId },
+  );
+
+  if (!healthErr && healthRaw) {
+    const h = healthRaw as HealthRow;
+    return {
+      plan: h.plan,
+      rawPlan: h.raw_plan,
+      status: h.status,
+      start_date: h.start_date,
+      expiry_date: h.expiry_date,
+      current_period_end: h.current_period_end,
+      plan_price: h.plan_price,
+      notes: h.notes,
+      limit: h.limit,
+      student_count: h.student_count,
+      over_limit: h.over_limit,
+      over_by: h.over_by,
+      days_until_expiry: h.days_until_expiry,
+      expired: h.expired,
+      trial: false,
+      setup_fee_paid: Boolean(
+        h.setup_fee_paid || h.raw_plan !== "free" || !!h.expiry_date,
+      ),
+      isOwner,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select(FALLBACK_SUBSCRIPTION_COLUMNS)
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+  if (error) throw error;
+  const row = data as {
+    plan: PlanCode;
+    status: string;
+    current_period_end: string | null;
+    start_date: string | null;
+    expiry_date: string | null;
+    plan_price: number | null;
+    notes: string | null;
+  } | null;
+  const plan = (row?.plan ?? "free") as PlanCode;
+  const status = row?.status ?? "active";
+  const expiry = row?.expiry_date ?? null;
+  const expired =
+    status === "expired" ||
+    status === "suspended" ||
+    status === "canceled" ||
+    (!!expiry && new Date(expiry).getTime() < Date.now());
+  const effectivePlan: PlanCode = expired ? "free" : plan;
+  const daysLeft = expiry
+    ? Math.ceil((new Date(expiry).getTime() - Date.now()) / 86_400_000)
+    : null;
+  return {
+    plan: effectivePlan,
+    rawPlan: plan,
+    status,
+    start_date: row?.start_date ?? null,
+    expiry_date: expiry,
+    current_period_end: row?.current_period_end ?? null,
+    plan_price: row?.plan_price ?? null,
+    notes: row?.notes ?? null,
+    limit: PLAN_LIMITS[effectivePlan],
+    student_count: 0,
+    over_limit: false,
+    over_by: 0,
+    days_until_expiry: daysLeft,
+    expired,
+    trial: false,
+    setup_fee_paid: plan !== "free" || !!expiry,
+    isOwner,
+  };
+}
+
 export function useSubscription() {
   const { user } = useAuth();
   const { active } = useActiveWorkspace();
@@ -106,89 +210,11 @@ export function useSubscription() {
       }
 
       const { supabase } = await import("@/integrations/supabase/client");
-
-      // Single source of truth: SQL helper computes plan/limit/expiry/count atomically.
-      const { data: healthRaw, error: healthErr } = await supabase.rpc(
-        "subscription_health" as never,
-        { _uid: ownerId! } as never,
-      );
-
-      if (!healthErr && healthRaw) {
-        const h = healthRaw as unknown as HealthRow;
-        return {
-          plan: h.plan,
-          rawPlan: h.raw_plan,
-          status: h.status,
-          start_date: h.start_date,
-          expiry_date: h.expiry_date,
-          current_period_end: h.current_period_end,
-          plan_price: h.plan_price,
-          notes: h.notes,
-          limit: h.limit,
-          student_count: h.student_count,
-          over_limit: h.over_limit,
-          over_by: h.over_by,
-          days_until_expiry: h.days_until_expiry,
-          expired: h.expired,
-          trial: false,
-          setup_fee_paid: Boolean(
-            h.setup_fee_paid || h.raw_plan !== "free" || !!h.expiry_date,
-          ),
-          isOwner,
-        };
-      }
-
-      // Fallback: legacy direct-table read (e.g. if RPC not yet migrated)
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .select(
-          "plan, status, current_period_end, start_date, expiry_date, plan_price, notes, setup_fee_paid",
-        )
-        .eq("owner_id", ownerId!)
-        .maybeSingle();
-      if (error) throw error;
-      const row = data as {
-        plan: PlanCode;
-        status: string;
-        current_period_end: string | null;
-        start_date: string | null;
-        expiry_date: string | null;
-        plan_price: number | null;
-        notes: string | null;
-        setup_fee_paid?: boolean;
-      } | null;
-      const plan = (row?.plan ?? "free") as PlanCode;
-      const status = row?.status ?? "active";
-      const expiry = row?.expiry_date ?? null;
-      const expired =
-        status === "expired" ||
-        status === "suspended" ||
-        status === "canceled" ||
-        (!!expiry && new Date(expiry).getTime() < Date.now());
-      const effectivePlan: PlanCode = expired ? "free" : plan;
-      const daysLeft = expiry
-        ? Math.ceil((new Date(expiry).getTime() - Date.now()) / 86_400_000)
-        : null;
-      return {
-        plan: effectivePlan,
-        rawPlan: plan,
-        status,
-        start_date: row?.start_date ?? null,
-        expiry_date: expiry,
-        current_period_end: row?.current_period_end ?? null,
-        plan_price: row?.plan_price ?? null,
-        notes: row?.notes ?? null,
-        limit: PLAN_LIMITS[effectivePlan],
-        student_count: 0,
-        over_limit: false,
-        over_by: 0,
-        days_until_expiry: daysLeft,
-        expired,
-        trial: false,
-        setup_fee_paid:
-          Boolean(row?.setup_fee_paid) || plan !== "free" || !!expiry,
+      return fetchSubscriptionForOwner(
+        supabase as unknown as SubscriptionRpcClient,
+        ownerId!,
         isOwner,
-      };
+      );
     },
   });
 }

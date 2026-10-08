@@ -37,7 +37,7 @@ A paid capture also sets `setup_fee_paid = true`. `/plan` reads `subscription_he
 
 Apply on the Supabase project that Preview uses (today that is prod `qyqomxuxtpbhnicbtmbq`) **before** setting `BILLING_ENABLED=true`. Preview uses the production database, so these run together in this order — not as a later follow-up after Preview testing:
 
-1. `20261008091700_fix_enforce_student_limit_exclude_archived.sql` — insert trigger **and** `subscription_health` ignore `status = 'archived'`. Over-limit error labels `pro` as **Large**.
+1. `20261008091700_fix_enforce_student_limit_exclude_archived.sql` — insert trigger **and** `subscription_health` ignore `status = 'archived'`. Workspace members (and service_role) may read the owner's plan. Admin summary/detail and `apply_subscription_change` use the same non-archived student count. Over-limit error labels `pro` as **Large**.
 2. `20261008091800_create_billing_orders_table.sql` — table, RLS, `ON DELETE RESTRICT` so payment rows survive user deletion, owner SELECT only.
 3. `20261008093000_pro_plan_unlimited.sql` — `plan_student_limit('pro')` = 2147483647 with `SET search_path = public` as a function attribute. Required before selling Large as unlimited.
 4. `20261008094000_atomic_billing_activation.sql` — idempotent `tier`/`cycle`/`needs_review` columns, `subscriptions.setup_fee_paid`, grant hardening, `activate_billing_order` (mid-term tier hold).
@@ -79,8 +79,8 @@ Race this closes: Starter with ≤7 days left, open Large checkout (tab A), buy 
 3. On success the client POSTs the Checkout payload to `/api/billing/verify-payment`.
 4. Verify: HMAC of `order_id|payment_id` with **byte-length**-checked `timingSafeEqual`, fetch payment, require `payment.order_id` match, amount/currency match, owner match. Order lookup DB errors return **500** (not 404).
    - `captured` + applied → `activate_billing_order`. UI: "Your plan is now active".
-   - `captured` + `tier_change_needs_review` → 200 `{ok:true, needsReview:true}`. UI: payment received, manual adjustment.
-   - `authorized` → `{ok:true,status:"pending"}`. UI: "Payment received, processing. We'll confirm shortly." Then poll subscription refresh until the purchased plan is active, or 60s.
+   - `captured` + hold (`tier_change_needs_review`, or `already_activated` with `needs_review` when the webhook won the race) → 200 `{ok:true, needsReview:true}`. UI: "Payment received. We'll contact you to switch your plan and adjust your remaining time" plus the contact link.
+   - `authorized` → `{ok:true,status:"pending"}`. UI: "Payment received, processing. We'll confirm shortly." Then poll until expiry moves (same-tier renewal) or the purchased plan becomes active, or the order is `needs_review` (held message). Does not claim success on timeout.
 5. Webhook (`payment.captured` / `order.paid`): signature over **raw** `request.text()`, dedupe `x-razorpay-event-id` into `delivery_hash` (upsert ignoreDuplicates; reprocess if `handled` is false). Payment is `payload.payment.entity` for both events. DB errors on order lookup return **500**. Genuine unknown order ids return 200 `order_not_found`. Stored `raw_body` is ids/event/amount/currency/status/method only (no customer PII).
 
 ## create-order rules

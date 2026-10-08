@@ -87,8 +87,18 @@ DECLARE
   v_expired boolean;
   v_setup_paid boolean;
 BEGIN
-  IF auth.role() <> 'service_role' AND _uid IS DISTINCT FROM auth.uid() THEN
-    RAISE EXCEPTION 'Forbidden' USING ERRCODE = '42501';
+  -- Live semantics (null-safe): service_role is allowed. Otherwise auth.uid()
+  -- IS NULL is forbidden. Allowed when _uid is the caller or a workspace they
+  -- belong to, so invited staff inherit the institute plan.
+  IF auth.role() IS DISTINCT FROM 'service_role' THEN
+    IF auth.uid() IS NULL
+       OR (
+         auth.uid() IS DISTINCT FROM _uid
+         AND NOT public.is_workspace_member(_uid, auth.uid())
+       )
+    THEN
+      RAISE EXCEPTION 'Forbidden' USING ERRCODE = '42501';
+    END IF;
   END IF;
 
   SELECT plan, status, start_date, expiry_date, plan_price, notes,

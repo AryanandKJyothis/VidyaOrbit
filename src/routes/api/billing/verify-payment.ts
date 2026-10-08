@@ -12,6 +12,7 @@ import { allowRequest, clientAddress, tooManyRequests } from "@/lib/rate-limit";
 import { assertRazorpayKeyMode, isBillingEnabled } from "@/lib/billing-pricing";
 import { activateOrderOnce } from "@/lib/billing-activation";
 import { verifyCheckoutSignature } from "@/lib/billing-signature";
+import { TIER_CHANGE_HELD_MESSAGE } from "@/lib/billing-guards";
 
 const bodySchema = z.object({
   razorpay_order_id: z.string().min(1),
@@ -251,16 +252,11 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
         );
 
         if (!activation.success) {
-          if (activation.reason === "already_activated") {
-            console.log(
-              "[verify-payment] Already activated, returning success",
-            );
-            return Response.json({
-              ok: true,
-              message: "Payment already processed",
-            });
-          }
-          if (activation.reason === "tier_change_needs_review") {
+          const held =
+            activation.needsReview === true ||
+            activation.reason === "tier_change_needs_review" ||
+            Boolean((order as { needs_review?: boolean | null }).needs_review);
+          if (held) {
             console.warn(
               "[verify-payment] Paid order held for admin review:",
               order.id,
@@ -268,8 +264,16 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
             return Response.json({
               ok: true,
               needsReview: true,
-              message:
-                "Payment received. Changing plans while time remains needs a manual adjustment — we'll be in touch.",
+              message: TIER_CHANGE_HELD_MESSAGE,
+            });
+          }
+          if (activation.reason === "already_activated") {
+            console.log(
+              "[verify-payment] Already activated, returning success",
+            );
+            return Response.json({
+              ok: true,
+              message: "Payment already processed",
             });
           }
           console.error(

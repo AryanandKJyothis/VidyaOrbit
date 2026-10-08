@@ -51,6 +51,30 @@ describe("activateOrderOnce", () => {
     });
   });
 
+  it("carries needs_review when already_activated after a hold", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        activated: false,
+        reason: "already_activated",
+        needs_review: true,
+      },
+      error: null,
+    });
+    const client = { rpc } as unknown as SupabaseClient<Database>;
+    const result = await activateOrderOnce(
+      client,
+      "11111111-1111-4111-8111-111111111111",
+      "pay_abc",
+      249900,
+      "INR",
+    );
+    expect(result).toEqual({
+      success: false,
+      reason: "already_activated",
+      needsReview: true,
+    });
+  });
+
   it("surfaces RPC errors", async () => {
     const rpc = vi.fn().mockResolvedValue({
       data: null,

@@ -196,6 +196,7 @@ function PlanPage() {
               tier={tier}
               cycle={cycle}
               currentPlan={currentPlan}
+              currentExpiry={subscription?.expiry_date ?? null}
               isOwner={isOwner}
               billingEnabled={billingEnabled}
               hasPaidSetup={Boolean(subscription?.setup_fee_paid)}
@@ -222,6 +223,7 @@ type PricingCardProps = {
   tier: TierConfig;
   cycle: BillingCycle;
   currentPlan: string;
+  currentExpiry: string | null;
   isOwner: boolean;
   billingEnabled: boolean;
   hasPaidSetup: boolean;
@@ -232,6 +234,7 @@ function PricingCard({
   tier,
   cycle,
   currentPlan,
+  currentExpiry,
   isOwner,
   billingEnabled,
   hasPaidSetup,
@@ -338,6 +341,8 @@ function PricingCard({
           <RazorpayCheckout
             tier={tier.tier}
             cycle={cycle}
+            currentPlan={currentPlan}
+            currentExpiry={currentExpiry}
             buttonLabel={checkoutLabel}
             onSuccess={onSuccess}
           />

@@ -69,6 +69,7 @@ export async function activateOrderOnce(
     owner_id?: string;
     tier?: string;
     cycle?: string;
+    needs_review?: boolean;
   };
 
   if (!result.activated) {
@@ -78,7 +79,10 @@ export async function activateOrderOnce(
       | "amount_or_currency_mismatch"
       | "tier_change_needs_review"
       | "rpc_error";
-    return result.reason === "tier_change_needs_review"
+    const needsReview =
+      result.needs_review === true ||
+      result.reason === "tier_change_needs_review";
+    return needsReview
       ? { success: false, reason, needsReview: true }
       : { success: false, reason };
   }

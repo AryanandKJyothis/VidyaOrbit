@@ -116,3 +116,50 @@ export function tierChangeSupportMessage(
 
 /** Fallback copy when the 409 body has no message. */
 export const TIER_CHANGE_MESSAGE = tierChangeSupportMessage("whatsapp");
+
+export const TIER_CHANGE_HELD_MESSAGE =
+  "Payment received. We'll contact you to switch your plan and adjust your remaining time";
+
+export type PendingFollowup = "success" | "held" | "wait";
+
+/**
+ * Same-tier renewals must wait until expiry moves (or a held order is
+ * flagged). Upgrades succeed when the purchased plan becomes active.
+ */
+export function evaluatePendingFollowup(args: {
+  expectedPlan: string;
+  previousPlan: string | null | undefined;
+  previousExpiry: string | null | undefined;
+  subscription: {
+    plan?: string;
+    status?: string;
+    expired?: boolean;
+    expiry_date?: string | null;
+  } | null;
+  order: {
+    needs_review?: boolean | null;
+    activated_at?: string | null;
+  } | null;
+}): PendingFollowup {
+  if (args.order?.needs_review) return "held";
+
+  const newExpiry = args.subscription?.expiry_date
+    ? new Date(args.subscription.expiry_date).getTime()
+    : NaN;
+  const oldExpiry = args.previousExpiry
+    ? new Date(args.previousExpiry).getTime()
+    : NaN;
+  const expiryMoved =
+    Number.isFinite(newExpiry) &&
+    (!Number.isFinite(oldExpiry) || newExpiry > oldExpiry);
+
+  const upgraded =
+    args.previousPlan !== args.expectedPlan &&
+    args.subscription?.plan === args.expectedPlan &&
+    args.subscription?.status === "active" &&
+    args.subscription?.expired === false;
+
+  if (upgraded || expiryMoved) return "success";
+  if (args.order?.activated_at && expiryMoved) return "success";
+  return "wait";
+}

@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getContactLabel, getContactLink } from "@/lib/contact-config";
-import { TIER_CHANGE_MESSAGE } from "@/lib/billing-guards";
+import {
+  evaluatePendingFollowup,
+  TIER_CHANGE_HELD_MESSAGE,
+  TIER_CHANGE_MESSAGE,
+} from "@/lib/billing-guards";
 import { planCodeForTier } from "@/lib/plan-limits";
 
 declare global {
@@ -46,6 +50,8 @@ interface RazorpayInstance {
 type CheckoutProps = {
   tier: "starter" | "growth" | "large";
   cycle: "monthly" | "annual";
+  currentPlan?: string;
+  currentExpiry?: string | null;
   onSuccess?: () => void | Promise<unknown>;
   onError?: (error: Error) => void;
   buttonLabel?: string;
@@ -90,38 +96,69 @@ function loadRazorpayScript(): Promise<void> {
   return checkoutScriptPromise;
 }
 
-function planIsActiveForTier(data: unknown, expectedPlan: string): boolean {
-  if (!data || typeof data !== "object") return false;
-  const row = data as {
-    plan?: string;
-    status?: string;
-    expired?: boolean;
-  };
-  return (
-    row.plan === expectedPlan &&
-    row.status === "active" &&
-    row.expired === false
-  );
+function toastHeldPlanChange() {
+  const link = getContactLink();
+  toast.info(TIER_CHANGE_HELD_MESSAGE, {
+    action: link
+      ? {
+          label: getContactLabel(),
+          onClick: () => window.open(link, "_blank", "noopener"),
+        }
+      : undefined,
+  });
 }
 
-async function pollSubscriptionRefresh(
-  onSuccess: (() => void | Promise<unknown>) | undefined,
-  expectedPlan: string,
-) {
+async function pollSubscriptionRefresh(args: {
+  onSuccess: (() => void | Promise<unknown>) | undefined;
+  expectedPlan: string;
+  previousPlan: string | undefined;
+  previousExpiry: string | null | undefined;
+  razorpayOrderId: string;
+}) {
   const deadline = Date.now() + 60_000;
+  const tick = async () => {
+    const data = (await args.onSuccess?.()) as {
+      plan?: string;
+      status?: string;
+      expired?: boolean;
+      expiry_date?: string | null;
+    } | null;
+    const { data: order } = await supabase
+      .from("billing_orders")
+      .select("needs_review, activated_at")
+      .eq("razorpay_order_id", args.razorpayOrderId)
+      .maybeSingle();
+    return evaluatePendingFollowup({
+      expectedPlan: args.expectedPlan,
+      previousPlan: args.previousPlan,
+      previousExpiry: args.previousExpiry,
+      subscription: data,
+      order,
+    });
+  };
+
   while (Date.now() < deadline) {
-    const data = await onSuccess?.();
-    if (planIsActiveForTier(data, expectedPlan)) {
+    const state = await tick();
+    if (state === "held") {
+      toastHeldPlanChange();
+      return;
+    }
+    if (state === "success") {
       toast.success("Your plan is now active");
       return;
     }
     await new Promise((r) => setTimeout(r, 5_000));
   }
+
+  const last = await tick();
+  if (last === "held") toastHeldPlanChange();
 }
 
 export function RazorpayCheckout({
   tier,
   cycle,
+  currentPlan,
+  currentExpiry,
   onSuccess,
   onError,
   buttonLabel,
@@ -241,16 +278,19 @@ export function RazorpayCheckout({
             }
 
             if (verifyData.needsReview) {
-              toast.info(
-                verifyData.message ||
-                  "Payment received. Changing plans while time remains needs a manual adjustment — we'll be in touch.",
-              );
+              toastHeldPlanChange();
               await onSuccess?.();
             } else if (verifyData.status === "pending") {
               toast.info(
                 "Payment received, processing. We'll confirm shortly.",
               );
-              void pollSubscriptionRefresh(onSuccess, planCodeForTier(tier));
+              void pollSubscriptionRefresh({
+                onSuccess,
+                expectedPlan: planCodeForTier(tier),
+                previousPlan: currentPlan,
+                previousExpiry: currentExpiry,
+                razorpayOrderId: response.razorpay_order_id,
+              });
             } else {
               toast.success("Your plan is now active");
               await onSuccess?.();
