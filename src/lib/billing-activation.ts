@@ -20,8 +20,10 @@ export type ActivationResult =
         | "already_activated"
         | "order_not_found"
         | "amount_or_currency_mismatch"
+        | "tier_change_needs_review"
         | "rpc_error";
       message?: string;
+      needsReview?: boolean;
     };
 
 /**
@@ -70,13 +72,16 @@ export async function activateOrderOnce(
   };
 
   if (!result.activated) {
+    const reason = (result.reason || "order_not_found") as
+      | "already_activated"
+      | "order_not_found"
+      | "amount_or_currency_mismatch"
+      | "tier_change_needs_review"
+      | "rpc_error";
     return {
       success: false,
-      reason: (result.reason || "order_not_found") as
-        | "already_activated"
-        | "order_not_found"
-        | "amount_or_currency_mismatch"
-        | "rpc_error",
+      reason,
+      needsReview: result.reason === "tier_change_needs_review",
     };
   }
 

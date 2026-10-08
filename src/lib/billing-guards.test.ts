@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import crypto from "node:crypto";
 import {
-  computeNewExpiry,
+  getBillingSupportContact,
   isCompedSubscription,
   isTierChangeBlocked,
+  kolkataCalendarDaysUntil,
+  tierChangeSupportMessage,
 } from "@/lib/billing-guards";
 import { verifyCheckoutSignature } from "@/lib/billing-signature";
 
@@ -72,6 +74,12 @@ describe("verifyCheckoutSignature", () => {
     );
   });
 
+  it("rejects a non-ASCII signature without throwing (byte-length check)", () => {
+    expect(
+      verifyCheckoutSignature(orderId, paymentId, "á".repeat(64), secret),
+    ).toBe(false);
+  });
+
   it("rejects the wrong secret", () => {
     const sig = crypto
       .createHmac("sha256", "other")
@@ -83,11 +91,17 @@ describe("verifyCheckoutSignature", () => {
   });
 });
 
-describe("isTierChangeBlocked", () => {
+describe("isTierChangeBlocked (Asia/Kolkata calendar days)", () => {
   const now = new Date("2026-10-08T00:00:00Z");
   const in30 = "2026-11-07T00:00:00Z";
   const in7 = "2026-10-15T00:00:00Z";
   const expired = "2026-09-01T00:00:00Z";
+
+  it("counts whole Kolkata calendar days", () => {
+    expect(
+      kolkataCalendarDaysUntil(new Date("2026-10-15T00:00:00Z"), now),
+    ).toBe(7);
+  });
 
   it("allows same-tier renewal while time remains (expiry will extend)", () => {
     expect(
@@ -109,7 +123,7 @@ describe("isTierChangeBlocked", () => {
     ).toBe(true);
   });
 
-  it("allows a different tier with 7 days left", () => {
+  it("allows a different tier with exactly 7 days left", () => {
     expect(
       isTierChangeBlocked(
         { plan: "growth", plan_price: 999, expiry_date: in7 },
@@ -138,36 +152,49 @@ describe("isTierChangeBlocked", () => {
       ),
     ).toBe(false);
   });
+
+  it("tab A Large then tab B Starter annual then tab A pay: activation must block", () => {
+    // Starter with 7 Kolkata days left: create-order allows Large (tab A).
+    const sevenLeft = {
+      plan: "starter",
+      plan_price: 499,
+      expiry_date: in7,
+    };
+    expect(isTierChangeBlocked(sevenLeft, "large", now)).toBe(false);
+
+    // Tab B: same-tier Starter annual is allowed and extends ~12 months.
+    expect(isTierChangeBlocked(sevenLeft, "starter", now)).toBe(false);
+    const afterAnnual = {
+      plan: "starter",
+      plan_price: 499,
+      expiry_date: "2027-10-15T00:00:00Z",
+    };
+
+    // Tab A payment: SQL activate_billing_order uses this same predicate
+    // (Asia/Kolkata days > 7 and different paid tier) and marks the paid
+    // order needs_review instead of extending Large from the new expiry.
+    expect(isTierChangeBlocked(afterAnnual, "large", now)).toBe(true);
+  });
 });
 
-describe("computeNewExpiry", () => {
-  const now = new Date("2026-10-08T12:00:00Z");
-
-  it("from the past starts at now + 1 month", () => {
-    const result = computeNewExpiry(
-      now,
-      new Date("2026-01-01T00:00:00Z"),
-      "monthly",
-    );
-    expect(result.toISOString()).toBe("2026-11-08T12:00:00.000Z");
+describe("tier-change support contact", () => {
+  it("uses wa.me when WhatsApp is configured", () => {
+    const c = getBillingSupportContact({
+      VITE_CONTACT_WHATSAPP: "+91 98765 43210",
+      VITE_CONTACT_EMAIL: "hi@example.com",
+    } as NodeJS.ProcessEnv);
+    expect(c.channel).toBe("whatsapp");
+    expect(c.link).toBe("https://wa.me/919876543210");
+    expect(tierChangeSupportMessage(c.channel)).toMatch(/WhatsApp/);
   });
 
-  it("from null starts at now + 1 month", () => {
-    const result = computeNewExpiry(now, null, "monthly");
-    expect(result.toISOString()).toBe("2026-11-08T12:00:00.000Z");
-  });
-
-  it("from the future extends the current expiry by 1 month", () => {
-    const result = computeNewExpiry(
-      now,
-      new Date("2026-12-01T00:00:00Z"),
-      "monthly",
-    );
-    expect(result.toISOString()).toBe("2027-01-01T00:00:00.000Z");
-  });
-
-  it("annual adds 12 months", () => {
-    const result = computeNewExpiry(now, null, "annual");
-    expect(result.toISOString()).toBe("2027-10-08T12:00:00.000Z");
+  it("falls back to mailto and does not say WhatsApp", () => {
+    const c = getBillingSupportContact({
+      VITE_CONTACT_EMAIL: "hi@example.com",
+    } as NodeJS.ProcessEnv);
+    expect(c.channel).toBe("email");
+    expect(c.link).toBe("mailto:hi@example.com");
+    expect(tierChangeSupportMessage(c.channel)).not.toMatch(/WhatsApp/);
+    expect(tierChangeSupportMessage(c.channel)).toMatch(/contact us/i);
   });
 });

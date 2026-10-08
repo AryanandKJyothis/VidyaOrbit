@@ -67,6 +67,7 @@ type HealthRow = {
   over_by: number;
   days_until_expiry: number | null;
   expired: boolean;
+  setup_fee_paid?: boolean;
 };
 
 export function useSubscription() {
@@ -99,6 +100,7 @@ export function useSubscription() {
           days_until_expiry: null as number | null,
           expired: false,
           trial: true,
+          setup_fee_paid: true,
           isOwner,
         };
       }
@@ -129,6 +131,11 @@ export function useSubscription() {
           days_until_expiry: h.days_until_expiry,
           expired: h.expired,
           trial: false,
+          setup_fee_paid: Boolean(
+            h.setup_fee_paid ||
+              h.raw_plan !== "free" ||
+              !!h.expiry_date,
+          ),
           isOwner,
         };
       }
@@ -137,7 +144,7 @@ export function useSubscription() {
       const { data, error } = await supabase
         .from("subscriptions")
         .select(
-          "plan, status, current_period_end, start_date, expiry_date, plan_price, notes",
+          "plan, status, current_period_end, start_date, expiry_date, plan_price, notes, setup_fee_paid",
         )
         .eq("owner_id", ownerId!)
         .maybeSingle();
@@ -150,6 +157,7 @@ export function useSubscription() {
         expiry_date: string | null;
         plan_price: number | null;
         notes: string | null;
+        setup_fee_paid?: boolean;
       } | null;
       const plan = (row?.plan ?? "free") as PlanCode;
       const status = row?.status ?? "active";
@@ -179,6 +187,8 @@ export function useSubscription() {
         days_until_expiry: daysLeft,
         expired,
         trial: false,
+        setup_fee_paid:
+          Boolean(row?.setup_fee_paid) || plan !== "free" || !!expiry,
         isOwner,
       };
     },

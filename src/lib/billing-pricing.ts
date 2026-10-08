@@ -167,26 +167,61 @@ export function computePricing(
   };
 }
 
+export type SetupFeeSubscriptionRow = {
+  setup_fee_paid?: boolean | null;
+  plan?: string | null;
+  expiry_date?: string | null;
+};
+
 /**
- * Check if the workspace has any activated paid order.
+ * Setup is already paid when:
+ * - admin flagged subscriptions.setup_fee_paid, or
+ * - any current/past paid plan (plan other than free, or an expiry/paid_until), or
+ * - an activated online billing_order exists.
+ */
+export function setupFeePaidFromSubscription(
+  sub: SetupFeeSubscriptionRow | null | undefined,
+): boolean {
+  if (!sub) return false;
+  if (sub.setup_fee_paid) return true;
+  if (sub.plan && sub.plan !== "free") return true;
+  if (sub.expiry_date) return true;
+  return false;
+}
+
+/**
+ * Whether this workspace should skip the online setup fee.
  * Throws on DB error (never silently overcharge setup).
  */
-export async function hasAnyPaidOrder(
+export async function hasSetupFeePaid(
   ownerId: string,
   db: SupabaseClient<Database>,
+  sub?: SetupFeeSubscriptionRow | null,
 ): Promise<boolean> {
+  let row = sub;
+  if (row === undefined) {
+    const { data, error: subErr } = await db
+      .from("subscriptions")
+      .select("setup_fee_paid, plan, expiry_date")
+      .eq("owner_id", ownerId)
+      .maybeSingle();
+    if (subErr) throw subErr;
+    row = data;
+  }
+  if (setupFeePaidFromSubscription(row)) return true;
+
   const { count, error } = await db
     .from("billing_orders")
     .select("id", { count: "exact", head: true })
     .eq("owner_id", ownerId)
     .not("activated_at", "is", null);
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return (count ?? 0) > 0;
 }
+
+/** @deprecated Use hasSetupFeePaid */
+export const hasAnyPaidOrder = hasSetupFeePaid;
 
 /**
  * Get the appropriate plan code for subscriptions table based on tier.

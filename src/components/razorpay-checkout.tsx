@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getContactLabel, getContactLink } from "@/lib/contact-config";
 import { TIER_CHANGE_MESSAGE } from "@/lib/billing-guards";
+import { planCodeForTier } from "@/lib/plan-limits";
 
 declare global {
   interface Window {
@@ -89,12 +90,34 @@ function loadRazorpayScript(): Promise<void> {
   return checkoutScriptPromise;
 }
 
+function planIsActiveForTier(
+  data: unknown,
+  expectedPlan: string,
+): boolean {
+  if (!data || typeof data !== "object") return false;
+  const row = data as {
+    plan?: string;
+    status?: string;
+    expired?: boolean;
+  };
+  return (
+    row.plan === expectedPlan &&
+    row.status === "active" &&
+    row.expired === false
+  );
+}
+
 async function pollSubscriptionRefresh(
   onSuccess: (() => void | Promise<unknown>) | undefined,
+  expectedPlan: string,
 ) {
   const deadline = Date.now() + 60_000;
   while (Date.now() < deadline) {
-    await onSuccess?.();
+    const data = await onSuccess?.();
+    if (planIsActiveForTier(data, expectedPlan)) {
+      toast.success("Your plan is now active");
+      return;
+    }
     await new Promise((r) => setTimeout(r, 5_000));
   }
 }
@@ -160,7 +183,10 @@ export function RazorpayCheckout({
 
       if (!orderRes.ok || !errorData.ok) {
         if (errorData.code === "TIER_CHANGE_CONTACT_SUPPORT") {
-          const link = getContactLink();
+          const link =
+            (typeof errorData.contactLink === "string" &&
+              errorData.contactLink) ||
+            getContactLink();
           toast.error(errorData.message || TIER_CHANGE_MESSAGE, {
             action: link
               ? {
@@ -217,11 +243,20 @@ export function RazorpayCheckout({
               );
             }
 
-            if (verifyData.status === "pending") {
+            if (verifyData.needsReview) {
+              toast.info(
+                verifyData.message ||
+                  "Payment received. Changing plans while time remains needs a manual adjustment — we'll be in touch.",
+              );
+              await onSuccess?.();
+            } else if (verifyData.status === "pending") {
               toast.info(
                 "Payment received, processing. We'll confirm shortly.",
               );
-              void pollSubscriptionRefresh(onSuccess);
+              void pollSubscriptionRefresh(
+                onSuccess,
+                planCodeForTier(tier),
+              );
             } else {
               toast.success("Your plan is now active");
               await onSuccess?.();

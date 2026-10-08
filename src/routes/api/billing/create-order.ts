@@ -12,7 +12,7 @@ import { parseBearerUserId } from "@/server/require-bearer-user";
 import { allowRequest, clientAddress, tooManyRequests } from "@/lib/rate-limit";
 import {
   computePricing,
-  hasAnyPaidOrder,
+  hasSetupFeePaid,
   assertRazorpayKeyMode,
   isBillingEnabled,
   isValidTier,
@@ -21,11 +21,12 @@ import {
   type BillingCycle,
 } from "@/lib/billing-pricing";
 import {
+  getBillingSupportContact,
   isCompedSubscription,
   isTierChangeBlocked,
-  TIER_CHANGE_MESSAGE,
+  tierChangeSupportMessage,
 } from "@/lib/billing-guards";
-import { formatStudentLimit, studentLimitForTier } from "@/lib/plan-limits";
+import { formatLimit, studentLimitForTier } from "@/lib/plan-limits";
 
 const bodySchema = z.object({
   tier: z.string().min(1),
@@ -130,7 +131,7 @@ export const Route = createFileRoute("/api/billing/create-order")({
         // Check for comped or special accounts (but allow free plan to upgrade)
         const { data: sub, error: subErr } = await supabaseAdmin
           .from("subscriptions")
-          .select("plan, plan_price, notes, expiry_date")
+          .select("plan, plan_price, notes, expiry_date, setup_fee_paid")
           .eq("owner_id", userId)
           .maybeSingle();
 
@@ -159,11 +160,13 @@ export const Route = createFileRoute("/api/billing/create-order")({
         }
 
         if (isTierChangeBlocked(sub, tier)) {
+          const contact = getBillingSupportContact();
           return Response.json(
             {
               ok: false,
               code: "TIER_CHANGE_CONTACT_SUPPORT",
-              message: TIER_CHANGE_MESSAGE,
+              message: tierChangeSupportMessage(contact.channel),
+              contactLink: contact.link,
             },
             { status: 409 },
           );
@@ -226,19 +229,18 @@ export const Route = createFileRoute("/api/billing/create-order")({
               {
                 ok: false,
                 code: "OVER_TIER_LIMIT",
-                message: `You have ${studentCount} active students, but ${tier} tier supports only ${formatStudentLimit(tierLimit)}. Please archive some students or choose a higher tier.`,
+                message: `You have ${studentCount} active students, but ${tier} tier supports only ${formatLimit(tierLimit)}. Please archive some students or choose a higher tier.`,
               },
               { status: 409 },
             );
           }
         }
 
-        // Check if any paid order exists (for setup fee logic)
         let hasPriorPaidOrder: boolean;
         try {
-          hasPriorPaidOrder = await hasAnyPaidOrder(userId, supabaseAdmin);
+          hasPriorPaidOrder = await hasSetupFeePaid(userId, supabaseAdmin, sub);
         } catch (e) {
-          console.error("[create-order] hasAnyPaidOrder error:", e);
+          console.error("[create-order] hasSetupFeePaid error:", e);
           return Response.json(
             {
               ok: false,

@@ -42,7 +42,7 @@ export function studentLimitForTier(tier: PlanTier): number | null {
   return studentLimitForPlan(planCodeForTier(tier));
 }
 
-export function isUnlimitedLimit(limit: number | null | undefined): boolean {
+export function isUnlimited(limit: number | null | undefined): boolean {
   return (
     limit == null ||
     limit === Infinity ||
@@ -51,7 +51,13 @@ export function isUnlimitedLimit(limit: number | null | undefined): boolean {
   );
 }
 
-export function formatStudentLimit(limit: number | null | undefined): string {
-  if (isUnlimitedLimit(limit)) return "Unlimited";
+/** @deprecated Use isUnlimited */
+export const isUnlimitedLimit = isUnlimited;
+
+export function formatLimit(limit: number | null | undefined): string {
+  if (isUnlimited(limit)) return "Unlimited";
   return String(limit);
 }
+
+/** @deprecated Use formatLimit */
+export const formatStudentLimit = formatLimit;

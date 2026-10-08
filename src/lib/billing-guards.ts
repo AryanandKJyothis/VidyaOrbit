@@ -1,17 +1,13 @@
 /**
  * Pure billing predicates shared by routes, the client, and tests.
+ *
+ * The 7-day mid-term window is counted in Asia/Kolkata calendar dates
+ * (same as activate_billing_order in SQL). SQL is the source of truth
+ * at payment time; this helper is the create-order gate.
  */
-import { differenceInCalendarDays } from "date-fns";
-import {
-  planCodeForTier,
-  type PlanCode,
-  type PlanTier,
-} from "@/lib/plan-limits";
+import { planCodeForTier, type PlanTier } from "@/lib/plan-limits";
 
-type BillingCycle = "monthly" | "annual";
-
-export const TIER_CHANGE_MESSAGE =
-  "To change plans, message us on WhatsApp, we'll adjust your remaining time";
+export const BILLING_TIME_ZONE = "Asia/Kolkata";
 
 export type SubscriptionGuardRow = {
   plan: string | null;
@@ -26,10 +22,41 @@ export function isCompedSubscription(
   return sub.plan_price === 0 || sub.expiry_date === null;
 }
 
+/** YYYY-MM-DD in Asia/Kolkata. */
+export function kolkataDateString(at: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: BILLING_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(at);
+}
+
 /**
- * Refuse a different paid tier while more than 7 calendar days remain.
- * Same-tier renewals, free accounts, expired plans, and plans with
- * <= 7 days left may buy any tier.
+ * Whole calendar days from `now` to `expiry` in Asia/Kolkata.
+ * Matches SQL:
+ *   (expiry AT TIME ZONE 'Asia/Kolkata')::date
+ *   - (now() AT TIME ZONE 'Asia/Kolkata')::date
+ */
+export function kolkataCalendarDaysUntil(
+  expiry: Date,
+  now: Date = new Date(),
+): number {
+  const [ey, em, ed] = kolkataDateString(expiry).split("-").map(Number);
+  const [ny, nm, nd] = kolkataDateString(now).split("-").map(Number);
+  const expiryUtc = Date.UTC(ey, em - 1, ed);
+  const nowUtc = Date.UTC(ny, nm - 1, nd);
+  return Math.round((expiryUtc - nowUtc) / 86_400_000);
+}
+
+/**
+ * Refuse a different paid tier while more than 7 Asia/Kolkata calendar
+ * days remain. Same-tier renewals, free accounts, expired plans, and
+ * plans with <= 7 days left may buy any tier.
+ *
+ * activate_billing_order enforces the same rule at capture time so a
+ * checkout opened when <= 7 days remain cannot later apply a different
+ * tier after a same-tier renewal in another tab.
  */
 export function isTierChangeBlocked(
   sub: SubscriptionGuardRow | null,
@@ -49,35 +76,43 @@ export function isTierChangeBlocked(
   if (Number.isNaN(expiry.getTime())) return false;
   if (expiry.getTime() <= now.getTime()) return false;
 
-  return differenceInCalendarDays(expiry, now) > 7;
+  return kolkataCalendarDaysUntil(expiry, now) > 7;
 }
 
-/** Mirrors SQL GREATEST(now(), COALESCE(expiry, now())) + 1 or 12 months. */
-export function computeNewExpiry(
-  now: Date,
-  currentExpiry: Date | string | null | undefined,
-  cycle: BillingCycle,
-): Date {
-  const expiryDate =
-    currentExpiry == null
-      ? null
-      : currentExpiry instanceof Date
-        ? currentExpiry
-        : new Date(currentExpiry);
-  const validExpiry =
-    expiryDate && !Number.isNaN(expiryDate.getTime()) ? expiryDate : null;
-  const base =
-    validExpiry && validExpiry.getTime() > now.getTime() ? validExpiry : now;
-  const months = cycle === "annual" ? 12 : 1;
-  return new Date(
-    Date.UTC(
-      base.getUTCFullYear(),
-      base.getUTCMonth() + months,
-      base.getUTCDate(),
-      base.getUTCHours(),
-      base.getUTCMinutes(),
-      base.getUTCSeconds(),
-      base.getUTCMilliseconds(),
-    ),
-  );
+export type BillingSupportContact = {
+  link: string | null;
+  channel: "whatsapp" | "email" | null;
+};
+
+/**
+ * Server-side support contact for 409 TIER_CHANGE_CONTACT_SUPPORT.
+ * Reads the same VITE_CONTACT_* vars the client uses.
+ */
+export function getBillingSupportContact(
+  env: NodeJS.ProcessEnv = process.env,
+): BillingSupportContact {
+  const whatsapp = env.VITE_CONTACT_WHATSAPP?.trim() || "";
+  const email = env.VITE_CONTACT_EMAIL?.trim() || "";
+  if (whatsapp) {
+    return {
+      link: `https://wa.me/${whatsapp.replace(/\D/g, "")}`,
+      channel: "whatsapp",
+    };
+  }
+  if (email) {
+    return { link: `mailto:${email}`, channel: "email" };
+  }
+  return { link: null, channel: null };
 }
+
+export function tierChangeSupportMessage(
+  channel: BillingSupportContact["channel"],
+): string {
+  if (channel === "whatsapp") {
+    return "To change plans, message us on WhatsApp, we'll adjust your remaining time";
+  }
+  return "To change plans, contact us, we'll adjust your remaining time";
+}
+
+/** Fallback copy when the 409 body has no message. */
+export const TIER_CHANGE_MESSAGE = tierChangeSupportMessage("whatsapp");

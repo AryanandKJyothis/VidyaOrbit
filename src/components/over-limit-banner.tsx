@@ -3,7 +3,7 @@ import { AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useSubscription, PLANS } from "@/hooks/use-subscription";
-import { formatStudentLimit } from "@/lib/plan-limits";
+import { formatLimit } from "@/lib/plan-limits";
 
 /**
  * Banner shown when an institute's student count exceeds the plan limit
@@ -26,7 +26,7 @@ export function OverLimitBanner() {
           <div className="space-y-1">
             <p className="text-sm font-semibold">
               You have {sub.data.student_count} students on the {planName} plan
-              (limit {formatStudentLimit(sub.data.limit)}).
+              (limit {formatLimit(sub.data.limit)}).
             </p>
             <p className="text-xs text-muted-foreground">
               Your data is safe and usable — adding new students is paused until

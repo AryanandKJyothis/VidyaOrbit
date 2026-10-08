@@ -20,9 +20,8 @@ import {
 import { Check, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
 import {
-  formatStudentLimit,
+  formatLimit,
   PLAN_DISPLAY_NAMES,
   planCodeForTier,
 } from "@/lib/plan-limits";
@@ -57,7 +56,6 @@ function PlanPage() {
   const [pricing, setPricing] = useState<PricingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [billingEnabled, setBillingEnabled] = useState(false);
-  const [hasPaidSetup, setHasPaidSetup] = useState(false);
   const [pricingError, setPricingError] = useState(false);
 
   const subscription = subQuery.data;
@@ -85,21 +83,6 @@ function PlanPage() {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (!isOwner) return;
-    let cancelled = false;
-    (async () => {
-      const { count, error } = await supabase
-        .from("billing_orders")
-        .select("id", { count: "exact", head: true })
-        .not("activated_at", "is", null);
-      if (!cancelled && !error) setHasPaidSetup((count ?? 0) > 0);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isOwner]);
 
   if (loading) {
     return (
@@ -166,7 +149,7 @@ function PlanPage() {
               <span className="text-sm font-medium">Students</span>
               <span className="text-sm">
                 {subscription.student_count} /{" "}
-                {formatStudentLimit(subscription.limit)}
+                {formatLimit(subscription.limit)}
               </span>
             </div>
           )}
@@ -216,8 +199,11 @@ function PlanPage() {
               currentPlan={currentPlan}
               isOwner={isOwner}
               billingEnabled={billingEnabled}
-              hasPaidSetup={hasPaidSetup}
-              onSuccess={() => subQuery.refetch()}
+              hasPaidSetup={Boolean(subscription?.setup_fee_paid)}
+              onSuccess={async () => {
+                const r = await subQuery.refetch();
+                return r.data;
+              }}
             />
           ))}
       </div>
@@ -240,7 +226,7 @@ type PricingCardProps = {
   isOwner: boolean;
   billingEnabled: boolean;
   hasPaidSetup: boolean;
-  onSuccess: () => void;
+  onSuccess: () => void | Promise<unknown>;
 };
 
 function PricingCard({
@@ -309,12 +295,14 @@ function PricingCard({
           {cycle === "annual" && priceSavings > 0 && (
             <div className="text-sm font-medium text-green-600 mt-1">
               Save ₹{priceSavings.toLocaleString("en-IN")}
-              {setupSavings > 0 && tier.tier !== "starter" && (
-                <span>
-                  {" "}
-                  + free ₹{setupSavings.toLocaleString("en-IN")} setup
-                </span>
-              )}
+              {setupSavings > 0 &&
+                tier.tier !== "starter" &&
+                !hasPaidSetup && (
+                  <span>
+                    {" "}
+                    + free ₹{setupSavings.toLocaleString("en-IN")} setup
+                  </span>
+                )}
             </div>
           )}
 

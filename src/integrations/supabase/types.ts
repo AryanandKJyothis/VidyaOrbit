@@ -155,6 +155,8 @@ export type Database = {
           status: string;
           tier: string;
           cycle: string;
+          needs_review: boolean;
+          review_reason: string | null;
         };
         Insert: {
           activated_at?: string | null;
@@ -171,6 +173,8 @@ export type Database = {
           status?: string;
           tier: string;
           cycle: string;
+          needs_review?: boolean;
+          review_reason?: string | null;
         };
         Update: {
           activated_at?: string | null;
@@ -187,6 +191,8 @@ export type Database = {
           status?: string;
           tier?: string;
           cycle?: string;
+          needs_review?: boolean;
+          review_reason?: string | null;
         };
         Relationships: [];
       };
@@ -459,6 +465,7 @@ export type Database = {
           plan_price: number | null;
           razorpay_customer_id: string | null;
           razorpay_subscription_id: string | null;
+          setup_fee_paid: boolean;
           start_date: string | null;
           status: string;
           updated_at: string;
@@ -476,6 +483,7 @@ export type Database = {
           plan_price?: number | null;
           razorpay_customer_id?: string | null;
           razorpay_subscription_id?: string | null;
+          setup_fee_paid?: boolean;
           start_date?: string | null;
           status?: string;
           updated_at?: string;
@@ -493,6 +501,7 @@ export type Database = {
           plan_price?: number | null;
           razorpay_customer_id?: string | null;
           razorpay_subscription_id?: string | null;
+          setup_fee_paid?: boolean;
           start_date?: string | null;
           status?: string;
           updated_at?: string;

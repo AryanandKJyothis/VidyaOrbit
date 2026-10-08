@@ -278,6 +278,7 @@ describe("POST /api/billing/create-order", () => {
   });
 
   it("refuses a different tier while more than 7 days remain", async () => {
+    process.env.VITE_CONTACT_WHATSAPP = "919876543210";
     const later = new Date(Date.now() + 30 * 86400_000).toISOString();
     fromMock.mockImplementation((table: string) => {
       if (table === "subscriptions")
@@ -294,6 +295,121 @@ describe("POST /api/billing/create-order", () => {
     const body = await res.json();
     expect(body.code).toBe("TIER_CHANGE_CONTACT_SUPPORT");
     expect(body.message).toMatch(/WhatsApp/i);
+    expect(body.contactLink).toBe("https://wa.me/919876543210");
+  });
+
+  it("409 without WhatsApp says contact us and uses mailto", async () => {
+    delete process.env.VITE_CONTACT_WHATSAPP;
+    process.env.VITE_CONTACT_EMAIL = "support@example.com";
+    const later = new Date(Date.now() + 30 * 86400_000).toISOString();
+    fromMock.mockImplementation((table: string) => {
+      if (table === "subscriptions")
+        return thenable({
+          data: { plan: "starter", plan_price: 499, expiry_date: later },
+          error: null,
+        });
+      if (table === "institutes")
+        return thenable({ data: { owner_id: OWNER }, error: null });
+      return thenable({ data: null, error: null, count: 0 });
+    });
+    const res = await postCreate({ tier: "large", cycle: "monthly" });
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.message).not.toMatch(/WhatsApp/i);
+    expect(body.message).toMatch(/contact us/i);
+    expect(body.contactLink).toBe("mailto:support@example.com");
+  });
+
+  it("allows a different tier with exactly 7 days left", async () => {
+    const in7 = new Date(Date.now() + 7 * 86400_000).toISOString();
+    fromMock.mockImplementation((table: string) => {
+      if (table === "subscriptions")
+        return thenable({
+          data: { plan: "starter", plan_price: 499, expiry_date: in7 },
+          error: null,
+        });
+      if (table === "institutes")
+        return thenable({ data: { owner_id: OWNER }, error: null });
+      if (table === "students")
+        return thenable({ data: null, error: null, count: 10 });
+      if (table === "billing_orders")
+        return thenable({ data: null, error: null, count: 1 });
+      return thenable({ data: null, error: null });
+    });
+    const res = await postCreate({ tier: "large", cycle: "monthly" });
+    expect(res.status).toBe(200);
+  });
+
+  it("allows a different tier when expired", async () => {
+    const expired = new Date(Date.now() - 86400_000).toISOString();
+    fromMock.mockImplementation((table: string) => {
+      if (table === "subscriptions")
+        return thenable({
+          data: { plan: "starter", plan_price: 499, expiry_date: expired },
+          error: null,
+        });
+      if (table === "institutes")
+        return thenable({ data: { owner_id: OWNER }, error: null });
+      if (table === "students")
+        return thenable({ data: null, error: null, count: 10 });
+      if (table === "billing_orders")
+        return thenable({ data: null, error: null, count: 1 });
+      return thenable({ data: null, error: null });
+    });
+    const res = await postCreate({ tier: "large", cycle: "monthly" });
+    expect(res.status).toBe(200);
+  });
+
+  it("allows same-tier renewal while time remains", async () => {
+    const later = new Date(Date.now() + 30 * 86400_000).toISOString();
+    fromMock.mockImplementation((table: string) => {
+      if (table === "subscriptions")
+        return thenable({
+          data: { plan: "growth", plan_price: 999, expiry_date: later },
+          error: null,
+        });
+      if (table === "institutes")
+        return thenable({ data: { owner_id: OWNER }, error: null });
+      if (table === "students")
+        return thenable({ data: null, error: null, count: 10 });
+      if (table === "billing_orders")
+        return thenable({ data: null, error: null, count: 1 });
+      return thenable({ data: null, error: null });
+    });
+    const res = await postCreate({ tier: "growth", cycle: "monthly" });
+    expect(res.status).toBe(200);
+  });
+
+  it("returns 503 when billing is disabled", async () => {
+    disableBilling();
+    const res = await postCreate({ tier: "growth", cycle: "monthly" });
+    expect(res.status).toBe(503);
+    expect((await res.json()).code).toBe("BILLING_DISABLED");
+  });
+
+  it("does not charge setup to an invoice-paid centre with no online orders", async () => {
+    fromMock.mockImplementation((table: string) => {
+      if (table === "subscriptions")
+        return thenable({
+          data: {
+            plan: "growth",
+            plan_price: 999,
+            expiry_date: "2026-12-01",
+            setup_fee_paid: false,
+          },
+          error: null,
+        });
+      if (table === "institutes")
+        return thenable({ data: { owner_id: OWNER }, error: null });
+      if (table === "students")
+        return thenable({ data: null, error: null, count: 10 });
+      if (table === "billing_orders")
+        return thenable({ data: null, error: null, count: 0 });
+      return thenable({ data: null, error: null });
+    });
+    const res = await postCreate({ tier: "growth", cycle: "monthly" });
+    expect(res.status).toBe(200);
+    expect((await res.json()).amount).toBe(99900);
   });
 
   it("blocks buying a tier below the active student count", async () => {
@@ -353,6 +469,54 @@ describe("POST /api/billing/verify-payment", () => {
     });
     expect(res.status).toBe(400);
     expect((await res.json()).code).toBe("INVALID_SIGNATURE");
+  });
+
+  it("returns 500 when order lookup hits a DB error", async () => {
+    fromMock.mockImplementation((table: string) => {
+      if (table === "billing_orders")
+        return thenable({ data: null, error: { message: "db down" } });
+      return thenable({ data: null, error: null });
+    });
+    const res = await postVerify({
+      razorpay_order_id: RZ_ORDER,
+      razorpay_payment_id: RZ_PAY,
+      razorpay_signature: checkoutSig(RZ_ORDER, RZ_PAY),
+    });
+    expect(res.status).toBe(500);
+    expect((await res.json()).code).toBe("DB_ERROR");
+  });
+
+  it("returns 200 needsReview when activation holds a mid-term tier change", async () => {
+    fromMock.mockImplementation(() =>
+      thenable({ data: storedOrder, error: null }),
+    );
+    paymentsFetch.mockResolvedValue({
+      id: RZ_PAY,
+      order_id: RZ_ORDER,
+      status: "captured",
+      amount: 99900,
+      currency: "INR",
+    });
+    rpcMock.mockResolvedValue({
+      data: {
+        activated: false,
+        reason: "tier_change_needs_review",
+        needs_review: true,
+        owner_id: OWNER,
+        tier: "large",
+        cycle: "monthly",
+      },
+      error: null,
+    });
+    const res = await postVerify({
+      razorpay_order_id: RZ_ORDER,
+      razorpay_payment_id: RZ_PAY,
+      razorpay_signature: checkoutSig(RZ_ORDER, RZ_PAY),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.needsReview).toBe(true);
   });
 
   it("returns 404 for the wrong owner", async () => {
@@ -618,6 +782,25 @@ describe("POST /api/webhooks/razorpay", () => {
     });
     expect(res.status).toBe(200);
     expect(rpcMock).toHaveBeenCalled();
+  });
+
+  it("returns 200 for an unknown order id (other environment)", async () => {
+    fromMock.mockImplementation((table: string) => {
+      if (table === "razorpay_webhook_deliveries")
+        return thenable({ data: { handled: false }, error: null });
+      if (table === "billing_orders")
+        return thenable({ data: null, error: null });
+      return thenable({ data: null, error: null });
+    });
+    const res = await postHook({
+      event: "payment.captured",
+      payload: { payment: { entity: paymentEntity } },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.reason).toBe("order_not_found");
+    expect(rpcMock).not.toHaveBeenCalled();
   });
 
   it("returns 500 when order lookup hits a DB error", async () => {

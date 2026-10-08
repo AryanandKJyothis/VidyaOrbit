@@ -129,8 +129,20 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
           .eq("owner_id", userId)
           .maybeSingle();
 
-        if (orderErr || !order) {
-          console.error("[verify-payment] Order not found:", orderErr);
+        if (orderErr) {
+          console.error("[verify-payment] Order lookup error:", orderErr);
+          return Response.json(
+            {
+              ok: false,
+              code: "DB_ERROR",
+              message: "Could not look up order.",
+            },
+            { status: 500 },
+          );
+        }
+
+        if (!order) {
+          console.error("[verify-payment] Order not found");
           return Response.json(
             { ok: false, code: "ORDER_NOT_FOUND", message: "Order not found." },
             { status: 404 },
@@ -246,6 +258,18 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
             return Response.json({
               ok: true,
               message: "Payment already processed",
+            });
+          }
+          if (activation.reason === "tier_change_needs_review") {
+            console.warn(
+              "[verify-payment] Paid order held for admin review:",
+              order.id,
+            );
+            return Response.json({
+              ok: true,
+              needsReview: true,
+              message:
+                "Payment received. Changing plans while time remains needs a manual adjustment — we'll be in touch.",
             });
           }
           console.error(

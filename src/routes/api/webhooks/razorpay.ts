@@ -227,7 +227,8 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
 
             if (
               !activation.success &&
-              activation.reason !== "already_activated"
+              activation.reason !== "already_activated" &&
+              activation.reason !== "tier_change_needs_review"
             ) {
               // Throw to trigger retry (500)
               throw new Error(`Activation failed: ${activation.reason}`);

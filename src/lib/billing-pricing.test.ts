@@ -4,9 +4,51 @@
 import { describe, it, expect } from "vitest";
 import {
   computePricing,
+  setupFeePaidFromSubscription,
   type PlanTier,
-  type BillingCycle,
 } from "@/lib/billing-pricing";
+
+describe("setupFeePaidFromSubscription", () => {
+  it("is true for admin-flagged invoice centres", () => {
+    expect(
+      setupFeePaidFromSubscription({
+        setup_fee_paid: true,
+        plan: "free",
+        expiry_date: null,
+      }),
+    ).toBe(true);
+  });
+
+  it("is true for any current non-free plan (invoice-only today)", () => {
+    expect(
+      setupFeePaidFromSubscription({
+        setup_fee_paid: false,
+        plan: "growth",
+        expiry_date: "2026-12-01",
+      }),
+    ).toBe(true);
+  });
+
+  it("is true when an expiry remains even after returning to free", () => {
+    expect(
+      setupFeePaidFromSubscription({
+        setup_fee_paid: false,
+        plan: "free",
+        expiry_date: "2026-01-01",
+      }),
+    ).toBe(true);
+  });
+
+  it("is false for a brand-new free account", () => {
+    expect(
+      setupFeePaidFromSubscription({
+        setup_fee_paid: false,
+        plan: "free",
+        expiry_date: null,
+      }),
+    ).toBe(false);
+  });
+});
 
 describe("Billing Pricing (Tier + Cycle)", () => {
   describe("Starter tier", () => {

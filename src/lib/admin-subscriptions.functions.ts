@@ -112,25 +112,34 @@ export const getSubscriptionDetail = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ owner_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
-    const [{ data: sub }, { data: inst }, { data: audit }] = await Promise.all([
-      supabaseAdmin
-        .from("subscriptions")
-        .select("*")
-        .eq("owner_id", data.owner_id)
-        .maybeSingle(),
-      supabaseAdmin
-        .from("institutes")
-        .select("name, contact_email, admin_notes" as never)
-        .eq("owner_id", data.owner_id)
-        .maybeSingle(),
-      supabaseAdmin
-        .from("subscription_audit" as never)
-        .select("*")
-        .eq("owner_id", data.owner_id)
-        .order("changed_at", { ascending: false })
-        .limit(25),
-    ]);
-    return { sub, inst, audit: audit ?? [] };
+    const [{ data: sub }, { data: inst }, { data: audit }, { data: reviews }] =
+      await Promise.all([
+        supabaseAdmin
+          .from("subscriptions")
+          .select("*")
+          .eq("owner_id", data.owner_id)
+          .maybeSingle(),
+        supabaseAdmin
+          .from("institutes")
+          .select("name, contact_email, admin_notes" as never)
+          .eq("owner_id", data.owner_id)
+          .maybeSingle(),
+        supabaseAdmin
+          .from("subscription_audit" as never)
+          .select("*")
+          .eq("owner_id", data.owner_id)
+          .order("changed_at", { ascending: false })
+          .limit(25),
+        supabaseAdmin
+          .from("billing_orders")
+          .select(
+            "id, tier, cycle, amount_paise, currency, razorpay_order_id, razorpay_payment_id, paid_at, needs_review, review_reason",
+          )
+          .eq("owner_id", data.owner_id)
+          .eq("needs_review", true)
+          .order("paid_at", { ascending: false }),
+      ]);
+    return { sub, inst, audit: audit ?? [], reviews: reviews ?? [] };
   });
 
 const planEnum = z.enum(["free", "starter", "growth", "pro"]);
@@ -205,12 +214,13 @@ export const updateSubscription = createServerFn({ method: "POST" })
         notes: z.string().max(2000).nullable(),
         note: z.string().max(500).optional(),
         confirm: z.boolean().optional(),
+        setup_fee_paid: z.boolean().optional(),
       })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
-    return applyChange({
+    const result = await applyChange({
       owner_id: data.owner_id,
       changed_by: context.userId,
       plan: data.plan,
@@ -222,6 +232,30 @@ export const updateSubscription = createServerFn({ method: "POST" })
       note: data.note ?? "Manual update",
       confirm: data.confirm ?? false,
     });
+    if (typeof data.setup_fee_paid === "boolean") {
+      const { error } = await supabaseAdmin
+        .from("subscriptions")
+        .update({ setup_fee_paid: data.setup_fee_paid })
+        .eq("owner_id", data.owner_id);
+      if (error) throw new Error(error.message);
+    }
+    return result;
+  });
+
+export const dismissBillingReview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({ owner_id: z.string().uuid(), order_id: z.string().uuid() }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin
+      .from("billing_orders")
+      .update({ needs_review: false })
+      .eq("id", data.order_id)
+      .eq("owner_id", data.owner_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 export const extendSubscription = createServerFn({ method: "POST" })

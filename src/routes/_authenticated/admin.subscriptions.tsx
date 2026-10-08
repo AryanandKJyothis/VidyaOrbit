@@ -46,11 +46,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import {
-  formatStudentLimit,
-  isUnlimitedLimit,
+  formatLimit,
+  isUnlimited,
   studentLimitForPlan,
   type PlanCode,
 } from "@/lib/plan-limits";
+import { Switch } from "@/components/ui/switch";
 import {
   checkAdmin,
   listInstitutes,
@@ -60,6 +61,7 @@ import {
   extendSubscription,
   grantTrial,
   updateInstituteAdminNotes,
+  dismissBillingReview,
 } from "@/lib/admin-subscriptions.functions";
 import { PLANS } from "@/hooks/use-subscription";
 
@@ -402,12 +404,15 @@ const toneText: Record<"neutral" | "warning" | "danger", string> = {
 };
 
 function InstituteRow({ row, onOpen }: { row: Row; onOpen: () => void }) {
-  const usagePct = Math.min(
-    100,
-    Math.round((row.student_count / Math.max(1, row.plan_limit)) * 100),
-  );
+  const unlimited = isUnlimited(row.plan_limit);
+  const usagePct = unlimited
+    ? 0
+    : Math.min(
+        100,
+        Math.round((row.student_count / Math.max(1, row.plan_limit)) * 100),
+      );
   const usageTone =
-    row.student_count >= row.plan_limit
+    !unlimited && row.student_count >= row.plan_limit
       ? "bg-red-500"
       : usagePct >= 80
         ? "bg-amber-500"
@@ -463,19 +468,20 @@ function InstituteRow({ row, onOpen }: { row: Row; onOpen: () => void }) {
       <div className="col-span-6 md:col-span-3">
         <div className="flex items-center justify-between text-xs">
           <span className="tabular-nums">
-            {row.student_count} /{" "}
-            {row.plan_limit >= 2147483647 || row.plan_limit === null
-              ? "Unlimited"
-              : row.plan_limit}
+            {row.student_count} / {formatLimit(row.plan_limit)}
           </span>
-          <span className="text-muted-foreground">{usagePct}%</span>
+          {!unlimited && (
+            <span className="text-muted-foreground">{usagePct}%</span>
+          )}
         </div>
-        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className={cn("h-full", usageTone)}
-            style={{ width: `${usagePct}%` }}
-          />
-        </div>
+        {!unlimited && (
+          <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn("h-full", usageTone)}
+              style={{ width: `${usagePct}%` }}
+            />
+          </div>
+        )}
       </div>
       <div
         className={cn(
@@ -513,6 +519,7 @@ function EditDialog({
   const extendFn = useServerFn(extendSubscription);
   const trialFn = useServerFn(grantTrial);
   const notesFn = useServerFn(updateInstituteAdminNotes);
+  const dismissReviewFn = useServerFn(dismissBillingReview);
 
   const detail = useQuery({
     queryKey: ["admin-sub", ownerId],
@@ -531,6 +538,7 @@ function EditDialog({
         expiry_date: string | null;
         plan_price: number | null;
         notes: string | null;
+        setup_fee_paid?: boolean;
       }
     | null
     | undefined;
@@ -548,6 +556,17 @@ function EditDialog({
     new_price: number | null;
     note: string | null;
   }>;
+  const reviews = (detail.data?.reviews ?? []) as Array<{
+    id: string;
+    tier: string;
+    cycle: string;
+    amount_paise: number;
+    currency: string;
+    razorpay_order_id: string;
+    razorpay_payment_id: string | null;
+    paid_at: string | null;
+    review_reason: string | null;
+  }>;
 
   const [plan, setPlan] = useState<string>("free");
   const [status, setStatus] = useState<string>("active");
@@ -556,6 +575,7 @@ function EditDialog({
   const [planPrice, setPlanPrice] = useState("");
   const [notes, setNotes] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
+  const [setupFeePaid, setSetupFeePaid] = useState(false);
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmOverLimit, setConfirmOverLimit] = useState<{
@@ -575,6 +595,7 @@ function EditDialog({
     setPlanPrice(sub?.plan_price != null ? String(sub.plan_price) : "");
     setNotes(sub?.notes ?? "");
     setAdminNotes(inst?.admin_notes ?? "");
+    setSetupFeePaid(Boolean(sub?.setup_fee_paid));
   }
 
   const refresh = () => {
@@ -620,6 +641,7 @@ function EditDialog({
           plan_price: planPrice ? Number(planPrice) : null,
           notes: notes || null,
           confirm,
+          setup_fee_paid: setupFeePaid,
         },
       });
       if (
@@ -710,7 +732,7 @@ function EditDialog({
     : null;
   const studentTotal = num("total_students");
   const planLimitFromForm = studentLimitForPlan((plan as PlanCode) || "free");
-  const usagePct = isUnlimitedLimit(planLimitFromForm)
+  const usagePct = isUnlimited(planLimitFromForm)
     ? 0
     : Math.min(
         100,
@@ -731,6 +753,64 @@ function EditDialog({
           </div>
         ) : (
           <div className="space-y-5">
+            {reviews.length > 0 && (
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+                <p className="font-semibold text-amber-800 dark:text-amber-300">
+                  Paid order needs review
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Money was captured but the plan was not changed (mid-term
+                  different-tier checkout). Apply or refund from this dialog,
+                  then dismiss.
+                </p>
+                <div className="mt-2 space-y-2">
+                  {reviews.map((r) => (
+                    <div
+                      key={r.id}
+                      className="rounded-md border bg-background p-2 text-xs"
+                    >
+                      <p className="font-medium capitalize">
+                        {r.tier} {r.cycle} · ₹
+                        {Math.round(r.amount_paise / 100).toLocaleString(
+                          "en-IN",
+                        )}{" "}
+                        · {r.razorpay_order_id}
+                      </p>
+                      {r.review_reason && (
+                        <p className="mt-1 text-muted-foreground">
+                          {r.review_reason}
+                        </p>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2"
+                        disabled={busy !== null}
+                        onClick={async () => {
+                          setBusy("dismiss-review");
+                          try {
+                            await dismissReviewFn({
+                              data: { owner_id: ownerId, order_id: r.id },
+                            });
+                            toast.success("Review dismissed");
+                            refresh();
+                          } catch (e) {
+                            toast.error(
+                              e instanceof Error ? e.message : "Failed",
+                            );
+                          } finally {
+                            setBusy(null);
+                          }
+                        }}
+                      >
+                        Dismiss review
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Activity & usage */}
             <div className="rounded-lg border bg-muted/20 p-4">
               <div className="grid gap-4 sm:grid-cols-3">
@@ -763,10 +843,12 @@ function EditDialog({
                     {studentTotal}
                     <span className="text-base text-muted-foreground">
                       {" "}
-                      / {formatStudentLimit(planLimitFromForm)}
+                      / {formatLimit(planLimitFromForm)}
                     </span>
                   </p>
-                  <Progress value={usagePct} className="mt-2 h-1.5" />
+                  {!isUnlimited(planLimitFromForm) && (
+                    <Progress value={usagePct} className="mt-2 h-1.5" />
+                  )}
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Last active</p>
@@ -872,6 +954,20 @@ function EditDialog({
                   value={planPrice}
                   onChange={(e) => setPlanPrice(e.target.value)}
                   placeholder="e.g. 499"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 sm:col-span-2">
+                <div>
+                  <Label htmlFor="setup-fee-paid">Setup fee already paid</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Invoice and previous online payments. When on, checkout
+                    will not charge ₹5,000 setup again.
+                  </p>
+                </div>
+                <Switch
+                  id="setup-fee-paid"
+                  checked={setupFeePaid}
+                  onCheckedChange={setSetupFeePaid}
                 />
               </div>
             </div>
@@ -980,7 +1076,8 @@ function EditDialog({
                   <strong className="capitalize">
                     {confirmOverLimit.new_plan}
                   </strong>{" "}
-                  only allows <strong>{confirmOverLimit.new_limit}</strong>{" "}
+                  only allows{" "}
+                  <strong>{formatLimit(confirmOverLimit.new_limit)}</strong>{" "}
                   (over by {confirmOverLimit.over_by}).
                   <br />
                   <br />
