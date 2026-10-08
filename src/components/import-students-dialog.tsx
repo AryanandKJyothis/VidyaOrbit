@@ -319,7 +319,7 @@ export function ImportStudentsDialog({
         }
         const { error } = await supabase
           .from("students")
-          .update(updatePayload)
+          .update(updatePayload as any)
           .eq("id", r.existingStudentId!)
           .eq("owner_id", ownerId);
         if (error) throw error;
