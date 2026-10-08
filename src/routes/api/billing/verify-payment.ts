@@ -4,7 +4,6 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import crypto from "node:crypto";
 import Razorpay from "razorpay";
 import type { Payments } from "razorpay/dist/types/payments";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -12,6 +11,7 @@ import { parseBearerUserId } from "@/server/require-bearer-user";
 import { allowRequest, clientAddress, tooManyRequests } from "@/lib/rate-limit";
 import { assertRazorpayKeyMode, isBillingEnabled } from "@/lib/billing-pricing";
 import { activateOrderOnce } from "@/lib/billing-activation";
+import { verifyCheckoutSignature } from "@/lib/billing-signature";
 
 const bodySchema = z.object({
   razorpay_order_id: z.string().min(1),
@@ -102,18 +102,12 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
           parsed.data;
 
-        // Verify signature
-        const sigText = `${razorpay_order_id}|${razorpay_payment_id}`;
-        const expectedSig = crypto
-          .createHmac("sha256", keySecret)
-          .update(sigText)
-          .digest("hex");
-
         if (
-          razorpay_signature.length !== expectedSig.length ||
-          !crypto.timingSafeEqual(
-            Buffer.from(razorpay_signature),
-            Buffer.from(expectedSig),
+          !verifyCheckoutSignature(
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            keySecret,
           )
         ) {
           console.error("[verify-payment] Invalid signature");

@@ -5,6 +5,11 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  PLAN_STUDENT_LIMITS,
+  UNLIMITED_STUDENT_SENTINEL,
+  planCodeForTier,
+} from "@/lib/plan-limits";
 
 export type PlanTier = "starter" | "growth" | "large";
 export type BillingCycle = "monthly" | "annual";
@@ -68,7 +73,7 @@ function getEnvInt(key: string, fallback: number): number {
 export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
   starter: {
     tier: "starter",
-    student_limit: getEnvInt("BILLING_STARTER_STUDENT_LIMIT", 100),
+    student_limit: PLAN_STUDENT_LIMITS.starter ?? 100,
     setup_fee_paise: getEnvInt("BILLING_STARTER_SETUP_FEE_PAISE", 0), // ₹0 (free)
     monthly_price_paise: getEnvInt(
       "BILLING_STARTER_MONTHLY_PRICE_PAISE",
@@ -80,7 +85,7 @@ export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
   },
   growth: {
     tier: "growth",
-    student_limit: getEnvInt("BILLING_GROWTH_STUDENT_LIMIT", 500),
+    student_limit: PLAN_STUDENT_LIMITS.growth ?? 500,
     setup_fee_paise: getEnvInt("BILLING_GROWTH_SETUP_FEE_PAISE", 500000), // ₹5,000 (monthly only)
     monthly_price_paise: getEnvInt("BILLING_GROWTH_MONTHLY_PRICE_PAISE", 99900), // ₹999
     annual_price_paise: getEnvInt("BILLING_GROWTH_ANNUAL_PRICE_PAISE", 1000000), // ₹10,000
@@ -89,7 +94,7 @@ export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
   },
   large: {
     tier: "large",
-    student_limit: getEnvInt("BILLING_LARGE_STUDENT_LIMIT", 2147483647), // Unlimited (use null in API)
+    student_limit: UNLIMITED_STUDENT_SENTINEL,
     setup_fee_paise: getEnvInt("BILLING_LARGE_SETUP_FEE_PAISE", 500000), // ₹5,000 (monthly only)
     monthly_price_paise: getEnvInt("BILLING_LARGE_MONTHLY_PRICE_PAISE", 249900), // ₹2,499
     annual_price_paise: getEnvInt("BILLING_LARGE_ANNUAL_PRICE_PAISE", 2500000), // ₹25,000
@@ -190,12 +195,7 @@ export async function hasAnyPaidOrder(
 export function getSubscriptionPlanCode(
   tier: PlanTier,
 ): "starter" | "growth" | "pro" {
-  // starter -> starter (100 students)
-  // growth -> growth (500 students)
-  // large -> pro (unlimited)
-  if (tier === "starter") return "starter";
-  if (tier === "growth") return "growth";
-  return "pro";
+  return planCodeForTier(tier);
 }
 
 /**

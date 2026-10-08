@@ -115,11 +115,19 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
         }
 
         // Check if already handled
-        const { data: delivery } = await supabaseAdmin
+        const { data: delivery, error: deliveryErr } = await supabaseAdmin
           .from("razorpay_webhook_deliveries")
           .select("handled")
           .eq("delivery_hash", eventId)
           .single();
+
+        if (deliveryErr) {
+          console.error(
+            "[Razorpay webhook] Delivery lookup failed:",
+            deliveryErr,
+          );
+          return Response.json({ error: "DB_LOOKUP_FAILED" }, { status: 500 });
+        }
 
         if (delivery?.handled) {
           console.log("[Razorpay webhook] Event already handled:", eventId);
@@ -162,11 +170,15 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
             }
 
             // Find the order by razorpay_order_id
-            const { data: order } = await supabaseAdmin
+            const { data: order, error: orderErr } = await supabaseAdmin
               .from("billing_orders")
               .select("id, amount_paise, currency")
               .eq("razorpay_order_id", orderId)
               .maybeSingle();
+
+            if (orderErr) {
+              throw orderErr;
+            }
 
             if (!order) {
               console.log(
@@ -241,10 +253,18 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
         }
 
         // Mark delivery as handled
-        await supabaseAdmin
+        const { error: handledErr } = await supabaseAdmin
           .from("razorpay_webhook_deliveries")
           .update({ handled: true, handled_at: new Date().toISOString() })
           .eq("delivery_hash", eventId);
+
+        if (handledErr) {
+          console.error(
+            "[Razorpay webhook] Failed to mark handled:",
+            handledErr,
+          );
+          return Response.json({ error: "DB_UPDATE_FAILED" }, { status: 500 });
+        }
 
         return Response.json({ ok: true });
       },

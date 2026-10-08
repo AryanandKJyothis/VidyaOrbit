@@ -17,10 +17,15 @@ import {
   isBillingEnabled,
   isValidTier,
   isValidCycle,
-  getTierConfig,
   type PlanTier,
   type BillingCycle,
 } from "@/lib/billing-pricing";
+import {
+  isCompedSubscription,
+  isTierChangeBlocked,
+  TIER_CHANGE_MESSAGE,
+} from "@/lib/billing-guards";
+import { formatStudentLimit, studentLimitForTier } from "@/lib/plan-limits";
 
 const bodySchema = z.object({
   tier: z.string().min(1),
@@ -143,29 +148,25 @@ export const Route = createFileRoute("/api/billing/create-order")({
 
         // Only block if it's a comped NON-FREE account
         // (free plan with NULL expiry/price is normal and should be allowed to buy)
-        if (sub && sub.plan !== "free") {
-          if (sub.plan_price === 0) {
-            return Response.json(
-              {
-                ok: false,
-                code: "COMPED_ACCOUNT",
-                message:
-                  "Your account has a complimentary plan. Please contact support to make changes.",
-              },
-              { status: 400 },
-            );
-          }
-          if (sub.expiry_date === null) {
-            return Response.json(
-              {
-                ok: false,
-                code: "NO_EXPIRY_ACCOUNT",
-                message:
-                  "Your account has a special no-expiry plan. Please contact support to make changes.",
-              },
-              { status: 400 },
-            );
-          }
+        if (isCompedSubscription(sub)) {
+          const code =
+            sub?.plan_price === 0 ? "COMPED_ACCOUNT" : "NO_EXPIRY_ACCOUNT";
+          const message =
+            sub?.plan_price === 0
+              ? "Your account has a complimentary plan. Please contact support to make changes."
+              : "Your account has a special no-expiry plan. Please contact support to make changes.";
+          return Response.json({ ok: false, code, message }, { status: 400 });
+        }
+
+        if (isTierChangeBlocked(sub, tier)) {
+          return Response.json(
+            {
+              ok: false,
+              code: "TIER_CHANGE_CONTACT_SUPPORT",
+              message: TIER_CHANGE_MESSAGE,
+            },
+            { status: 409 },
+          );
         }
 
         // Check that the user is the workspace owner
@@ -200,8 +201,8 @@ export const Route = createFileRoute("/api/billing/create-order")({
         }
 
         // Check student count to prevent over-limit purchases (except for large = unlimited)
-        if (tier !== "large") {
-          const tierConfig = getTierConfig(tier);
+        const tierLimit = studentLimitForTier(tier);
+        if (tierLimit != null) {
           const { count: studentCount, error: countErr } = await supabaseAdmin
             .from("students")
             .select("id", { count: "exact", head: true })
@@ -220,12 +221,12 @@ export const Route = createFileRoute("/api/billing/create-order")({
             );
           }
 
-          if ((studentCount ?? 0) > tierConfig.student_limit) {
+          if ((studentCount ?? 0) > tierLimit) {
             return Response.json(
               {
                 ok: false,
                 code: "OVER_TIER_LIMIT",
-                message: `You have ${studentCount} active students, but ${tier} tier supports only ${tierConfig.student_limit}. Please archive some students or choose a higher tier.`,
+                message: `You have ${studentCount} active students, but ${tier} tier supports only ${formatStudentLimit(tierLimit)}. Please archive some students or choose a higher tier.`,
               },
               { status: 409 },
             );

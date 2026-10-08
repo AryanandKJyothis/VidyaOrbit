@@ -607,6 +607,15 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      activate_billing_order: {
+        Args: {
+          _amount: number;
+          _currency: string;
+          _order_id: string;
+          _payment_id: string;
+        };
+        Returns: Json;
+      };
       admin_institute_health_detail: {
         Args: { _owner: string };
         Returns: Json;
@@ -684,16 +693,6 @@ export type Database = {
       };
       subscription_health: { Args: { _uid: string }; Returns: Json };
     };
-    activate_billing_order: {
-      Args: {
-        _order_id: string;
-        _payment_id: string;
-        _amount: number;
-        _currency: string;
-      };
-      Returns: Json;
-    };
-
     Enums: {
       app_role: "admin" | "user";
       invite_status: "pending" | "accepted" | "revoked" | "expired";
