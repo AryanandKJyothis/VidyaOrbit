@@ -120,14 +120,16 @@ export const Route = createFileRoute("/api/billing/create-order")({
         const tier = body.tier as PlanTier;
         const cycle = body.cycle as BillingCycle;
 
-        // Check for comped or special accounts
+        // Check for comped or special accounts (but allow free plan to upgrade)
         const { data: sub } = await supabaseAdmin
           .from("subscriptions")
           .select("plan, plan_price, notes, expiry_date")
           .eq("owner_id", userId)
           .maybeSingle();
 
-        if (sub) {
+        // Only block if it's a comped NON-FREE account
+        // (free plan with NULL expiry/price is normal and should be allowed to buy)
+        if (sub && sub.plan !== "free") {
           if (sub.plan_price === 0) {
             return Response.json(
               {

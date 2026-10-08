@@ -48,21 +48,28 @@ function PlanPage() {
   const [pricing, setPricing] = useState<PricingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [billingEnabled, setBillingEnabled] = useState(false);
+  const [hasPaidSetup, setHasPaidSetup] = useState(false);
 
   const subscription = subQuery.data;
   const isOwner = subscription?.isOwner ?? false;
 
-  // Fetch pricing data
+  // Fetch pricing data and check if setup applies to this account
   useEffect(() => {
-    fetch("/api/billing/pricing")
-      .then((res) => res.json())
-      .then((data) => {
-        setPricing(data);
-        setBillingEnabled(data.billingEnabled ?? false);
+    Promise.all([
+      fetch("/api/billing/pricing").then((res) => res.json()),
+      // Check if this account has paid setup fee
+      fetch("/api/billing/has-paid-setup", {
+        headers: { Authorization: `Bearer ${user?.id}` }
+      }).then((res) => res.ok ? res.json() : { hasPaidSetup: false })
+    ])
+      .then(([pricingData, setupData]) => {
+        setPricing(pricingData);
+        setBillingEnabled(pricingData.billingEnabled ?? false);
+        setHasPaidSetup(setupData.hasPaidSetup ?? false);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [user]);
 
   if (loading) {
     return (
@@ -172,6 +179,7 @@ function PlanPage() {
             currentPlan={currentPlan}
             isOwner={isOwner}
             billingEnabled={billingEnabled}
+            hasPaidSetup={hasPaidSetup}
             onSuccess={() => subQuery.refetch()}
           />
         ))}
@@ -244,15 +252,24 @@ function PricingCard({
           <div className="text-sm text-muted-foreground">
             per {cycle === "monthly" ? "month" : "year"}
           </div>
-          {cycle === "annual" && savings > 0 && (
+          
+          {cycle === "annual" && priceSavings > 0 && (
             <div className="text-sm font-medium text-green-600 mt-1">
-              Save ₹{savings.toLocaleString("en-IN")}
-              {setupFee > 0 && tier.tier !== "starter" && " + free setup"}
+              Save ₹{priceSavings.toLocaleString("en-IN")}
+              {setupSavings > 0 && tier.tier !== "starter" && (
+                <span> + free ₹{setupSavings.toLocaleString("en-IN")} setup</span>
+              )}
             </div>
           )}
+          
           {cycle === "monthly" && setupFee > 0 && (
-            <div className="text-sm text-muted-foreground mt-1">
-              + ₹{setupFee.toLocaleString("en-IN")} one-time setup
+            <div className="mt-2 space-y-1">
+              <div className="text-sm text-muted-foreground">
+                + ₹{setupFee.toLocaleString("en-IN")} one-time setup
+              </div>
+              <div className="text-sm font-medium">
+                First payment: ₹{firstPaymentTotal.toLocaleString("en-IN")}
+              </div>
             </div>
           )}
         </div>
