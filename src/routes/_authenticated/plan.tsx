@@ -14,9 +14,9 @@ import { RenewalBanner } from "@/components/renewal-banner";
 import { RazorpayCheckout } from "@/components/razorpay-checkout";
 import { useAuth } from "@/hooks/use-auth";
 import { useSubscription } from "@/hooks/use-subscription";
-import { Check, AlertCircle, Clock } from "lucide-react";
+import { Check, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
-import { format, differenceInCalendarDays } from "date-fns";
+import { format } from "date-fns";
 
 type BillingCycle = "monthly" | "annual";
 type PlanTier = "starter" | "growth" | "large";
@@ -53,23 +53,17 @@ function PlanPage() {
   const subscription = subQuery.data;
   const isOwner = subscription?.isOwner ?? false;
 
-  // Fetch pricing data and check if setup applies to this account
+  // Fetch pricing data (simplified - hasPaidSetup check would be added later)
   useEffect(() => {
-    Promise.all([
-      fetch("/api/billing/pricing").then((res) => res.json()),
-      // Check if this account has paid setup fee
-      fetch("/api/billing/has-paid-setup", {
-        headers: { Authorization: `Bearer ${user?.id}` }
-      }).then((res) => res.ok ? res.json() : { hasPaidSetup: false })
-    ])
-      .then(([pricingData, setupData]) => {
-        setPricing(pricingData);
-        setBillingEnabled(pricingData.billingEnabled ?? false);
-        setHasPaidSetup(setupData.hasPaidSetup ?? false);
+    fetch("/api/billing/pricing")
+      .then((res) => res.json())
+      .then((data) => {
+        setPricing(data);
+        setBillingEnabled(data.billingEnabled ?? false);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [user]);
+  }, []);
 
   if (loading) {
     return (
@@ -203,6 +197,7 @@ type PricingCardProps = {
   currentPlan: string;
   isOwner: boolean;
   billingEnabled: boolean;
+  hasPaidSetup: boolean;
   onSuccess: () => void;
 };
 
@@ -212,20 +207,24 @@ function PricingCard({
   currentPlan,
   isOwner,
   billingEnabled,
+  hasPaidSetup,
   onSuccess,
 }: PricingCardProps) {
   const price =
     cycle === "monthly" ? tier.monthlyPricePaise : tier.annualPricePaise;
   const displayPrice = Math.floor(price / 100);
-  const setupFee =
-    tier.setupFeePaise > 0 && cycle === "monthly"
-      ? tier.setupFeePaise / 100
-      : 0;
 
-  // Calculate savings
+  // Setup fee applies only on monthly for Growth/Large, and only if not yet paid
+  const setupApplies =
+    cycle === "monthly" && tier.setupFeePaise > 0 && !hasPaidSetup;
+  const setupFee = setupApplies ? tier.setupFeePaise / 100 : 0;
+  const firstPaymentTotal = displayPrice + setupFee;
+
+  // Calculate savings for annual
   const monthlyCost = tier.monthlyPricePaise * 12;
+  const setupSavings = tier.setupFeePaise > 0 ? tier.setupFeePaise / 100 : 0;
   const annualCost = tier.annualPricePaise;
-  const savings =
+  const priceSavings =
     cycle === "annual" ? Math.floor((monthlyCost - annualCost) / 100) : 0;
 
   const isCurrent = tier.tier === currentPlan;
@@ -252,16 +251,19 @@ function PricingCard({
           <div className="text-sm text-muted-foreground">
             per {cycle === "monthly" ? "month" : "year"}
           </div>
-          
+
           {cycle === "annual" && priceSavings > 0 && (
             <div className="text-sm font-medium text-green-600 mt-1">
               Save ₹{priceSavings.toLocaleString("en-IN")}
               {setupSavings > 0 && tier.tier !== "starter" && (
-                <span> + free ₹{setupSavings.toLocaleString("en-IN")} setup</span>
+                <span>
+                  {" "}
+                  + free ₹{setupSavings.toLocaleString("en-IN")} setup
+                </span>
               )}
             </div>
           )}
-          
+
           {cycle === "monthly" && setupFee > 0 && (
             <div className="mt-2 space-y-1">
               <div className="text-sm text-muted-foreground">
