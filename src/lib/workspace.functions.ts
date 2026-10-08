@@ -135,22 +135,35 @@ export const listTeam = createServerFn({ method: "POST" })
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
 
-    // Single round-trip email lookup: pull a page of users and map locally.
-    // Beats N x getUserById once you cross ~3 members.
+    // Fetch emails for all members. Page through listUsers to avoid the 200-user limit.
     const idSet = new Set((members ?? []).map((m) => m.user_id));
     const emails: Record<string, string> = {};
     const lastSignIn: Record<string, string | null> = {};
     if (idSet.size > 0) {
-      // 200 should cover any realistic workspace; we could paginate if needed.
-      const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({
-        page: 1,
-        perPage: 200,
-      });
-      for (const u of usersPage?.users ?? []) {
-        if (idSet.has(u.id)) {
-          emails[u.id] = u.email ?? "";
-          lastSignIn[u.id] = (u.last_sign_in_at as string | null) ?? null;
+      let page = 1;
+      const maxPages = 50; // Safety cap: 10,000 users max
+      let hasMore = true;
+      while (hasMore && page <= maxPages && idSet.size > Object.keys(emails).length) {
+        const { data: usersPage, error: usersError } =
+          await supabaseAdmin.auth.admin.listUsers({
+            page,
+            perPage: 200,
+          });
+        // Break on error or empty response
+        if (usersError || !usersPage?.users || usersPage.users.length === 0) {
+          break;
         }
+        for (const u of usersPage.users) {
+          if (idSet.has(u.id)) {
+            emails[u.id] = u.email ?? "";
+            lastSignIn[u.id] = (u.last_sign_in_at as string | null) ?? null;
+          }
+        }
+        // Stop if we've found all members or if this page was incomplete
+        hasMore =
+          usersPage.users.length === 200 &&
+          Object.keys(emails).length < idSet.size;
+        page++;
       }
     }
 
@@ -236,22 +249,37 @@ export const inviteMember = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertOwner(data.ownerId, context.userId);
 
-    // Block duplicate active member by checking against the page of users we have.
+    // Block duplicate active member by checking against existing members.
     const { data: existingMembers } = await supabaseAdmin
       .from("workspace_members")
       .select("user_id")
       .eq("owner_id", data.ownerId);
     if (existingMembers && existingMembers.length > 0) {
       const idSet = new Set(existingMembers.map((m) => m.user_id));
-      const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({
-        page: 1,
-        perPage: 200,
-      });
-      const existingEmails = new Set(
-        (usersPage?.users ?? [])
-          .filter((u) => idSet.has(u.id))
-          .map((u) => (u.email ?? "").toLowerCase()),
-      );
+      // Page through all users to find existing member emails
+      let page = 1;
+      const maxPages = 50; // Safety cap: 10,000 users max
+      let hasMore = true;
+      const existingEmails = new Set<string>();
+      while (hasMore && page <= maxPages && existingEmails.size < idSet.size) {
+        const { data: usersPage, error: usersError } =
+          await supabaseAdmin.auth.admin.listUsers({
+            page,
+            perPage: 200,
+          });
+        // Break on error or empty response
+        if (usersError || !usersPage?.users || usersPage.users.length === 0) {
+          break;
+        }
+        for (const u of usersPage.users) {
+          if (idSet.has(u.id)) {
+            existingEmails.add((u.email ?? "").toLowerCase());
+          }
+        }
+        hasMore =
+          usersPage.users.length === 200 && existingEmails.size < idSet.size;
+        page++;
+      }
       if (existingEmails.has(data.email)) {
         throw new Error("This person is already a member of the workspace");
       }
@@ -375,6 +403,23 @@ export const listMyPendingInvites = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const email = String(context.claims.email ?? "").toLowerCase();
     if (!email) return [];
+
+    // Check if user's email is confirmed by fetching full user record
+    const { data: userData, error: userError } =
+      await supabaseAdmin.auth.admin.getUserById(context.userId);
+    if (userError || !userData?.user) {
+      console.warn(
+        `Failed to fetch user ${context.userId} for invite check:`,
+        userError,
+      );
+      return []; // Return empty list if we can't verify, don't block the page
+    }
+
+    // Silently return empty list if email not confirmed
+    if (!userData.user.email_confirmed_at) {
+      return [];
+    }
+
     const { data: invites, error } = await context.supabase
       .from("workspace_invites")
       .select("id, owner_id, role, permissions, expires_at, created_at, token")
@@ -407,6 +452,21 @@ export const acceptInvite = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const userEmail = String(context.claims.email ?? "").toLowerCase();
     if (!userEmail) throw new Error("Your account has no email address");
+
+    // Check if user's email is confirmed by fetching full user record
+    const { data: userData, error: userError } =
+      await supabaseAdmin.auth.admin.getUserById(context.userId);
+    if (userError || !userData?.user) {
+      throw new Error(
+        "Could not verify your account. Please try again or contact support.",
+      );
+    }
+
+    if (!userData.user.email_confirmed_at) {
+      throw new Error(
+        "Please verify your email address before accepting invites. Check your inbox for the verification link.",
+      );
+    }
 
     const { data: invite } = await supabaseAdmin
       .from("workspace_invites")

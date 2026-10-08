@@ -166,7 +166,7 @@ function Hero() {
             </a>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            Free for up to 25 students · UPI &amp; card billing · Cancel anytime
+            Free for up to 25 students · Contact us to upgrade · Cancel anytime
           </p>
         </div>
 
@@ -300,13 +300,11 @@ function TrustStrip() {
   return (
     <section className="border-y border-border/60 bg-card/40">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-10 gap-y-3 px-4 py-6 text-xs font-medium uppercase tracking-wider text-muted-foreground sm:px-6">
-        <span>Razorpay billing</span>
-        <span className="opacity-50">·</span>
-        <span>UPI &amp; cards</span>
+        <span>Contact us for billing</span>
         <span className="opacity-50">·</span>
         <span>WhatsApp-friendly</span>
         <span className="opacity-50">·</span>
-        <span>Daily encrypted backups</span>
+        <span>Data encrypted</span>
         <span className="opacity-50">·</span>
         <span>Made in India</span>
       </div>
@@ -322,7 +320,7 @@ function Pains() {
     },
     {
       pain: "Fee follow-ups eat half your week.",
-      fix: "Auto-flagged overdues with one-tap WhatsApp reminders.",
+      fix: "Auto-flagged overdues so you know exactly who to follow up with.",
     },
     {
       pain: "You don't really know how the centre is doing.",
@@ -382,7 +380,7 @@ function FeatureGrid() {
     {
       icon: Receipt,
       title: "Branded receipts",
-      body: "Numbered receipts with your centre name, downloadable PDF, ready to share on WhatsApp.",
+      body: "Numbered receipts with your centre name, ready to print or save as PDF from your browser.",
     },
     {
       icon: LineChart,
@@ -503,13 +501,13 @@ function ProofStrip() {
     },
     {
       icon: HeartHandshake,
-      t: "Built with real centres",
-      d: "Shaped by coaching owners across South India.",
+      t: "Built for real centres",
+      d: "Designed with coaching owners in mind.",
     },
     {
       icon: ShieldCheck,
       t: "Your data is yours",
-      d: "Daily encrypted backups. Export anytime.",
+      d: "Encrypted data. Export anytime.",
     },
   ];
   return (
@@ -543,7 +541,7 @@ function Pricing() {
       name: "Free",
       price: "₹0",
       sub: "Up to 25 students",
-      features: ["All core features", "Single owner", "Email support"],
+      features: ["All core features", "Email support"],
       cta: "Start free",
       highlight: false,
     },
@@ -551,7 +549,7 @@ function Pricing() {
       name: "Growth",
       price: "See plans",
       sub: "For growing centres",
-      features: ["Up to 500 students", "Team members", "Priority support"],
+      features: ["Up to 500 students", "Team members", "Email support"],
       cta: "View pricing",
       highlight: true,
     },
@@ -575,8 +573,7 @@ function Pricing() {
           Honest pricing. Start free.
         </h2>
         <p className="mt-3 text-muted-foreground">
-          Pay only when your centre grows. No setup fees, no hidden charges, no
-          commitments.
+          Pay only when your centre grows. No hidden charges, no commitments.
         </p>
       </div>
       <div className="mt-12 grid gap-5 md:grid-cols-3">
@@ -624,7 +621,7 @@ function FAQ() {
   const faqs = [
     {
       q: "Is my data safe?",
-      a: "Yes. Data is encrypted in transit and at rest, backed up daily, and isolated per institute. You can export everything at any time.",
+      a: "Yes. Data is encrypted in transit and at rest, isolated per institute. You can export everything at any time.",
     },
     {
       q: "Can I move from Excel?",
@@ -632,7 +629,7 @@ function FAQ() {
     },
     {
       q: "Do my parents need to install anything?",
-      a: "No. Vidya Orbit is for you and your staff. You share receipts and reminders through WhatsApp the way you already do.",
+      a: "No. Vidya Orbit is for you and your staff. You share receipts through WhatsApp the way you already do.",
     },
     {
       q: "Can I cancel?",

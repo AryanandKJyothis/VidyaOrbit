@@ -22,7 +22,6 @@ import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authentic
 import { Route as AuthenticatedBatchesRouteImport } from './routes/_authenticated/batches'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedDonateRouteImport } from './routes/_authenticated/donate'
 import { Route as AuthenticatedFeesRouteImport } from './routes/_authenticated/fees'
 import { Route as AuthenticatedInvitesRouteImport } from './routes/_authenticated/invites'
 import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/plan'
@@ -100,11 +99,6 @@ const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedDonateRoute = AuthenticatedDonateRouteImport.update({
-  id: '/donate',
-  path: '/donate',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedFeesRoute = AuthenticatedFeesRouteImport.update({
@@ -197,7 +191,6 @@ export interface FileRoutesByFullPath {
   '/batches': typeof AuthenticatedBatchesRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/donate': typeof AuthenticatedDonateRoute
   '/fees': typeof AuthenticatedFeesRoute
   '/invites': typeof AuthenticatedInvitesRoute
   '/plan': typeof AuthenticatedPlanRoute
@@ -226,7 +219,6 @@ export interface FileRoutesByTo {
   '/batches': typeof AuthenticatedBatchesRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/donate': typeof AuthenticatedDonateRoute
   '/fees': typeof AuthenticatedFeesRoute
   '/invites': typeof AuthenticatedInvitesRoute
   '/plan': typeof AuthenticatedPlanRoute
@@ -256,7 +248,6 @@ export interface FileRoutesById {
   '/_authenticated/batches': typeof AuthenticatedBatchesRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/donate': typeof AuthenticatedDonateRoute
   '/_authenticated/fees': typeof AuthenticatedFeesRoute
   '/_authenticated/invites': typeof AuthenticatedInvitesRoute
   '/_authenticated/plan': typeof AuthenticatedPlanRoute
@@ -287,7 +278,6 @@ export interface FileRouteTypes {
     | '/batches'
     | '/billing'
     | '/dashboard'
-    | '/donate'
     | '/fees'
     | '/invites'
     | '/plan'
@@ -316,7 +306,6 @@ export interface FileRouteTypes {
     | '/batches'
     | '/billing'
     | '/dashboard'
-    | '/donate'
     | '/fees'
     | '/invites'
     | '/plan'
@@ -345,7 +334,6 @@ export interface FileRouteTypes {
     | '/_authenticated/batches'
     | '/_authenticated/billing'
     | '/_authenticated/dashboard'
-    | '/_authenticated/donate'
     | '/_authenticated/fees'
     | '/_authenticated/invites'
     | '/_authenticated/plan'
@@ -468,13 +456,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/donate': {
-      id: '/_authenticated/donate'
-      path: '/donate'
-      fullPath: '/donate'
-      preLoaderRoute: typeof AuthenticatedDonateRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/fees': {
@@ -612,7 +593,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedBatchesRoute: typeof AuthenticatedBatchesRoute
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedDonateRoute: typeof AuthenticatedDonateRoute
   AuthenticatedFeesRoute: typeof AuthenticatedFeesRoute
   AuthenticatedInvitesRoute: typeof AuthenticatedInvitesRoute
   AuthenticatedPlanRoute: typeof AuthenticatedPlanRoute
@@ -628,7 +608,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBatchesRoute: AuthenticatedBatchesRoute,
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedDonateRoute: AuthenticatedDonateRoute,
   AuthenticatedFeesRoute: AuthenticatedFeesRoute,
   AuthenticatedInvitesRoute: AuthenticatedInvitesRoute,
   AuthenticatedPlanRoute: AuthenticatedPlanRoute,

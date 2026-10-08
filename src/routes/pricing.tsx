@@ -7,7 +7,7 @@ import { Check, ArrowRight, ShieldCheck, MessageCircle } from "lucide-react";
 const SITE_URL = "https://vidyaorbit.in";
 const TITLE = "Pricing — Vidya Orbit";
 const DESC =
-  "Simple INR pricing for Indian coaching centres. Start free for up to 25 students. Upgrade only when you grow. Cancel anytime, refund within 7 days.";
+  "Simple INR pricing for Indian coaching centres. Start free for up to 25 students. Upgrade only when you grow.";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -53,16 +53,16 @@ const FAQ = [
     a: "You can still view and manage existing students. Adding new ones is paused until you upgrade — your data is never deleted.",
   },
   {
-    q: "How does billing work in India?",
-    a: "All plans are billed in INR via UPI, cards, or net banking through Razorpay. GST invoices are issued automatically.",
+    q: "How do I upgrade?",
+    a: "Contact us via WhatsApp or email and we'll help you upgrade to a paid plan that fits your needs.",
   },
   {
     q: "Can I cancel or downgrade?",
-    a: "Anytime. Email or WhatsApp us and we'll process it the same day. Full refund within 7 days of payment, no questions asked.",
+    a: "Yes. Contact us via WhatsApp or email and we'll help you adjust your plan the same day.",
   },
   {
     q: "Is my data safe?",
-    a: "Yes. Data is encrypted in transit and at rest, backed up daily, and only your authorised team can access it. We never sell or share institute data.",
+    a: "Yes. Data is encrypted in transit and at rest, isolated per institute, and only your authorised team can access it. We never sell or share institute data.",
   },
 ];
 
@@ -110,8 +110,8 @@ function PricingPage() {
                 Simple, INR-first pricing
               </h1>
               <p className="mt-4 text-muted-foreground sm:text-lg">
-                Start free. Upgrade only when your centre grows. No setup fees,
-                no hidden charges, refundable within 7 days.
+                Start free. Upgrade only when your centre grows. No hidden
+                charges.
               </p>
             </div>
           </div>
@@ -181,11 +181,10 @@ function PricingPage() {
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 text-[color:var(--brand-teal)]" />
-              Encrypted &amp; backed up daily
+              Data encrypted in transit &amp; at rest
             </span>
-            <span>UPI · Cards · Net banking</span>
-            <span>GST invoices included</span>
-            <span>7-day refund</span>
+            <span>Multi-level permissions</span>
+            <span>Export data anytime</span>
           </div>
         </section>
 

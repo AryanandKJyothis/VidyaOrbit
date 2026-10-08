@@ -92,20 +92,16 @@ function PrivacyPage() {
           </p>
         </Section>
 
-        <Section title="6. Payments and donations">
+        <Section title="6. Payments">
           <p>
-            Paid subscriptions are processed by <strong>Razorpay</strong>. When
-            you upgrade, you are redirected to Razorpay's hosted checkout where
-            you enter your card / UPI / netbanking details directly with them —
-            we never see or store your card or bank credentials. We store only
-            the Razorpay subscription identifier, your plan, billing status and
-            renewal date so we can grant the right level of access. Razorpay's
-            own privacy policy applies to data you submit to their checkout.
-          </p>
-          <p className="mt-2">
-            UPI donations made via the "Support us" page are processed directly
-            through your UPI app to our UPI ID — we receive only the transaction
-            reference your bank sends us.
+            Paid subscriptions are arranged by contacting us directly. In the
+            future, we plan to add online payment processing through{" "}
+            <strong>Razorpay</strong>. If and when you upgrade via an online
+            checkout, you'll enter your card / UPI / netbanking details directly
+            with Razorpay — we never see or store your card or bank credentials.
+            We store only the subscription details and billing status to grant
+            the right level of access. Razorpay's own privacy policy would apply
+            to data you submit to their checkout.
           </p>
         </Section>
 

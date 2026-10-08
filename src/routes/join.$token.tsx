@@ -26,6 +26,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 import { previewInvite, acceptInvite } from "@/lib/workspace.functions";
 import { formatUserError } from "@/lib/format-error";
+import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
 
 export const Route = createFileRoute("/join/$token")({
   component: JoinPage,
@@ -288,26 +289,30 @@ function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
   if (mode === "choose") {
     return (
       <div className="space-y-3">
-        <Button
-          onClick={handleGoogle}
-          disabled={oauthLoading}
-          className="w-full"
-          variant="outline"
-          size="lg"
-        >
-          {oauthLoading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <GoogleIcon />
-          )}
-          <span className="ml-2">Continue with Google</span>
-        </Button>
+        {GOOGLE_AUTH_ENABLED && (
+          <Button
+            onClick={handleGoogle}
+            disabled={oauthLoading}
+            className="w-full"
+            variant="outline"
+            size="lg"
+          >
+            {oauthLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <GoogleIcon />
+            )}
+            <span className="ml-2">Continue with Google</span>
+          </Button>
+        )}
         <Button
           onClick={() => setMode("password")}
-          variant="ghost"
+          variant={GOOGLE_AUTH_ENABLED ? "ghost" : "outline"}
           className="w-full"
         >
-          Use email &amp; password instead
+          {GOOGLE_AUTH_ENABLED
+            ? "Use email & password instead"
+            : "Continue with email & password"}
         </Button>
       </div>
     );
