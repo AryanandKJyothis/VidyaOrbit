@@ -18,7 +18,7 @@ export const HERO_SUB =
   "After a call, Aryanand imports your students from your Excel or CSV file, sets up your batches and fees, adds your staff, and gives a 30-minute training. Then you can see who hasn't paid this month in one tap.";
 
 export const FOUNDER_LINE =
-  "I'm Aryanand, in Valanchery. There is no demo centre — I set yours up myself and stay on WhatsApp if anything is unclear.";
+  "I'm Aryanand, in Valanchery. I set your centre up myself and stay on WhatsApp if anything is unclear.";
 
 export const WHATSAPP_PREFILL =
   "Hi Aryanand, I run a coaching centre and I'd like Vidya Orbit set up for us.";
