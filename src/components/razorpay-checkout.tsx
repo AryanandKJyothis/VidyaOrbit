@@ -162,7 +162,9 @@ export function RazorpayCheckout({
             const verifyData = await verifyRes.json();
 
             if (!verifyData.ok) {
-              throw new Error(verifyData.message || "Payment verification failed");
+              throw new Error(
+                verifyData.message || "Payment verification failed",
+              );
             }
 
             toast.success("Payment successful! Your plan is now active.");

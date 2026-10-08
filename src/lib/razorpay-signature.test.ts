@@ -23,10 +23,7 @@ function verifyPaymentSignature(
     return false;
   }
 
-  return crypto.timingSafeEqual(
-    Buffer.from(expected),
-    Buffer.from(signature),
-  );
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 }
 
 describe("Razorpay Signature Verification", () => {

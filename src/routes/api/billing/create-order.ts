@@ -30,11 +30,7 @@ export const Route = createFileRoute("/api/billing/create-order")({
     handlers: {
       POST: async ({ request }) => {
         if (
-          !allowRequest(
-            `billing-order:${clientAddress(request)}`,
-            10,
-            60_000,
-          )
+          !allowRequest(`billing-order:${clientAddress(request)}`, 10, 60_000)
         ) {
           return tooManyRequests();
         }
@@ -227,7 +223,7 @@ export const Route = createFileRoute("/api/billing/create-order")({
         }
 
         // Store order in DB with tier and cycle
-        const { error: insertErr} = await supabaseAdmin
+        const { error: insertErr } = await supabaseAdmin
           .from("billing_orders")
           .insert({
             owner_id: userId,

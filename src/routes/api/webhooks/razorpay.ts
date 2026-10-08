@@ -50,10 +50,7 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
         const eventId = request.headers.get("x-razorpay-event-id");
         if (!eventId) {
           console.warn("[Razorpay webhook] Missing x-razorpay-event-id header");
-          return Response.json(
-            { error: "MISSING_EVENT_ID" },
-            { status: 400 },
-          );
+          return Response.json({ error: "MISSING_EVENT_ID" }, { status: 400 });
         }
 
         // Check for duplicate event_id (dedupe on unique x-razorpay-event-id)
@@ -64,7 +61,11 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
           .maybeSingle();
 
         if (existing?.handled) {
-          return Response.json({ ok: true, ignored: true, reason: "already_handled" });
+          return Response.json({
+            ok: true,
+            ignored: true,
+            reason: "already_handled",
+          });
         }
 
         let envelope: RzEnvelope;
@@ -95,11 +96,15 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
         if (eventName === "payment.captured" && payload.payment) {
           const paymentEntity = (payload.payment as any).entity;
           orderId = paymentEntity?.order_id ?? null;
-          deliveryRecord.owner_id = normalizeOwner(paymentEntity?.notes?.owner_id);
+          deliveryRecord.owner_id = normalizeOwner(
+            paymentEntity?.notes?.owner_id,
+          );
         } else if (eventName === "order.paid" && payload.order) {
           const orderEntity = (payload.order as any).entity;
           orderId = orderEntity?.id ?? null;
-          deliveryRecord.owner_id = normalizeOwner(orderEntity?.notes?.owner_id);
+          deliveryRecord.owner_id = normalizeOwner(
+            orderEntity?.notes?.owner_id,
+          );
         }
 
         // Insert delivery record
@@ -125,10 +130,7 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
             });
           }
           console.error("[Razorpay webhook] Insert delivery failed:", insErr);
-          return Response.json(
-            { error: "DB_INSERT_FAILED" },
-            { status: 500 },
-          );
+          return Response.json({ error: "DB_INSERT_FAILED" }, { status: 500 });
         }
 
         // Process event
@@ -142,11 +144,16 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
             // Get payment_id for activation
             let paymentId: string | null = null;
             if (eventName === "payment.captured" && payload.payment) {
-              paymentId = (payload.payment as any).entity?.id ?? null;
+              paymentId = (payload.payment as { entity?: { id?: string } }).entity?.id ?? null;
             } else if (eventName === "order.paid" && payload.order) {
               // For order.paid, fetch the payment from the order
-              const orderEntity = (payload.order as any).entity;
-              paymentId = orderEntity?.payment_id ?? orderEntity?.first_payment_id ?? null;
+              const orderEntity = (payload.order as {
+                entity?: { payment_id?: string; first_payment_id?: string };
+              }).entity;
+              paymentId =
+                orderEntity?.payment_id ??
+                orderEntity?.first_payment_id ??
+                null;
             }
 
             if (!paymentId) {
@@ -161,26 +168,28 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
               paymentId,
             );
 
-            if (!activation.success && activation.reason !== "already_activated") {
+            if (
+              !activation.success &&
+              activation.reason !== "already_activated"
+            ) {
               throw new Error(`Activation failed: ${activation.reason}`);
             }
 
-            console.log(`[Razorpay webhook] ${activation.success ? "Activated" : "Already activated"} order ${orderId}`);
+            console.log(
+              `[Razorpay webhook] ${activation.success ? "Activated" : "Already activated"} order ${orderId}`,
+            );
           }
           // Ignore other events (legacy subscription events are deprecated)
         } catch (e) {
           console.error("[Razorpay webhook] Handler error:", e);
-          
+
           // Mark delivery with error (but don't mark as handled - allow retry)
           await supabaseAdmin
             .from("razorpay_webhook_deliveries")
             .update({ error: String(e) })
             .eq("event_type", eventId);
 
-          return Response.json(
-            { error: "PROCESSING_FAILED" },
-            { status: 500 },
-          );
+          return Response.json({ error: "PROCESSING_FAILED" }, { status: 500 });
         }
 
         // Mark delivery as handled

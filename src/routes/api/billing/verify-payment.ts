@@ -104,7 +104,11 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
         ) {
           console.error("[verify-payment] Invalid signature");
           return Response.json(
-            { ok: false, code: "INVALID_SIGNATURE", message: "Invalid signature." },
+            {
+              ok: false,
+              code: "INVALID_SIGNATURE",
+              message: "Invalid signature.",
+            },
             { status: 400 },
           );
         }
@@ -144,11 +148,11 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
         }
 
         // Validate payment matches order
-        if (
-          payment.status !== "captured" &&
-          payment.status !== "authorized"
-        ) {
-          console.error("[verify-payment] Payment not captured:", payment.status);
+        if (payment.status !== "captured" && payment.status !== "authorized") {
+          console.error(
+            "[verify-payment] Payment not captured:",
+            payment.status,
+          );
           return Response.json(
             {
               ok: false,
@@ -196,10 +200,18 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
 
         if (!activation.success) {
           if (activation.reason === "already_activated") {
-            console.log("[verify-payment] Already activated, returning success");
-            return Response.json({ ok: true, message: "Payment already processed" });
+            console.log(
+              "[verify-payment] Already activated, returning success",
+            );
+            return Response.json({
+              ok: true,
+              message: "Payment already processed",
+            });
           }
-          console.error("[verify-payment] Activation failed:", activation.reason);
+          console.error(
+            "[verify-payment] Activation failed:",
+            activation.reason,
+          );
           return Response.json(
             {
               ok: false,
@@ -210,7 +222,10 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
           );
         }
 
-        console.log("[verify-payment] Successfully activated order:", activation.orderId);
+        console.log(
+          "[verify-payment] Successfully activated order:",
+          activation.orderId,
+        );
         return Response.json({ ok: true });
       },
     },

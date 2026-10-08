@@ -1,5 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -66,7 +73,9 @@ function PlanPage() {
   }
 
   const currentPlan = subscription?.plan ?? "starter";
-  const expiryDate = subscription?.expiry_date ? new Date(subscription.expiry_date) : null;
+  const expiryDate = subscription?.expiry_date
+    ? new Date(subscription.expiry_date)
+    : null;
   const isExpired = subscription?.expired ?? false;
   const daysLeft = subscription?.days_until_expiry ?? null;
 
@@ -119,7 +128,11 @@ function PlanPage() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Students</span>
               <span className="text-sm">
-                {subscription.student_count} / {subscription.limit === Infinity || subscription.limit === 2147483647 ? "Unlimited" : subscription.limit}
+                {subscription.student_count} /{" "}
+                {subscription.limit === Infinity ||
+                subscription.limit === 2147483647
+                  ? "Unlimited"
+                  : subscription.limit}
               </span>
             </div>
           )}
@@ -193,14 +206,19 @@ function PricingCard({
   billingEnabled,
   onSuccess,
 }: PricingCardProps) {
-  const price = cycle === "monthly" ? tier.monthlyPricePaise : tier.annualPricePaise;
+  const price =
+    cycle === "monthly" ? tier.monthlyPricePaise : tier.annualPricePaise;
   const displayPrice = Math.floor(price / 100);
-  const setupFee = tier.setupFeePaise > 0 && cycle === "monthly" ? tier.setupFeePaise / 100 : 0;
+  const setupFee =
+    tier.setupFeePaise > 0 && cycle === "monthly"
+      ? tier.setupFeePaise / 100
+      : 0;
 
   // Calculate savings
   const monthlyCost = tier.monthlyPricePaise * 12;
   const annualCost = tier.annualPricePaise;
-  const savings = cycle === "annual" ? Math.floor((monthlyCost - annualCost) / 100) : 0;
+  const savings =
+    cycle === "annual" ? Math.floor((monthlyCost - annualCost) / 100) : 0;
 
   const isCurrent = tier.tier === currentPlan;
 

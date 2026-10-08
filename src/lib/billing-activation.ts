@@ -10,7 +10,10 @@ type Json = Database["public"]["Tables"]["billing_orders"]["Row"]["line_items"];
 
 export type ActivationResult =
   | { success: true; orderId: string; ownerId: string; intent: Json }
-  | { success: false; reason: "already_activated" | "order_not_found" | "not_paid" };
+  | {
+      success: false;
+      reason: "already_activated" | "order_not_found" | "not_paid";
+    };
 
 /**
  * Atomically mark an order as activated and extend subscription.
@@ -55,10 +58,13 @@ export async function activateOrderOnce(
 
   // This call won the race: activate subscription now
   const intent = updated.intent as Json;
-  await supabase.rpc("apply_subscription_change" as never, {
-    _uid: updated.owner_id,
-    _change: intent,
-  } as never);
+  await supabase.rpc(
+    "apply_subscription_change" as never,
+    {
+      _uid: updated.owner_id,
+      _change: intent,
+    } as never,
+  );
 
   return {
     success: true,

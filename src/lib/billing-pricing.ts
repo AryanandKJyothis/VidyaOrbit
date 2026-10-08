@@ -44,7 +44,10 @@ export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
     tier: "starter",
     student_limit: getEnvInt("BILLING_STARTER_STUDENT_LIMIT", 100),
     setup_fee_paise: getEnvInt("BILLING_STARTER_SETUP_FEE_PAISE", 0), // ₹0 (free)
-    monthly_price_paise: getEnvInt("BILLING_STARTER_MONTHLY_PRICE_PAISE", 49900), // ₹499
+    monthly_price_paise: getEnvInt(
+      "BILLING_STARTER_MONTHLY_PRICE_PAISE",
+      49900,
+    ), // ₹499
     annual_price_paise: getEnvInt("BILLING_STARTER_ANNUAL_PRICE_PAISE", 499900), // ₹4,999
     display_name: "Starter",
     description: "Up to 100 students",
@@ -60,7 +63,10 @@ export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
   },
   large: {
     tier: "large",
-    student_limit: getEnvInt("BILLING_LARGE_STUDENT_LIMIT", Number.MAX_SAFE_INTEGER), // Unlimited
+    student_limit: getEnvInt(
+      "BILLING_LARGE_STUDENT_LIMIT",
+      Number.MAX_SAFE_INTEGER,
+    ), // Unlimited
     setup_fee_paise: getEnvInt("BILLING_LARGE_SETUP_FEE_PAISE", 500000), // ₹5,000 (monthly only)
     monthly_price_paise: getEnvInt("BILLING_LARGE_MONTHLY_PRICE_PAISE", 249900), // ₹2,499
     annual_price_paise: getEnvInt("BILLING_LARGE_ANNUAL_PRICE_PAISE", 2500000), // ₹25,000
@@ -160,7 +166,9 @@ export async function hasPaidSetupFee(
  * Get the appropriate plan code for subscriptions table based on tier.
  * Maps billing tiers to subscription plan codes.
  */
-export function getSubscriptionPlanCode(tier: PlanTier): "starter" | "growth" | "pro" {
+export function getSubscriptionPlanCode(
+  tier: PlanTier,
+): "starter" | "growth" | "pro" {
   // starter -> starter (100 students)
   // growth -> growth (500 students)
   // large -> pro (unlimited)
@@ -178,8 +186,7 @@ export function assertRazorpayKeyMode(keyId: string | undefined): void {
   }
 
   const isLive = keyId.startsWith("rzp_live_");
-  const allowLive =
-    process.env.RAZORPAY_ALLOW_LIVE?.toLowerCase() === "true";
+  const allowLive = process.env.RAZORPAY_ALLOW_LIVE?.toLowerCase() === "true";
 
   if (isLive && !allowLive) {
     throw new Error(

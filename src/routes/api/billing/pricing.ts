@@ -4,7 +4,11 @@
  * Client reads prices from this endpoint; never hard-coded.
  */
 import { createFileRoute } from "@tanstack/react-router";
-import { isBillingEnabled, TIER_CONFIGS, type PlanTier } from "@/lib/billing-pricing";
+import {
+  isBillingEnabled,
+  TIER_CONFIGS,
+  type PlanTier,
+} from "@/lib/billing-pricing";
 
 export const Route = createFileRoute("/api/billing/pricing")({
   server: {

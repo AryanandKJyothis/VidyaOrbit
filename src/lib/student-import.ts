@@ -22,11 +22,7 @@ function normKeyFromRow(phone: string | null, name: string): string {
 }
 
 export type ImportRowIssue =
-  | "none"
-  | "invalid_phone"
-  | "invalid_name"
-  | "dup_file"
-  | "dup_db";
+  "none" | "invalid_phone" | "invalid_name" | "dup_file" | "dup_db";
 
 export type PreparedImportRow = {
   sourceRow: number;
