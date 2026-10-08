@@ -5,7 +5,6 @@ import { format } from "date-fns";
 import { ArrowRight, CalendarCheck, Wallet, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { useCan } from "@/hooks/use-active-workspace";
 import { formatINR } from "@/lib/format";
 
 function greetingFor(date = new Date()) {
@@ -38,7 +37,6 @@ export function DashboardHero({
   duesWeekAmount: number;
 }) {
   const { user } = useAuth();
-  const canViewFees = useCan("fees", "read");
   const displayName = displayNameFor(
     instituteName,
     (user?.user_metadata?.full_name as string | undefined) ?? null,
@@ -84,7 +82,7 @@ export function DashboardHero({
               {studentsActive} active{" "}
               {studentsActive === 1 ? "student" : "students"}
             </span>
-            {canViewFees && duesWeekAmount > 0 && (
+            {duesWeekAmount > 0 && (
               <span className="pill pill-danger">
                 <Wallet className="h-3 w-3" aria-hidden />
                 {formatINR(duesWeekAmount)} due this week
@@ -100,14 +98,12 @@ export function DashboardHero({
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </Button>
-          {canViewFees && (
-            <Button asChild size="sm" className="gap-1.5">
-              <Link to="/fees">
-                Record payment
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          )}
+          <Button asChild size="sm" className="gap-1.5">
+            <Link to="/fees">
+              Record payment
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
         </div>
       </div>
     </motion.section>

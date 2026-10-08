@@ -48,7 +48,7 @@ import { DashboardSpotlight } from "@/components/dashboard-spotlight";
 import { OverLimitBanner } from "@/components/over-limit-banner";
 import { ExpiryBanner } from "@/components/expiry-banner";
 import { WelcomeBackBanner } from "@/components/welcome-back-banner";
-import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
+import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -64,7 +64,6 @@ function Dashboard() {
   const batches = useBatches();
   const payments = usePayments();
   const { active } = useActiveWorkspace();
-  const canViewFees = useCan("fees", "read");
 
   const attendance = useQuery({
     queryKey: ["att-summary", active?.ownerId],
@@ -325,30 +324,26 @@ function Dashboard() {
               hint={`${stats.todaysBatches.length} today`}
               icon={Layers}
             />
-            {canViewFees && (
-              <>
-                <StatCard
-                  index={2}
-                  label="Collected"
-                  value={formatINR(stats.monthCollected)}
-                  hint="This month"
-                  icon={Wallet}
-                  tone="success"
-                  sparkline={collectionSpark}
-                  deltaPct={stats.collectionDelta}
-                />
-                <StatCard
-                  index={3}
-                  label="Dues"
-                  value={formatINR(stats.totalDues)}
-                  hint={`${stats.overdue.length} overdue`}
-                  icon={AlertCircle}
-                  tone={stats.overdue.length ? "destructive" : "default"}
-                />
-              </>
-            )}
             <StatCard
-              index={canViewFees ? 4 : 2}
+              index={2}
+              label="Collected"
+              value={formatINR(stats.monthCollected)}
+              hint="This month"
+              icon={Wallet}
+              tone="success"
+              sparkline={collectionSpark}
+              deltaPct={stats.collectionDelta}
+            />
+            <StatCard
+              index={3}
+              label="Dues"
+              value={formatINR(stats.totalDues)}
+              hint={`${stats.overdue.length} overdue`}
+              icon={AlertCircle}
+              tone={stats.overdue.length ? "destructive" : "default"}
+            />
+            <StatCard
+              index={4}
               label="Attendance"
               value={`${stats.attRate}%`}
               hint="Last 30 days"
@@ -360,18 +355,17 @@ function Dashboard() {
       </div>
 
       {/* Today's batches + Collection chart */}
-      {canViewFees && (
-        <div className="mt-6 sm:mt-8 grid gap-6 lg:grid-cols-3 auto-rows-max">
-          <Card className="card-premium lg:col-span-2">
-            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4">
-              <div className="min-w-0">
-                <CardTitle className="text-base sm:text-lg">
-                  Fee collection
-                </CardTitle>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Last 14 days
-                </p>
-              </div>
+      <div className="mt-6 sm:mt-8 grid gap-6 lg:grid-cols-3 auto-rows-max">
+        <Card className="card-premium lg:col-span-2">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4">
+            <div className="min-w-0">
+              <CardTitle className="text-base sm:text-lg">
+                Fee collection
+              </CardTitle>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                Last 14 days
+              </p>
+            </div>
             <TrendingUp
               className="h-5 w-5 text-muted-foreground mt-2 sm:mt-0 shrink-0"
               aria-hidden
@@ -635,7 +629,6 @@ function Dashboard() {
           </CardContent>
         </Card>
       </div>
-      )}
     </div>
   );
 }
