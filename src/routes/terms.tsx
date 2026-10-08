@@ -1,14 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { getContactConfig } from "@/lib/contact-config";
 
 export const Route = createFileRoute("/terms")({
   component: TermsPage,
   head: () => ({
     meta: [
-      { title: "Terms of Service — Vidya" },
+      { title: "Terms of Service — Vidya Orbit" },
       {
         name: "description",
         content:
-          "Terms of service for the Vidya institute management platform.",
+          "Terms of service for the Vidya Orbit institute management platform.",
       },
     ],
   }),
@@ -41,10 +42,10 @@ function TermsPage() {
 
         <Section title="2. The service">
           <p>
-            Vidya is a software platform for coaching centres and tuition
+            Vidya Orbit is a software platform for coaching centres and tuition
             institutes to manage students, batches, attendance, fees and
             receipts. A free tier is available with usage limits. Paid plans
-            (Starter, Growth and Pro) unlock higher student limits and
+            (Free, Starter, Growth and Large) unlock higher student limits and
             additional features. Current pricing is shown on the in-app Billing
             page and may change with reasonable notice.
           </p>
@@ -80,16 +81,15 @@ function TermsPage() {
 
         <Section title="6. Paid subscriptions, billing and refunds">
           <p>
-            Paid plans are billed monthly in Indian Rupees (INR) through
-            Razorpay. Your subscription renews automatically until you cancel.
-            You can cancel at any time from the Billing page; cancellation takes
-            effect at the end of the current billing period and you retain
-            access until then. Because the service is delivered digitally and
-            immediately on payment, fees already paid are non-refundable except
-            where required by law. If your subscription lapses or is cancelled,
-            your account automatically reverts to the Free tier and data beyond
-            the Free-tier limits remains stored but read-only until you upgrade
-            again.
+            Paid plans are arranged directly with us by invoice (monthly or
+            annual). Online payment is coming soon. You can request to cancel or
+            change your plan at any time by contacting us; changes take effect
+            at the end of the current billing period where applicable. Because
+            the service is delivered digitally and immediately on payment, fees
+            already paid are non-refundable except where required by law. If
+            your subscription lapses or is cancelled, your account automatically
+            reverts to the Free tier and data beyond the Free-tier limits
+            remains stored but read-only until you upgrade again.
           </p>
         </Section>
 
@@ -118,22 +118,7 @@ function TermsPage() {
           </p>
         </Section>
 
-        <Section title="10. Contact">
-          <p>For any questions about these terms, contact:</p>
-          <ul className="ml-4 list-disc">
-            <li>Aryanand K Jyothis</li>
-            <li>
-              Email:{" "}
-              <a
-                className="text-primary hover:underline"
-                href="mailto:aryanandkjyothis4@gmail.com"
-              >
-                aryanandkjyothis4@gmail.com
-              </a>
-            </li>
-            <li>Phone: +91 7025063047</li>
-          </ul>
-        </Section>
+        <ContactSection />
       </div>
     </div>
   );
@@ -153,5 +138,29 @@ function Section({
         {children}
       </div>
     </section>
+  );
+}
+
+function ContactSection() {
+  const { email, phone } = getContactConfig();
+  return (
+    <Section title="10. Contact">
+      <p>For any questions about these terms, contact:</p>
+      <ul className="ml-4 list-disc">
+        <li>Aryanand K Jyothis</li>
+        {email && (
+          <li>
+            Email:{" "}
+            <a
+              className="text-primary hover:underline"
+              href={`mailto:${email}`}
+            >
+              {email}
+            </a>
+          </li>
+        )}
+        {phone && <li>Phone: {phone}</li>}
+      </ul>
+    </Section>
   );
 }

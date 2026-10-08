@@ -77,7 +77,7 @@ Add a public **`/demo`** route that boots the app in read-only mode with realist
 - Sample-data seeder: a `createServerFn` that inserts demo rows scoped to the new user's institute, plus a "Clear sample data" action.
 - Parent share: tokenized public route + a `student_share_tokens` table with RLS allowing `anon` SELECT only via the token-scoped RPC. Migration must include GRANTs.
 - Digest: extend existing reminders hook + a cron-driven `/api/public/cron/daily-digest` (signed via shared secret) that emails owners.
-- All new public pages get unique `<head>` (title, description, canonical, og:*) per the route-architecture rules.
+- All new public pages get unique `<head>` (title, description, canonical, og:\*) per the route-architecture rules.
 
 ---
 

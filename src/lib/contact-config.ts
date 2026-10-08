@@ -1,37 +1,80 @@
 /**
  * Contact configuration for upgrade / support CTAs.
- * Reads from environment variables; shows nothing when unset.
+ * Centralizes all contact info for the site (landing, pricing, terms, privacy, billing).
+ * Reads from environment variables with built-in defaults. To hide contact info,
+ * explicitly set the env var to an empty string.
  */
 
 export interface ContactConfig {
+  phone: string | null;
   whatsapp: string | null;
+  whatsappUrl: string | null;
   email: string | null;
 }
 
+const DEFAULT_PHONE = "+91 7025063047";
+const DEFAULT_WHATSAPP_NUMBER = "917025063047";
+const DEFAULT_WHATSAPP_URL = "https://wa.me/917025063047";
+const DEFAULT_EMAIL = "aryanandkjyothis4@gmail.com";
+
 export function getContactConfig(): ContactConfig {
+  const envPhone = import.meta.env.VITE_CONTACT_PHONE;
+  const envWhatsapp = import.meta.env.VITE_CONTACT_WHATSAPP;
+  const envEmail = import.meta.env.VITE_CONTACT_EMAIL;
+
+  const phone =
+    envPhone !== undefined && envPhone !== ""
+      ? envPhone
+      : envPhone === ""
+        ? null
+        : DEFAULT_PHONE;
+  const whatsappRaw =
+    envWhatsapp !== undefined && envWhatsapp !== ""
+      ? envWhatsapp
+      : envWhatsapp === ""
+        ? null
+        : DEFAULT_WHATSAPP_NUMBER;
+  const email =
+    envEmail !== undefined && envEmail !== ""
+      ? envEmail
+      : envEmail === ""
+        ? null
+        : DEFAULT_EMAIL;
+
+  let whatsappUrl: string | null = null;
+  if (whatsappRaw) {
+    const clean = whatsappRaw.replace(/\D/g, "");
+    whatsappUrl = `https://wa.me/${clean}`;
+  } else if (envWhatsapp === undefined) {
+    whatsappUrl = DEFAULT_WHATSAPP_URL;
+  }
+
   return {
-    whatsapp: import.meta.env.VITE_CONTACT_WHATSAPP || null,
-    email: import.meta.env.VITE_CONTACT_EMAIL || null,
+    phone,
+    whatsapp: whatsappRaw,
+    whatsappUrl,
+    email,
   };
 }
 
 export function hasAnyContact(): boolean {
-  const { whatsapp, email } = getContactConfig();
-  return !!(whatsapp || email);
+  const { whatsappUrl, email } = getContactConfig();
+  return !!(whatsappUrl || email);
 }
 
 export function getContactMessage(isOwner: boolean): string {
-  const { whatsapp, email } = getContactConfig();
-  if (!whatsapp && !email) return "";
+  const { whatsappUrl, email } = getContactConfig();
+  if (!whatsappUrl && !email) return "";
 
   if (isOwner) {
-    if (whatsapp && email) return `Contact us on WhatsApp or email to upgrade.`;
-    if (whatsapp) return `Contact us on WhatsApp to upgrade.`;
+    if (whatsappUrl && email)
+      return `Contact us on WhatsApp or email to upgrade.`;
+    if (whatsappUrl) return `Contact us on WhatsApp to upgrade.`;
     if (email) return `Contact us via email to upgrade.`;
   } else {
-    if (whatsapp && email)
+    if (whatsappUrl && email)
       return `Ask your administrator to upgrade, or contact us on WhatsApp or email.`;
-    if (whatsapp)
+    if (whatsappUrl)
       return `Ask your administrator to upgrade, or contact us on WhatsApp.`;
     if (email)
       return `Ask your administrator to upgrade, or contact us via email.`;
@@ -40,10 +83,9 @@ export function getContactMessage(isOwner: boolean): string {
 }
 
 export function getContactLink(): string | null {
-  const { whatsapp, email } = getContactConfig();
-  if (whatsapp) {
-    const clean = whatsapp.replace(/\D/g, "");
-    return `https://wa.me/${clean}`;
+  const { whatsappUrl, email } = getContactConfig();
+  if (whatsappUrl) {
+    return whatsappUrl;
   }
   if (email) {
     return `mailto:${email}`;
@@ -52,8 +94,8 @@ export function getContactLink(): string | null {
 }
 
 export function getContactLabel(): string {
-  const { whatsapp, email } = getContactConfig();
-  if (whatsapp) return "WhatsApp us";
+  const { whatsappUrl, email } = getContactConfig();
+  if (whatsappUrl) return "WhatsApp us";
   if (email) return "Email us";
   return "Contact us";
 }

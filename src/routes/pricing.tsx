@@ -1,8 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { LogoWordmark } from "@/components/logo";
-import { PLANS } from "@/hooks/use-subscription";
-import { Check, ArrowRight, ShieldCheck, MessageCircle } from "lucide-react";
+import {
+  APPROVED_PRICING,
+  formatIndianPrice,
+  getAnnualSavings,
+} from "@/lib/pricing-display";
+import { getContactConfig } from "@/lib/contact-config";
+import {
+  Check,
+  ArrowRight,
+  ShieldCheck,
+  MessageCircle,
+  Mail,
+} from "lucide-react";
 
 const SITE_URL = "https://vidyaorbit.in";
 const TITLE = "Pricing — Vidya Orbit";
@@ -29,10 +40,10 @@ export const Route = createFileRoute("/pricing")({
           "@type": "Product",
           name: "Vidya Orbit",
           description: DESC,
-          offers: PLANS.map((p) => ({
+          offers: APPROVED_PRICING.map((p) => ({
             "@type": "Offer",
-            name: p.name,
-            price: p.price,
+            name: p.displayName,
+            price: p.monthlyPrice,
             priceCurrency: "INR",
             url: SITE_URL + "/pricing",
           })),
@@ -54,17 +65,51 @@ const FAQ = [
   },
   {
     q: "How do I upgrade?",
-    a: "Contact us via WhatsApp or email and we'll help you upgrade to a paid plan that fits your needs.",
+    a: "Contact us and we'll help you upgrade to a paid plan that fits your needs. Online payment is coming soon.",
   },
   {
     q: "Can I cancel or downgrade?",
-    a: "Yes. Contact us via WhatsApp or email and we'll help you adjust your plan the same day.",
+    a: "Yes. Contact us and we'll help you adjust your plan the same day.",
   },
   {
     q: "Is my data safe?",
     a: "Yes. Data is encrypted in transit and at rest, isolated per institute, and only your authorised team can access it. We never sell or share institute data.",
   },
 ];
+
+function ContactCard() {
+  const { whatsappUrl, email } = getContactConfig();
+  if (!whatsappUrl && !email) return null;
+
+  return (
+    <div className="mt-10 rounded-2xl border border-border bg-card p-6 text-center">
+      <h3 className="font-display text-xl font-semibold">
+        Still have questions?
+      </h3>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Reach out and we'll help you find the right plan.
+      </p>
+      <div className="mt-4 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        {whatsappUrl && (
+          <a href={whatsappUrl} target="_blank" rel="noreferrer">
+            <Button variant="outline" size="sm">
+              <MessageCircle className="mr-1.5 h-4 w-4" />
+              WhatsApp us
+            </Button>
+          </a>
+        )}
+        {email && (
+          <a href={`mailto:${email}`}>
+            <Button variant="ghost" size="sm">
+              <Mail className="mr-1.5 h-3.5 w-3.5" />
+              {email}
+            </Button>
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function PricingPage() {
   return (
@@ -84,7 +129,7 @@ function PricingPage() {
                 Sign in
               </Button>
             </Link>
-            <Link to="/login">
+            <Link to="/login" search={{ mode: "signup" }}>
               <Button size="sm">
                 Start free
                 <ArrowRight className="ml-1 h-4 w-4" />
@@ -119,58 +164,86 @@ function PricingPage() {
 
         <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {PLANS.map((p) => {
-              const popular = p.code === "growth";
+            {APPROVED_PRICING.map((plan) => {
+              const isRecommended = plan.code === "growth";
+              const savings = getAnnualSavings(plan);
               return (
                 <div
-                  key={p.code}
+                  key={plan.code}
                   className={
                     "relative flex flex-col rounded-2xl border p-6 transition " +
-                    (popular
+                    (isRecommended
                       ? "border-[color:var(--brand-teal)]/60 bg-card shadow-[var(--shadow-lift)]"
                       : "border-border bg-card hover:shadow-sm")
                   }
                 >
-                  {popular && (
+                  {isRecommended && (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[color:var(--brand-teal)] px-3 py-1 text-[11px] font-semibold text-white">
-                      Most popular
+                      Recommended
                     </span>
                   )}
                   <div className="flex items-baseline justify-between">
                     <h2 className="font-display text-xl font-semibold">
-                      {p.name}
+                      {plan.displayName}
                     </h2>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {p.tagline}
+                    {plan.tagline}
                   </p>
-                  <div className="mt-5 flex items-baseline gap-1">
-                    <span className="font-display text-3xl font-bold">
-                      {p.price === 0
-                        ? "Free"
-                        : `₹${p.price.toLocaleString("en-IN")}`}
-                    </span>
-                    {p.price !== 0 && (
-                      <span className="text-sm text-muted-foreground">
-                        /month
+                  <div className="mt-5">
+                    <div className="flex items-baseline gap-1">
+                      <span className="font-display text-3xl font-bold">
+                        {plan.monthlyPrice === 0
+                          ? "Free"
+                          : formatIndianPrice(plan.monthlyPrice)}
                       </span>
+                      {plan.monthlyPrice !== 0 && (
+                        <span className="text-sm text-muted-foreground">
+                          /month
+                        </span>
+                      )}
+                    </div>
+                    {plan.monthlyPrice > 0 && (
+                      <>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {formatIndianPrice(plan.annualPrice)}/year
+                        </p>
+                        {savings > 0 && (
+                          <p className="mt-0.5 text-xs font-medium text-[color:var(--brand-teal)]">
+                            Save {formatIndianPrice(savings)} annually
+                            {plan.setupFee > 0 && " + free setup"}
+                          </p>
+                        )}
+                        {plan.setupFee > 0 && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {formatIndianPrice(plan.setupFee)} setup fee for
+                            monthly billing
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
-                  <ul className="mt-5 space-y-2.5 text-sm">
-                    {p.features.map((f) => (
+                  <ul className="mt-5 space-y-2.5 text-sm flex-1">
+                    {plan.features.map((f) => (
                       <li key={f} className="flex items-start gap-2">
                         <Check className="mt-0.5 h-4 w-4 flex-none text-[color:var(--brand-teal)]" />
                         <span className="text-foreground/90">{f}</span>
                       </li>
                     ))}
                   </ul>
-                  <Link to="/login" className="mt-6">
+                  <Link
+                    to={plan.code === "free" ? "/login" : "/pricing"}
+                    search={
+                      plan.code === "free" ? { mode: "signup" } : undefined
+                    }
+                    className="mt-6"
+                  >
                     <Button
                       className="w-full"
-                      variant={popular ? "default" : "outline"}
+                      variant={isRecommended ? "default" : "outline"}
                       size="sm"
                     >
-                      {p.price === 0 ? "Start free" : `Choose ${p.name}`}
+                      {plan.ctaLabel}
                     </Button>
                   </Link>
                 </div>
@@ -210,31 +283,7 @@ function PricingPage() {
               ))}
             </div>
 
-            <div className="mt-10 rounded-2xl border border-border bg-card p-6 text-center">
-              <h3 className="font-display text-xl font-semibold">
-                Still have questions?
-              </h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                We reply within a few hours. Pick whichever you prefer.
-              </p>
-              <div className="mt-4 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <a
-                  href="https://wa.me/917025063047"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Button variant="outline" size="sm">
-                    <MessageCircle className="mr-1.5 h-4 w-4" />
-                    WhatsApp us
-                  </Button>
-                </a>
-                <a href="mailto:aryanandkjyothis4@gmail.com">
-                  <Button variant="ghost" size="sm">
-                    aryanandkjyothis4@gmail.com
-                  </Button>
-                </a>
-              </div>
-            </div>
+            <ContactCard />
           </div>
         </section>
 

@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { getContactConfig } from "@/lib/contact-config";
 
 export const Route = createFileRoute("/privacy")({
   component: PrivacyPage,
   head: () => ({
     meta: [
-      { title: "Privacy Policy — Vidya" },
+      { title: "Privacy Policy — Vidya Orbit" },
       {
         name: "description",
-        content: "Privacy policy describing how Vidya handles your data.",
+        content: "Privacy policy describing how Vidya Orbit handles your data.",
       },
     ],
   }),
@@ -30,19 +31,7 @@ function PrivacyPage() {
       </p>
 
       <div className="mt-8 space-y-6">
-        <Section title="1. Who we are">
-          <p>
-            Vidya is an institute management platform operated by Aryanand K
-            Jyothis from Kerala, India. We can be reached at{" "}
-            <a
-              className="text-primary hover:underline"
-              href="mailto:aryanandkjyothis4@gmail.com"
-            >
-              aryanandkjyothis4@gmail.com
-            </a>{" "}
-            or +91 7025063047.
-          </p>
-        </Section>
+        <WhoWeAreSection />
 
         <Section title="2. Information we collect">
           <ul className="ml-4 list-disc space-y-1">
@@ -105,19 +94,7 @@ function PrivacyPage() {
           </p>
         </Section>
 
-        <Section title="7. Your rights">
-          <p>
-            You can view and edit your data at any time inside the app. To
-            export or permanently delete your account data, email us at{" "}
-            <a
-              className="text-primary hover:underline"
-              href="mailto:aryanandkjyothis4@gmail.com"
-            >
-              aryanandkjyothis4@gmail.com
-            </a>{" "}
-            and we will respond within a reasonable time.
-          </p>
-        </Section>
+        <YourRightsSection />
 
         <Section title="8. Children's data">
           <p>
@@ -135,22 +112,7 @@ function PrivacyPage() {
           </p>
         </Section>
 
-        <Section title="10. Contact">
-          <p>Questions or requests:</p>
-          <ul className="ml-4 list-disc">
-            <li>Aryanand K Jyothis</li>
-            <li>
-              Email:{" "}
-              <a
-                className="text-primary hover:underline"
-                href="mailto:aryanandkjyothis4@gmail.com"
-              >
-                aryanandkjyothis4@gmail.com
-              </a>
-            </li>
-            <li>Phone: +91 7025063047</li>
-          </ul>
-        </Section>
+        <ContactSection />
       </div>
     </div>
   );
@@ -170,5 +132,82 @@ function Section({
         {children}
       </div>
     </section>
+  );
+}
+
+function WhoWeAreSection() {
+  const { email, phone } = getContactConfig();
+  return (
+    <Section title="1. Who we are">
+      <p>
+        Vidya Orbit is an institute management platform operated by Aryanand K
+        Jyothis from Kerala, India.{" "}
+        {email && (
+          <>
+            We can be reached at{" "}
+            <a
+              className="text-primary hover:underline"
+              href={`mailto:${email}`}
+            >
+              {email}
+            </a>
+            {phone && <> or {phone}</>}.
+          </>
+        )}
+        {!email && phone && <>We can be reached at {phone}.</>}
+      </p>
+    </Section>
+  );
+}
+
+function YourRightsSection() {
+  const { email } = getContactConfig();
+  return (
+    <Section title="7. Your rights">
+      <p>
+        You can view and edit your data at any time inside the app.{" "}
+        {email ? (
+          <>
+            To export or permanently delete your account data, email us at{" "}
+            <a
+              className="text-primary hover:underline"
+              href={`mailto:${email}`}
+            >
+              {email}
+            </a>{" "}
+            and we will respond within a reasonable time.
+          </>
+        ) : (
+          <>
+            To export or permanently delete your account data, contact us and we
+            will respond within a reasonable time.
+          </>
+        )}
+      </p>
+    </Section>
+  );
+}
+
+function ContactSection() {
+  const { email, phone } = getContactConfig();
+  return (
+    <Section title="10. Contact">
+      <p>Questions or requests:</p>
+      <ul className="ml-4 list-disc">
+        <li>Aryanand K Jyothis</li>
+        {email && (
+          <li>
+            Email:{" "}
+            <a
+              className="text-primary hover:underline"
+              href={`mailto:${email}`}
+            >
+              {email}
+            </a>
+          </li>
+        )}
+        {phone && <li>Phone: {phone}</li>}
+      </ul>
+    </Section>
   );
 }
