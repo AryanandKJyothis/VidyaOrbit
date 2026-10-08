@@ -1,16 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  Check,
-  MessageCircle,
-  Phone,
-  Upload,
-  Users,
-  Wallet,
-  CalendarCheck,
-  Receipt,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowRight, Check, MessageCircle, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductPreviews } from "@/components/landing/product-previews";
 import { PublicPricingGrid } from "@/components/public/pricing-grid";
@@ -40,6 +29,12 @@ export function LandingPage() {
       <SiteHeader />
       <main>
         <Hero />
+        <section
+          id="product"
+          className="mx-auto max-w-5xl px-4 pb-10 sm:px-6 sm:pb-16"
+        >
+          <ProductPreviews />
+        </section>
         <Setup />
         <Pains />
         <Features />
@@ -151,11 +146,8 @@ function Hero() {
           <p className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground sm:text-lg">
             {HERO_SUB}
           </p>
-          <HeroCtas stacked />
+          <HeroCtas />
           <p className="mt-4 text-xs text-muted-foreground">{FOUNDER_LINE}</p>
-        </div>
-        <div id="product" className="mx-auto mt-8 max-w-5xl sm:mt-12">
-          <ProductPreviews />
         </div>
       </div>
     </section>
@@ -271,32 +263,26 @@ function Pains() {
 function Features() {
   const features = [
     {
-      icon: Wallet,
       title: "Who hasn't paid",
       body: "Filter overdue, pending or paid. Record cash, UPI or bank. Export dues if you still like a spreadsheet.",
     },
     {
-      icon: CalendarCheck,
       title: "Attendance on your phone",
       body: "Mark a whole batch in a few taps. All present, then fix the absentees. Built for a busy evening class.",
     },
     {
-      icon: Users,
       title: "Students and batches",
       body: "Name, parent phone, batch, fee total and due date in one roster. Search instead of scrolling WhatsApp.",
     },
     {
-      icon: Receipt,
       title: "Numbered receipts",
       body: "Centre name on the receipt. Print or save as PDF from the browser, then send it yourself on WhatsApp.",
     },
     {
-      icon: Upload,
       title: "Excel / CSV import",
       body: "Upload .xlsx, .xls or .csv. We do not ask you to paste rows. A template is in the app if you want to tidy the sheet first.",
     },
     {
-      icon: ShieldCheck,
       title: "Staff logins",
       body: "Invite a tutor with a link. You choose whether they can see fees. Your login stays the owner login.",
     },
@@ -328,7 +314,7 @@ function Features() {
                   "color-mix(in oklab, var(--brand-teal) 18%, transparent)",
               }}
             >
-              <f.icon className="h-5 w-5 text-[color:var(--brand-teal)]" />
+              <Check className="h-5 w-5 text-[color:var(--brand-teal)]" />
             </div>
             <h3 className="mt-4 font-display text-lg font-semibold">
               {f.title}
