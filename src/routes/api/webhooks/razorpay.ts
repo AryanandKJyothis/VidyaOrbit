@@ -23,6 +23,15 @@ async function activateFromOrder(
     return { ok: false, error: "Order not found or not paid" };
   }
 
+  const { isValidPlanId, getSubscriptionPlanCode } = await import(
+    "@/lib/billing-pricing"
+  );
+
+  const planId = order.intent; // We stored plan_id in intent field
+  if (!isValidPlanId(planId)) {
+    return { ok: false, error: `Invalid plan_id: ${planId}` };
+  }
+
   try {
     const { data: currentSub } = await supabaseAdmin
       .from("subscriptions")
@@ -33,7 +42,8 @@ async function activateFromOrder(
     const now = new Date();
     let baseDate = now;
 
-    if (order.intent === "renew" && currentSub?.expiry_date) {
+    // Extend from current expiry if it's in the future
+    if (currentSub?.expiry_date) {
       const currentExpiry = new Date(currentSub.expiry_date);
       if (currentExpiry > now) {
         baseDate = currentExpiry;
@@ -43,17 +53,20 @@ async function activateFromOrder(
     const expiryDate = new Date(baseDate);
     expiryDate.setDate(expiryDate.getDate() + 365);
 
+    // Map plan_id to subscription plan code
+    const planCode = getSubscriptionPlanCode(planId);
+
     const { error } = await supabaseAdmin.rpc(
       "apply_subscription_change" as never,
       {
         _owner: order.owner_id,
         _changed_by: order.owner_id,
-        _plan: "growth",
+        _plan: planCode,
         _status: "active",
         _start: now.toISOString(),
         _expiry: expiryDate.toISOString(),
         _price: null,
-        _notes: `Annual plan activated via ${order.intent}`,
+        _notes: `Annual plan ${planId} activated`,
         _note: `Razorpay payment: ${order.razorpay_payment_id ?? orderId}`,
         _confirm: true,
       } as never,

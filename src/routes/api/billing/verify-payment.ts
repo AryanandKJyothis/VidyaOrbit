@@ -12,7 +12,9 @@ import { allowRequest, clientAddress, tooManyRequests } from "@/lib/rate-limit";
 import {
   assertRazorpayKeyMode,
   isBillingEnabled,
-  ANNUAL_PLAN_STUDENT_LIMIT,
+  getSubscriptionPlanCode,
+  isValidPlanId,
+  type PlanId,
 } from "@/lib/billing-pricing";
 
 const bodySchema = z.object({
@@ -291,10 +293,25 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
         const alreadyPaid = !updateResult;
 
         if (!alreadyPaid) {
-          // Activate subscription
+          // Validate and activate subscription
+          const planId = order.intent; // We stored plan_id in intent field
+          if (!isValidPlanId(planId)) {
+            console.error(
+              `[verify-payment] Invalid plan_id in order: ${planId}`,
+            );
+            return Response.json(
+              {
+                ok: false,
+                code: "INVALID_PLAN_IN_ORDER",
+                message: "Order contains invalid plan ID.",
+              },
+              { status: 500 },
+            );
+          }
+
           const activationResult = await activateSubscription(
             userId,
-            order.intent,
+            planId as PlanId,
           );
 
           if (!activationResult.ok) {

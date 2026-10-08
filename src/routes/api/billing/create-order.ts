@@ -14,11 +14,12 @@ import {
   hasPaidSetupFee,
   assertRazorpayKeyMode,
   isBillingEnabled,
-  type BillingIntent,
+  isValidPlanId,
+  type PlanId,
 } from "@/lib/billing-pricing";
 
 const bodySchema = z.object({
-  intent: z.enum(["activate", "renew"]),
+  plan_id: z.string().min(1),
 });
 
 export const Route = createFileRoute("/api/billing/create-order")({
@@ -94,6 +95,20 @@ export const Route = createFileRoute("/api/billing/create-order")({
           );
         }
 
+        // Validate plan_id
+        if (!isValidPlanId(body.plan_id)) {
+          return Response.json(
+            {
+              ok: false,
+              code: "INVALID_PLAN",
+              message: "Invalid plan ID. Must be 'annual_500' or 'annual_large'.",
+            },
+            { status: 400 },
+          );
+        }
+
+        const planId = body.plan_id as PlanId;
+
         // Check that the user is the workspace owner
         const { data: inst, error: instErr } = await supabaseAdmin
           .from("institutes")
@@ -129,15 +144,15 @@ export const Route = createFileRoute("/api/billing/create-order")({
         const paidSetup = await hasPaidSetupFee(userId, supabaseAdmin);
 
         // Compute server-side pricing
-        const pricing = computePricing(body.intent, paidSetup);
+        const pricing = computePricing(planId, paidSetup);
 
         // Create Razorpay order
         const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
 
-        const receipt = `vidya_${body.intent}_${Date.now().toString(36)}`;
+        const receipt = `vidya_${planId}_${Date.now().toString(36)}`;
         const notes = {
           owner_id: userId,
-          intent: body.intent,
+          plan_id: planId,
         };
 
         let rzOrder: any;
@@ -163,13 +178,13 @@ export const Route = createFileRoute("/api/billing/create-order")({
           );
         }
 
-        // Store order in DB
+        // Store order in DB with plan_id
         const { error: insertErr } = await supabaseAdmin
           .from("billing_orders")
           .insert({
             owner_id: userId,
             razorpay_order_id: rzOrder.id,
-            intent: body.intent,
+            intent: planId, // Store plan_id as intent for now
             amount_paise: pricing.total,
             currency: pricing.currency,
             status: "created",
