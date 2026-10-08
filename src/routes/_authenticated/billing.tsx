@@ -26,7 +26,8 @@ import { BILLING_DISABLED } from "@/lib/feature-flags";
 
 export const Route = createFileRoute("/_authenticated/billing")({
   beforeLoad: () => {
-    if (BILLING_DISABLED) throw redirect({ to: "/plan" });
+    // Redirect to /plan page - annual billing is now on /plan
+    throw redirect({ to: "/plan" });
   },
   component: BillingPage,
 });
