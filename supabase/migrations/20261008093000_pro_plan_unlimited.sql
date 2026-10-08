@@ -2,12 +2,12 @@
 -- This allows large tier billing to activate Pro subscription with no student cap.
 -- DO NOT APPLY this migration until after testing on Preview.
 
-SET search_path TO 'public';
-
 -- Update plan_student_limit function to return unlimited for Pro
 CREATE OR REPLACE FUNCTION public.plan_student_limit(_plan public.plan_code)
-RETURNS INTEGER
-LANGUAGE sql IMMUTABLE
+RETURNS integer
+LANGUAGE sql 
+IMMUTABLE 
+SET search_path = public
 AS $$
   SELECT CASE _plan
     WHEN 'free' THEN 25
