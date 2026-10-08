@@ -110,8 +110,8 @@ function PricingPage() {
                 Simple, INR-first pricing
               </h1>
               <p className="mt-4 text-muted-foreground sm:text-lg">
-                Start free. Upgrade only when your centre grows. No setup fees,
-                no hidden charges.
+                Start free. Upgrade only when your centre grows. No hidden
+                charges.
               </p>
             </div>
           </div>

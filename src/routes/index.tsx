@@ -573,8 +573,7 @@ function Pricing() {
           Honest pricing. Start free.
         </h2>
         <p className="mt-3 text-muted-foreground">
-          Pay only when your centre grows. No setup fees, no hidden charges, no
-          commitments.
+          Pay only when your centre grows. No hidden charges, no commitments.
         </p>
       </div>
       <div className="mt-12 grid gap-5 md:grid-cols-3">

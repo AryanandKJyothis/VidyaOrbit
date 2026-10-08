@@ -92,7 +92,7 @@ function PrivacyPage() {
           </p>
         </Section>
 
-        <Section title="6. Payments and donations">
+        <Section title="6. Payments">
           <p>
             Paid subscriptions are arranged by contacting us directly. In the
             future, we plan to add online payment processing through{" "}
@@ -102,11 +102,6 @@ function PrivacyPage() {
             We store only the subscription details and billing status to grant
             the right level of access. Razorpay's own privacy policy would apply
             to data you submit to their checkout.
-          </p>
-          <p className="mt-2">
-            UPI donations made via the "Support us" page are processed directly
-            through your UPI app to our UPI ID — we receive only the transaction
-            reference your bank sends us.
           </p>
         </Section>
 

@@ -52,7 +52,6 @@ export const PLANS: {
     features: [
       "Up to 100 students",
       "Everything in Free",
-      "Team member invites",
       "Email support",
     ],
   },
@@ -64,8 +63,6 @@ export const PLANS: {
     features: [
       "Up to 500 students",
       "Everything in Starter",
-      "Advanced permissions",
-      "Data export",
     ],
   },
   {
@@ -77,7 +74,6 @@ export const PLANS: {
       "Up to 1,000 students",
       "Everything in Growth",
       "Email support",
-      "All features unlocked",
     ],
   },
 ];

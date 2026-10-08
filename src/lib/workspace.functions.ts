@@ -141,13 +141,19 @@ export const listTeam = createServerFn({ method: "POST" })
     const lastSignIn: Record<string, string | null> = {};
     if (idSet.size > 0) {
       let page = 1;
+      const maxPages = 50; // Safety cap: 10,000 users max
       let hasMore = true;
-      while (hasMore && idSet.size > Object.keys(emails).length) {
-        const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({
-          page,
-          perPage: 200,
-        });
-        for (const u of usersPage?.users ?? []) {
+      while (hasMore && page <= maxPages && idSet.size > Object.keys(emails).length) {
+        const { data: usersPage, error: usersError } =
+          await supabaseAdmin.auth.admin.listUsers({
+            page,
+            perPage: 200,
+          });
+        // Break on error or empty response
+        if (usersError || !usersPage?.users || usersPage.users.length === 0) {
+          break;
+        }
+        for (const u of usersPage.users) {
           if (idSet.has(u.id)) {
             emails[u.id] = u.email ?? "";
             lastSignIn[u.id] = (u.last_sign_in_at as string | null) ?? null;
@@ -155,7 +161,7 @@ export const listTeam = createServerFn({ method: "POST" })
         }
         // Stop if we've found all members or if this page was incomplete
         hasMore =
-          (usersPage?.users?.length ?? 0) === 200 &&
+          usersPage.users.length === 200 &&
           Object.keys(emails).length < idSet.size;
         page++;
       }
@@ -252,21 +258,26 @@ export const inviteMember = createServerFn({ method: "POST" })
       const idSet = new Set(existingMembers.map((m) => m.user_id));
       // Page through all users to find existing member emails
       let page = 1;
+      const maxPages = 50; // Safety cap: 10,000 users max
       let hasMore = true;
       const existingEmails = new Set<string>();
-      while (hasMore && existingEmails.size < idSet.size) {
-        const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({
-          page,
-          perPage: 200,
-        });
-        for (const u of usersPage?.users ?? []) {
+      while (hasMore && page <= maxPages && existingEmails.size < idSet.size) {
+        const { data: usersPage, error: usersError } =
+          await supabaseAdmin.auth.admin.listUsers({
+            page,
+            perPage: 200,
+          });
+        // Break on error or empty response
+        if (usersError || !usersPage?.users || usersPage.users.length === 0) {
+          break;
+        }
+        for (const u of usersPage.users) {
           if (idSet.has(u.id)) {
             existingEmails.add((u.email ?? "").toLowerCase());
           }
         }
         hasMore =
-          (usersPage?.users?.length ?? 0) === 200 &&
-          existingEmails.size < idSet.size;
+          usersPage.users.length === 200 && existingEmails.size < idSet.size;
         page++;
       }
       if (existingEmails.has(data.email)) {
@@ -393,12 +404,20 @@ export const listMyPendingInvites = createServerFn({ method: "GET" })
     const email = String(context.claims.email ?? "").toLowerCase();
     if (!email) return [];
 
-    // Require confirmed email before showing invites
-    const emailConfirmedAt = context.claims.email_confirmed_at;
-    if (!emailConfirmedAt) {
-      throw new Error(
-        "Please verify your email address before accepting invites. Check your inbox for the verification link.",
+    // Check if user's email is confirmed by fetching full user record
+    const { data: userData, error: userError } =
+      await supabaseAdmin.auth.admin.getUserById(context.userId);
+    if (userError || !userData?.user) {
+      console.warn(
+        `Failed to fetch user ${context.userId} for invite check:`,
+        userError,
       );
+      return []; // Return empty list if we can't verify, don't block the page
+    }
+
+    // Silently return empty list if email not confirmed
+    if (!userData.user.email_confirmed_at) {
+      return [];
     }
 
     const { data: invites, error } = await context.supabase
@@ -434,9 +453,16 @@ export const acceptInvite = createServerFn({ method: "POST" })
     const userEmail = String(context.claims.email ?? "").toLowerCase();
     if (!userEmail) throw new Error("Your account has no email address");
 
-    // Require confirmed email before accepting invites
-    const emailConfirmedAt = context.claims.email_confirmed_at;
-    if (!emailConfirmedAt) {
+    // Check if user's email is confirmed by fetching full user record
+    const { data: userData, error: userError } =
+      await supabaseAdmin.auth.admin.getUserById(context.userId);
+    if (userError || !userData?.user) {
+      throw new Error(
+        "Could not verify your account. Please try again or contact support.",
+      );
+    }
+
+    if (!userData.user.email_confirmed_at) {
       throw new Error(
         "Please verify your email address before accepting invites. Check your inbox for the verification link.",
       );

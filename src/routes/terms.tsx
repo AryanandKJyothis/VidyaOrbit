@@ -93,15 +93,7 @@ function TermsPage() {
           </p>
         </Section>
 
-        <Section title="7. Donations">
-          <p>
-            Donations made through the "Support us" page are voluntary and
-            non-refundable. Donations do not entitle you to any additional
-            features or services.
-          </p>
-        </Section>
-
-        <Section title="8. Availability and warranty">
+        <Section title="7. Availability and warranty">
           <p>
             The service is provided "as is" without warranty of any kind. We do
             not guarantee uninterrupted availability and are not liable for any
@@ -110,7 +102,7 @@ function TermsPage() {
           </p>
         </Section>
 
-        <Section title="9. Termination">
+        <Section title="8. Termination">
           <p>
             You may stop using the service at any time. We may suspend or
             terminate accounts that violate these terms or that are used to harm
@@ -119,14 +111,14 @@ function TermsPage() {
           </p>
         </Section>
 
-        <Section title="10. Changes">
+        <Section title="9. Changes">
           <p>
             We may update these terms from time to time. Continued use of the
             service after changes constitutes acceptance of the new terms.
           </p>
         </Section>
 
-        <Section title="11. Contact">
+        <Section title="10. Contact">
           <p>For any questions about these terms, contact:</p>
           <ul className="ml-4 list-disc">
             <li>Aryanand K Jyothis</li>
