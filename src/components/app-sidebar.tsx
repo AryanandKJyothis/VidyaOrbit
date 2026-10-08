@@ -117,9 +117,9 @@ export function AppSidebar() {
   );
   const items: NavItem[] = [
     ...visibleBase,
-    // Team is visible to every workspace member so they can see their teammates.
+    // Team is visible only to members with settings:read (to see teammates).
     // Non-owners get a read-only view; the page itself enforces permissions.
-    ...(active
+    ...(active && canSettings
       ? [{ title: "Team", url: "/settings/team", icon: Users2 } as NavItem]
       : []),
     ...(isAdmin

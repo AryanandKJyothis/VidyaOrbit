@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -59,6 +60,26 @@ function FeesPageContent() {
   const [q, setQ] = useState("");
   const [batchFilter, setBatchFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const loading = students.isLoading || batches.isLoading || payments.isLoading;
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <PageHeader
+          title="Fees"
+          description="Track fee collection and pending dues"
+        />
+        <div className="grid gap-4 sm:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
 
   const paidByStudent = useMemo(() => {
     const m: Record<string, number> = {};

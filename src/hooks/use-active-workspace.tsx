@@ -39,7 +39,9 @@ const WorkspaceCtx = createContext<Ctx>({
   refresh: () => {},
 });
 
-const STORAGE_KEY = "vidya.active-workspace";
+function getStorageKey(userId: string) {
+  return `vidya.active-workspace.${userId}`;
+}
 
 const OWNER_PERMISSIONS: Permissions = {
   students: "write",
@@ -76,25 +78,39 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [query.data, query.isError, user]);
 
   const [activeOwnerId, setActiveOwnerId] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem(STORAGE_KEY);
+    if (typeof window === "undefined" || !user) return null;
+    try {
+      return localStorage.getItem(getStorageKey(user.id));
+    } catch {
+      return null;
+    }
   });
 
-  // Default active = own workspace
+  // Default active = own workspace, and validate stored workspace against memberships
   useEffect(() => {
     if (workspaces.length === 0) return;
+    
+    // Validate stored workspace is still in memberships
     const exists =
       activeOwnerId && workspaces.find((w) => w.ownerId === activeOwnerId);
+    
     if (!exists) {
+      // Stored workspace not found, default to own workspace
       const own = workspaces.find((w) => w.isOwn) ?? workspaces[0];
       setActiveOwnerId(own.ownerId);
     }
   }, [workspaces, activeOwnerId]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (activeOwnerId) localStorage.setItem(STORAGE_KEY, activeOwnerId);
-  }, [activeOwnerId]);
+    if (typeof window === "undefined" || !user) return;
+    if (activeOwnerId) {
+      try {
+        localStorage.setItem(getStorageKey(user.id), activeOwnerId);
+      } catch {
+        /* ignore quota */
+      }
+    }
+  }, [activeOwnerId, user]);
 
   const active = useMemo(
     () => workspaces.find((w) => w.ownerId === activeOwnerId) ?? null,

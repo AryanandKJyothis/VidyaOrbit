@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useInstitute, useUpdateInstitute } from "@/hooks/use-data";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +65,18 @@ function SettingsPageContent() {
         logo_url: inst.data.logo_url ?? "",
       });
   }, [inst.data]);
+
+  if (inst.isLoading) {
+    return (
+      <div className="space-y-4">
+        <PageHeader title="Settings" description="Manage your institute info" />
+        <div className="space-y-6">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
+    );
+  }
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();

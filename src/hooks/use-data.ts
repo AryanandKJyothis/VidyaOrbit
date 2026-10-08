@@ -84,13 +84,19 @@ const ROW_LIMIT = 5000;
 
 export function useStudents() {
   const ownerId = useOwnerId();
+  const { active } = useActiveWorkspace();
+  const isOwner = active?.role === "owner";
+  
   return useQuery({
     queryKey: ["students", ownerId],
     enabled: !!ownerId,
     staleTime: 60_000,
     queryFn: async () => {
+      // Owners query the students table directly (faster, no permission check)
+      // Non-owners query students_gated view (hides fee amounts for non-fees members)
+      const table = isOwner ? "students" : "students_gated";
       const { data, error } = await supabase
-        .from("students")
+        .from(table)
         .select("*")
         .eq("owner_id", ownerId!)
         .order("created_at", { ascending: false })
@@ -103,13 +109,17 @@ export function useStudents() {
 
 export function useStudent(id: string | undefined) {
   const ownerId = useOwnerId();
+  const { active } = useActiveWorkspace();
+  const isOwner = active?.role === "owner";
+  
   return useQuery({
     queryKey: ["student", id, ownerId],
     enabled: !!id && !!ownerId,
     staleTime: 30_000,
     queryFn: async () => {
+      const table = isOwner ? "students" : "students_gated";
       const { data, error } = await supabase
-        .from("students")
+        .from(table)
         .select("*")
         .eq("id", id!)
         .eq("owner_id", ownerId!)

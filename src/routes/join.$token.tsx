@@ -87,9 +87,9 @@ function JoinPage() {
   const accept = useMutation({
     mutationFn: () => acceptFn({ data: { token } }),
     onSuccess: async (res) => {
-      toast.success("You're in!");
       await ws.refresh();
       ws.setActiveOwnerId(res.ownerId);
+      toast.success("Welcome! You've joined the workspace.");
       navigate({ to: "/dashboard" });
     },
     onError: (e) => toast.error(formatUserError(e)),
