@@ -197,13 +197,16 @@ export function useUpsertStudent() {
       const validated = studentSchemaWithPhone.parse(rest);
       // Prevent zod from re-adding fee fields that weren't in the original input
       // This prevents staff edits from wiping fee_due_date or fee_total
-      if (!("fee_due_date" in rest)) delete (validated as any).fee_due_date;
-      if (!("fee_total" in rest)) delete (validated as any).fee_total;
-      const payload = { ...validated, owner_id: ownerId };
+      const payload: Record<string, unknown> = {
+        ...validated,
+        owner_id: ownerId,
+      };
+      if (!("fee_due_date" in rest)) delete payload.fee_due_date;
+      if (!("fee_total" in rest)) delete payload.fee_total;
       if (id) {
         const { error } = await supabase
           .from("students")
-          .update(payload)
+          .update(payload as never)
           .eq("id", id)
           .eq("owner_id", ownerId);
         if (error) throw error;

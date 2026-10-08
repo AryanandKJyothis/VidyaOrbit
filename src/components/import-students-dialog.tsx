@@ -305,7 +305,15 @@ export function ImportStudentsDialog({
     try {
       let updated = 0;
       for (const r of toUpdate) {
-        const updatePayload: Record<string, unknown> = {
+        const updatePayload: {
+          full_name: string;
+          phone: string | null;
+          guardian_name: string | null;
+          guardian_phone: string | null;
+          batch_id: string | null;
+          joining_date?: string;
+          fee_total?: number;
+        } = {
           full_name: r.full_name,
           phone: r.phone,
           guardian_name: r.guardian_name,
@@ -314,12 +322,12 @@ export function ImportStudentsDialog({
           ...(r.joining_date ? { joining_date: r.joining_date } : {}),
         };
         // Only include fee fields if user has fees:write permission
-        if (canWriteFees) {
-          if (r.fee_total) updatePayload.fee_total = r.fee_total;
+        if (canWriteFees && r.fee_total) {
+          updatePayload.fee_total = r.fee_total;
         }
         const { error } = await supabase
           .from("students")
-          .update(updatePayload as any)
+          .update(updatePayload)
           .eq("id", r.existingStudentId!)
           .eq("owner_id", ownerId);
         if (error) throw error;

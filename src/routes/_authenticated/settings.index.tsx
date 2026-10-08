@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Save, Loader2, LogOut, Bell } from "lucide-react";
 import { RoutePermissionGate } from "@/components/route-permission-gate";
 import { PageHeader } from "@/components/page-header";
@@ -43,6 +44,7 @@ function SettingsPageContent() {
   const mut = useUpdateInstitute();
   const reminderPrefs = useReminderPrefs();
   const { resetChecklist } = useOnboarding();
+  const qc = useQueryClient();
   const [form, setForm] = useState({
     name: "",
     contact_phone: "",
@@ -293,8 +295,11 @@ function SettingsPageContent() {
                 className="w-full text-destructive hover:bg-destructive/5 hover:text-destructive"
                 onClick={async () => {
                   const { error } = await supabase.auth.signOut();
-                  if (error)
+                  if (error) {
                     toast.error("Could not sign out. Please try again.");
+                  } else {
+                    qc.clear();
+                  }
                 }}
               >
                 <LogOut className="mr-2 h-4 w-4" /> Sign out
