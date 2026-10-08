@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, Home, Users, Wallet, CreditCard } from "lucide-react";
+import { Home, Users, Wallet, CreditCard } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useInstitute } from "@/hooks/use-data";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -44,21 +44,21 @@ function AuthenticatedLayout() {
                 <PageTransition />
               </div>
               <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-border text-center text-[10px] sm:text-[11px] text-muted-foreground shrink-0">
+                <span>Vidya Orbit · Data privacy and security built-in</span>
+                <span className="mx-2 opacity-40">·</span>
                 <Link
-                  to="/donate"
-                  className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                  to="/terms"
+                  className="text-muted-foreground hover:text-foreground transition-colors hover:underline"
                 >
-                  <Heart className="h-3 w-3 opacity-70" aria-hidden />
-                  <span className="hidden sm:inline">
-                    Support Vidya&apos;s development
-                  </span>
-                  <span className="sm:hidden">Support development</span>
+                  Terms
                 </Link>
                 <span className="mx-2 opacity-40">·</span>
-                <span className="hidden sm:inline">
-                  Billing lives under Plans — donations are optional.
-                </span>
-                <span className="sm:hidden">Donations optional.</span>
+                <Link
+                  to="/privacy"
+                  className="text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                >
+                  Privacy
+                </Link>
               </footer>
             </main>
             <MobileNav />

@@ -41,7 +41,7 @@ export const PLANS: {
       "Student & batch management",
       "Daily attendance",
       "Basic fee tracking",
-      "Email & Google sign-in",
+      "Email sign-in",
     ],
   },
   {
@@ -52,8 +52,7 @@ export const PLANS: {
     features: [
       "Up to 100 students",
       "Everything in Free",
-      "Full analytics suite",
-      "Comprehensive reporting",
+      "Team member invites",
       "Email support",
     ],
   },
@@ -65,8 +64,8 @@ export const PLANS: {
     features: [
       "Up to 500 students",
       "Everything in Starter",
-      "Online fee payment links",
-      "Automated payment receipts",
+      "Advanced permissions",
+      "Data export",
     ],
   },
   {
@@ -77,7 +76,7 @@ export const PLANS: {
     features: [
       "Up to 1,000 students",
       "Everything in Growth",
-      "Priority support",
+      "Email support",
       "All features unlocked",
     ],
   },
