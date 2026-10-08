@@ -5,6 +5,7 @@
  * (same as activate_billing_order in SQL). SQL is the source of truth
  * at payment time; this helper is the create-order gate.
  */
+import { DEFAULT_EMAIL, DEFAULT_WHATSAPP_NUMBER } from "@/lib/contact-config";
 import { planCodeForTier, type PlanTier } from "@/lib/plan-limits";
 
 export const BILLING_TIME_ZONE = "Asia/Kolkata";
@@ -86,21 +87,29 @@ export type BillingSupportContact = {
 
 /**
  * Server-side support contact for 409 TIER_CHANGE_CONTACT_SUPPORT.
- * Reads the same VITE_CONTACT_* vars the client uses.
+ * Same VITE_CONTACT_* vars as the client; unset falls back to
+ * contact-config.ts built-in defaults so the 409 always has a WhatsApp link.
+ * An explicit empty string still hides that channel.
  */
 export function getBillingSupportContact(
   env: NodeJS.ProcessEnv = process.env,
 ): BillingSupportContact {
-  const whatsapp = env.VITE_CONTACT_WHATSAPP?.trim() || "";
-  const email = env.VITE_CONTACT_EMAIL?.trim() || "";
-  if (whatsapp) {
+  const whatsappRaw =
+    env.VITE_CONTACT_WHATSAPP === undefined
+      ? DEFAULT_WHATSAPP_NUMBER
+      : env.VITE_CONTACT_WHATSAPP.trim();
+  const emailRaw =
+    env.VITE_CONTACT_EMAIL === undefined
+      ? DEFAULT_EMAIL
+      : env.VITE_CONTACT_EMAIL.trim();
+  if (whatsappRaw) {
     return {
-      link: `https://wa.me/${whatsapp.replace(/\D/g, "")}`,
+      link: `https://wa.me/${whatsappRaw.replace(/\D/g, "")}`,
       channel: "whatsapp",
     };
   }
-  if (email) {
-    return { link: `mailto:${email}`, channel: "email" };
+  if (emailRaw) {
+    return { link: `mailto:${emailRaw}`, channel: "email" };
   }
   return { link: null, channel: null };
 }

@@ -46,8 +46,11 @@ describe("billing SQL migrations", () => {
   );
 
   it("094000 setup_fee_paid is only real payments, not non-free/expiry", () => {
-    expect(health094000).toMatch(
+    expect(health094000).not.toMatch(
       /UPDATE public\.subscriptions\s+SET setup_fee_paid = false/,
+    );
+    expect(health094000).not.toMatch(
+      /UPDATE public\.subscriptions\s+SET setup_fee_paid = true\s*;/,
     );
     expect(health094000).not.toMatch(
       /SET setup_fee_paid = true\s+WHERE plan IS DISTINCT FROM 'free'/,
@@ -57,9 +60,10 @@ describe("billing SQL migrations", () => {
       /v_setup_paid :=[\s\S]*plan IS DISTINCT FROM 'free'/,
     );
     expect(health).not.toMatch(/v_setup_paid :=[\s\S]*expiry_date IS NOT NULL/);
-    expect(health).toContain("li->>'item' = 'setup_fee'");
+    expect(health).toMatch(/bo\.activated_at IS NOT NULL/);
+    expect(health).not.toMatch(/li->>'item' = 'setup_fee'/);
     expect(health094000).toMatch(
-      /jsonb_array_elements\(COALESCE\(o\.line_items[\s\S]*setup_fee[\s\S]*SET setup_fee_paid = true/,
+      /UPDATE public\.subscriptions\s+SET setup_fee_paid = true\s+WHERE owner_id = o\.owner_id/,
     );
   });
 

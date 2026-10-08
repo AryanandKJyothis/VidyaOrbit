@@ -259,13 +259,10 @@ describe("tier-change support contact", () => {
     expect(tierChangeSupportMessage(c.channel)).toMatch(/WhatsApp/);
   });
 
-  it("falls back to mailto and does not say WhatsApp", () => {
-    const c = getBillingSupportContact({
-      VITE_CONTACT_EMAIL: "hi@example.com",
-    } as NodeJS.ProcessEnv);
-    expect(c.channel).toBe("email");
-    expect(c.link).toBe("mailto:hi@example.com");
-    expect(tierChangeSupportMessage(c.channel)).not.toMatch(/WhatsApp/);
-    expect(tierChangeSupportMessage(c.channel)).toMatch(/contact us/i);
+  it("uses contact-config WhatsApp default when env is unset", () => {
+    const c = getBillingSupportContact({} as NodeJS.ProcessEnv);
+    expect(c.channel).toBe("whatsapp");
+    expect(c.link).toBe("https://wa.me/917025063047");
+    expect(tierChangeSupportMessage(c.channel)).toMatch(/WhatsApp/);
   });
 });

@@ -139,6 +139,13 @@ describe("GET /api/billing/pricing", () => {
     expect(
       body.tiers.find((t: { tier: string }) => t.tier === "large").studentLimit,
     ).toBeNull();
+    expect(
+      body.tiers.find((t: { tier: string }) => t.tier === "growth").features,
+    ).toEqual([
+      "Up to 500 students",
+      "Everything in Starter",
+      "Email & WhatsApp support",
+    ]);
   });
 });
 
@@ -314,9 +321,9 @@ describe("POST /api/billing/create-order", () => {
     expect(body.contactLink).toBe("https://wa.me/919876543210");
   });
 
-  it("409 without WhatsApp says contact us and uses mailto", async () => {
+  it("409 without VITE_CONTACT_WHATSAPP still includes the default WhatsApp link", async () => {
     delete process.env.VITE_CONTACT_WHATSAPP;
-    process.env.VITE_CONTACT_EMAIL = "support@example.com";
+    delete process.env.VITE_CONTACT_EMAIL;
     const later = new Date(Date.now() + 30 * 86400_000).toISOString();
     fromMock.mockImplementation((table: string) => {
       if (table === "subscriptions")
@@ -331,9 +338,8 @@ describe("POST /api/billing/create-order", () => {
     const res = await postCreate({ tier: "large", cycle: "monthly" });
     expect(res.status).toBe(409);
     const body = await res.json();
-    expect(body.message).not.toMatch(/WhatsApp/i);
-    expect(body.message).toMatch(/contact us/i);
-    expect(body.contactLink).toBe("mailto:support@example.com");
+    expect(body.message).toMatch(/WhatsApp/i);
+    expect(body.contactLink).toBe("https://wa.me/917025063047");
   });
 
   it("allows a different tier with exactly 7 days left", async () => {
@@ -426,6 +432,57 @@ describe("POST /api/billing/create-order", () => {
     const res = await postCreate({ tier: "growth", cycle: "monthly" });
     expect(res.status).toBe(200);
     expect((await res.json()).amount).toBe(599900);
+  });
+
+  it("does not charge setup on Growth monthly after a captured Starter monthly", async () => {
+    const in3 = new Date(Date.now() + 3 * 86400_000).toISOString();
+    fromMock.mockImplementation((table: string) => {
+      if (table === "subscriptions")
+        return thenable({
+          data: {
+            plan: "starter",
+            plan_price: 499,
+            expiry_date: in3,
+            setup_fee_paid: false,
+          },
+          error: null,
+        });
+      if (table === "institutes")
+        return thenable({ data: { owner_id: OWNER }, error: null });
+      if (table === "students")
+        return thenable({ data: null, error: null, count: 10 });
+      if (table === "billing_orders")
+        return thenable({ data: [{ id: "starter-paid" }], error: null });
+      return thenable({ data: null, error: null });
+    });
+    const res = await postCreate({ tier: "growth", cycle: "monthly" });
+    expect(res.status).toBe(200);
+    expect((await res.json()).amount).toBe(99900);
+  });
+
+  it("does not charge setup on monthly after a captured annual order", async () => {
+    fromMock.mockImplementation((table: string) => {
+      if (table === "subscriptions")
+        return thenable({
+          data: {
+            plan: "growth",
+            plan_price: 10000,
+            expiry_date: "2027-10-01",
+            setup_fee_paid: false,
+          },
+          error: null,
+        });
+      if (table === "institutes")
+        return thenable({ data: { owner_id: OWNER }, error: null });
+      if (table === "students")
+        return thenable({ data: null, error: null, count: 10 });
+      if (table === "billing_orders")
+        return thenable({ data: [{ id: "annual-paid" }], error: null });
+      return thenable({ data: null, error: null });
+    });
+    const res = await postCreate({ tier: "growth", cycle: "monthly" });
+    expect(res.status).toBe(200);
+    expect((await res.json()).amount).toBe(99900);
   });
 
   it("skips setup when the admin toggle marks it paid (offline invoice)", async () => {

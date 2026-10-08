@@ -28,7 +28,7 @@ export type PricingResult = {
   months: number; // 1 for monthly, 12 for annual
 };
 
-// ── Plan Configuration (server-side, env-overridable) ──
+// ── Plan Configuration (code constants; match pricing-display.ts) ──
 export type TierConfig = {
   tier: PlanTier;
   student_limit: number;
@@ -39,65 +39,31 @@ export type TierConfig = {
   description: string;
 };
 
-// Helper to get env var with fallback and validation
-function getEnvInt(key: string, fallback: number): number {
-  const val = process.env[key];
-  if (!val) return fallback;
-  const parsed = parseInt(val, 10);
-
-  // Validate: must be a positive integer >= 100 paise for prices, >= 0 for setup
-  if (isNaN(parsed)) {
-    console.warn(
-      `[billing-pricing] Invalid ${key}: "${val}" is not a number, using fallback ${fallback}`,
-    );
-    return fallback;
-  }
-
-  if (key.includes("SETUP") && parsed < 0) {
-    console.warn(
-      `[billing-pricing] Invalid ${key}: ${parsed} is negative, using fallback ${fallback}`,
-    );
-    return fallback;
-  }
-
-  if (!key.includes("SETUP") && parsed < 100) {
-    console.warn(
-      `[billing-pricing] Invalid ${key}: ${parsed} is less than 100 paise, using fallback ${fallback}`,
-    );
-    return fallback;
-  }
-
-  return parsed;
-}
-
 export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
   starter: {
     tier: "starter",
     student_limit: PLAN_STUDENT_LIMITS.starter ?? 100,
-    setup_fee_paise: getEnvInt("BILLING_STARTER_SETUP_FEE_PAISE", 0), // ₹0 (free)
-    monthly_price_paise: getEnvInt(
-      "BILLING_STARTER_MONTHLY_PRICE_PAISE",
-      49900,
-    ), // ₹499
-    annual_price_paise: getEnvInt("BILLING_STARTER_ANNUAL_PRICE_PAISE", 499900), // ₹4,999
+    setup_fee_paise: 0,
+    monthly_price_paise: 49900, // ₹499
+    annual_price_paise: 499900, // ₹4,999
     display_name: "Starter",
     description: "Up to 100 students",
   },
   growth: {
     tier: "growth",
     student_limit: PLAN_STUDENT_LIMITS.growth ?? 500,
-    setup_fee_paise: getEnvInt("BILLING_GROWTH_SETUP_FEE_PAISE", 500000), // ₹5,000 (monthly only)
-    monthly_price_paise: getEnvInt("BILLING_GROWTH_MONTHLY_PRICE_PAISE", 99900), // ₹999
-    annual_price_paise: getEnvInt("BILLING_GROWTH_ANNUAL_PRICE_PAISE", 1000000), // ₹10,000
+    setup_fee_paise: 500000, // ₹5,000 first monthly only
+    monthly_price_paise: 99900, // ₹999
+    annual_price_paise: 1000000, // ₹10,000
     display_name: "Growth",
     description: "Up to 500 students",
   },
   large: {
     tier: "large",
     student_limit: UNLIMITED_STUDENT_SENTINEL,
-    setup_fee_paise: getEnvInt("BILLING_LARGE_SETUP_FEE_PAISE", 500000), // ₹5,000 (monthly only)
-    monthly_price_paise: getEnvInt("BILLING_LARGE_MONTHLY_PRICE_PAISE", 249900), // ₹2,499
-    annual_price_paise: getEnvInt("BILLING_LARGE_ANNUAL_PRICE_PAISE", 2500000), // ₹25,000
+    setup_fee_paise: 500000, // ₹5,000 first monthly only
+    monthly_price_paise: 249900, // ₹2,499
+    annual_price_paise: 2500000, // ₹25,000
     display_name: "Large",
     description: "Unlimited students",
   },
@@ -126,11 +92,12 @@ export function isValidCycle(cycle: string): cycle is BillingCycle {
 
 /**
  * Compute pricing for a plan purchase.
- * Setup rule: charged only on first paid order, and only for monthly cycle on Growth/Large tiers.
- * Annual waives setup fee.
- * @param tier The plan tier ('starter', 'growth', or 'large')
- * @param cycle The billing cycle ('monthly' or 'annual')
- * @param hasPriorPaidOrder Whether the workspace has any paid order
+ * Setup is a one-time onboarding fee: charged only when there is no prior
+ * captured payment, and only on monthly Growth/Large. Annual first orders
+ * do not include a setup line, but that capture still counts as paid so a
+ * later monthly switch is not charged setup.
+ * @param hasPriorPaidOrder Whether the workspace has any captured paid order
+ *   or setup_fee_paid = true
  */
 export function computePricing(
   tier: PlanTier,
@@ -140,10 +107,6 @@ export function computePricing(
   const config = getTierConfig(tier);
   const line_items: LineItem[] = [];
 
-  // Setup fee rule:
-  // - Annual: setup is waived (₹0)
-  // - Monthly: setup charged only on first paid order (if hasPriorPaidOrder = false)
-  // - Starter: setup is ₹0 for both cycles
   if (!hasPriorPaidOrder && cycle === "monthly" && config.setup_fee_paise > 0) {
     line_items.push({ item: "setup_fee", amount: config.setup_fee_paise });
   }
@@ -200,7 +163,8 @@ export function setupFeePaidFromSubscription(
 
 /**
  * Whether this workspace should skip the online setup fee.
- * True when setup_fee_paid is set, or an activated online order included setup.
+ * True when setup_fee_paid is set, or any captured billing_orders row exists
+ * (any plan/cycle, with or without a setup line, including a hold).
  * Throws on DB error (never silently overcharge setup).
  */
 export async function hasSetupFeePaid(
@@ -222,12 +186,12 @@ export async function hasSetupFeePaid(
 
   const { data, error } = await db
     .from("billing_orders")
-    .select("line_items")
+    .select("id")
     .eq("owner_id", ownerId)
     .not("activated_at", "is", null);
 
   if (error) throw error;
-  return (data ?? []).some((o) => lineItemsIncludeSetup(o.line_items));
+  return (data ?? []).length > 0;
 }
 
 /** @deprecated Use hasSetupFeePaid */
@@ -266,6 +230,5 @@ export function assertRazorpayKeyMode(keyId: string | undefined): void {
  * MUST default to OFF (false) for safety.
  */
 export function isBillingEnabled(): boolean {
-  const enabled = process.env.BILLING_ENABLED?.toLowerCase() === "true";
-  return enabled;
+  return process.env.BILLING_ENABLED === "true";
 }

@@ -51,6 +51,7 @@ import {
   studentLimitForPlan,
   type PlanCode,
 } from "@/lib/plan-limits";
+import { formatIndianPrice, getPlanByCode } from "@/lib/pricing-display";
 import { Switch } from "@/components/ui/switch";
 import {
   checkAdmin,
@@ -960,8 +961,10 @@ function EditDialog({
                 <div>
                   <Label htmlFor="setup-fee-paid">Setup fee already paid</Label>
                   <p className="text-xs text-muted-foreground">
-                    Invoice and previous online payments. When on, checkout will
-                    not charge ₹5,000 setup again.
+                    Any captured online payment or an invoice you mark paid.
+                    When on, checkout will not charge{" "}
+                    {formatIndianPrice(getPlanByCode("growth")!.setupFee)} setup
+                    again.
                   </p>
                 </div>
                 <Switch

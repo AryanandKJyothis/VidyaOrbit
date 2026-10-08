@@ -1,10 +1,11 @@
 /**
  * Tests for billing pricing logic (tier + cycle model)
  */
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   computePricing,
   hasSetupFeePaid,
+  isBillingEnabled,
   lineItemsIncludeSetup,
   setupFeePaidFromSubscription,
   type PlanTier,
@@ -74,20 +75,13 @@ describe("lineItemsIncludeSetup", () => {
 });
 
 describe("hasSetupFeePaid", () => {
-  it("is true when an activated online order included setup", async () => {
+  it("is true when any captured billing order exists", async () => {
     const db = {
       from: () => ({
         select: () => ({
           eq: () => ({
             not: async () => ({
-              data: [
-                {
-                  line_items: [
-                    { item: "setup_fee", amount: 500000 },
-                    { item: "subscription_charge", amount: 99900 },
-                  ],
-                },
-              ],
+              data: [{ id: "order-1" }],
               error: null,
             }),
           }),
@@ -99,19 +93,31 @@ describe("hasSetupFeePaid", () => {
     ).resolves.toBe(true);
   });
 
-  it("is false when activated orders did not include setup", async () => {
+  it("is true for a captured annual order that did not include setup", async () => {
     const db = {
       from: () => ({
         select: () => ({
           eq: () => ({
             not: async () => ({
-              data: [
-                {
-                  line_items: [
-                    { item: "subscription_charge", amount: 1000000 },
-                  ],
-                },
-              ],
+              data: [{ id: "annual-1" }],
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    };
+    await expect(
+      hasSetupFeePaid("owner", db as never, { setup_fee_paid: false }),
+    ).resolves.toBe(true);
+  });
+
+  it("is false when there are no captured orders and the flag is off", async () => {
+    const db = {
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            not: async () => ({
+              data: [],
               error: null,
             }),
           }),
@@ -121,6 +127,31 @@ describe("hasSetupFeePaid", () => {
     await expect(
       hasSetupFeePaid("owner", db as never, { setup_fee_paid: false }),
     ).resolves.toBe(false);
+  });
+});
+
+describe("isBillingEnabled", () => {
+  const previous = process.env.BILLING_ENABLED;
+  afterEach(() => {
+    if (previous === undefined) delete process.env.BILLING_ENABLED;
+    else process.env.BILLING_ENABLED = previous;
+  });
+
+  it("is true only for the exact string true", () => {
+    process.env.BILLING_ENABLED = "true";
+    expect(isBillingEnabled()).toBe(true);
+    process.env.BILLING_ENABLED = "TRUE";
+    expect(isBillingEnabled()).toBe(false);
+    process.env.BILLING_ENABLED = "True";
+    expect(isBillingEnabled()).toBe(false);
+    process.env.BILLING_ENABLED = "1";
+    expect(isBillingEnabled()).toBe(false);
+    process.env.BILLING_ENABLED = "yes";
+    expect(isBillingEnabled()).toBe(false);
+    process.env.BILLING_ENABLED = "false";
+    expect(isBillingEnabled()).toBe(false);
+    delete process.env.BILLING_ENABLED;
+    expect(isBillingEnabled()).toBe(false);
   });
 });
 
@@ -250,15 +281,25 @@ describe("Billing Pricing (Tier + Cycle)", () => {
       );
     });
 
-    it("annual to monthly: no setup if already paid", () => {
-      // Scenario: user starts with annual (setup waived), then switches to monthly
+    it("annual then monthly means no setup fee", () => {
       const annual = computePricing("growth", "annual", false);
-      const monthly = computePricing("growth", "monthly", true); // hasPaidSetup=true from annual order
+      const monthly = computePricing("growth", "monthly", true);
 
       expect(annual.line_items.some((i) => i.item === "setup_fee")).toBe(false);
       expect(monthly.line_items.some((i) => i.item === "setup_fee")).toBe(
         false,
       );
+    });
+
+    it("captured Starter monthly then Growth monthly means no setup fee", () => {
+      const starter = computePricing("starter", "monthly", false);
+      const growth = computePricing("growth", "monthly", true);
+
+      expect(starter.line_items.some((i) => i.item === "setup_fee")).toBe(
+        false,
+      );
+      expect(growth.line_items.some((i) => i.item === "setup_fee")).toBe(false);
+      expect(growth.total).toBe(99900);
     });
 
     it("monthly to annual: smooth upgrade", () => {

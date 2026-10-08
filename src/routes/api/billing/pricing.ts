@@ -10,6 +10,7 @@ import {
   TIER_CONFIGS,
   type PlanTier,
 } from "@/lib/billing-pricing";
+import { getPlanByCode } from "@/lib/pricing-display";
 
 export const Route = createFileRoute("/api/billing/pricing")({
   server: {
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/api/billing/pricing")({
             monthlyPricePaise: TIER_CONFIGS[t].monthly_price_paise,
             annualPricePaise: TIER_CONFIGS[t].annual_price_paise,
             setupFeePaise: TIER_CONFIGS[t].setup_fee_paise,
-            features: [] as string[],
+            features: getPlanByCode(t)?.features ?? [],
           }),
         );
 

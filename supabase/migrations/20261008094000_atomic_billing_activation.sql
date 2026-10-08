@@ -56,17 +56,16 @@ REVOKE ALL ON public.billing_orders FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON public.billing_orders TO authenticated;
 
 -- ── subscriptions.setup_fee_paid ───────────────────────────────────
--- True only after a real setup payment: an online order that charged
--- setup, or an admin toggle (invoices / special deals). Trials, comps,
--- and admin-set non-free plans do not waive setup.
+-- One-time onboarding: any captured paid billing order (monthly or
+-- annual, any plan, with or without a setup line, including a hold)
+-- or an admin toggle (invoices / special deals). Trials, comps, and
+-- admin-set non-free plans do not waive setup. No table-wide UPDATE:
+-- ADD COLUMN DEFAULT false is enough; a re-run must not wipe flags.
 ALTER TABLE public.subscriptions
   ADD COLUMN IF NOT EXISTS setup_fee_paid boolean NOT NULL DEFAULT false;
 
-UPDATE public.subscriptions
-   SET setup_fee_paid = false;
-
 COMMENT ON COLUMN public.subscriptions.setup_fee_paid IS
-  'True once setup has actually been paid: captured online order that included a setup_fee line, or admin toggle for offline invoices / special deals. Not implied by a non-free plan or an expiry date.';
+  'True once the centre has made any real payment: any captured online billing order (including a needs_review hold), or admin toggle for offline invoices / special deals. Not implied by a trial, comp, or an admin-set non-free plan. One-time onboarding fee — never charged again.';
 
 -- Health RPC: exclude archived students and expose setup_fee_paid.
 -- Mirrors 091700 archived count; this later migration is the live definition.
@@ -127,12 +126,6 @@ BEGIN
       SELECT 1 FROM public.billing_orders bo
        WHERE bo.owner_id = _uid
          AND bo.activated_at IS NOT NULL
-         AND EXISTS (
-           SELECT 1
-             FROM jsonb_array_elements(COALESCE(bo.line_items, '[]'::jsonb)) li
-            WHERE li->>'item' = 'setup_fee'
-              AND COALESCE((li->>'amount')::numeric, 0) > 0
-         )
     );
 
   RETURN jsonb_build_object(
@@ -235,17 +228,12 @@ BEGIN
    WHERE owner_id = o.owner_id
      FOR UPDATE;
 
-  -- Captured setup is paid even if this order is later held for review.
-  IF EXISTS (
-    SELECT 1
-      FROM jsonb_array_elements(COALESCE(o.line_items, '[]'::jsonb)) li
-     WHERE li->>'item' = 'setup_fee'
-       AND COALESCE((li->>'amount')::numeric, 0) > 0
-  ) THEN
-    UPDATE public.subscriptions
-       SET setup_fee_paid = true
-     WHERE owner_id = o.owner_id;
-  END IF;
+  -- One-time onboarding: any captured paid order (monthly or annual, any
+  -- plan, with or without a setup line, including a needs_review hold)
+  -- means setup is never charged again.
+  UPDATE public.subscriptions
+     SET setup_fee_paid = true
+   WHERE owner_id = o.owner_id;
 
   v_order_plan := CASE o.tier
                     WHEN 'starter' THEN 'starter'
@@ -339,4 +327,4 @@ GRANT EXECUTE ON FUNCTION public.activate_billing_order(uuid, text, bigint, text
   TO service_role;
 
 COMMENT ON FUNCTION public.activate_billing_order IS
-  'Atomically mark a billing order paid and apply the subscription, or hold a mid-term different-tier capture as needs_review. Sets setup_fee_paid when the captured order line_items include a setup_fee amount > 0 (including a hold: the customer paid it either way). Service-role only. Idempotent. Same-tier extends from GREATEST(now(), expiry). Different paid tier with >7 Asia/Kolkata calendar days remaining is not applied: the order stays paid/visible for admin review. SQL month math is the source of truth (not JS).';
+  'Atomically mark a billing order paid and apply the subscription, or hold a mid-term different-tier capture as needs_review. Sets setup_fee_paid on any captured paid order (including a hold): setup is a one-time onboarding fee. Service-role only. Idempotent. Same-tier extends from GREATEST(now(), expiry). Different paid tier with >7 Asia/Kolkata calendar days remaining is not applied: the order stays paid/visible for admin review. SQL month math is the source of truth (not JS).';
