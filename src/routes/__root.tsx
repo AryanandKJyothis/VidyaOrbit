@@ -80,31 +80,31 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       meta: [
         { charSet: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
-        { title: "Vidya Orbit — Manage your Centre" },
+        { title: "Vidya Orbit — Coaching centre management" },
         {
           name: "description",
           content:
-            "Vidya is a modern admin dashboard for coaching centres and tuition institutes — manage students, batches, fees, attendance, and receipts in one place.",
+            "Vidya Orbit helps coaching centres and tuition institutes manage students, batches, fees, attendance, and receipts in one place.",
         },
-        { name: "author", content: "Vidya" },
+        { name: "author", content: "Aryanand, Vidya Orbit" },
         {
           property: "og:title",
-          content: "Vidya Orbit — Manage your Centre",
+          content: "Vidya Orbit — Coaching centre management",
         },
         {
           property: "og:description",
           content:
-            "Vidya is a modern admin dashboard for coaching centres and tuition institutes — manage students, batches, fees, attendance, and receipts in one place.",
+            "Vidya Orbit helps coaching centres and tuition institutes manage students, batches, fees, attendance, and receipts in one place.",
         },
         { property: "og:type", content: "website" },
         {
           name: "twitter:title",
-          content: "Vidya Orbit — Manage your Centre",
+          content: "Vidya Orbit — Coaching centre management",
         },
         {
           name: "twitter:description",
           content:
-            "Vidya is a modern admin dashboard for coaching centres and tuition institutes — manage students, batches, fees, attendance, and receipts in one place.",
+            "Vidya Orbit helps coaching centres and tuition institutes manage students, batches, fees, attendance, and receipts in one place.",
         },
         {
           property: "og:image",
@@ -124,15 +124,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       ],
       links: [
         { rel: "stylesheet", href: appCss },
-        { rel: "preconnect", href: "https://fonts.googleapis.com" },
         {
-          rel: "preconnect",
-          href: "https://fonts.gstatic.com",
+          rel: "preload",
+          href: "/fonts/sora-700-latin.woff2",
+          as: "font",
+          type: "font/woff2",
           crossOrigin: "anonymous",
-        },
-        {
-          rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap",
         },
       ],
     }),

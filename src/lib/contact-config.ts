@@ -16,6 +16,8 @@ export const DEFAULT_PHONE = "+91 7025063047";
 export const DEFAULT_WHATSAPP_NUMBER = "917025063047";
 export const DEFAULT_WHATSAPP_URL = "https://wa.me/917025063047";
 export const DEFAULT_EMAIL = "aryanandkjyothis4@gmail.com";
+export const FOUNDER_NAME = "Aryanand";
+export const FOUNDER_TOWN = "Valanchery, Kerala";
 
 export function getContactConfig(): ContactConfig {
   const envPhone = import.meta.env.VITE_CONTACT_PHONE;
@@ -98,4 +100,20 @@ export function getContactLabel(): string {
   if (whatsappUrl) return "WhatsApp us";
   if (email) return "Email us";
   return "Contact us";
+}
+
+/** `tel:` href from the display phone, or null if phone is hidden. */
+export function getTelHref(): string | null {
+  const { phone } = getContactConfig();
+  if (!phone) return null;
+  const compact = phone.replace(/[^\d+]/g, "");
+  return compact ? `tel:${compact}` : null;
+}
+
+/** WhatsApp chat URL, optionally with a prefilled message. */
+export function getWhatsAppHref(prefill?: string): string | null {
+  const { whatsappUrl } = getContactConfig();
+  if (!whatsappUrl) return null;
+  if (!prefill) return whatsappUrl;
+  return `${whatsappUrl}?text=${encodeURIComponent(prefill)}`;
 }
