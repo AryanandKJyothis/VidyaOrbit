@@ -22,8 +22,8 @@ describe("Comped Account Logic", () => {
 
   it("allows no subscription (null) to buy", () => {
     const sub: Subscription | null = null;
-    // Type guard: check if sub is not null before accessing properties
-    const isComped = sub ? (sub.plan !== "free" && (sub.plan_price === 0 || sub.expiry_date === null)) : false;
+    // When sub is null, it's not comped (free centres can buy)
+    const isComped = !!(sub && sub.plan !== "free" && (sub.plan_price === 0 || sub.expiry_date === null));
     expect(isComped).toBe(false);
   });
 
