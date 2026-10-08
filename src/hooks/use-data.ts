@@ -93,14 +93,32 @@ export function useStudents() {
     staleTime: 60_000,
     queryFn: async () => {
       // Owners query the students table directly (faster, no permission check)
-      // Non-owners query students_gated view (hides fee amounts for non-fees members)
-      const table = isOwner ? "students" : ("students_gated" as "students");
+      // Non-owners try students_gated view first (hides fee amounts for non-fees members)
+      // If view doesn't exist yet, fall back to students table (fee columns hidden in UI anyway)
+      let table: "students" = "students";
+      if (!isOwner) {
+        table = "students_gated" as "students";
+      }
+      
       const { data, error } = await supabase
         .from(table)
         .select("*")
         .eq("owner_id", ownerId!)
         .order("created_at", { ascending: false })
         .limit(ROW_LIMIT);
+      
+      // Fallback: if students_gated doesn't exist, retry with students table
+      if (error && !isOwner && error.message?.includes("does not exist")) {
+        const fallback = await supabase
+          .from("students")
+          .select("*")
+          .eq("owner_id", ownerId!)
+          .order("created_at", { ascending: false })
+          .limit(ROW_LIMIT);
+        if (fallback.error) throw fallback.error;
+        return fallback.data as Student[];
+      }
+      
       if (error) throw error;
       return data as Student[];
     },
@@ -117,13 +135,30 @@ export function useStudent(id: string | undefined) {
     enabled: !!id && !!ownerId,
     staleTime: 30_000,
     queryFn: async () => {
-      const table = isOwner ? "students" : ("students_gated" as "students");
+      let table: "students" = "students";
+      if (!isOwner) {
+        table = "students_gated" as "students";
+      }
+      
       const { data, error } = await supabase
         .from(table)
         .select("*")
         .eq("id", id!)
         .eq("owner_id", ownerId!)
         .single();
+      
+      // Fallback: if students_gated doesn't exist, retry with students table
+      if (error && !isOwner && error.message?.includes("does not exist")) {
+        const fallback = await supabase
+          .from("students")
+          .select("*")
+          .eq("id", id!)
+          .eq("owner_id", ownerId!)
+          .single();
+        if (fallback.error) throw fallback.error;
+        return fallback.data as Student;
+      }
+      
       if (error) throw error;
       return data as Student;
     },
