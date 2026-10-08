@@ -1,6 +1,5 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { LoadingScreen } from "@/components/loading-screen";
 import { LogoWordmark } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +15,15 @@ import {
   MessageCircle,
   Zap,
   HeartHandshake,
+  Mail,
 } from "lucide-react";
+import {
+  APPROVED_PRICING,
+  formatIndianPrice,
+  getAnnualSavingsLabel,
+  jsonLdOffers,
+} from "@/lib/pricing-display";
+import { getContactConfig } from "@/lib/contact-config";
 
 const SITE_URL = "https://vidyaorbit.in";
 const HERO_TITLE = "Run your coaching centre — without the spreadsheet chaos.";
@@ -56,7 +63,7 @@ export const Route = createFileRoute("/")({
           applicationCategory: "BusinessApplication",
           operatingSystem: "Web",
           description: HERO_SUB,
-          offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
+          offers: jsonLdOffers(SITE_URL + "/"),
           url: SITE_URL,
         }),
       },
@@ -66,8 +73,7 @@ export const Route = createFileRoute("/")({
 });
 
 function IndexRoute() {
-  const { session, loading } = useAuth();
-  if (loading) return <LoadingScreen />;
+  const { session } = useAuth();
   if (session) return <Navigate to="/dashboard" />;
   return <Landing />;
 }
@@ -116,7 +122,7 @@ function SiteHeader() {
               Sign in
             </Button>
           </Link>
-          <Link to="/login">
+          <Link to="/login" search={{ mode: "signup" }}>
             <Button size="sm" className="shadow-sm">
               Start free
               <ArrowRight className="ml-1 h-4 w-4" />
@@ -153,17 +159,17 @@ function Hero() {
             {HERO_SUB}
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link to="/login">
+            <Link to="/login" search={{ mode: "signup" }}>
               <Button size="lg" className="w-full sm:w-auto">
                 Start free — no card needed
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <a href="#features">
+            <Link to="/pricing">
               <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                See what's inside
+                View pricing
               </Button>
-            </a>
+            </Link>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
             Free for up to 25 students · Contact us to upgrade · Cancel anytime
@@ -190,6 +196,9 @@ function ProductPreview() {
           <span className="h-2.5 w-2.5 rounded-full bg-[color:var(--brand-teal)]/70" />
           <span className="ml-3 text-[11px] font-medium text-muted-foreground">
             vidyaorbit.in/dashboard
+          </span>
+          <span className="ml-auto rounded bg-foreground/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground">
+            Sample data
           </span>
         </div>
 
@@ -364,13 +373,13 @@ function FeatureGrid() {
   const features = [
     {
       icon: Users,
-      title: "Students &amp; batches",
+      title: "Students & batches",
       body: "A clean roster with parent contacts, batch tags, fee status and history — searchable in one click.",
     },
     {
       icon: CalendarCheck,
       title: "Fast attendance",
-      body: "Mark a full batch in under 30 seconds. Daily and monthly views ready for parent conversations.",
+      body: "Mark a full batch quickly. Daily and monthly views ready for parent conversations.",
     },
     {
       icon: Wallet,
@@ -389,7 +398,7 @@ function FeatureGrid() {
     },
     {
       icon: ShieldCheck,
-      title: "Team roles &amp; permissions",
+      title: "Team roles & permissions",
       body: "Invite tutors or admin staff with read or write access per area — billing stays with you.",
     },
   ];
@@ -420,10 +429,9 @@ function FeatureGrid() {
               >
                 <f.icon className="h-5 w-5 text-[color:var(--brand-teal)]" />
               </div>
-              <h3
-                className="mt-4 font-display text-lg font-semibold"
-                dangerouslySetInnerHTML={{ __html: f.title }}
-              />
+              <h3 className="mt-4 font-display text-lg font-semibold">
+                {f.title}
+              </h3>
               <p className="mt-1.5 text-sm text-muted-foreground">{f.body}</p>
             </div>
           ))}
@@ -435,8 +443,8 @@ function FeatureGrid() {
 
 function WorkflowStrip() {
   const steps = [
-    { n: "1", t: "Add your institute", d: "Two fields. 30 seconds." },
-    { n: "2", t: "Import your students", d: "Paste from Excel or upload CSV." },
+    { n: "1", t: "Add your institute", d: "Quick setup to get started." },
+    { n: "2", t: "Import your students", d: "Upload your Excel or CSV file." },
     {
       n: "3",
       t: "Start collecting",
@@ -448,15 +456,15 @@ function WorkflowStrip() {
       <div className="grid items-center gap-12 md:grid-cols-2">
         <div>
           <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            You'll be running your centre on it by this evening.
+            You can usually be set up within an afternoon.
           </h2>
           <p className="mt-3 text-muted-foreground">
             No training, no onboarding calls, no "implementation partner". Sign
-            in, paste your student list, done.
+            in, upload your student list, done.
           </p>
           <ul className="mt-6 space-y-3 text-sm">
             {[
-              "Bulk-import students from any spreadsheet",
+              "Bulk-import students from spreadsheets",
               "Invite your staff with one WhatsApp link",
               "Branded receipts ready on day one",
               "Works on phone, tablet and laptop",
@@ -496,7 +504,7 @@ function ProofStrip() {
   const items = [
     {
       icon: Zap,
-      t: "Set up in 5 minutes",
+      t: "Quick to set up",
       d: "From signup to first attendance marked.",
     },
     {
@@ -536,36 +544,6 @@ function ProofStrip() {
 }
 
 function Pricing() {
-  const tiers = [
-    {
-      name: "Free",
-      price: "₹0",
-      sub: "Up to 25 students",
-      features: ["All core features", "Email support"],
-      cta: "Start free",
-      highlight: false,
-    },
-    {
-      name: "Growth",
-      price: "See plans",
-      sub: "For growing centres",
-      features: ["Up to 500 students", "Team members", "Email support"],
-      cta: "View pricing",
-      highlight: true,
-    },
-    {
-      name: "Pro",
-      price: "See plans",
-      sub: "For multi-batch academies",
-      features: [
-        "Up to 1,000 students",
-        "Advanced analytics",
-        "Dedicated help",
-      ],
-      cta: "View pricing",
-      highlight: false,
-    },
-  ];
   return (
     <section id="pricing" className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
       <div className="mx-auto max-w-2xl text-center">
@@ -573,45 +551,82 @@ function Pricing() {
           Honest pricing. Start free.
         </h2>
         <p className="mt-3 text-muted-foreground">
-          Pay only when your centre grows. No hidden charges, no commitments.
+          Pay only when your centre grows. Cancel anytime.
         </p>
       </div>
-      <div className="mt-12 grid gap-5 md:grid-cols-3">
-        {tiers.map((t) => (
-          <div
-            key={t.name}
-            className={`rounded-2xl border bg-card p-6 ${
-              t.highlight
-                ? "border-[color:var(--brand-teal)] shadow-[var(--shadow-lift)] md:-mt-4"
-                : "border-border"
-            }`}
-          >
-            {t.highlight && (
-              <span className="mb-3 inline-flex rounded-full bg-[color:var(--brand-teal)]/15 px-2.5 py-0.5 text-xs font-semibold text-[color:var(--brand-teal)]">
-                Most popular
-              </span>
-            )}
-            <h3 className="font-display text-xl font-bold">{t.name}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{t.sub}</p>
-            <p className="mt-4 font-display text-3xl font-bold">{t.price}</p>
-            <ul className="mt-5 space-y-2 text-sm">
-              {t.features.map((f) => (
-                <li key={f} className="flex items-start gap-2">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--brand-teal)]" />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <Link to="/login" className="mt-6 block">
-              <Button
-                className="w-full"
-                variant={t.highlight ? "default" : "outline"}
+      <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {APPROVED_PRICING.map((plan) => {
+          const isRecommended = plan.code === "growth";
+          const savingsLabel = getAnnualSavingsLabel(plan);
+          return (
+            <div
+              key={plan.code}
+              className={`rounded-2xl border bg-card p-5 ${
+                isRecommended
+                  ? "border-[color:var(--brand-teal)] shadow-[var(--shadow-lift)]"
+                  : "border-border"
+              }`}
+            >
+              {isRecommended && (
+                <span className="mb-3 inline-flex rounded-full bg-[color:var(--brand-teal)]/15 px-2.5 py-0.5 text-xs font-semibold text-[color:var(--brand-teal)]">
+                  Recommended
+                </span>
+              )}
+              <h3 className="font-display text-lg font-bold">
+                {plan.displayName}
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {plan.tagline}
+              </p>
+              <div className="mt-4">
+                <p className="font-display text-2xl font-bold">
+                  {plan.monthlyPrice === 0
+                    ? "Free"
+                    : formatIndianPrice(plan.monthlyPrice)}
+                </p>
+                {plan.monthlyPrice > 0 && (
+                  <>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      /month or {formatIndianPrice(plan.annualPrice)}/year
+                    </p>
+                    {savingsLabel && (
+                      <p className="mt-0.5 text-xs font-medium text-[color:var(--brand-teal)]">
+                        {savingsLabel}
+                      </p>
+                    )}
+                    {plan.setupFee > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatIndianPrice(plan.setupFee)} one-time setup on
+                        monthly (waived on annual)
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+              <ul className="mt-4 space-y-1.5 text-xs">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-start gap-1.5">
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--brand-teal)]" />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to={plan.code === "free" ? "/login" : "/pricing"}
+                search={plan.code === "free" ? { mode: "signup" } : undefined}
+                className="mt-4 block"
               >
-                {t.cta}
-              </Button>
-            </Link>
-          </div>
-        ))}
+                <Button
+                  className="w-full"
+                  size="sm"
+                  variant={isRecommended ? "default" : "outline"}
+                >
+                  {plan.code === "free" ? "Start free" : "Learn more"}
+                </Button>
+              </Link>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
@@ -625,15 +640,15 @@ function FAQ() {
     },
     {
       q: "Can I move from Excel?",
-      a: "Yes — paste your student list directly from Excel or upload a CSV. Most centres are up and running within an afternoon.",
+      a: "Yes — upload your Excel or CSV file. You can usually be set up within an afternoon.",
     },
     {
-      q: "Do my parents need to install anything?",
+      q: "Do students or parents need to install anything?",
       a: "No. Vidya Orbit is for you and your staff. You share receipts through WhatsApp the way you already do.",
     },
     {
       q: "Can I cancel?",
-      a: "Anytime. You stay on the free plan with your data intact — nothing is locked away.",
+      a: "Anytime. You stay on the free plan with your data intact. If you are over the free student limit, existing data stays safe and usable — adding new students is paused until you upgrade.",
     },
   ];
   return (
@@ -661,6 +676,7 @@ function FAQ() {
 }
 
 function CTA() {
+  const { whatsappUrl } = getContactConfig();
   return (
     <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
       <div
@@ -674,29 +690,31 @@ function CTA() {
           Bring your centre into one orbit.
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-primary-foreground/80">
-          Free for up to 25 students. Set up in 5 minutes. Cancel anytime.
+          Free for up to 25 students. Quick to set up. Cancel anytime.
         </p>
         <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link to="/login">
+          <Link to="/login" search={{ mode: "signup" }}>
             <Button size="lg" variant="secondary" className="w-full sm:w-auto">
               Start free
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
-          <a
-            href="https://wa.me/917025063047?text=I%27d%20like%20to%20learn%20more%20about%20Vidya%20Orbit"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground sm:w-auto"
+          {whatsappUrl && (
+            <a
+              href={`${whatsappUrl}?text=${encodeURIComponent("I'd like to learn more about Vidya Orbit")}`}
+              target="_blank"
+              rel="noreferrer"
             >
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Talk to us on WhatsApp
-            </Button>
-          </a>
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground sm:w-auto"
+              >
+                <MessageCircle className="mr-2 h-4 w-4" />
+                Talk to us on WhatsApp
+              </Button>
+            </a>
+          )}
         </div>
       </div>
     </section>
@@ -704,6 +722,7 @@ function CTA() {
 }
 
 function SiteFooter() {
+  const { email, whatsappUrl } = getContactConfig();
   return (
     <footer className="border-t border-border bg-card/40">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:px-6">
@@ -718,6 +737,26 @@ function SiteFooter() {
           <Link to="/privacy" className="hover:text-foreground">
             Privacy
           </Link>
+          {email && (
+            <a
+              href={`mailto:${email}`}
+              className="inline-flex items-center gap-1.5 hover:text-foreground"
+            >
+              <Mail className="h-3.5 w-3.5" />
+              Contact
+            </a>
+          )}
+          {whatsappUrl && (
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 hover:text-foreground"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              WhatsApp
+            </a>
+          )}
         </nav>
         <p>© {new Date().getFullYear()} Vidya Orbit</p>
       </div>

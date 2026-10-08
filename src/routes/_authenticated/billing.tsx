@@ -19,6 +19,7 @@ import {
 } from "@/hooks/use-subscription";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { getContactConfig } from "@/lib/contact-config";
 
 import { redirect } from "@tanstack/react-router";
 import { BILLING_DISABLED } from "@/lib/feature-flags";
@@ -35,10 +36,6 @@ const CHECKOUT_PENDING_STATUSES = new Set([
   "processing_checkout",
 ]);
 
-const SUPPORT_PHONE = "+91 7025063047";
-const SUPPORT_EMAIL = "aryanandkjyothis4@gmail.com";
-const WHATSAPP_NUMBER = "917025063047"; // E.164 without +
-
 function contactSubject(planName: string, currentPlan: string) {
   return encodeURIComponent(`Vidya plan change: ${currentPlan} → ${planName}`);
 }
@@ -49,13 +46,17 @@ function contactBody(planName: string, currentPlan: string) {
   );
 }
 
-function whatsappUrl(planName: string, currentPlan: string) {
+function planWhatsappHref(
+  planName: string,
+  currentPlan: string,
+  baseWhatsappUrl: string,
+) {
   const text = contactBody(planName, currentPlan);
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`;
+  return `${baseWhatsappUrl}?text=${text}`;
 }
 
-function emailUrl(planName: string, currentPlan: string) {
-  return `mailto:${SUPPORT_EMAIL}?subject=${contactSubject(planName, currentPlan)}&body=${contactBody(planName, currentPlan)}`;
+function emailUrl(planName: string, currentPlan: string, email: string) {
+  return `mailto:${email}?subject=${contactSubject(planName, currentPlan)}&body=${contactBody(planName, currentPlan)}`;
 }
 
 async function billingAuthFetch(path: string, init?: RequestInit) {
@@ -78,6 +79,7 @@ function BillingPage() {
   const sub = useSubscription();
   const students = useStudents();
   const qc = useQueryClient();
+  const { email, phone, whatsappUrl: contactWhatsappUrl } = getContactConfig();
 
   const [syncing, setSyncing] = useState(false);
 
@@ -283,7 +285,7 @@ function BillingPage() {
               >
                 {highlight && !isCurrent && (
                   <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground">
-                    Popular
+                    Recommended
                   </span>
                 )}
                 <CardContent className="flex flex-1 flex-col gap-4 p-5">
@@ -311,6 +313,14 @@ function BillingPage() {
                         </span>
                       )}
                     </div>
+                    {p.price !== 0 && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        or ₹{p.annualPrice.toLocaleString("en-IN")}/year
+                        {p.setupFee > 0
+                          ? ` · ₹${p.setupFee.toLocaleString("en-IN")} setup on monthly`
+                          : ""}
+                      </p>
+                    )}
                   </div>
                   <ul className="flex-1 space-y-2 text-sm">
                     {p.features.map((f) => (
@@ -331,38 +341,44 @@ function BillingPage() {
                     </Button>
                   ) : (
                     <div className="flex flex-col gap-2">
-                      <Button asChild className="w-full gap-2">
-                        <a
-                          href={whatsappUrl(
-                            p.name,
-                            planMeta?.name ?? effectivePlan,
-                          )}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                      {contactWhatsappUrl && (
+                        <Button asChild className="w-full gap-2">
+                          <a
+                            href={planWhatsappHref(
+                              p.name,
+                              planMeta?.name ?? effectivePlan,
+                              contactWhatsappUrl,
+                            )}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                            {isDowngrade
+                              ? "Request downgrade"
+                              : "Upgrade on WhatsApp"}
+                          </a>
+                        </Button>
+                      )}
+                      {email && (
+                        <Button
+                          asChild
+                          variant={contactWhatsappUrl ? "outline" : "default"}
+                          className="w-full gap-2"
                         >
-                          <MessageCircle className="h-4 w-4" />
-                          {isDowngrade
-                            ? "Request downgrade"
-                            : "Upgrade on WhatsApp"}
-                        </a>
-                      </Button>
-                      <Button
-                        asChild
-                        variant="outline"
-                        className="w-full gap-2"
-                      >
-                        <a
-                          href={emailUrl(
-                            p.name,
-                            planMeta?.name ?? effectivePlan,
-                          )}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Mail className="h-4 w-4" />
-                          Email to switch
-                        </a>
-                      </Button>
+                          <a
+                            href={emailUrl(
+                              p.name,
+                              planMeta?.name ?? effectivePlan,
+                              email,
+                            )}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Mail className="h-4 w-4" />
+                            Email to switch
+                          </a>
+                        </Button>
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -383,33 +399,41 @@ function BillingPage() {
               </p>
             </div>
             <div className="flex flex-col items-stretch gap-2 md:w-[240px]">
-              <Button asChild className="w-full gap-2">
-                <a
-                  href={`https://wa.me/${WHATSAPP_NUMBER}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+              {contactWhatsappUrl && (
+                <Button asChild className="w-full gap-2">
+                  <a
+                    href={contactWhatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    WhatsApp {phone || "us"}
+                  </a>
+                </Button>
+              )}
+              {email && (
+                <Button
+                  asChild
+                  variant={contactWhatsappUrl ? "outline" : "default"}
+                  className="w-full gap-2"
                 >
-                  <MessageCircle className="h-4 w-4" />
-                  WhatsApp {SUPPORT_PHONE}
-                </a>
-              </Button>
-              <Button asChild variant="outline" className="w-full gap-2">
-                <a
-                  href={`mailto:${SUPPORT_EMAIL}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Mail className="h-4 w-4" />
-                  Email support
-                </a>
-              </Button>
+                  <a
+                    href={`mailto:${email}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Email support
+                  </a>
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
 
         <p className="mt-6 text-center text-[11px] text-muted-foreground leading-relaxed max-w-xl mx-auto">
-          Existing Razorpay subscriptions are still synced automatically. New
-          plan changes are handled by contacting support.
+          Paid plans are arranged by invoice. Online payment is coming soon.
+          Existing Razorpay subscriptions are still synced automatically.
         </p>
       </div>
     </RoutePermissionGate>

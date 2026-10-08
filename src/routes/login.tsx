@@ -19,6 +19,7 @@ import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
 
 const searchSchema = z.object({
   invite: z.string().min(10).max(200).optional(),
+  mode: z.enum(["login", "signup"]).optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/login")({
@@ -52,7 +53,7 @@ function GoogleIcon() {
 function LoginPage() {
   const navigate = useNavigate();
   const { session, loading } = useAuth();
-  const { invite } = Route.useSearch();
+  const { invite, mode } = Route.useSearch();
   const joiningTeam = !!invite;
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
@@ -289,7 +290,7 @@ function LoginPage() {
           )}
 
           <Tabs
-            defaultValue={joiningTeam ? "signup" : "login"}
+            defaultValue={mode === "signup" || joiningTeam ? "signup" : "login"}
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-2">

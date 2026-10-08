@@ -108,13 +108,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         },
         {
           property: "og:image",
-          content:
-            "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/47e3d04b-b9aa-4f96-ba5b-83d526457920",
+          content: "https://www.vidyaorbit.in/og-image.png",
+        },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        {
+          property: "og:image:alt",
+          content: "Vidya Orbit — Coaching centre management, made calm",
         },
         {
           name: "twitter:image",
-          content:
-            "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/47e3d04b-b9aa-4f96-ba5b-83d526457920",
+          content: "https://www.vidyaorbit.in/og-image.png",
         },
         { name: "twitter:card", content: "summary_large_image" },
       ],
