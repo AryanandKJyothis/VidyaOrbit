@@ -38,7 +38,7 @@ import { formatINR, formatDate } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useActiveWorkspace } from "@/hooks/use-active-workspace";
+import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
 
 export const Route = createFileRoute("/_authenticated/students/$id")({
   component: StudentDetail,
@@ -53,6 +53,7 @@ function StudentDetail() {
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
+  const canViewFees = useCan("fees", "read");
 
   const updateStudent = useUpsertStudent();
 
@@ -157,9 +158,11 @@ function StudentDetail() {
             <Button variant="outline" onClick={() => setEditOpen(true)}>
               <Pencil className="mr-1.5 h-4 w-4" /> Edit
             </Button>
-            <Button onClick={() => setPayOpen(true)}>
-              <Plus className="mr-1.5 h-4 w-4" /> Add payment
-            </Button>
+            {canViewFees && (
+              <Button onClick={() => setPayOpen(true)}>
+                <Plus className="mr-1.5 h-4 w-4" /> Add payment
+              </Button>
+            )}
           </>
         }
       />
@@ -227,39 +230,41 @@ function StudentDetail() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Fee summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Row label="Total fee" value={formatINR(feeTotal)} />
-              <Row label="Paid" value={formatINR(paid)} tone="success" />
-              <Row
-                label="Balance"
-                value={formatINR(balance)}
-                tone={balance > 0 ? "warning" : "default"}
-                bold
-              />
-              {feeTotal > 0 && (
-                <div className="pt-1">
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-primary transition-all"
-                      style={{ width: `${paidPct}%` }}
-                    />
+          {canViewFees && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Fee summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Row label="Total fee" value={formatINR(feeTotal)} />
+                <Row label="Paid" value={formatINR(paid)} tone="success" />
+                <Row
+                  label="Balance"
+                  value={formatINR(balance)}
+                  tone={balance > 0 ? "warning" : "default"}
+                  bold
+                />
+                {feeTotal > 0 && (
+                  <div className="pt-1">
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all"
+                        style={{ width: `${paidPct}%` }}
+                      />
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground text-right">
+                      {paidPct}% paid
+                    </div>
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground text-right">
-                    {paidPct}% paid
+                )}
+                {s.fee_due_date && (
+                  <div className="text-xs text-muted-foreground">
+                    Due {formatDate(s.fee_due_date)}
                   </div>
-                </div>
-              )}
-              {s.fee_due_date && (
-                <div className="text-xs text-muted-foreground">
-                  Due {formatDate(s.fee_due_date)}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
@@ -277,13 +282,16 @@ function StudentDetail() {
         </div>
 
         <div className="lg:col-span-2">
-          <Tabs defaultValue="payments">
+          <Tabs defaultValue={canViewFees ? "payments" : "attendance"}>
             <TabsList>
-              <TabsTrigger value="payments">Fee history</TabsTrigger>
+              {canViewFees && (
+                <TabsTrigger value="payments">Fee history</TabsTrigger>
+              )}
               <TabsTrigger value="attendance">Attendance</TabsTrigger>
               {s.notes && <TabsTrigger value="notes">Notes</TabsTrigger>}
             </TabsList>
-            <TabsContent value="payments" className="mt-4">
+            {canViewFees && (
+              <TabsContent value="payments" className="mt-4">
               <Card>
                 <CardContent className="p-0">
                   {(payments.data ?? []).length === 0 ? (
@@ -335,6 +343,7 @@ function StudentDetail() {
                 </CardContent>
               </Card>
             </TabsContent>
+            )}
             <TabsContent value="attendance" className="mt-4 space-y-4">
               <AttendanceMiniCalendar records={attendance.data ?? []} />
               <Card>

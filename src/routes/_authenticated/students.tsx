@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/empty-state";
 import { OverLimitBanner } from "@/components/over-limit-banner";
-import { useActiveWorkspace } from "@/hooks/use-active-workspace";
+import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
 import {
   getContactMessage,
   getContactLink,
@@ -82,6 +82,7 @@ function StudentsList() {
   const sub = useSubscription();
   const { active } = useActiveWorkspace();
   const qc = useQueryClient();
+  const canViewFees = useCan("fees", "read");
 
   const [q, setQ] = useState("");
   const [batchFilter, setBatchFilter] = useState<string>("all");
@@ -385,8 +386,12 @@ function StudentsList() {
                       <th className="px-4 py-3">Student</th>
                       <th className="px-4 py-3">Batch</th>
                       <th className="px-4 py-3">Joined</th>
-                      <th className="px-4 py-3 text-right">Fee</th>
-                      <th className="px-4 py-3 text-right">Balance</th>
+                      {canViewFees && (
+                        <>
+                          <th className="px-4 py-3 text-right">Fee</th>
+                          <th className="px-4 py-3 text-right">Balance</th>
+                        </>
+                      )}
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3"></th>
                     </tr>
@@ -423,14 +428,18 @@ function StudentsList() {
                           <td className="px-4 py-3 text-muted-foreground">
                             {formatDate(s.joining_date)}
                           </td>
-                          <td className="px-4 py-3 text-right font-mono">
-                            {formatINR(Number(s.fee_total))}
-                          </td>
-                          <td
-                            className={`px-4 py-3 text-right font-mono ${bal > 0 ? "font-semibold" : "text-muted-foreground"}`}
-                          >
-                            {formatINR(bal)}
-                          </td>
+                          {canViewFees && (
+                            <>
+                              <td className="px-4 py-3 text-right font-mono">
+                                {formatINR(Number(s.fee_total))}
+                              </td>
+                              <td
+                                className={`px-4 py-3 text-right font-mono ${bal > 0 ? "font-semibold" : "text-muted-foreground"}`}
+                              >
+                                {formatINR(bal)}
+                              </td>
+                            </>
+                          )}
                           <td className="px-4 py-3">
                             {overdue ? (
                               <Badge variant="destructive">Overdue</Badge>
@@ -518,14 +527,16 @@ function StudentsList() {
                             </div>
                           )}
                         </div>
-                        <div className="text-right shrink-0">
-                          <div className="font-mono text-sm font-semibold">
-                            {formatINR(bal)}
+                        {canViewFees && (
+                          <div className="text-right shrink-0">
+                            <div className="font-mono text-sm font-semibold">
+                              {formatINR(bal)}
+                            </div>
+                            <div className="text-[10px] uppercase text-muted-foreground">
+                              balance
+                            </div>
                           </div>
-                          <div className="text-[10px] uppercase text-muted-foreground">
-                            balance
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </Link>
                   );
