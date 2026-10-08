@@ -1,311 +1,494 @@
-# Razorpay In-App Payments Documentation
+# Razorpay In-App Payments
 
-This document covers the Razorpay Standard Checkout integration for Vidya Orbit's annual subscription plans.
+Complete documentation for the Razorpay in-app payment integration in Vidya Orbit.
 
 ## Overview
 
-Vidya Orbit uses Razorpay Standard Checkout for in-app payment processing. The system supports:
-- **Annual plan**: ₹10,000/year (Growth tier, 500 students)
-- **One-time setup fee**: ₹5,000 (first purchase only)
-- **Server-side pricing**: The client never sends amounts
-- **Idempotent activation**: Payments activate subscriptions exactly once
+Vidya Orbit uses **Razorpay Standard Checkout** (modal flow) with **one-time orders** to handle subscription payments. Each payment creates a Razorpay Order, extends the subscription expiry by 1 month (monthly) or 12 months (annual), and is recorded in the `billing_orders` table.
+
+**Key Design**:
+- No auto-recurring subscriptions
+- Server-side pricing only (client sends tier+cycle)
+- Idempotent activation via `activated_at` timestamp
+- Webhook backup activation for payment.captured / order.paid events
+- Test mode enforced by default (`RAZORPAY_ALLOW_LIVE=false`)
+
+---
+
+## Pricing Model
+
+### Tiers & Cycles
+
+| Tier | Students | Monthly | Annual | Monthly Setup | Annual Setup |
+|------|----------|---------|--------|---------------|-------------|
+| **Starter** | 100 | ₹499 | ₹4,999 | ₹0 | ₹0 |
+| **Growth** | 500 | ₹999 | ₹10,000 | ₹5,000 | ₹0 (waived) |
+| **Large** | Unlimited* | ₹2,499 | ₹25,000 | ₹5,000 | ₹0 (waived) |
+
+\* Large maps to Pro subscription (unlimited after migration `20261008093000_pro_plan_unlimited.sql`)
+
+### Setup Fee Logic
+
+- **Charged once** on first paid order (no prior paid `billing_orders` for owner)
+- **Monthly**: Growth and Large charge ₹5,000 setup
+- **Annual**: Setup waived for all tiers
+- **Cross-cycle protection**: Accounts that start annual never pay setup when switching to monthly
+
+### Annual Savings
+
+- **Starter**: ₹989 (₹499×12 - ₹4,999)
+- **Growth**: ₹1,988 + free ₹5,000 setup
+- **Large**: ₹4,988 + free ₹5,000 setup
+
+---
 
 ## Architecture
 
-### Order-based Flow (not subscription-based)
+### Payment Flow
 
-1. **Client** initiates checkout → `/api/billing/create-order`
-2. **Server** computes price, creates Razorpay order, stores in `billing_orders`
-3. **Client** opens Razorpay checkout modal
-4. **User** completes payment via Razorpay
-5. **Client** receives payment response → `/api/billing/verify-payment`
-6. **Server** verifies HMAC signature, confirms payment with Razorpay, marks order paid, activates subscription
-7. **Webhook** (backup) on `payment.captured` or `order.paid` activates via the same idempotent path
+1. **Client**: Calls `POST /api/billing/create-order` with `{tier, cycle}`
+2. **Server**:
+   - Validates owner, checks for comped/no-expiry accounts
+   - Computes pricing server-side (including setup fee logic)
+   - Creates Razorpay Order via API
+   - Inserts `billing_orders` row (status=`created`)
+3. **Client**: Loads Razorpay checkout.js modal with order_id
+4. **Razorpay**: User pays, modal returns `{razorpay_order_id, razorpay_payment_id, razorpay_signature}`
+5. **Client**: Calls `POST /api/billing/verify-payment` with payment response
+6. **Server**:
+   - Verifies HMAC-SHA256 signature
+   - Fetches payment from Razorpay API, validates amount & currency
+   - **Idempotent activation**: Updates `billing_orders` with `WHERE activated_at IS NULL`
+   - Calls `apply_subscription_change` RPC only if activated_at was NULL
+7. **Webhook** (backup): Razorpay sends `payment.captured` / `order.paid`
+   - Dedupe on unique `x-razorpay-event-id`
+   - Uses same `activateOrderOnce()` helper
+   - Already-activated orders return `already_activated`, no duplicate extension
 
-### Database Schema
+### Idempotent Activation
 
-#### `billing_orders`
+**Key guarantee**: Each order activates exactly once, even if:
+- verify-payment is called multiple times
+- webhook fires for both payment.captured AND order.paid
+- verify-payment and webhook both run
+
+**Implementation**:
+```sql
+UPDATE billing_orders
+SET status = 'paid',
+    paid_at = now(),
+    activated_at = now(),
+    razorpay_payment_id = $1
+WHERE razorpay_order_id = $2
+  AND activated_at IS NULL
+RETURNING id, owner_id, intent;
+```
+
+Only the first UPDATE to set `activated_at` returns a row → only that call activates the subscription.
+
+**Shared Helper**: `src/lib/billing-activation.ts` → `activateOrderOnce()`
+
+---
+
+## Database Schema
+
+### `billing_orders` Table
+
 ```sql
 CREATE TABLE billing_orders (
-  id uuid PRIMARY KEY,
-  owner_id uuid NOT NULL,
-  razorpay_order_id text UNIQUE NOT NULL,
-  razorpay_payment_id text UNIQUE,
-  intent text NOT NULL, -- 'activate' or 'renew'
-  amount_paise integer NOT NULL,
-  currency text NOT NULL DEFAULT 'INR',
-  status text NOT NULL DEFAULT 'created', -- 'created', 'paid', 'failed'
-  line_items jsonb,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  paid_at timestamptz
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  razorpay_order_id TEXT UNIQUE NOT NULL,
+  razorpay_payment_id TEXT UNIQUE,
+  intent TEXT NOT NULL,  -- "starter_monthly", "growth_annual", etc.
+  amount_paise INTEGER NOT NULL CHECK (amount_paise > 0),
+  currency TEXT NOT NULL DEFAULT 'INR',
+  status TEXT NOT NULL DEFAULT 'created' CHECK (status IN ('created', 'paid', 'failed')),
+  line_items JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  paid_at TIMESTAMPTZ,
+  activated_at TIMESTAMPTZ,  -- Idempotency key for activation
+  
+  CONSTRAINT fk_billing_orders_owner 
+    FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
 ```
 
-- **intent**:
-  - `activate`: first purchase (includes setup fee if not already paid)
-  - `renew`: annual renewal (annual charge only)
-- **line_items**: JSON array, e.g. `[{"item": "setup_fee", "amount": 500000}, {"item": "annual_plan", "amount": 1000000}]`
+**Key Fields**:
+- `intent`: Tier + cycle string (e.g. `"growth_monthly"`)
+- `activated_at`: NULL until first activation, then set permanently
+- `line_items`: JSON breakdown (optional, for setup fee display)
 
-## Environment Variables
+### Row Level Security
 
-All variables are **server-only** (no `VITE_` prefix).
+- **SELECT**: Owners can read their own orders
+- **INSERT/UPDATE/DELETE**: Blocked for clients (server-only via service_role)
 
-### Required
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `RAZORPAY_KEY_ID` | Razorpay API key ID (test: `rzp_test_*`, live: `rzp_live_*`) | `rzp_test_abc123` |
-| `RAZORPAY_KEY_SECRET` | Razorpay API key secret | `secret_xyz789` |
-| `RAZORPAY_WEBHOOK_SECRET` | Webhook signature secret (from Razorpay dashboard) | `whsec_abc123xyz` |
-
-### Optional
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `BILLING_ENABLED` | Enable/disable billing endpoints | `true` |
-| `BILLING_SETUP_FEE_PAISE` | Setup fee in paise | `500000` (₹5,000) |
-| `BILLING_ANNUAL_PLAN_PAISE` | Annual plan price in paise | `1000000` (₹10,000) |
-| `BILLING_ANNUAL_PLAN_STUDENT_LIMIT` | Student limit for annual plan | `500` |
-| `RAZORPAY_ALLOW_LIVE` | Allow live keys (must be `true` to use `rzp_live_*`) | `false` |
-
-### Safety Guards
-
-- **Test/live guard**: The system refuses to run with `rzp_live_*` keys unless `RAZORPAY_ALLOW_LIVE=true` is explicitly set.
-- **Billing disabled by default**: Set `BILLING_ENABLED=true` (or remove `BILLING_DISABLED=true`) to enable payment endpoints.
-
-## Migration Files
-
-Apply migrations in this order:
-
-1. `20261008091700_fix_enforce_student_limit_exclude_archived.sql`
-   - Fixes `enforce_student_limit()` to exclude archived students from plan limit count
-2. `20261008091800_create_billing_orders_table.sql`
-   - Creates `billing_orders` table with RLS policies
+---
 
 ## API Endpoints
 
-### POST `/api/billing/create-order`
-Creates a Razorpay order.
+### `GET /api/billing/pricing`
+
+Returns server pricing for all tiers and cycles.
+
+**Response**:
+```json
+{
+  "billingEnabled": true,
+  "tiers": [
+    {
+      "tier": "starter",
+      "name": "Starter",
+      "description": "For growing coaching centres",
+      "studentLimit": 100,
+      "monthlyPricePaise": 49900,
+      "annualPricePaise": 499900,
+      "setupFeePaise": 0,
+      "features": ["Up to 100 students", "All core features", "Email support"]
+    },
+    ...
+  ],
+  "cycles": [
+    { "cycle": "monthly", "label": "Monthly" },
+    { "cycle": "annual", "label": "Annual" }
+  ]
+}
+```
+
+### `POST /api/billing/create-order`
+
+Creates a Razorpay Order for checkout.
 
 **Request**:
 ```json
 {
-  "intent": "activate" | "renew"
+  "tier": "growth",
+  "cycle": "annual"
 }
 ```
 
-**Response** (success):
+**Server Logic**:
+1. Validates tier and cycle
+2. Checks owner permissions
+3. **Blocks comped accounts** (plan_price=0) → "contact support"
+4. **Blocks no-expiry accounts** (expiry_date=null) → "contact support"
+5. Computes pricing with setup fee logic
+6. Creates Razorpay Order
+7. Inserts `billing_orders` row
+
+**Response**:
 ```json
 {
   "ok": true,
-  "orderId": "order_ABC123",
-  "amount": 1500000,
+  "orderId": "order_xyz123",
+  "amount": 1000000,
   "currency": "INR",
-  "keyId": "rzp_test_abc123"
+  "keyId": "rzp_test_..."
 }
 ```
 
-**Errors**:
-- `503 BILLING_DISABLED`: Billing not enabled
-- `503 NOT_CONFIGURED`: Missing Razorpay credentials
-- `403 LIVE_KEY_BLOCKED`: Live keys without `RAZORPAY_ALLOW_LIVE=true`
-- `403 NOT_OWNER`: Only workspace owners can purchase
+**Error Codes**:
+- `COMPED_ACCOUNT`: Account has plan_price=0
+- `NO_EXPIRY_ACCOUNT`: Account has expiry_date=null
+- `NOT_OWNER`: Only owner can purchase
 
-### POST `/api/billing/verify-payment`
-Verifies payment signature and activates subscription.
+### `POST /api/billing/verify-payment`
+
+Verifies payment signature and activates subscription idempotently.
 
 **Request**:
 ```json
 {
-  "razorpay_order_id": "order_ABC123",
-  "razorpay_payment_id": "pay_XYZ789",
-  "razorpay_signature": "abcdef123456..."
+  "razorpay_order_id": "order_xyz123",
+  "razorpay_payment_id": "pay_abc456",
+  "razorpay_signature": "abc123..."
 }
 ```
 
-**Response** (success):
+**Server Logic**:
+1. Verify HMAC-SHA256 signature
+2. Fetch payment from Razorpay API
+3. Validate amount & currency match stored order
+4. **Idempotent activation**:
+   - UPDATE billing_orders SET activated_at=now() WHERE activated_at IS NULL
+   - If row returned: call apply_subscription_change RPC
+   - If no row: already activated, return success
+
+**Response**:
 ```json
 {
-  "ok": true,
-  "paymentId": "pay_XYZ789",
-  "orderId": "order_ABC123",
-  "alreadyPaid": false
+  "ok": true
 }
 ```
 
-**Errors**:
-- `400 INVALID_SIGNATURE`: Signature verification failed
-- `404 ORDER_NOT_FOUND`: Order not found in database
-- `403 OWNERSHIP_MISMATCH`: Order belongs to different user
-- `400 PAYMENT_NOT_CAPTURED`: Payment status not captured/authorized
-- `400 AMOUNT_MISMATCH`: Payment amount doesn't match order
+### `POST /api/webhooks/razorpay`
 
-### POST `/api/webhooks/razorpay`
-Webhook handler for `payment.captured` and `order.paid` events.
+Handles Razorpay webhook events for backup activation.
 
-**Headers**:
-- `x-razorpay-signature`: HMAC-SHA256 signature of raw body
-- `x-razorpay-event-id`: Unique event ID for deduplication
+**Events**:
+- `payment.captured`: Payment was captured
+- `order.paid`: Order was fully paid
 
-**Events handled**:
-- `payment.captured`: Activates subscription from the paid order
-- `order.paid`: Activates subscription from the paid order
+**Deduplication**:
+- Uses unique `x-razorpay-event-id` header
+- Stores in `razorpay_webhook_deliveries.delivery_hash`
+- Duplicate events return 200 OK immediately
 
-**Deduplication**: Uses `x-razorpay-event-id` header (unique per event) stored in `razorpay_webhook_deliveries.event_type`.
+**Activation**:
+- Extracts `order_id` from payload
+- Calls `activateOrderOnce()` (same as verify-payment)
+- Already-activated orders ignored silently
+
+---
+
+## Subscription Extension Logic
+
+**Rule**: Expiry extends by 1 month (monthly) or 12 months (annual) from `max(now, current_expiry)`
+
+**Examples**:
+- Current expiry: 2026-01-15, today: 2025-12-01, monthly → new expiry: 2026-02-15
+- Current expiry: 2025-11-01 (past), today: 2025-12-01, monthly → new expiry: 2026-01-01
+- Annual purchase → +12 months
+
+**Tier Switches**:
+- New tier takes effect immediately
+- Expiry calculation same as renewal (leftover time carries over)
+- Documented as accepted v1 simplification
+
+**Admin Field Preservation**:
+- `notes` field preserved across activations
+- `start_date` preserved (not reset)
+- `plan_price` set to NULL (price tracked in billing_orders)
+
+---
+
+## Migrations
+
+Apply in this order:
+
+1. `20261008091700_fix_enforce_student_limit_exclude_archived.sql`
+   - Updates trigger to exclude `status='archived'` students from limit
+
+2. `20261008091800_create_billing_orders_table.sql`
+   - Creates `billing_orders` table
+   - Adds `activated_at` column
+   - Sets up RLS policies
+
+3. `20261008093000_pro_plan_unlimited.sql` (**SEPARATE, DO NOT APPLY**)
+   - Sets Pro student limit to 2147483647 (unlimited)
+   - Only apply after testing and explicit approval
+
+---
+
+## Environment Variables
+
+All server-only (no `VITE_` prefix).
+
+### Required
+
+```bash
+RAZORPAY_KEY_ID=rzp_test_...
+RAZORPAY_KEY_SECRET=...
+RAZORPAY_WEBHOOK_SECRET=...
+BILLING_ENABLED=true  # Defaults to FALSE
+```
+
+### Optional (defaults shown, all in paise)
+
+```bash
+# Starter
+BILLING_STARTER_STUDENT_LIMIT=100
+BILLING_STARTER_MONTHLY_PRICE_PAISE=49900
+BILLING_STARTER_ANNUAL_PRICE_PAISE=499900
+BILLING_STARTER_SETUP_FEE_PAISE=0
+
+# Growth
+BILLING_GROWTH_STUDENT_LIMIT=500
+BILLING_GROWTH_MONTHLY_PRICE_PAISE=99900
+BILLING_GROWTH_ANNUAL_PRICE_PAISE=1000000
+BILLING_GROWTH_SETUP_FEE_PAISE=500000
+
+# Large
+BILLING_LARGE_STUDENT_LIMIT=2147483647
+BILLING_LARGE_MONTHLY_PRICE_PAISE=249900
+BILLING_LARGE_ANNUAL_PRICE_PAISE=2500000
+BILLING_LARGE_SETUP_FEE_PAISE=500000
+
+# Safety
+RAZORPAY_ALLOW_LIVE=false  # Must be true for live keys
+```
+
+---
+
+## Frontend Components
+
+### `/plan` Page
+
+- Current plan status (tier, expiry, student usage)
+- Renewal banner (7 days before expiry)
+- Expired state alert
+- Monthly/annual toggle (default: annual)
+- Three tier cards with:
+  - Prices from `GET /api/billing/pricing`
+  - Savings display for annual
+  - Setup fee line for monthly (when applicable)
+  - Pay button (owner only, when BILLING_ENABLED=true)
+  - "Contact us" fallback
+- GST TODO note
+
+### `/pricing` Page
+
+- Public marketing page
+- Same tier/cycle display
+- Read-only (no checkout)
+- Honest pricing display
+
+### `RazorpayCheckout` Component
+
+- Loads Razorpay checkout.js dynamically
+- Handles payment modal
+- Calls verify-payment on success
+- Error handling with toast notifications
+
+---
 
 ## Testing
 
-### Test Cards
-- **Visa**: `4111 1111 1111 1111`
-- **Any future expiry**, any CVV
-- **UPI success**: `success@razorpay`
-- **UPI failure**: `failure@razorpay`
-
-### Test Flow
-
-1. **Set test credentials**:
-   ```bash
-   RAZORPAY_KEY_ID=rzp_test_your_key_id
-   RAZORPAY_KEY_SECRET=your_test_secret
-   RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
-   BILLING_ENABLED=true
-   ```
-
-2. **Start dev server** and navigate to `/plan` as a workspace owner.
-
-3. **Click "Activate Annual Plan"** (or "Renew" if already active).
-
-4. **Complete payment** in the Razorpay modal with test card.
-
-5. **Verify**:
-   - Subscription status updates to "active"
-   - Plan changes to "Growth" (500 students)
-   - Expiry date is 365 days from activation
-   - Order is marked "paid" in `billing_orders`
-
-### Webhook Testing
-
-**IMPORTANT**: Test webhooks must go to a **Preview deployment** with a Vercel protection-bypass secret, **NEVER production**.
-
-1. Deploy to Vercel Preview from your branch.
-2. Get the Preview URL (e.g. `https://your-app-git-branch-user.vercel.app`).
-3. If Preview has Vercel Protection enabled, add bypass secret: `?bypass=YOUR_SECRET`.
-4. In Razorpay Dashboard → Webhooks:
-   - URL: `https://your-preview-url.vercel.app/api/webhooks/razorpay?bypass=YOUR_SECRET`
-   - Events: `payment.captured`, `order.paid`
-   - Secret: Copy the webhook secret to `RAZORPAY_WEBHOOK_SECRET`.
-5. Test a payment and verify webhook delivery in Razorpay dashboard.
-
 ### Unit Tests
 
-Run tests:
-```bash
-npm test
-```
+**File**: `src/lib/billing-pricing.test.ts`
 
-Test files:
-- `src/lib/billing-pricing.test.ts`: Pricing calculation (setup fee, annual plan, intents)
-- `src/lib/razorpay-signature.test.ts`: HMAC-SHA256 signature verification
+**Coverage** (22 tests):
+- All tier+cycle combinations
+- Setup fee logic (first order, monthly/annual, cross-cycle)
+- Monthly→Annual and Annual→Monthly switches
+- Savings calculations
+- Signature verification (valid, invalid, length mismatch)
+
+**Run**: `npm run test:run`
+
+### Manual Testing Checklist
+
+1. Create order for each tier+cycle
+2. Complete payment in Razorpay test mode
+3. Verify subscription extended correctly
+4. Test webhook activation (disable verify-payment)
+5. Test duplicate activation attempts (should be idempotent)
+6. Test comped account rejection
+7. Test owner-only restrictions
+
+---
 
 ## Security
 
-### Server-side Pricing
-- The client sends only `intent` ("activate" or "renew") and workspace ID
-- The server computes amounts based on:
-  - Configured prices (`BILLING_SETUP_FEE_PAISE`, `BILLING_ANNUAL_PLAN_PAISE`)
-  - Whether setup fee has been paid before (checked in `billing_orders`)
-- **Never trust amounts from the client**
+### HMAC Signature Verification
 
-### Signature Verification
-- **Order verification** uses HMAC-SHA256(`order_id|payment_id`, `KEY_SECRET`)
-- **Webhook verification** uses HMAC-SHA256(raw body, `WEBHOOK_SECRET`)
-- Both use constant-time comparison (`crypto.timingSafeEqual`) with length check
+**verify-payment**:
+```javascript
+const expectedSig = crypto
+  .createHmac("sha256", keySecret)
+  .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+  .digest("hex");
 
-### Idempotent Activation
-- Orders are marked paid with a conditional update: `WHERE status='created'`
-- If the update returns no rows, the order was already paid (idempotent)
-- Subscription is activated via `apply_subscription_change` RPC, which handles over-limit checks
+// Length check before timingSafeEqual
+if (expectedSig.length !== razorpay_signature.length) {
+  return invalid();
+}
 
-### RLS Policies
-- **billing_orders**: Owners can `SELECT` their own rows; no client `INSERT`/`UPDATE`/`DELETE`
-- **subscriptions**: Read-only for clients; writes via server with service_role
-- **subscription_audit**: No client access; server-only audit log
+const isValid = crypto.timingSafeEqual(
+  Buffer.from(expectedSig),
+  Buffer.from(razorpay_signature)
+);
+```
 
-## Troubleshooting
+**webhook**:
+```javascript
+import { verifyRazorpayWebhookSignature } from "@/lib/razorpay-webhook-verify";
 
-### "Payment system is not configured"
-- Check that `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET` are set
-- Ensure they are **server-only** variables (no `VITE_` prefix)
-- For Vercel: set them in Project Settings → Environment Variables
+const isValid = verifyRazorpayWebhookSignature(
+  rawBody,
+  signature,
+  webhookSecret
+);
+```
 
-### "Refusing to use live Razorpay keys"
-- You're using a `rzp_live_*` key without explicit opt-in
-- Set `RAZORPAY_ALLOW_LIVE=true` only when you're ready to go live
-- **Never set this on Preview deployments**
+### Rate Limiting
 
-### Webhook signature mismatch
-- Verify `RAZORPAY_WEBHOOK_SECRET` matches the secret in Razorpay dashboard
-- Check that the webhook URL is correct (including bypass token if needed)
-- Ensure raw body is passed to verification (no JSON parsing before HMAC)
+- `create-order`: 10 requests / 60s per IP
+- `verify-payment`: 10 requests / 60s per IP
+- `webhooks/razorpay`: 50 requests / 60s per IP
 
-### Payment verified but subscription not activated
-- Check server logs for RPC errors
-- Verify `apply_subscription_change` function exists in database
-- Check that `billing_orders` table and migrations are applied
-- Confirm workspace owner exists in `institutes` table
+### Live Key Protection
 
-### Duplicate webhook deliveries
-- The system deduplicates by `x-razorpay-event-id` header
-- Check `razorpay_webhook_deliveries` table for `handled=true`
-- If a webhook fails processing, it's **not marked handled** so Razorpay will retry
+```typescript
+assertRazorpayKeyMode(keyId);
+```
 
-## Production Checklist
+Throws error if `keyId.startsWith("rzp_live_")` and `RAZORPAY_ALLOW_LIVE !== "true"`.
 
-Before going live:
+---
 
-1. **Test mode validation**:
-   - [ ] All test payments work end-to-end
-   - [ ] Webhook receives and processes events correctly
-   - [ ] Subscription activates with correct plan and expiry
+## Audit Fixes (2026-10-08)
 
-2. **Live credentials**:
-   - [ ] Obtain live API keys from Razorpay (`rzp_live_*`)
-   - [ ] Set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` for production
-   - [ ] Set `RAZORPAY_ALLOW_LIVE=true` (production only)
-   - [ ] Remove bypass tokens from webhook URL
+### 1. Double/Triple Activation (HIGH)
 
-3. **Compliance**:
-   - [ ] Add GST/tax information to the UI (marked as TODO in `/plan`)
-   - [ ] Update Terms of Service to include subscription terms
-   - [ ] Add refund policy
+**Problem**: verify-payment activated, then webhook activated again for BOTH payment.captured AND order.paid → 3x extensions
 
-4. **Monitoring**:
-   - [ ] Set up alerts for payment failures
-   - [ ] Monitor `billing_orders` for stuck "created" orders
-   - [ ] Track webhook delivery failures in Razorpay dashboard
+**Fix**:
+- Added `activated_at` column to `billing_orders`
+- Created `activateOrderOnce()` helper with conditional UPDATE
+- Both verify-payment and webhook use same path
+- Webhook dedupe fixed: uses unique `x-razorpay-event-id` (not event_type)
+- Only ONE activation per order guaranteed
 
-## GST and Taxes
+### 2. Admin Field Clobbering (MEDIUM)
 
-The current implementation displays a **TODO** note for GST information. Before going live:
-- Determine if your business is GST-registered
-- Add GST number and tax breakdown to the pricing display
-- Consult with a tax advisor for proper compliance
+**Problem**: Activations overwrote admin notes, reset start_date, set price=null, clobbered comped accounts
 
-## Migration from Old Subscription Flow
+**Fix**:
+- Comped accounts (plan_price=0) blocked in create-order
+- No-expiry accounts blocked in create-order
+- Clear error: "contact support"
+- Admin notes and start_date preserved
+- Tier switches documented
 
-The old `/api/billing/start-subscription` endpoint used Razorpay Subscriptions with a hosted `short_url`. It has been retired in favor of the in-app order-based checkout.
+### 3. Pro Unlimited Migration (LOW)
 
-- Old flow: Redirected users to Razorpay hosted page
-- New flow: In-app checkout modal via Razorpay Standard Checkout
-- Migration: Old webhook events for `subscription.authenticated` etc. are ignored; only `payment.captured` and `order.paid` are processed
+**Problem**: Missing `SET search_path TO 'public'`
 
-## Support
+**Fix**: Restored in migration file
 
-For Razorpay-specific issues:
-- Razorpay documentation: https://razorpay.com/docs/payments/
-- Razorpay support: https://razorpay.com/support/
+### 4. Admin UI Hardcoded Limits (LOW)
 
-For Vidya Orbit billing issues:
-- Check server logs for detailed error messages
-- Verify environment variables are set correctly
-- Ensure migrations are applied in the correct order
+**Problem**: Pro always showed 1,000
+
+**Fix**: Display "Unlimited" when limit >= 2147483647 or null
+
+---
+
+## Known Limitations
+
+1. **GST**: Not yet implemented (prices are pre-tax)
+2. **Tier switches**: Leftover time carries over (v1 simplification)
+3. **Refunds**: Manual process (not automated)
+4. **Prorated upgrades**: Not supported (full period charged)
+
+---
+
+## Future Enhancements
+
+- GST calculations and invoicing
+- Prorated tier upgrades/downgrades
+- Auto-retry failed payments
+- Payment history page
+- Invoice generation
+- Cancellation flow
+
+---
+
+## References
+
+- [Razorpay Standard Checkout](https://razorpay.com/docs/payments/payment-gateway/web-integration/standard/)
+- [Razorpay Webhooks](https://razorpay.com/docs/webhooks/)
+- [Razorpay Signature Verification](https://razorpay.com/docs/payments/server-integration/nodejs/payment-gateway/build-integration/#signature-verification)
