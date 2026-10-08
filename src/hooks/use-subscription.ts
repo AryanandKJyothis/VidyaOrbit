@@ -1,8 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
+import { APPROVED_PRICING, type PlanDisplay } from "@/lib/pricing-display";
 
 export type PlanCode = "free" | "starter" | "growth" | "pro";
+
+function toPlanCode(code: PlanDisplay["code"]): PlanCode {
+  return code === "large" ? "pro" : code;
+}
 
 // ── Trial mode ──────────────────────────────────────────────────────
 // When true, every account is treated as the highest plan (no caps,
@@ -28,44 +33,19 @@ export const PLANS: {
   code: PlanCode;
   name: string;
   price: number;
+  annualPrice: number;
+  setupFee: number;
   tagline: string;
   features: string[];
-}[] = [
-  {
-    code: "free",
-    name: "Free",
-    price: 0,
-    tagline: "For trying things out",
-    features: [
-      "Up to 25 students",
-      "Student & batch management",
-      "Daily attendance",
-      "Basic fee tracking",
-      "Email sign-in",
-    ],
-  },
-  {
-    code: "starter",
-    name: "Starter",
-    price: 999,
-    tagline: "Growing coaching centres",
-    features: ["Up to 100 students", "Everything in Free", "Email support"],
-  },
-  {
-    code: "growth",
-    name: "Growth",
-    price: 1499,
-    tagline: "Multi-batch institutions",
-    features: ["Up to 500 students", "Everything in Starter"],
-  },
-  {
-    code: "pro",
-    name: "Pro",
-    price: 2999,
-    tagline: "Large institutions",
-    features: ["Up to 1,000 students", "Everything in Growth", "Email support"],
-  },
-];
+}[] = APPROVED_PRICING.map((p) => ({
+  code: toPlanCode(p.code),
+  name: p.displayName,
+  price: p.monthlyPrice,
+  annualPrice: p.annualPrice,
+  setupFee: p.setupFee,
+  tagline: p.tagline,
+  features: p.features,
+}));
 
 type HealthRow = {
   plan: PlanCode;

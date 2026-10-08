@@ -46,13 +46,13 @@ function contactBody(planName: string, currentPlan: string) {
   );
 }
 
-function whatsappUrl(
+function planWhatsappHref(
   planName: string,
   currentPlan: string,
-  whatsappNumber: string,
+  baseWhatsappUrl: string,
 ) {
   const text = contactBody(planName, currentPlan);
-  return `https://wa.me/${whatsappNumber}?text=${text}`;
+  return `${baseWhatsappUrl}?text=${text}`;
 }
 
 function emailUrl(planName: string, currentPlan: string, email: string) {
@@ -79,12 +79,7 @@ function BillingPage() {
   const sub = useSubscription();
   const students = useStudents();
   const qc = useQueryClient();
-  const {
-    email,
-    phone,
-    whatsapp,
-    whatsappUrl: contactWhatsappUrl,
-  } = getContactConfig();
+  const { email, phone, whatsappUrl: contactWhatsappUrl } = getContactConfig();
 
   const [syncing, setSyncing] = useState(false);
 
@@ -290,7 +285,7 @@ function BillingPage() {
               >
                 {highlight && !isCurrent && (
                   <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground">
-                    Popular
+                    Recommended
                   </span>
                 )}
                 <CardContent className="flex flex-1 flex-col gap-4 p-5">
@@ -318,6 +313,14 @@ function BillingPage() {
                         </span>
                       )}
                     </div>
+                    {p.price !== 0 && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        or ₹{p.annualPrice.toLocaleString("en-IN")}/year
+                        {p.setupFee > 0
+                          ? ` · ₹${p.setupFee.toLocaleString("en-IN")} setup on monthly`
+                          : ""}
+                      </p>
+                    )}
                   </div>
                   <ul className="flex-1 space-y-2 text-sm">
                     {p.features.map((f) => (
@@ -338,13 +341,13 @@ function BillingPage() {
                     </Button>
                   ) : (
                     <div className="flex flex-col gap-2">
-                      {whatsapp && contactWhatsappUrl && (
+                      {contactWhatsappUrl && (
                         <Button asChild className="w-full gap-2">
                           <a
-                            href={whatsappUrl(
+                            href={planWhatsappHref(
                               p.name,
                               planMeta?.name ?? effectivePlan,
-                              whatsapp,
+                              contactWhatsappUrl,
                             )}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -359,7 +362,7 @@ function BillingPage() {
                       {email && (
                         <Button
                           asChild
-                          variant={whatsapp ? "outline" : "default"}
+                          variant={contactWhatsappUrl ? "outline" : "default"}
                           className="w-full gap-2"
                         >
                           <a
@@ -429,8 +432,8 @@ function BillingPage() {
         </Card>
 
         <p className="mt-6 text-center text-[11px] text-muted-foreground leading-relaxed max-w-xl mx-auto">
-          Existing Razorpay subscriptions are still synced automatically. New
-          plan changes are handled by contacting support.
+          Paid plans are arranged by invoice. Online payment is coming soon.
+          Existing Razorpay subscriptions are still synced automatically.
         </p>
       </div>
     </RoutePermissionGate>
