@@ -1,4 +1,5 @@
 -- Migration 5: Copy signup phone to institute contact_phone
+-- APPLY ORDER: Apply migrations 5, 4, 3a (safe with current prod), then deploy frontend, then manual 3b.
 -- Based on LIVE handle_new_user, changing only the institutes insert to include contact_phone.
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()

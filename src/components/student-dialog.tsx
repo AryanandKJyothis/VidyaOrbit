@@ -35,7 +35,7 @@ export function StudentDialog({
   const batches = useBatches();
   const mut = useUpsertStudent();
   const canSeeFees = useCan("fees", "read");
-  
+
   const [form, setForm] = useState({
     full_name: "",
     phone: "",
@@ -85,13 +85,13 @@ export function StudentDialog({
         batch_id: form.batch_id || null,
         notes: form.notes || null,
       };
-      
+
       // Only include fee fields if user has fees permission
       if (canSeeFees) {
         payload.fee_total = form.fee_total ? Number(form.fee_total) : undefined;
         payload.fee_due_date = form.fee_due_date || null;
       }
-      
+
       await mut.mutateAsync(payload);
       toast.success(student ? "Student updated" : "Student added");
       onOpenChange(false);
@@ -206,7 +206,9 @@ export function StudentDialog({
                   min="0"
                   step="1"
                   value={form.fee_total}
-                  onChange={(e) => setForm({ ...form, fee_total: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, fee_total: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-1.5">

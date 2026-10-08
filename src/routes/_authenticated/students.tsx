@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
-import { createFileRoute, Link, Outlet, useChildMatches } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useChildMatches,
+} from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -64,12 +69,12 @@ export const Route = createFileRoute("/_authenticated/students")({
 
 function StudentsLayout() {
   const childMatches = useChildMatches();
-  
+
   // If there's a child route (e.g., /students/$id), render it
   if (childMatches.length > 0) {
     return <Outlet />;
   }
-  
+
   // Otherwise render the list
   return <StudentsList />;
 }
@@ -175,7 +180,7 @@ function StudentsList() {
                         "Joining date": s.joining_date,
                         Status: s.status,
                       };
-                      
+
                       // Only include fee columns if user has fees permission
                       if (canViewFees) {
                         baseRow["Total fee"] = Number(s.fee_total);
@@ -186,7 +191,7 @@ function StudentsList() {
                         );
                         baseRow["Due date"] = s.fee_due_date ?? "";
                       }
-                      
+
                       baseRow["Address"] = s.address ?? "";
                       return baseRow;
                     });
@@ -208,7 +213,7 @@ function StudentsList() {
                         "Joining date": s.joining_date,
                         Status: s.status,
                       };
-                      
+
                       if (canViewFees) {
                         baseRow["Total fee"] = Number(s.fee_total);
                         baseRow["Paid"] = paidByStudent[s.id] ?? 0;
@@ -218,7 +223,7 @@ function StudentsList() {
                         );
                         baseRow["Due date"] = s.fee_due_date ?? "";
                       }
-                      
+
                       baseRow["Address"] = s.address ?? "";
                       return baseRow;
                     });
@@ -276,7 +281,9 @@ function StudentsList() {
                       : `Heads up — you're using ${currentCount} of ${planLimit} students.`}
                   </p>
                   {contactMsg && (
-                    <p className="text-xs text-muted-foreground">{contactMsg}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {contactMsg}
+                    </p>
                   )}
                 </div>
               </div>
@@ -290,8 +297,13 @@ function StudentsList() {
                 </Button>
                 {showContact && contactUrl && (
                   <Button asChild size="sm" variant="outline">
-                    <a href={contactUrl} target="_blank" rel="noopener noreferrer">
-                      {contactLabel} <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+                    <a
+                      href={contactUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {contactLabel}{" "}
+                      <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
                     </a>
                   </Button>
                 )}

@@ -98,7 +98,7 @@ export function useStudents() {
         .eq("owner_id", ownerId!)
         .order("created_at", { ascending: false })
         .limit(ROW_LIMIT);
-      
+
       if (error) throw error;
       return data as Student[];
     },
@@ -120,7 +120,7 @@ export function useStudent(id: string | undefined) {
         .eq("id", id!)
         .eq("owner_id", ownerId!)
         .single();
-      
+
       if (error) throw error;
       return data as Student;
     },
@@ -195,6 +195,10 @@ export function useUpsertStudent() {
       if (!ownerId) throw new Error("No active workspace selected");
       const { id, ...rest } = s;
       const validated = studentSchemaWithPhone.parse(rest);
+      // Prevent zod from re-adding fee fields that weren't in the original input
+      // This prevents staff edits from wiping fee_due_date or fee_total
+      if (!("fee_due_date" in rest)) delete validated.fee_due_date;
+      if (!("fee_total" in rest)) delete validated.fee_total;
       const payload = { ...validated, owner_id: ownerId };
       if (id) {
         const { error } = await supabase

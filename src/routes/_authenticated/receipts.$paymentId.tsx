@@ -57,7 +57,7 @@ function ReceiptPageContent() {
 
   if (payment.isLoading || student.isLoading)
     return <Skeleton className="h-96" />;
-  
+
   if (payment.isError || !payment.data || student.isError || !student.data) {
     return (
       <Card className="border-dashed">

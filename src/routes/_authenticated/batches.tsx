@@ -252,7 +252,9 @@ function BatchesPage() {
                             size="sm"
                             variant="ghost"
                             onClick={() => toggle(b)}
-                            title={b.is_active ? "Pause batch" : "Activate batch"}
+                            title={
+                              b.is_active ? "Pause batch" : "Activate batch"
+                            }
                           >
                             <Power className="h-3.5 w-3.5" />
                           </Button>

@@ -143,7 +143,11 @@ export const listTeam = createServerFn({ method: "POST" })
       let page = 1;
       const maxPages = 50; // Safety cap: 10,000 users max
       let hasMore = true;
-      while (hasMore && page <= maxPages && idSet.size > Object.keys(emails).length) {
+      while (
+        hasMore &&
+        page <= maxPages &&
+        idSet.size > Object.keys(emails).length
+      ) {
         const { data: usersPage, error: usersError } =
           await supabaseAdmin.auth.admin.listUsers({
             page,

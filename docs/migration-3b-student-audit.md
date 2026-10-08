@@ -41,25 +41,17 @@ This audit confirms that all student references in `src/` are safe for Migration
 ### ✅ src/components/import-students-dialog.tsx:308 - Bulk update
 ```typescript
 .from("students")
-.update({
-  full_name: r.full_name,
-  phone: r.phone,
-  guardian_name: r.guardian_name,
-  guardian_phone: r.guardian_phone,
-  batch_id: r.batch_id ?? defaultBatch,
-  fee_total: r.fee_total || defaultFee,
-  ...(r.joining_date ? { joining_date: r.joining_date } : {}),
-})
+.update(updatePayload)
 .eq("id", r.existingStudentId!)
 ```
-**Status:** SAFE - No `.select()` call, returns nothing. Note: This UPDATE includes `fee_total`, which is allowed because writes are unrestricted by Migration 3b (only reads are gated).
+**Status:** SAFE - No `.select()` call, returns nothing. For fees:write users, conditionally includes `fee_total: r.fee_total` when present. For non-fees users, fee fields are excluded from the payload entirely.
 
 ### ✅ src/components/import-students-dialog.tsx:339 - Bulk insert
 ```typescript
 .from("students")
 .insert(part as never[])
 ```
-**Status:** SAFE - No `.select()` call, returns nothing
+**Status:** SAFE - No `.select()` call, returns nothing. For fees:write users, includes `fee_total: r.fee_total || defaultFee`. For non-fees users, fee fields are excluded from the payload entirely.
 
 ### ✅ src/routes/_authenticated/students.tsx:139 - Archive/restore
 ```typescript

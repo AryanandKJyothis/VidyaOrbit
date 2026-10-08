@@ -233,7 +233,8 @@ function Dashboard() {
     }
     for (const a of att) {
       // Use session_date (class date) instead of created_at (mark time)
-      const k = a.attendance_sessions?.session_date ?? a.created_at.slice(0, 10);
+      const k =
+        a.attendance_sessions?.session_date ?? a.created_at.slice(0, 10);
       const day = days.find((d) => d.date === k);
       if (day) {
         day.total += 1;
@@ -377,99 +378,102 @@ function Dashboard() {
                   Last 14 days
                 </p>
               </div>
-            <TrendingUp
-              className="h-5 w-5 text-muted-foreground mt-2 sm:mt-0 shrink-0"
-              aria-hidden
-            />
-          </CardHeader>
-          <CardContent>
-            {payments.isError ? (
-              <QueryErrorState error={payments.error as Error} />
-            ) : payments.isLoading ? (
-              <QueryLoadingSkeleton
-                count={1}
-                className="h-[200px] sm:h-[240px]"
+              <TrendingUp
+                className="h-5 w-5 text-muted-foreground mt-2 sm:mt-0 shrink-0"
+                aria-hidden
               />
-            ) : (
-              <div className="h-[200px] sm:h-[240px] w-full -mx-4 sm:mx-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={collectionSeries}
-                    margin={{ left: -10, right: 6, top: 6, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient
-                        id="collectArea"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="oklch(0.55 0.14 220)"
-                          stopOpacity={0.35}
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor="oklch(0.55 0.14 220)"
-                          stopOpacity={0}
-                        />
-                      </linearGradient>
-                      <linearGradient
-                        id="collectStroke"
-                        x1="0"
-                        y1="0"
-                        x2="1"
-                        y2="0"
-                      >
-                        <stop offset="0%" stopColor="oklch(0.7 0.12 185)" />
-                        <stop offset="100%" stopColor="oklch(0.32 0.10 255)" />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="oklch(0.92 0.008 245)"
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 10 }}
-                      stroke="oklch(0.52 0.03 255)"
-                    />
-                    <YAxis
-                      tick={{ fontSize: 10 }}
-                      stroke="oklch(0.52 0.03 255)"
-                      tickFormatter={(v) =>
-                        v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v
-                      }
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "white",
-                        border: "1px solid oklch(0.92 0.008 245)",
-                        borderRadius: 10,
-                        fontSize: 11,
-                        boxShadow: "0 8px 24px -8px rgba(15,42,72,0.18)",
-                      }}
-                      formatter={(v) => formatINR(Number(v))}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="amount"
-                      stroke="url(#collectStroke)"
-                      strokeWidth={2.5}
-                      fill="url(#collectArea)"
-                      dot={false}
-                      activeDot={{ r: 5, fill: "oklch(0.32 0.10 255)" }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </CardHeader>
+            <CardContent>
+              {payments.isError ? (
+                <QueryErrorState error={payments.error as Error} />
+              ) : payments.isLoading ? (
+                <QueryLoadingSkeleton
+                  count={1}
+                  className="h-[200px] sm:h-[240px]"
+                />
+              ) : (
+                <div className="h-[200px] sm:h-[240px] w-full -mx-4 sm:mx-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={collectionSeries}
+                      margin={{ left: -10, right: 6, top: 6, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient
+                          id="collectArea"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor="oklch(0.55 0.14 220)"
+                            stopOpacity={0.35}
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor="oklch(0.55 0.14 220)"
+                            stopOpacity={0}
+                          />
+                        </linearGradient>
+                        <linearGradient
+                          id="collectStroke"
+                          x1="0"
+                          y1="0"
+                          x2="1"
+                          y2="0"
+                        >
+                          <stop offset="0%" stopColor="oklch(0.7 0.12 185)" />
+                          <stop
+                            offset="100%"
+                            stopColor="oklch(0.32 0.10 255)"
+                          />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="oklch(0.92 0.008 245)"
+                        vertical={false}
+                      />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 10 }}
+                        stroke="oklch(0.52 0.03 255)"
+                      />
+                      <YAxis
+                        tick={{ fontSize: 10 }}
+                        stroke="oklch(0.52 0.03 255)"
+                        tickFormatter={(v) =>
+                          v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v
+                        }
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: "white",
+                          border: "1px solid oklch(0.92 0.008 245)",
+                          borderRadius: 10,
+                          fontSize: 11,
+                          boxShadow: "0 8px 24px -8px rgba(15,42,72,0.18)",
+                        }}
+                        formatter={(v) => formatINR(Number(v))}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="amount"
+                        stroke="url(#collectStroke)"
+                        strokeWidth={2.5}
+                        fill="url(#collectArea)"
+                        dot={false}
+                        activeDot={{ r: 5, fill: "oklch(0.32 0.10 255)" }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* Today's batches */}
@@ -547,103 +551,104 @@ function Dashboard() {
       {/* Overdue + Recent payments */}
       {canViewFees && (
         <div className="mt-6 sm:mt-8 grid gap-6 lg:grid-cols-2 auto-rows-max">
-        <Card className="card-premium">
-          <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <div>
-              <CardTitle className="text-base sm:text-lg">
-                Overdue dues
-              </CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">
-                {stats.overdue.length === 0
-                  ? "All clear"
-                  : `${stats.overdue.length} students · ${formatINR(stats.overdueAmount)}`}
-              </p>
-            </div>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/fees">Collect</Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {stats.overdue.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-subtle p-5 text-center text-xs sm:text-sm text-muted-foreground">
-                No overdue dues. 🎉
+          <Card className="card-premium">
+            <CardHeader className="flex flex-row items-center justify-between pb-4">
+              <div>
+                <CardTitle className="text-base sm:text-lg">
+                  Overdue dues
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.overdue.length === 0
+                    ? "All clear"
+                    : `${stats.overdue.length} students · ${formatINR(stats.overdueAmount)}`}
+                </p>
               </div>
-            ) : (
-              stats.overdue.slice(0, 6).map((s, i) => {
-                const balance =
-                  Number(s.fee_total) - (stats.totalPaidByStudent[s.id] ?? 0);
-                return (
-                  <motion.div
-                    key={s.id}
-                    initial={{ opacity: 0, x: -4 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.03 }}
-                    className="flex items-center justify-between rounded-lg border border-subtle bg-card p-3 hover:bg-muted/40 transition-colors"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <Link
-                        to="/students/$id"
-                        params={{ id: s.id }}
-                        className="block truncate text-sm font-medium hover:underline"
-                      >
-                        {s.full_name}
-                      </Link>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
-                        Due {formatDate(s.fee_due_date)}
-                      </div>
-                    </div>
-                    <Badge
-                      variant="destructive"
-                      className="font-mono text-[11px] ml-2 shrink-0"
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/fees">Collect</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {stats.overdue.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-subtle p-5 text-center text-xs sm:text-sm text-muted-foreground">
+                  No overdue dues. 🎉
+                </div>
+              ) : (
+                stats.overdue.slice(0, 6).map((s, i) => {
+                  const balance =
+                    Number(s.fee_total) - (stats.totalPaidByStudent[s.id] ?? 0);
+                  return (
+                    <motion.div
+                      key={s.id}
+                      initial={{ opacity: 0, x: -4 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.03 }}
+                      className="flex items-center justify-between rounded-lg border border-subtle bg-card p-3 hover:bg-muted/40 transition-colors"
                     >
-                      {formatINR(balance)}
-                    </Badge>
-                  </motion.div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          to="/students/$id"
+                          params={{ id: s.id }}
+                          className="block truncate text-sm font-medium hover:underline"
+                        >
+                          {s.full_name}
+                        </Link>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          Due {formatDate(s.fee_due_date)}
+                        </div>
+                      </div>
+                      <Badge
+                        variant="destructive"
+                        className="font-mono text-[11px] ml-2 shrink-0"
+                      >
+                        {formatINR(balance)}
+                      </Badge>
+                    </motion.div>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
 
-        <Card className="card-premium">
-          <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <CardTitle className="text-base sm:text-lg">
-              Recent payments
-            </CardTitle>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/fees">View all</Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {(payments.data?.length ?? 0) === 0 ? (
-              <EmptyHint text="No payments recorded yet." />
-            ) : (
-              <div className="divide-y divide-border space-y-1">
-                {payments.data!.slice(0, 6).map((p) => (
-                  <Link
-                    key={p.id}
-                    to="/receipts/$paymentId"
-                    params={{ paymentId: p.id }}
-                    className="flex items-center justify-between py-3 hover:bg-muted/40 -mx-2 px-2 rounded-md transition-colors text-sm"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium text-sm">
-                        {studentById[p.student_id] ?? "Student"}
+          <Card className="card-premium">
+            <CardHeader className="flex flex-row items-center justify-between pb-4">
+              <CardTitle className="text-base sm:text-lg">
+                Recent payments
+              </CardTitle>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/fees">View all</Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {(payments.data?.length ?? 0) === 0 ? (
+                <EmptyHint text="No payments recorded yet." />
+              ) : (
+                <div className="divide-y divide-border space-y-1">
+                  {payments.data!.slice(0, 6).map((p) => (
+                    <Link
+                      key={p.id}
+                      to="/receipts/$paymentId"
+                      params={{ paymentId: p.id }}
+                      className="flex items-center justify-between py-3 hover:bg-muted/40 -mx-2 px-2 rounded-md transition-colors text-sm"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-medium text-sm">
+                          {studentById[p.student_id] ?? "Student"}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          {formatDate(p.payment_date)} ·{" "}
+                          {p.method.toUpperCase()}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
-                        {formatDate(p.payment_date)} · {p.method.toUpperCase()}
+                      <div className="font-mono text-sm font-semibold ml-2 shrink-0 tabular-nums">
+                        {formatINR(Number(p.amount))}
                       </div>
-                    </div>
-                    <div className="font-mono text-sm font-semibold ml-2 shrink-0 tabular-nums">
-                      {formatINR(Number(p.amount))}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );

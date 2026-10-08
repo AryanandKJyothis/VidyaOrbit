@@ -13,28 +13,25 @@ GRANT SELECT (
 CREATE OR REPLACE FUNCTION public.validate_student_fee_write()
 RETURNS trigger
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path TO 'public'
 AS $$
 BEGIN
   -- Allow service_role and superuser writes (admin operations, background jobs, seeding)
-  IF auth.role() = 'service_role' OR current_user IN ('postgres', 'supabase_admin') THEN
+  IF auth.role() = 'service_role' OR session_user IN ('postgres', 'supabase_admin') THEN
     RETURN NEW;
   END IF;
 
-  -- On INSERT, only check if fee fields are being set to non-null values
+  -- On INSERT, only check if fee fields differ from defaults (fee_total=0, fee_due_date=NULL)
   IF TG_OP = 'INSERT' THEN
-    IF (NEW.fee_total IS NOT NULL OR NEW.fee_due_date IS NOT NULL) THEN
-      IF NOT public.has_resource_access(NEW.owner_id, auth.uid(), 'fees', true) THEN
-        RAISE EXCEPTION 'Unauthorized: fees:write permission required to set fee fields';
-      END IF;
+    IF (NEW.fee_total IS DISTINCT FROM 0 OR NEW.fee_due_date IS NOT NULL)
+       AND NOT public.has_resource_access(NEW.owner_id, auth.uid(), 'fees', true) THEN
+      RAISE EXCEPTION 'fees:write permission required to set fee fields' USING ERRCODE = '42501';
     END IF;
   -- On UPDATE, check if fee fields are being changed
-  ELSIF (NEW.fee_total IS DISTINCT FROM OLD.fee_total) OR 
-        (NEW.fee_due_date IS DISTINCT FROM OLD.fee_due_date) THEN
-    IF NOT public.has_resource_access(NEW.owner_id, auth.uid(), 'fees', true) THEN
-      RAISE EXCEPTION 'Unauthorized: fees:write permission required to modify fee fields';
-    END IF;
+  ELSIF (NEW.fee_total IS DISTINCT FROM OLD.fee_total OR NEW.fee_due_date IS DISTINCT FROM OLD.fee_due_date)
+        AND NOT public.has_resource_access(NEW.owner_id, auth.uid(), 'fees', true) THEN
+    RAISE EXCEPTION 'fees:write permission required to modify fee fields' USING ERRCODE = '42501';
   END IF;
   
   RETURN NEW;

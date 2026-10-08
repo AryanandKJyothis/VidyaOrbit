@@ -105,7 +105,7 @@ function StudentDetail() {
   };
 
   if (student.isLoading) return <Skeleton className="h-64" />;
-  
+
   if (student.isError || !student.data) {
     return (
       <Card className="border-dashed">
@@ -292,57 +292,57 @@ function StudentDetail() {
             </TabsList>
             {canViewFees && (
               <TabsContent value="payments" className="mt-4">
-              <Card>
-                <CardContent className="p-0">
-                  {(payments.data ?? []).length === 0 ? (
-                    <div className="p-10 text-center text-sm text-muted-foreground">
-                      No payments yet.
-                    </div>
-                  ) : (
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-                        <tr>
-                          <th className="px-4 py-3">Receipt</th>
-                          <th className="px-4 py-3">Date</th>
-                          <th className="px-4 py-3">Method</th>
-                          <th className="px-4 py-3 text-right">Amount</th>
-                          <th className="px-4 py-3"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {payments.data!.map((p) => (
-                          <tr key={p.id}>
-                            <td className="px-4 py-3 font-mono text-xs">
-                              {p.receipt_number}
-                            </td>
-                            <td className="px-4 py-3">
-                              {formatDate(p.payment_date)}
-                            </td>
-                            <td className="px-4 py-3 uppercase text-xs">
-                              {p.method}
-                            </td>
-                            <td className="px-4 py-3 text-right font-mono font-medium">
-                              {formatINR(Number(p.amount))}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <Button asChild size="sm" variant="ghost">
-                                <Link
-                                  to="/receipts/$paymentId"
-                                  params={{ paymentId: p.id }}
-                                >
-                                  <Receipt className="mr-1 h-3.5 w-3.5" />
-                                  Receipt
-                                </Link>
-                              </Button>
-                            </td>
+                <Card>
+                  <CardContent className="p-0">
+                    {(payments.data ?? []).length === 0 ? (
+                      <div className="p-10 text-center text-sm text-muted-foreground">
+                        No payments yet.
+                      </div>
+                    ) : (
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
+                          <tr>
+                            <th className="px-4 py-3">Receipt</th>
+                            <th className="px-4 py-3">Date</th>
+                            <th className="px-4 py-3">Method</th>
+                            <th className="px-4 py-3 text-right">Amount</th>
+                            <th className="px-4 py-3"></th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {payments.data!.map((p) => (
+                            <tr key={p.id}>
+                              <td className="px-4 py-3 font-mono text-xs">
+                                {p.receipt_number}
+                              </td>
+                              <td className="px-4 py-3">
+                                {formatDate(p.payment_date)}
+                              </td>
+                              <td className="px-4 py-3 uppercase text-xs">
+                                {p.method}
+                              </td>
+                              <td className="px-4 py-3 text-right font-mono font-medium">
+                                {formatINR(Number(p.amount))}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <Button asChild size="sm" variant="ghost">
+                                  <Link
+                                    to="/receipts/$paymentId"
+                                    params={{ paymentId: p.id }}
+                                  >
+                                    <Receipt className="mr-1 h-3.5 w-3.5" />
+                                    Receipt
+                                  </Link>
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
             )}
             <TabsContent value="attendance" className="mt-4 space-y-4">
               <AttendanceMiniCalendar records={attendance.data ?? []} />
