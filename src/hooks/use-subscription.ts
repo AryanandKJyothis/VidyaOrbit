@@ -49,32 +49,21 @@ export const PLANS: {
     name: "Starter",
     price: 999,
     tagline: "Growing coaching centres",
-    features: [
-      "Up to 100 students",
-      "Everything in Free",
-      "Email support",
-    ],
+    features: ["Up to 100 students", "Everything in Free", "Email support"],
   },
   {
     code: "growth",
     name: "Growth",
     price: 1499,
     tagline: "Multi-batch institutions",
-    features: [
-      "Up to 500 students",
-      "Everything in Starter",
-    ],
+    features: ["Up to 500 students", "Everything in Starter"],
   },
   {
     code: "pro",
     name: "Pro",
     price: 2999,
     tagline: "Large institutions",
-    features: [
-      "Up to 1,000 students",
-      "Everything in Growth",
-      "Email support",
-    ],
+    features: ["Up to 1,000 students", "Everything in Growth", "Email support"],
   },
 ];
 

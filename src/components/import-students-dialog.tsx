@@ -24,7 +24,7 @@ import { useBatches, useStudents } from "@/hooks/use-data";
 import { useSubscription, PLAN_LIMITS } from "@/hooks/use-subscription";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { useActiveWorkspace } from "@/hooks/use-active-workspace";
+import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { formatUserError } from "@/lib/format-error";
@@ -72,6 +72,7 @@ const FIELD_ORDER: ImportField[] = [
   "name",
   "phone",
   "guardian",
+  "guardian_phone",
   "batch",
   "fee",
   "joining_date",
@@ -99,6 +100,7 @@ export function ImportStudentsDialog({
   const ownerId = active?.ownerId ?? user?.id ?? null;
   const sub = useSubscription();
   const qc = useQueryClient();
+  const canWriteFees = useCan("fees", "write");
 
   const [step, setStep] = useState<Step>(1);
   const [fileName, setFileName] = useState("");
@@ -303,32 +305,44 @@ export function ImportStudentsDialog({
     try {
       let updated = 0;
       for (const r of toUpdate) {
+        const updatePayload: Record<string, unknown> = {
+          full_name: r.full_name,
+          phone: r.phone,
+          guardian_name: r.guardian_name,
+          guardian_phone: r.guardian_phone,
+          batch_id: r.batch_id ?? defaultBatch,
+          ...(r.joining_date ? { joining_date: r.joining_date } : {}),
+        };
+        // Only include fee fields if user has fees:write permission
+        if (canWriteFees) {
+          if (r.fee_total) updatePayload.fee_total = r.fee_total;
+        }
         const { error } = await supabase
           .from("students")
-          .update({
-            full_name: r.full_name,
-            phone: r.phone,
-            guardian_name: r.guardian_name,
-            batch_id: r.batch_id ?? defaultBatch,
-            fee_total: r.fee_total || defaultFee,
-            ...(r.joining_date ? { joining_date: r.joining_date } : {}),
-          })
+          .update(updatePayload as any)
           .eq("id", r.existingStudentId!)
           .eq("owner_id", ownerId);
         if (error) throw error;
         updated++;
       }
 
-      const payload = toInsert.map((r) => ({
-        owner_id: ownerId,
-        full_name: r.full_name,
-        phone: r.phone,
-        guardian_name: r.guardian_name,
-        batch_id: r.batch_id ?? defaultBatch,
-        fee_total: r.fee_total || defaultFee,
-        joining_date: r.joining_date ?? new Date().toISOString().slice(0, 10),
-        status: "active",
-      }));
+      const payload = toInsert.map((r) => {
+        const row: Record<string, unknown> = {
+          owner_id: ownerId,
+          full_name: r.full_name,
+          phone: r.phone,
+          guardian_name: r.guardian_name,
+          guardian_phone: r.guardian_phone,
+          batch_id: r.batch_id ?? defaultBatch,
+          joining_date: r.joining_date ?? new Date().toISOString().slice(0, 10),
+          status: "active",
+        };
+        // Only include fee_total if user has fees:write permission
+        if (canWriteFees) {
+          row.fee_total = r.fee_total || defaultFee;
+        }
+        return row;
+      });
 
       let inserted = 0;
       for (const part of chunk(payload, 40)) {
@@ -408,6 +422,7 @@ export function ImportStudentsDialog({
               feeTotal={feeTotal}
               setFeeTotal={setFeeTotal}
               batches={batches.data ?? []}
+              canWriteFees={canWriteFees}
             />
           )}
 
@@ -652,6 +667,7 @@ function StepMap({
   feeTotal,
   setFeeTotal,
   batches,
+  canWriteFees,
 }: {
   headers: string[];
   rows: Record<string, unknown>[];
@@ -662,6 +678,7 @@ function StepMap({
   feeTotal: string;
   setFeeTotal: (s: string) => void;
   batches: { id: string; name: string }[];
+  canWriteFees: boolean;
 }) {
   // header -> field (inverse for the select per header)
   const headerToField: Record<string, ImportField | undefined> = {};
@@ -743,7 +760,9 @@ function StepMap({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ignore">— Ignore —</SelectItem>
-                      {FIELD_ORDER.map((f) => (
+                      {FIELD_ORDER.filter(
+                        (f) => canWriteFees || f !== "fee",
+                      ).map((f) => (
                         <SelectItem key={f} value={f}>
                           {FIELD_LABELS[f]}
                           {f === "name" ? " *" : ""}
@@ -775,16 +794,18 @@ function StepMap({
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label className="text-xs">Default fee (₹)</Label>
-          <Input
-            type="number"
-            min={0}
-            className="mt-1.5 h-9"
-            value={feeTotal}
-            onChange={(e) => setFeeTotal(e.target.value)}
-          />
-        </div>
+        {canWriteFees && (
+          <div>
+            <Label className="text-xs">Default fee (₹)</Label>
+            <Input
+              type="number"
+              min={0}
+              className="mt-1.5 h-9"
+              value={feeTotal}
+              onChange={(e) => setFeeTotal(e.target.value)}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

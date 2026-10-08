@@ -5,7 +5,7 @@ import {
   Link,
 } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -23,7 +23,7 @@ import { Logo } from "@/components/logo";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
-import { useActiveWorkspace } from "@/hooks/use-active-workspace";
+import { getStorageKey } from "@/hooks/use-active-workspace";
 import { previewInvite, acceptInvite } from "@/lib/workspace.functions";
 import { formatUserError } from "@/lib/format-error";
 import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
@@ -72,8 +72,8 @@ function GoogleIcon() {
 function JoinPage() {
   const { token } = useParams({ from: "/join/$token" });
   const navigate = useNavigate();
-  const { session, loading: authLoading } = useAuth();
-  const ws = useActiveWorkspace();
+  const { session, user, loading: authLoading } = useAuth();
+  const qc = useQueryClient();
 
   const fetchPreview = useServerFn(previewInvite);
   const acceptFn = useServerFn(acceptInvite);
@@ -87,9 +87,17 @@ function JoinPage() {
   const accept = useMutation({
     mutationFn: () => acceptFn({ data: { token } }),
     onSuccess: async (res) => {
-      toast.success("You're in!");
-      await ws.refresh();
-      ws.setActiveOwnerId(res.ownerId);
+      // Set active workspace in localStorage (outside WorkspaceProvider)
+      if (user?.id) {
+        try {
+          localStorage.setItem(getStorageKey(user.id), res.ownerId);
+        } catch {
+          // ignore quota errors
+        }
+      }
+      // Invalidate workspaces to trigger refetch
+      await qc.invalidateQueries({ queryKey: ["workspaces"] });
+      toast.success("Welcome! You've joined the workspace.");
       navigate({ to: "/dashboard" });
     },
     onError: (e) => toast.error(formatUserError(e)),

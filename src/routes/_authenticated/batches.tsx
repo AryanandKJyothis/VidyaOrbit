@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/empty-state";
 import { formatUserError } from "@/lib/format-error";
-import { useActiveWorkspace } from "@/hooks/use-active-workspace";
+import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
 
 export const Route = createFileRoute("/_authenticated/batches")({
   component: BatchesPage,
@@ -57,6 +57,7 @@ function BatchesPage() {
   const students = useStudents();
   const qc = useQueryClient();
   const { active } = useActiveWorkspace();
+  const canWriteBatches = useCan("batches", "write");
   const [editing, setEditing] = useState<Batch | undefined>();
   const [open, setOpen] = useState(false);
 
@@ -144,6 +145,7 @@ function BatchesPage() {
                 setEditing(undefined);
                 setOpen(true);
               }}
+              disabled={!canWriteBatches}
             >
               <Plus className="mr-1.5 h-4 w-4" /> New batch
             </Button>
@@ -163,7 +165,7 @@ function BatchesPage() {
           title="Create your first batch"
           description="Batches group students by timing or programme — you’ll need one before marking attendance."
         >
-          <Button onClick={() => setOpen(true)}>
+          <Button onClick={() => setOpen(true)} disabled={!canWriteBatches}>
             <Plus className="mr-1.5 h-4 w-4" /> New batch
           </Button>
         </EmptyState>
@@ -233,25 +235,31 @@ function BatchesPage() {
                       </div>
                     </div>
                     <div className="mt-4 flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => {
-                          setEditing(b);
-                          setOpen(true);
-                        }}
-                      >
-                        <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => toggle(b)}
-                        title={b.is_active ? "Pause batch" : "Activate batch"}
-                      >
-                        <Power className="h-3.5 w-3.5" />
-                      </Button>
+                      {canWriteBatches && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => {
+                              setEditing(b);
+                              setOpen(true);
+                            }}
+                          >
+                            <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => toggle(b)}
+                            title={
+                              b.is_active ? "Pause batch" : "Activate batch"
+                            }
+                          >
+                            <Power className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

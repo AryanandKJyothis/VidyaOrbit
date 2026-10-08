@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Save, Loader2, LogOut, Bell } from "lucide-react";
+import { RoutePermissionGate } from "@/components/route-permission-gate";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useInstitute, useUpdateInstitute } from "@/hooks/use-data";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +30,14 @@ export const Route = createFileRoute("/_authenticated/settings/")({
 });
 
 function SettingsPage() {
+  return (
+    <RoutePermissionGate resource="settings" level="read">
+      <SettingsPageContent />
+    </RoutePermissionGate>
+  );
+}
+
+function SettingsPageContent() {
   const { user } = useAuth();
   const inst = useInstitute();
   const mut = useUpdateInstitute();
@@ -55,6 +65,18 @@ function SettingsPage() {
         logo_url: inst.data.logo_url ?? "",
       });
   }, [inst.data]);
+
+  if (inst.isLoading) {
+    return (
+      <div className="space-y-4">
+        <PageHeader title="Settings" description="Manage your institute info" />
+        <div className="space-y-6">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
+    );
+  }
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();

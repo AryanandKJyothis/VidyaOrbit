@@ -1,8 +1,10 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Printer, GraduationCap } from "lucide-react";
+import { ArrowLeft, Printer, GraduationCap, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
+import { RoutePermissionGate } from "@/components/route-permission-gate";
 import { supabase } from "@/integrations/supabase/client";
 import {
   useInstitute,
@@ -18,6 +20,14 @@ export const Route = createFileRoute("/_authenticated/receipts/$paymentId")({
 });
 
 function ReceiptPage() {
+  return (
+    <RoutePermissionGate resource="fees" level="read">
+      <ReceiptPageContent />
+    </RoutePermissionGate>
+  );
+}
+
+function ReceiptPageContent() {
   const { paymentId } = useParams({
     from: "/_authenticated/receipts/$paymentId",
   });
@@ -47,7 +57,29 @@ function ReceiptPage() {
 
   if (payment.isLoading || student.isLoading)
     return <Skeleton className="h-96" />;
-  if (!payment.data || !student.data) return <p>Receipt not found.</p>;
+
+  if (payment.isError || !payment.data || student.isError || !student.data) {
+    return (
+      <Card className="border-dashed">
+        <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <Receipt className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">Receipt not found</h3>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              This receipt doesn't exist or isn't visible to you.
+            </p>
+          </div>
+          <Button asChild variant="outline">
+            <Link to="/fees">
+              <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to fees
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const p = payment.data;
   const s = student.data;

@@ -10,12 +10,14 @@ import {
   Download,
   ChevronDown,
 } from "lucide-react";
+import { RoutePermissionGate } from "@/components/route-permission-gate";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -42,6 +44,14 @@ export const Route = createFileRoute("/_authenticated/fees")({
 });
 
 function FeesPage() {
+  return (
+    <RoutePermissionGate resource="fees" level="read">
+      <FeesPageContent />
+    </RoutePermissionGate>
+  );
+}
+
+function FeesPageContent() {
   const students = useStudents();
   const batches = useBatches();
   const payments = usePayments();
@@ -63,43 +73,70 @@ function FeesPage() {
     [batches.data],
   );
 
-  const rows = (students.data ?? [])
-    .filter((s) => s.status !== "archived")
-    .map((s) => {
-      const paid = paidByStudent[s.id] ?? 0;
-      const balance = Math.max(0, Number(s.fee_total) - paid);
-      const overdue = !!(
-        s.fee_due_date &&
-        new Date(s.fee_due_date) < new Date() &&
-        balance > 0
-      );
-      return { s, paid, balance, overdue };
+  const rows = useMemo(() => {
+    return (students.data ?? [])
+      .filter((s) => s.status !== "archived")
+      .map((s) => {
+        const paid = paidByStudent[s.id] ?? 0;
+        const balance = Math.max(0, Number(s.fee_total) - paid);
+        const overdue = !!(
+          s.fee_due_date &&
+          new Date(s.fee_due_date) < new Date() &&
+          balance > 0
+        );
+        return { s, paid, balance, overdue };
+      });
+  }, [students.data, paidByStudent]);
+
+  const totals = useMemo(() => {
+    return rows.reduce(
+      (acc, r) => {
+        acc.totalFee += Number(r.s.fee_total);
+        acc.paid += r.paid;
+        acc.due += r.balance;
+        if (r.overdue) acc.overdue += r.balance;
+        return acc;
+      },
+      { totalFee: 0, paid: 0, due: 0, overdue: 0 },
+    );
+  }, [rows]);
+
+  const filtered = useMemo(() => {
+    return rows.filter(({ s, balance, overdue }) => {
+      if (q && !s.full_name.toLowerCase().includes(q.toLowerCase()))
+        return false;
+      if (batchFilter !== "all" && s.batch_id !== batchFilter) return false;
+      if (statusFilter === "paid" && balance > 0) return false;
+      if (statusFilter === "pending" && balance === 0) return false;
+      if (statusFilter === "overdue" && !overdue) return false;
+      return true;
     });
-
-  const totals = rows.reduce(
-    (acc, r) => {
-      acc.totalFee += Number(r.s.fee_total);
-      acc.paid += r.paid;
-      acc.due += r.balance;
-      if (r.overdue) acc.overdue += r.balance;
-      return acc;
-    },
-    { totalFee: 0, paid: 0, due: 0, overdue: 0 },
-  );
-
-  const filtered = rows.filter(({ s, balance, overdue }) => {
-    if (q && !s.full_name.toLowerCase().includes(q.toLowerCase())) return false;
-    if (batchFilter !== "all" && s.batch_id !== batchFilter) return false;
-    if (statusFilter === "paid" && balance > 0) return false;
-    if (statusFilter === "pending" && balance === 0) return false;
-    if (statusFilter === "overdue" && !overdue) return false;
-    return true;
-  });
+  }, [rows, q, batchFilter, statusFilter]);
 
   const studentById = useMemo(
     () => Object.fromEntries((students.data ?? []).map((s) => [s.id, s])),
     [students.data],
   );
+
+  const loading = students.isLoading || batches.isLoading || payments.isLoading;
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <PageHeader
+          title="Fees"
+          description="Track fee collection and pending dues"
+        />
+        <div className="grid gap-4 sm:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div>

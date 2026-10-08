@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -189,6 +190,21 @@ function AttendancePage() {
   }, [marks, roster]);
 
   const noBatches = !batches.isLoading && (batches.data ?? []).length === 0;
+
+  if (batches.isLoading || students.isLoading) {
+    return (
+      <div className="pb-24 md:pb-6">
+        <PageHeader
+          title="Attendance"
+          description="Mark daily attendance by batch"
+        />
+        <div className="space-y-4">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-96 w-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-24 md:pb-6">

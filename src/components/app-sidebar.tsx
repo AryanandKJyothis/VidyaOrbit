@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   LayoutDashboard,
@@ -46,7 +46,12 @@ type NavItem = {
   url: string;
   icon: typeof LayoutDashboard;
   resource?:
-    "students" | "batches" | "fees" | "attendance" | "settings" | "billing";
+    | "students"
+    | "batches"
+    | "fees"
+    | "attendance"
+    | "settings"
+    | "billing";
 };
 
 const baseItems: NavItem[] = [
@@ -84,6 +89,7 @@ const baseItems: NavItem[] = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const qc = useQueryClient();
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   // "Best-prefix" match: only the most specific item lights up. Avoids
   // `/settings/team` highlighting both Team and Settings simultaneously.
@@ -117,9 +123,9 @@ export function AppSidebar() {
   );
   const items: NavItem[] = [
     ...visibleBase,
-    // Team is visible to every workspace member so they can see their teammates.
+    // Team is visible only to members with settings:read (to see teammates).
     // Non-owners get a read-only view; the page itself enforces permissions.
-    ...(active
+    ...(active && canSettings
       ? [{ title: "Team", url: "/settings/team", icon: Users2 } as NavItem]
       : []),
     ...(isAdmin
@@ -249,7 +255,11 @@ export function AppSidebar() {
               tooltip="Sign out"
               onClick={async () => {
                 const { error } = await supabase.auth.signOut();
-                if (error) toast.error("Could not sign out. Please try again.");
+                if (error) {
+                  toast.error("Could not sign out. Please try again.");
+                } else {
+                  qc.clear();
+                }
               }}
               className="group text-sidebar-foreground/80 hover:text-sidebar-foreground"
             >

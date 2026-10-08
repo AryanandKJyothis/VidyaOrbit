@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Check, Loader2, CreditCard, MessageCircle, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
+import { RoutePermissionGate } from "@/components/route-permission-gate";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -146,259 +147,271 @@ function BillingPage() {
   }, [checkoutPending, syncSubscription]);
 
   return (
-    <div>
-      <PageHeader
-        title="Billing & plans"
-        description="Compare all Vidya plans. To upgrade, downgrade, or change your subscription, contact us directly on WhatsApp or email and we'll handle it for you."
-      />
+    <RoutePermissionGate resource="billing" level="read">
+      <div>
+        <PageHeader
+          title="Billing & plans"
+          description="Compare all Vidya plans. To upgrade, downgrade, or change your subscription, contact us directly on WhatsApp or email and we'll handle it for you."
+        />
 
-      {sub.data && !sub.data.isOwner && (
-        <Card className="mb-6 border-primary/30 bg-primary/5">
-          <CardContent className="py-3 text-sm text-muted-foreground">
-            You're viewing the institute owner's billing. Only the owner can
-            change the plan — please ask them to contact support.
+        {sub.data && !sub.data.isOwner && (
+          <Card className="mb-6 border-primary/30 bg-primary/5">
+            <CardContent className="py-3 text-sm text-muted-foreground">
+              You're viewing the institute owner's billing. Only the owner can
+              change the plan — please ask them to contact support.
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="mb-6 overflow-hidden border-primary/20">
+          <CardContent className="grid gap-6 p-6 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Current access
+                </span>
+                <Badge variant="secondary" className="capitalize">
+                  {planMeta?.name ?? effectivePlan}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="text-[10px] uppercase tracking-wide"
+                >
+                  {billingLabel}
+                </Badge>
+              </div>
+              <h2 className="mt-1 font-display text-2xl font-semibold">
+                {planMeta?.name} —{" "}
+                <span className="text-muted-foreground">
+                  {planMeta?.price === 0
+                    ? "Free"
+                    : `₹${planMeta?.price.toLocaleString("en-IN")}/mo`}
+                </span>
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {planMeta?.tagline}
+              </p>
+
+              {checkoutPending && (
+                <div className="mt-4 space-y-2 rounded-lg border border-amber-500/35 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground">
+                  <p>
+                    Finish Razorpay checkout in the tab we opened (or start
+                    checkout again if you closed it). Your plan unlocks
+                    automatically after payment — we also check with Razorpay
+                    every few seconds.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={syncing}
+                    onClick={() => void syncSubscription()}
+                  >
+                    {syncing ? (
+                      <>
+                        <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />{" "}
+                        Checking payment…
+                      </>
+                    ) : (
+                      "Refresh payment status"
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              <div className="mt-5 max-w-md">
+                <div className="mb-1.5 flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Students</span>
+                  <span className="font-medium">
+                    {students.isLoading ? "—" : used} /{" "}
+                    {Number.isFinite(limit) ? limit : "∞"}
+                  </span>
+                </div>
+                {students.isLoading ? (
+                  <Skeleton className="h-2" />
+                ) : (
+                  <Progress
+                    value={pct}
+                    className={cn(pct >= 90 && "[&>div]:bg-destructive")}
+                  />
+                )}
+                {pct >= 100 && (
+                  <p className="mt-2 text-xs text-destructive">
+                    You&apos;ve hit your plan limit. Upgrade to add more
+                    students.
+                  </p>
+                )}
+                {pct >= 80 && pct < 100 && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    You&apos;re approaching your plan limit.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-stretch gap-2 md:w-[220px]">
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="w-full gap-2"
+              >
+                <Link to="/settings">
+                  <CreditCard className="h-4 w-4" /> Institute & billing email
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
-      )}
 
-      <Card className="mb-6 overflow-hidden border-primary/20">
-        <CardContent className="grid gap-6 p-6 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                Current access
-              </span>
-              <Badge variant="secondary" className="capitalize">
-                {planMeta?.name ?? effectivePlan}
-              </Badge>
-              <Badge
-                variant="outline"
-                className="text-[10px] uppercase tracking-wide"
-              >
-                {billingLabel}
-              </Badge>
-            </div>
-            <h2 className="mt-1 font-display text-2xl font-semibold">
-              {planMeta?.name} —{" "}
-              <span className="text-muted-foreground">
-                {planMeta?.price === 0
-                  ? "Free"
-                  : `₹${planMeta?.price.toLocaleString("en-IN")}/mo`}
-              </span>
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {planMeta?.tagline}
-            </p>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {PLANS.map((p) => {
+            const isCurrent = p.code === effectivePlan;
+            const rank = PLAN_RANK[p.code];
+            const isDowngrade = rank < currentRank;
+            const highlight = p.code === "growth";
 
-            {checkoutPending && (
-              <div className="mt-4 space-y-2 rounded-lg border border-amber-500/35 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground">
-                <p>
-                  Finish Razorpay checkout in the tab we opened (or start
-                  checkout again if you closed it). Your plan unlocks
-                  automatically after payment — we also check with Razorpay
-                  every few seconds.
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  disabled={syncing}
-                  onClick={() => void syncSubscription()}
-                >
-                  {syncing ? (
-                    <>
-                      <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />{" "}
-                      Checking payment…
-                    </>
-                  ) : (
-                    "Refresh payment status"
-                  )}
-                </Button>
-              </div>
-            )}
-
-            <div className="mt-5 max-w-md">
-              <div className="mb-1.5 flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Students</span>
-                <span className="font-medium">
-                  {students.isLoading ? "—" : used} /{" "}
-                  {Number.isFinite(limit) ? limit : "∞"}
-                </span>
-              </div>
-              {students.isLoading ? (
-                <Skeleton className="h-2" />
-              ) : (
-                <Progress
-                  value={pct}
-                  className={cn(pct >= 90 && "[&>div]:bg-destructive")}
-                />
-              )}
-              {pct >= 100 && (
-                <p className="mt-2 text-xs text-destructive">
-                  You&apos;ve hit your plan limit. Upgrade to add more students.
-                </p>
-              )}
-              {pct >= 80 && pct < 100 && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  You&apos;re approaching your plan limit.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col items-stretch gap-2 md:w-[220px]">
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="w-full gap-2"
-            >
-              <Link to="/settings">
-                <CreditCard className="h-4 w-4" /> Institute & billing email
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {PLANS.map((p) => {
-          const isCurrent = p.code === effectivePlan;
-          const rank = PLAN_RANK[p.code];
-          const isDowngrade = rank < currentRank;
-          const highlight = p.code === "growth";
-
-          return (
-            <Card
-              key={p.code}
-              className={cn(
-                "relative flex flex-col transition-shadow",
-                highlight && "ring-1 ring-primary/40 shadow-md",
-                isCurrent && "border-primary",
-              )}
-            >
-              {highlight && !isCurrent && (
-                <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground">
-                  Popular
-                </span>
-              )}
-              <CardContent className="flex flex-1 flex-col gap-4 p-5">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-display text-lg font-semibold">
-                      {p.name}
-                    </h3>
-                    {isCurrent && <Badge variant="secondary">Active</Badge>}
-                  </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {p.tagline}
-                  </p>
-                </div>
-                <div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-display text-3xl font-bold">
-                      {p.price === 0
-                        ? "Free"
-                        : `₹${p.price.toLocaleString("en-IN")}`}
-                    </span>
-                    {p.price !== 0 && (
-                      <span className="text-xs text-muted-foreground">/mo</span>
-                    )}
-                  </div>
-                </div>
-                <ul className="flex-1 space-y-2 text-sm">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {p.code === "free" ? (
-                  <Button variant="outline" disabled className="w-full">
-                    Included for every institute
-                  </Button>
-                ) : isCurrent ? (
-                  <Button variant="secondary" disabled className="w-full">
-                    Current tier
-                  </Button>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <Button asChild className="w-full gap-2">
-                      <a
-                        href={whatsappUrl(
-                          p.name,
-                          planMeta?.name ?? effectivePlan,
-                        )}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                        {isDowngrade
-                          ? "Request downgrade"
-                          : "Upgrade on WhatsApp"}
-                      </a>
-                    </Button>
-                    <Button asChild variant="outline" className="w-full gap-2">
-                      <a
-                        href={emailUrl(p.name, planMeta?.name ?? effectivePlan)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Mail className="h-4 w-4" />
-                        Email to switch
-                      </a>
-                    </Button>
-                  </div>
+            return (
+              <Card
+                key={p.code}
+                className={cn(
+                  "relative flex flex-col transition-shadow",
+                  highlight && "ring-1 ring-primary/40 shadow-md",
+                  isCurrent && "border-primary",
                 )}
-              </CardContent>
-            </Card>
-          );
-        })}
+              >
+                {highlight && !isCurrent && (
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground">
+                    Popular
+                  </span>
+                )}
+                <CardContent className="flex flex-1 flex-col gap-4 p-5">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-display text-lg font-semibold">
+                        {p.name}
+                      </h3>
+                      {isCurrent && <Badge variant="secondary">Active</Badge>}
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {p.tagline}
+                    </p>
+                  </div>
+                  <div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="font-display text-3xl font-bold">
+                        {p.price === 0
+                          ? "Free"
+                          : `₹${p.price.toLocaleString("en-IN")}`}
+                      </span>
+                      {p.price !== 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          /mo
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <ul className="flex-1 space-y-2 text-sm">
+                    {p.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {p.code === "free" ? (
+                    <Button variant="outline" disabled className="w-full">
+                      Included for every institute
+                    </Button>
+                  ) : isCurrent ? (
+                    <Button variant="secondary" disabled className="w-full">
+                      Current tier
+                    </Button>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <Button asChild className="w-full gap-2">
+                        <a
+                          href={whatsappUrl(
+                            p.name,
+                            planMeta?.name ?? effectivePlan,
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          {isDowngrade
+                            ? "Request downgrade"
+                            : "Upgrade on WhatsApp"}
+                        </a>
+                      </Button>
+                      <Button
+                        asChild
+                        variant="outline"
+                        className="w-full gap-2"
+                      >
+                        <a
+                          href={emailUrl(
+                            p.name,
+                            planMeta?.name ?? effectivePlan,
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Mail className="h-4 w-4" />
+                          Email to switch
+                        </a>
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        <Card className="mt-8 overflow-hidden border-primary/20">
+          <CardContent className="grid gap-6 p-6 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <h3 className="font-display text-lg font-semibold">
+                Need to change your plan?
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Reach out directly and we&apos;ll upgrade or downgrade your
+                subscription right away.
+              </p>
+            </div>
+            <div className="flex flex-col items-stretch gap-2 md:w-[240px]">
+              <Button asChild className="w-full gap-2">
+                <a
+                  href={`https://wa.me/${WHATSAPP_NUMBER}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  WhatsApp {SUPPORT_PHONE}
+                </a>
+              </Button>
+              <Button asChild variant="outline" className="w-full gap-2">
+                <a
+                  href={`mailto:${SUPPORT_EMAIL}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Mail className="h-4 w-4" />
+                  Email support
+                </a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <p className="mt-6 text-center text-[11px] text-muted-foreground leading-relaxed max-w-xl mx-auto">
+          Existing Razorpay subscriptions are still synced automatically. New
+          plan changes are handled by contacting support.
+        </p>
       </div>
-
-      <Card className="mt-8 overflow-hidden border-primary/20">
-        <CardContent className="grid gap-6 p-6 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div>
-            <h3 className="font-display text-lg font-semibold">
-              Need to change your plan?
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Reach out directly and we&apos;ll upgrade or downgrade your
-              subscription right away.
-            </p>
-          </div>
-          <div className="flex flex-col items-stretch gap-2 md:w-[240px]">
-            <Button asChild className="w-full gap-2">
-              <a
-                href={`https://wa.me/${WHATSAPP_NUMBER}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <MessageCircle className="h-4 w-4" />
-                WhatsApp {SUPPORT_PHONE}
-              </a>
-            </Button>
-            <Button asChild variant="outline" className="w-full gap-2">
-              <a
-                href={`mailto:${SUPPORT_EMAIL}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Mail className="h-4 w-4" />
-                Email support
-              </a>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <p className="mt-6 text-center text-[11px] text-muted-foreground leading-relaxed max-w-xl mx-auto">
-        Existing Razorpay subscriptions are still synced automatically. New plan
-        changes are handled by contacting support.
-      </p>
-    </div>
+    </RoutePermissionGate>
   );
 }

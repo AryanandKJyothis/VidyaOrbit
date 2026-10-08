@@ -57,7 +57,7 @@ function PlanPage() {
 
   const data = sub.data;
   const meta = PLANS.find((p) => p.code === data.plan) ?? PLANS[0];
-  const used = students.data?.length ?? 0;
+  const used = data.student_count ?? 0;
   const limit = Number.isFinite(data.limit) ? data.limit : 9999;
   const usagePct = Math.min(100, Math.round((used / limit) * 100));
   const expiry = data.expiry_date ? new Date(data.expiry_date) : null;

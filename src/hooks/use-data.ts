@@ -84,17 +84,21 @@ const ROW_LIMIT = 5000;
 
 export function useStudents() {
   const ownerId = useOwnerId();
+
   return useQuery({
     queryKey: ["students", ownerId],
     enabled: !!ownerId,
     staleTime: 60_000,
     queryFn: async () => {
+      // All users (owners and staff) query via students_gated view
+      // View handles permission gating: shows fee columns only to fees:read+ users
       const { data, error } = await supabase
-        .from("students")
+        .from("students_gated" as "students")
         .select("*")
         .eq("owner_id", ownerId!)
         .order("created_at", { ascending: false })
         .limit(ROW_LIMIT);
+
       if (error) throw error;
       return data as Student[];
     },
@@ -103,17 +107,20 @@ export function useStudents() {
 
 export function useStudent(id: string | undefined) {
   const ownerId = useOwnerId();
+
   return useQuery({
     queryKey: ["student", id, ownerId],
     enabled: !!id && !!ownerId,
     staleTime: 30_000,
     queryFn: async () => {
+      // All users query via students_gated view
       const { data, error } = await supabase
-        .from("students")
+        .from("students_gated" as "students")
         .select("*")
         .eq("id", id!)
         .eq("owner_id", ownerId!)
         .single();
+
       if (error) throw error;
       return data as Student;
     },
@@ -188,6 +195,10 @@ export function useUpsertStudent() {
       if (!ownerId) throw new Error("No active workspace selected");
       const { id, ...rest } = s;
       const validated = studentSchemaWithPhone.parse(rest);
+      // Prevent zod from re-adding fee fields that weren't in the original input
+      // This prevents staff edits from wiping fee_due_date or fee_total
+      if (!("fee_due_date" in rest)) delete (validated as any).fee_due_date;
+      if (!("fee_total" in rest)) delete (validated as any).fee_total;
       const payload = { ...validated, owner_id: ownerId };
       if (id) {
         const { error } = await supabase

@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useBatches, useUpsertStudent, type Student } from "@/hooks/use-data";
+import { useCan } from "@/hooks/use-active-workspace";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatUserError } from "@/lib/format-error";
@@ -33,6 +34,8 @@ export function StudentDialog({
 }) {
   const batches = useBatches();
   const mut = useUpsertStudent();
+  const canSeeFees = useCan("fees", "read");
+
   const [form, setForm] = useState({
     full_name: "",
     phone: "",
@@ -42,7 +45,7 @@ export function StudentDialog({
     joining_date: new Date().toISOString().slice(0, 10),
     status: "active",
     batch_id: "",
-    fee_total: "0",
+    fee_total: "",
     fee_due_date: "",
     notes: "",
   });
@@ -59,7 +62,7 @@ export function StudentDialog({
           student?.joining_date ?? new Date().toISOString().slice(0, 10),
         status: student?.status ?? "active",
         batch_id: student?.batch_id ?? "",
-        fee_total: String(student?.fee_total ?? 0),
+        fee_total: student?.fee_total != null ? String(student.fee_total) : "",
         fee_due_date: student?.fee_due_date ?? "",
         notes: student?.notes ?? "",
       });
@@ -70,7 +73,7 @@ export function StudentDialog({
     e.preventDefault();
     if (!form.full_name.trim()) return toast.error("Name is required");
     try {
-      await mut.mutateAsync({
+      const payload: Parameters<typeof mut.mutateAsync>[0] = {
         id: student?.id,
         full_name: form.full_name.trim(),
         phone: form.phone || null,
@@ -80,10 +83,16 @@ export function StudentDialog({
         joining_date: form.joining_date,
         status: form.status,
         batch_id: form.batch_id || null,
-        fee_total: Number(form.fee_total) || 0,
-        fee_due_date: form.fee_due_date || null,
         notes: form.notes || null,
-      });
+      };
+
+      // Only include fee fields if user has fees permission
+      if (canSeeFees) {
+        payload.fee_total = form.fee_total ? Number(form.fee_total) : undefined;
+        payload.fee_due_date = form.fee_due_date || null;
+      }
+
+      await mut.mutateAsync(payload);
       toast.success(student ? "Student updated" : "Student added");
       onOpenChange(false);
     } catch (e: unknown) {
@@ -188,26 +197,32 @@ export function StudentDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
-            <Label>Total fee (₹)</Label>
-            <Input
-              type="number"
-              min="0"
-              step="1"
-              value={form.fee_total}
-              onChange={(e) => setForm({ ...form, fee_total: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Fee due date (optional)</Label>
-            <Input
-              type="date"
-              value={form.fee_due_date}
-              onChange={(e) =>
-                setForm({ ...form, fee_due_date: e.target.value })
-              }
-            />
-          </div>
+          {canSeeFees && (
+            <>
+              <div className="space-y-1.5">
+                <Label>Total fee (₹)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.fee_total}
+                  onChange={(e) =>
+                    setForm({ ...form, fee_total: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Fee due date (optional)</Label>
+                <Input
+                  type="date"
+                  value={form.fee_due_date}
+                  onChange={(e) =>
+                    setForm({ ...form, fee_due_date: e.target.value })
+                  }
+                />
+              </div>
+            </>
+          )}
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Notes (optional)</Label>
             <Textarea
