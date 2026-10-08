@@ -96,7 +96,7 @@ function JoinPage() {
         }
       }
       // Invalidate workspaces to trigger refetch
-      await qc.invalidateQueries({ queryKey: ["workspaces"] });
+      await qc.removeQueries({ queryKey: ["workspaces"] });
       toast.success("Welcome! You've joined the workspace.");
       navigate({ to: "/dashboard" });
     },
@@ -170,6 +170,7 @@ function ValidInvite({
   accepting: boolean;
   onAccept: () => void;
 }) {
+  const qc = useQueryClient();
   const userEmail = session?.user?.email?.toLowerCase() ?? null;
   const inviteEmail = preview.email.toLowerCase();
   const emailMatches = userEmail === inviteEmail;
@@ -225,8 +226,11 @@ function ValidInvite({
                 className="w-full"
                 onClick={async () => {
                   const { error } = await supabase.auth.signOut();
-                  if (error)
+                  if (error) {
                     toast.error("Could not sign out. Please try again.");
+                  } else {
+                    qc.clear();
+                  }
                 }}
               >
                 Sign out

@@ -113,10 +113,26 @@ function AnalyticsPage() {
         : 0;
 
   const collectedYtd = useMemo(() => {
-    return payments.data?.reduce((sum, p) => sum + Number(p.amount), 0) ?? 0;
+    const currentYear = new Date().getFullYear();
+    return (
+      payments.data
+        ?.filter((p) => {
+          const paymentYear = new Date(p.payment_date).getFullYear();
+          return paymentYear === currentYear;
+        })
+        .reduce((sum, p) => sum + Number(p.amount), 0) ?? 0
+    );
   }, [payments.data]);
 
-  const totalPaymentsYtd = payments.data?.length ?? 0;
+  const totalPaymentsYtd = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return (
+      payments.data?.filter((p) => {
+        const paymentYear = new Date(p.payment_date).getFullYear();
+        return paymentYear === currentYear;
+      }).length ?? 0
+    );
+  }, [payments.data]);
 
   // ---------- Outstanding dues ----------
   const dues = useMemo(() => {
