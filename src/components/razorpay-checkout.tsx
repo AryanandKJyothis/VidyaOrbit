@@ -10,8 +10,34 @@ import { supabase } from "@/integrations/supabase/client";
 
 declare global {
   interface Window {
-    Razorpay?: any;
+    Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
   }
+}
+
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpayResponse) => void;
+  modal: { ondismiss: () => void };
+}
+
+interface RazorpayResponse {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayError {
+  error: { description?: string };
+}
+
+interface RazorpayInstance {
+  open: () => void;
+  on: (event: string, handler: (res: RazorpayError) => void) => void;
 }
 
 type CheckoutProps = {
@@ -110,7 +136,7 @@ export function RazorpayCheckout({
         name: "Vidya Orbit",
         description: `${tier.charAt(0).toUpperCase() + tier.slice(1)} ${cycle} plan`,
         order_id: orderData.orderId,
-        handler: async (response: any) => {
+        handler: async (response: RazorpayResponse) => {
           try {
             // Verify payment
             const verifyRes = await fetch("/api/billing/verify-payment", {
@@ -141,10 +167,11 @@ export function RazorpayCheckout({
 
             toast.success("Payment successful! Your plan is now active.");
             onSuccess?.();
-          } catch (e: any) {
-            console.error("[Razorpay checkout] Verification error:", e);
-            toast.error(e?.message || "Payment verification failed");
-            onError?.(e);
+          } catch (e) {
+            const error = e as Error;
+            console.error("[Razorpay checkout] Verification error:", error);
+            toast.error(error?.message || "Payment verification failed");
+            onError?.(error);
           } finally {
             setLoading(false);
           }
@@ -157,7 +184,7 @@ export function RazorpayCheckout({
         },
       });
 
-      rzp.on("payment.failed", (res: any) => {
+      rzp.on("payment.failed", (res: RazorpayError) => {
         setLoading(false);
         const errorMsg =
           res?.error?.description || "Payment failed. Please try again.";
@@ -166,10 +193,11 @@ export function RazorpayCheckout({
       });
 
       rzp.open();
-    } catch (e: any) {
-      console.error("[Razorpay checkout] Error:", e);
-      toast.error(e?.message || "Could not start checkout");
-      onError?.(e);
+    } catch (e) {
+      const error = e as Error;
+      console.error("[Razorpay checkout] Error:", error);
+      toast.error(error?.message || "Could not start checkout");
+      onError?.(error);
       setLoading(false);
     }
   };

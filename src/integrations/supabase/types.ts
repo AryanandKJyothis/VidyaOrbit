@@ -139,6 +139,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      billing_orders: {
+        Row: {
+          amount_paise: number;
+          created_at: string;
+          currency: string;
+          id: string;
+          intent: string;
+          line_items: Json | null;
+          owner_id: string;
+          paid_at: string | null;
+          razorpay_order_id: string;
+          razorpay_payment_id: string | null;
+          status: string;
+        };
+        Insert: {
+          amount_paise: number;
+          created_at?: string;
+          currency?: string;
+          id?: string;
+          intent: string;
+          line_items?: Json | null;
+          owner_id: string;
+          paid_at?: string | null;
+          razorpay_order_id: string;
+          razorpay_payment_id?: string | null;
+          status?: string;
+        };
+        Update: {
+          amount_paise?: number;
+          created_at?: string;
+          currency?: string;
+          id?: string;
+          intent?: string;
+          line_items?: Json | null;
+          owner_id?: string;
+          paid_at?: string | null;
+          razorpay_order_id?: string;
+          razorpay_payment_id?: string | null;
+          status?: string;
+        };
+        Relationships: [];
+      };
       fee_payments: {
         Row: {
           amount: number;
