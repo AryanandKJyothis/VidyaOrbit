@@ -11,11 +11,12 @@ import { parseBearerUserId } from "@/server/require-bearer-user";
 import { allowRequest, clientAddress, tooManyRequests } from "@/lib/rate-limit";
 import {
   computePricing,
-  hasPaidSetupFee,
+  hasAnyPaidOrder,
   assertRazorpayKeyMode,
   isBillingEnabled,
   isValidTier,
   isValidCycle,
+  getTierConfig,
   type PlanTier,
   type BillingCycle,
 } from "@/lib/billing-pricing";
@@ -121,11 +122,23 @@ export const Route = createFileRoute("/api/billing/create-order")({
         const cycle = body.cycle as BillingCycle;
 
         // Check for comped or special accounts (but allow free plan to upgrade)
-        const { data: sub } = await supabaseAdmin
+        const { data: sub, error: subErr } = await supabaseAdmin
           .from("subscriptions")
           .select("plan, plan_price, notes, expiry_date")
           .eq("owner_id", userId)
           .maybeSingle();
+
+        if (subErr) {
+          console.error("[create-order] subscription read error:", subErr);
+          return Response.json(
+            {
+              ok: false,
+              code: "DB_ERROR",
+              message: "Could not verify subscription status.",
+            },
+            { status: 500 },
+          );
+        }
 
         // Only block if it's a comped NON-FREE account
         // (free plan with NULL expiry/price is normal and should be allowed to buy)
@@ -161,35 +174,81 @@ export const Route = createFileRoute("/api/billing/create-order")({
           .eq("owner_id", userId)
           .maybeSingle();
 
-        if (instErr || !inst) {
+        if (instErr) {
           console.error("[create-order] institute read error:", instErr);
           return Response.json(
             {
               ok: false,
-              code: "OWNER_CHECK_FAILED",
+              code: "DB_ERROR",
               message: "Could not verify workspace ownership.",
             },
             { status: 500 },
           );
         }
 
-        // Ensure the caller is the owner
-        if (inst.owner_id !== userId) {
+        if (!inst) {
+          // No institute = not an owner (expected for team-joined users)
           return Response.json(
             {
               ok: false,
               code: "NOT_OWNER",
-              message: "Only the workspace owner can purchase plans.",
+              message: "Only workspace owners can purchase plans.",
             },
             { status: 403 },
           );
         }
 
-        // Check if setup fee has been paid before
-        const paidSetup = await hasPaidSetupFee(userId, supabaseAdmin);
+        // Check student count to prevent over-limit purchases (except for large = unlimited)
+        if (tier !== "large") {
+          const tierConfig = getTierConfig(tier);
+          const { count: studentCount, error: countErr } = await supabaseAdmin
+            .from("students")
+            .select("id", { count: "exact", head: true })
+            .eq("owner_id", userId)
+            .neq("status", "archived");
+
+          if (countErr) {
+            console.error("[create-order] student count error:", countErr);
+            return Response.json(
+              {
+                ok: false,
+                code: "DB_ERROR",
+                message: "Could not verify student count.",
+              },
+              { status: 500 },
+            );
+          }
+
+          if ((studentCount ?? 0) > tierConfig.student_limit) {
+            return Response.json(
+              {
+                ok: false,
+                code: "OVER_TIER_LIMIT",
+                message: `You have ${studentCount} active students, but ${tier} tier supports only ${tierConfig.student_limit}. Please archive some students or choose a higher tier.`,
+              },
+              { status: 409 },
+            );
+          }
+        }
+
+        // Check if any paid order exists (for setup fee logic)
+        let hasPriorPaidOrder: boolean;
+        try {
+          hasPriorPaidOrder = await hasAnyPaidOrder(userId, supabaseAdmin);
+        } catch (e) {
+          console.error("[create-order] hasAnyPaidOrder error:", e);
+          return Response.json(
+            {
+              ok: false,
+              code: "DB_ERROR",
+              message: "Could not verify payment history.",
+            },
+            { status: 500 },
+          );
+        }
 
         // Compute server-side pricing
-        const pricing = computePricing(tier, cycle, paidSetup);
+        const pricing = computePricing(tier, cycle, hasPriorPaidOrder);
 
         // Create Razorpay order
         const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
@@ -201,7 +260,7 @@ export const Route = createFileRoute("/api/billing/create-order")({
           cycle,
         };
 
-        let rzOrder: any;
+        let rzOrder: Razorpay.Orders.RazorpayOrder;
         try {
           rzOrder = await rzp.orders.create({
             amount: pricing.total,
@@ -209,16 +268,13 @@ export const Route = createFileRoute("/api/billing/create-order")({
             receipt,
             notes,
           });
-        } catch (e: any) {
+        } catch (e) {
           console.error("[create-order] Razorpay order creation failed:", e);
           return Response.json(
             {
               ok: false,
               code: "RAZORPAY_ERROR",
-              message:
-                e?.error?.description ||
-                e?.message ||
-                "Failed to create payment order.",
+              message: "Failed to create payment order. Please try again.",
             },
             { status: 502 },
           );
@@ -231,6 +287,8 @@ export const Route = createFileRoute("/api/billing/create-order")({
             owner_id: userId,
             razorpay_order_id: rzOrder.id,
             intent: `${tier}_${cycle}`, // Store as "tier_cycle"
+            tier,
+            cycle,
             amount_paise: pricing.total,
             currency: pricing.currency,
             status: "created",

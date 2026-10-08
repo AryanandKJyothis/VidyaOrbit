@@ -1,18 +1,27 @@
 /**
  * Shared activation logic for billing orders
- * Ensures idempotent activation via conditional update on activated_at
+ * Calls the atomic activate_billing_order RPC function
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
-type Json = Database["public"]["Tables"]["billing_orders"]["Row"]["line_items"];
-
 export type ActivationResult =
-  | { success: true; orderId: string; ownerId: string; intent: Json }
+  | {
+      success: true;
+      orderId: string;
+      ownerId: string;
+      tier: string;
+      cycle: string;
+    }
   | {
       success: false;
-      reason: "already_activated" | "order_not_found" | "not_paid";
+      reason:
+        | "already_activated"
+        | "order_not_found"
+        | "amount_or_currency_mismatch"
+        | "rpc_error";
+      message?: string;
     };
 
 /**
@@ -22,54 +31,58 @@ export type ActivationResult =
  */
 export async function activateOrderOnce(
   supabase: SupabaseClient<Database>,
-  razorpayOrderId: string,
-  razorpayPaymentId: string,
+  orderId: string,
+  paymentId: string,
+  amount: number,
+  currency: string,
 ): Promise<ActivationResult> {
-  // Conditional update: only activate if activated_at IS NULL
-  const { data: updated, error } = await supabase
-    .from("billing_orders")
-    .update({
-      status: "paid",
-      paid_at: new Date().toISOString(),
-      activated_at: new Date().toISOString(),
-      razorpay_payment_id: razorpayPaymentId,
-    })
-    .eq("razorpay_order_id", razorpayOrderId)
-    .is("activated_at", null)
-    .select("id, owner_id, intent")
-    .single();
+  // Call the atomic activation RPC
+  const { data, error } = await supabase.rpc("activate_billing_order", {
+    _order_id: orderId,
+    _payment_id: paymentId,
+    _amount: BigInt(amount),
+    _currency: currency,
+  });
 
-  if (error || !updated) {
-    // Check why: was it already activated, or does the order not exist?
-    const { data: existing } = await supabase
-      .from("billing_orders")
-      .select("activated_at, status")
-      .eq("razorpay_order_id", razorpayOrderId)
-      .maybeSingle();
-
-    if (!existing) {
-      return { success: false, reason: "order_not_found" };
-    }
-    if (existing.activated_at !== null) {
-      return { success: false, reason: "already_activated" };
-    }
-    return { success: false, reason: "not_paid" };
+  if (error) {
+    console.error("Activation RPC error:", error);
+    return {
+      success: false,
+      reason: "rpc_error",
+      message: error.message,
+    };
   }
 
-  // This call won the race: activate subscription now
-  const intent = updated.intent as Json;
-  await supabase.rpc(
-    "apply_subscription_change" as never,
-    {
-      _uid: updated.owner_id,
-      _change: intent,
-    } as never,
-  );
+  if (!data) {
+    return {
+      success: false,
+      reason: "rpc_error",
+      message: "No data returned from activation RPC",
+    };
+  }
+
+  // Parse the result
+  const result = data as {
+    activated: boolean;
+    reason?: string;
+    owner_id?: string;
+    tier?: string;
+    cycle?: string;
+  };
+
+  if (!result.activated) {
+    return {
+      success: false,
+      reason: (result.reason ||
+        "order_not_found") as ActivationResult["reason"],
+    };
+  }
 
   return {
     success: true,
-    orderId: updated.id,
-    ownerId: updated.owner_id,
-    intent,
+    orderId: orderId,
+    ownerId: result.owner_id || "",
+    tier: result.tier || "",
+    cycle: result.cycle || "",
   };
 }

@@ -1,7 +1,10 @@
 /**
  * Razorpay in-app checkout pricing configuration (v3 - tier + cycle model)
- * Server-only — never send these values to the client.
+ * Server-side pricing configuration and logic.
  */
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 export type PlanTier = "starter" | "growth" | "large";
 export type BillingCycle = "monthly" | "annual";
@@ -102,21 +105,21 @@ export function isValidCycle(cycle: string): cycle is BillingCycle {
  * Annual waives setup fee.
  * @param tier The plan tier ('starter', 'growth', or 'large')
  * @param cycle The billing cycle ('monthly' or 'annual')
- * @param hasPaidSetup Whether the workspace has paid setup fee before
+ * @param hasPriorPaidOrder Whether the workspace has any paid order
  */
 export function computePricing(
   tier: PlanTier,
   cycle: BillingCycle,
-  hasPaidSetup: boolean,
+  hasPriorPaidOrder: boolean,
 ): PricingResult {
   const config = getTierConfig(tier);
   const line_items: LineItem[] = [];
 
   // Setup fee rule:
   // - Annual: setup is waived (₹0)
-  // - Monthly: setup charged only on first paid order (if hasPaidSetup = false)
+  // - Monthly: setup charged only on first paid order (if hasPriorPaidOrder = false)
   // - Starter: setup is ₹0 for both cycles
-  if (!hasPaidSetup && cycle === "monthly" && config.setup_fee_paise > 0) {
+  if (!hasPriorPaidOrder && cycle === "monthly" && config.setup_fee_paise > 0) {
     line_items.push({ item: "setup_fee", amount: config.setup_fee_paise });
   }
 
@@ -140,26 +143,24 @@ export function computePricing(
 }
 
 /**
- * Check if the workspace has ever paid a setup fee.
+ * Check if the workspace has any activated paid order.
+ * Throws on DB error (never silently overcharge setup).
  */
-export async function hasPaidSetupFee(
+export async function hasAnyPaidOrder(
   ownerId: string,
-  supabaseAdmin: any,
+  db: SupabaseClient<Database>,
 ): Promise<boolean> {
-  // Check if any paid order includes setup_fee in line_items
-  const { data: orders } = await supabaseAdmin
+  const { count, error } = await db
     .from("billing_orders")
-    .select("line_items")
+    .select("id", { count: "exact", head: true })
     .eq("owner_id", ownerId)
-    .eq("status", "paid");
+    .not("activated_at", "is", null);
 
-  if (!orders || orders.length === 0) return false;
+  if (error) {
+    throw error;
+  }
 
-  return orders.some((order: any) => {
-    const items = order.line_items;
-    if (!Array.isArray(items)) return false;
-    return items.some((item: any) => item.item === "setup_fee");
-  });
+  return (count ?? 0) > 0;
 }
 
 /**
