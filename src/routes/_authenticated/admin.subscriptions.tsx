@@ -55,6 +55,7 @@ import {
   grantTrial,
   updateInstituteAdminNotes,
 } from "@/lib/admin-subscriptions.functions";
+import { PLAN_LIMITS, PLANS, type PlanCode } from "@/hooks/use-subscription";
 
 export const Route = createFileRoute("/_authenticated/admin/subscriptions")({
   beforeLoad: async () => {
@@ -668,14 +669,7 @@ function EditDialog({
     ? Math.ceil((new Date(expiryDate).getTime() - Date.now()) / 86400_000)
     : null;
   const studentTotal = num("total_students");
-  const planLimitFromForm =
-    plan === "pro"
-      ? 1000
-      : plan === "growth"
-        ? 500
-        : plan === "starter"
-          ? 100
-          : 25;
+  const planLimitFromForm = PLAN_LIMITS[plan as PlanCode] ?? PLAN_LIMITS.free;
   const usagePct = Math.min(
     100,
     Math.round((studentTotal / Math.max(1, planLimitFromForm)) * 100),
@@ -790,7 +784,9 @@ function EditDialog({
                     <SelectItem value="free">Free</SelectItem>
                     <SelectItem value="starter">Starter</SelectItem>
                     <SelectItem value="growth">Growth</SelectItem>
-                    <SelectItem value="pro">Pro</SelectItem>
+                    <SelectItem value="pro">
+                      {PLANS.find((p) => p.code === "pro")?.name ?? "Large"}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>

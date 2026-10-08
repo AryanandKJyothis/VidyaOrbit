@@ -56,7 +56,7 @@ const FAQ = [
   },
   {
     q: "What happens if I cross my student limit?",
-    a: "Your data stays safe and fully accessible. You just can't add new students until you upgrade or archive some.",
+    a: "Existing data stays safe and usable. Adding new students is paused until you upgrade.",
   },
   {
     q: "How do I upgrade?",

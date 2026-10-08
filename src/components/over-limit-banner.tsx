@@ -8,8 +8,8 @@ import { BILLING_DISABLED } from "@/lib/feature-flags";
 /**
  * Banner shown when an institute's student count exceeds the plan limit
  * (i.e. they downgraded or their subscription expired). Existing data is
- * NEVER deleted by downgrade — this banner explains that and prompts them
- * to upgrade or trim students before adding new ones.
+ * NEVER deleted by downgrade — this banner explains that adding new
+ * students is paused until they upgrade.
  */
 export function OverLimitBanner() {
   const sub = useSubscription();
@@ -29,8 +29,8 @@ export function OverLimitBanner() {
               (limit {sub.data.limit}).
             </p>
             <p className="text-xs text-muted-foreground">
-              Your data is safe and fully accessible — you just can't add new
-              students until you upgrade or archive some.
+              Your data is safe and usable — adding new students is paused until
+              you upgrade.
             </p>
           </div>
         </div>

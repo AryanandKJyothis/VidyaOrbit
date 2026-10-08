@@ -648,7 +648,7 @@ function FAQ() {
     },
     {
       q: "Can I cancel?",
-      a: "Anytime. You stay on the free plan with your data intact. If you are over the free student limit, existing students stay fully accessible — adding new ones is paused until you upgrade or archive some.",
+      a: "Anytime. You stay on the free plan with your data intact. If you are over the free student limit, existing data stays safe and usable — adding new students is paused until you upgrade.",
     },
   ];
   return (

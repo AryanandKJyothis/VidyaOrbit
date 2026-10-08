@@ -295,7 +295,7 @@ export function ImportStudentsDialog({
       toast.error("Nothing to import.", {
         description:
           remainingSlots === 0
-            ? "Your plan is at its student limit. Upgrade or archive students first."
+            ? "Your plan is at its student limit. Adding new students is paused until you upgrade."
             : "All rows are duplicates or need fixing.",
       });
       return;

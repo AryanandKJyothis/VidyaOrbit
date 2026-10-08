@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSubscription, PLANS } from "@/hooks/use-subscription";
+import { useSubscription, PLANS, PLAN_LIMITS } from "@/hooks/use-subscription";
 import { useStudents } from "@/hooks/use-data";
 import { OverLimitBanner } from "@/components/over-limit-banner";
 import { ExpiryBanner } from "@/components/expiry-banner";
@@ -58,7 +58,9 @@ function PlanPage() {
   const data = sub.data;
   const meta = PLANS.find((p) => p.code === data.plan) ?? PLANS[0];
   const used = data.student_count ?? 0;
-  const limit = Number.isFinite(data.limit) ? data.limit : 9999;
+  const limit = Number.isFinite(data.limit)
+    ? data.limit
+    : PLAN_LIMITS[data.plan];
   const usagePct = Math.min(100, Math.round((used / limit) * 100));
   const expiry = data.expiry_date ? new Date(data.expiry_date) : null;
   const daysLeft = expiry ? differenceInCalendarDays(expiry, new Date()) : null;
@@ -161,7 +163,7 @@ function PlanPage() {
                 Students
               </span>
               <span className="font-medium">
-                {used} / {limit}
+                {used} / {limit.toLocaleString("en-IN")}
               </span>
             </div>
             <Progress value={usagePct} />
@@ -172,12 +174,19 @@ function PlanPage() {
               Included features
             </p>
             <ul className="grid gap-1.5 text-sm sm:grid-cols-2">
-              {meta.features.map((f) => (
-                <li key={f} className="flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  {f}
-                </li>
-              ))}
+              {meta.features.map((f) => {
+                const label =
+                  f === "Unlimited students" &&
+                  Number.isFinite(PLAN_LIMITS[data.plan])
+                    ? `Up to ${PLAN_LIMITS[data.plan].toLocaleString("en-IN")} students`
+                    : f;
+                return (
+                  <li key={f} className="flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    {label}
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
