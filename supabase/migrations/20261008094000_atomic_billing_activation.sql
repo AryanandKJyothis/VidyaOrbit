@@ -41,7 +41,7 @@ DECLARE
   v_res jsonb;
 BEGIN
   -- Only service_role can activate
-  IF current_setting('role', true) IS DISTINCT FROM 'service_role' THEN
+  IF auth.role() IS DISTINCT FROM 'service_role' THEN
     RAISE EXCEPTION 'Forbidden: only service_role can activate orders' USING ERRCODE = '42501';
   END IF;
 
