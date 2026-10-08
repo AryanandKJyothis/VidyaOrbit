@@ -27,6 +27,14 @@ function subscriptionHealthBody(sql: string) {
   return next === -1 ? sql.slice(start) : sql.slice(start, next);
 }
 
+function activateBody(sql: string) {
+  const start = sql.indexOf(
+    "CREATE OR REPLACE FUNCTION public.activate_billing_order",
+  );
+  expect(start).toBeGreaterThan(-1);
+  return sql.slice(start);
+}
+
 describe("billing SQL migrations", () => {
   it.each([
     ["091700", health091700],
@@ -64,6 +72,39 @@ describe("billing SQL migrations", () => {
     expect(health).not.toMatch(/li->>'item' = 'setup_fee'/);
     expect(health094000).toMatch(
       /UPDATE public\.subscriptions\s+SET setup_fee_paid = true\s+WHERE owner_id = o\.owner_id/,
+    );
+  });
+
+  it("094000 A/B race: later setup capture is applied and flagged setup_already_paid", () => {
+    const activate = activateBody(health094000);
+    expect(activate).toContain("setup_already_paid");
+    expect(activate).toMatch(/bo\.id IS DISTINCT FROM o\.id/);
+    expect(activate).toMatch(/v_setup_in_order AND v_setup_already/);
+    const applyAt = activate.indexOf("public.apply_subscription_change");
+    expect(applyAt).toBeGreaterThan(-1);
+    const afterApply = activate.slice(applyAt);
+    expect(afterApply).toMatch(/SET setup_fee_paid = true/);
+    expect(afterApply).toMatch(/needs_review = true/);
+    expect(afterApply).toContain("setup_already_paid");
+    expect(afterApply).toMatch(
+      /'activated',\s*true[\s\S]*'reason',\s*'setup_already_paid'/,
+    );
+  });
+
+  it("094000 sets setup_fee_paid after apply_subscription_change", () => {
+    const activate = activateBody(health094000);
+    const applyAt = activate.indexOf(
+      "v_res := public.apply_subscription_change",
+    );
+    expect(applyAt).toBeGreaterThan(-1);
+    expect(activate.slice(applyAt)).toMatch(
+      /SET setup_fee_paid = true\s+WHERE owner_id = o\.owner_id/,
+    );
+    expect(health091700).toMatch(
+      /INSERT INTO public\.subscriptions \(owner_id, plan, status/,
+    );
+    expect(health091700).not.toMatch(
+      /INSERT INTO public\.subscriptions \([^;]*setup_fee_paid/,
     );
   });
 

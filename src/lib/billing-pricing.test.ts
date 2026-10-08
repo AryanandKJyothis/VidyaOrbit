@@ -269,6 +269,30 @@ describe("Billing Pricing (Tier + Cycle)", () => {
       expect(large.line_items.some((i) => i.item === "setup_fee")).toBe(false);
     });
 
+    it("A/B race: after B is captured, Growth monthly with setup is not owed again", async () => {
+      const orderA = computePricing("growth", "monthly", false);
+      expect(lineItemsIncludeSetup(orderA.line_items)).toBe(true);
+
+      const db = {
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              not: async () => ({
+                data: [{ id: "order-b-captured" }],
+                error: null,
+              }),
+            }),
+          }),
+        }),
+      };
+      await expect(
+        hasSetupFeePaid("owner", db as never, { setup_fee_paid: false }),
+      ).resolves.toBe(true);
+
+      const laterCheckout = computePricing("growth", "monthly", true);
+      expect(lineItemsIncludeSetup(laterCheckout.line_items)).toBe(false);
+    });
+
     it("monthly charges setup only once", () => {
       const firstOrder = computePricing("growth", "monthly", false);
       const renewOrder = computePricing("growth", "monthly", true);

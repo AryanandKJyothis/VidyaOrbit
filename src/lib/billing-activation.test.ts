@@ -92,6 +92,33 @@ describe("activateOrderOnce", () => {
     if (!result.success) expect(result.reason).toBe("rpc_error");
   });
 
+  it("treats setup_already_paid as applied (plan active) with needs_review for refund", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        activated: true,
+        needs_review: true,
+        reason: "setup_already_paid",
+        owner_id: "owner-1",
+        tier: "growth",
+        cycle: "monthly",
+      },
+      error: null,
+    });
+    const client = { rpc } as unknown as SupabaseClient<Database>;
+    const result = await activateOrderOnce(
+      client,
+      "11111111-1111-4111-8111-111111111111",
+      "pay_abc",
+      599900,
+      "INR",
+    );
+    expect(result).toMatchObject({
+      success: true,
+      ownerId: "owner-1",
+      tier: "growth",
+    });
+  });
+
   it("surfaces tier_change_needs_review without treating it as a hard RPC error", async () => {
     const rpc = vi.fn().mockResolvedValue({
       data: {

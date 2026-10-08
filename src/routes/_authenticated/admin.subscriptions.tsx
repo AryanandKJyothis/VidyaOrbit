@@ -760,8 +760,8 @@ function EditDialog({
                   Paid order needs review
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Money was captured but the plan was not changed (mid-term
-                  different-tier checkout). Apply or refund from this dialog,
+                  Money was captured. Read the reason below — refund setup if it
+                  was charged twice, or apply/refund a mid-term tier change —
                   then dismiss.
                 </p>
                 <div className="mt-2 space-y-2">
@@ -964,7 +964,8 @@ function EditDialog({
                     Any captured online payment or an invoice you mark paid.
                     When on, checkout will not charge{" "}
                     {formatIndianPrice(getPlanByCode("growth")!.setupFee)} setup
-                    again.
+                    again. Turning this off will not make setup chargeable again
+                    once an online payment has been captured.
                   </p>
                 </div>
                 <Switch

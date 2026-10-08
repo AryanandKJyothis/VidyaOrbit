@@ -183,6 +183,8 @@ DECLARE
   v_current_plan public.plan_code;
   v_paid_current boolean;
   v_review_reason text;
+  v_setup_in_order boolean;
+  v_setup_already boolean;
 BEGIN
   IF auth.role() IS DISTINCT FROM 'service_role' THEN
     RAISE EXCEPTION 'Forbidden: only service_role can activate orders' USING ERRCODE = '42501';
@@ -223,17 +225,28 @@ BEGIN
     END;
   END IF;
 
-  SELECT plan, start_date, expiry_date, plan_price, notes INTO s
+  SELECT plan, start_date, expiry_date, plan_price, notes, setup_fee_paid INTO s
     FROM public.subscriptions
    WHERE owner_id = o.owner_id
      FOR UPDATE;
 
-  -- One-time onboarding: any captured paid order (monthly or annual, any
-  -- plan, with or without a setup line, including a needs_review hold)
-  -- means setup is never charged again.
-  UPDATE public.subscriptions
-     SET setup_fee_paid = true
-   WHERE owner_id = o.owner_id;
+  v_setup_in_order := EXISTS (
+    SELECT 1
+      FROM jsonb_array_elements(COALESCE(o.line_items, '[]'::jsonb)) li
+     WHERE li->>'item' = 'setup_fee'
+       AND COALESCE((li->>'amount')::numeric, 0) > 0
+  );
+
+  -- Already paid *before this order*: the flag, or any OTHER captured order
+  -- (this row already has activated_at from the UPDATE above).
+  v_setup_already :=
+    COALESCE(s.setup_fee_paid, false)
+    OR EXISTS (
+      SELECT 1 FROM public.billing_orders bo
+       WHERE bo.owner_id = o.owner_id
+         AND bo.id IS DISTINCT FROM o.id
+         AND bo.activated_at IS NOT NULL
+    );
 
   v_order_plan := CASE o.tier
                     WHEN 'starter' THEN 'starter'
@@ -266,11 +279,21 @@ BEGIN
       'Paid %s %s order captured while current paid plan is %s with %s Asia/Kolkata days left. Not applied: mid-term tier changes are manual. Refund or apply from the admin subscriptions dialog.',
       o.tier, o.cycle, v_current_plan, v_days_left
     );
+    -- Tier hold wins (plan is not applied). If setup was also double-charged,
+    -- both reasons stay in review_reason so the admin refunds the ₹5,000 too.
+    IF v_setup_in_order AND v_setup_already THEN
+      v_review_reason := v_review_reason
+        || ' setup_already_paid. Also refund the ₹5,000 setup — another captured payment already covered onboarding.';
+    END IF;
 
     UPDATE public.billing_orders
        SET needs_review = true,
            review_reason = v_review_reason
      WHERE id = o.id;
+
+    UPDATE public.subscriptions
+       SET setup_fee_paid = true
+     WHERE owner_id = o.owner_id;
 
     RETURN jsonb_build_object(
       'activated', false,
@@ -311,6 +334,29 @@ BEGIN
     _confirm    => true
   );
 
+  -- After apply: INSERT … ON CONFLICT does not set setup_fee_paid, so a
+  -- first-time payer would otherwise keep DEFAULT false.
+  UPDATE public.subscriptions
+     SET setup_fee_paid = true
+   WHERE owner_id = o.owner_id;
+
+  IF v_setup_in_order AND v_setup_already THEN
+    UPDATE public.billing_orders
+       SET needs_review = true,
+           review_reason = 'setup_already_paid. Refund the ₹5,000 setup — another captured payment already covered onboarding. The plan was still applied.'
+     WHERE id = o.id;
+
+    RETURN jsonb_build_object(
+      'activated', true,
+      'needs_review', true,
+      'reason', 'setup_already_paid',
+      'owner_id', o.owner_id,
+      'tier', o.tier,
+      'cycle', o.cycle,
+      'result', v_res
+    );
+  END IF;
+
   RETURN jsonb_build_object(
     'activated', true,
     'owner_id', o.owner_id,
@@ -327,4 +373,4 @@ GRANT EXECUTE ON FUNCTION public.activate_billing_order(uuid, text, bigint, text
   TO service_role;
 
 COMMENT ON FUNCTION public.activate_billing_order IS
-  'Atomically mark a billing order paid and apply the subscription, or hold a mid-term different-tier capture as needs_review. Sets setup_fee_paid on any captured paid order (including a hold): setup is a one-time onboarding fee. Service-role only. Idempotent. Same-tier extends from GREATEST(now(), expiry). Different paid tier with >7 Asia/Kolkata calendar days remaining is not applied: the order stays paid/visible for admin review. SQL month math is the source of truth (not JS).';
+  'Atomically mark a billing order paid and apply the subscription, or hold a mid-term different-tier capture as needs_review. Sets setup_fee_paid AFTER apply_subscription_change (and on a hold) so a first-time payer gets the flag. If this order charged setup but setup was already paid (flag or any OTHER captured order), still apply the plan and flag needs_review reason setup_already_paid for a ₹5,000 refund. A tier hold is not applied; review_reason then includes both the tier text and setup_already_paid. Service-role only. Idempotent. Same-tier extends from GREATEST(now(), expiry). SQL month math is the source of truth (not JS).';

@@ -33,7 +33,7 @@ Trials, comps, and any non-free plan an admin set do **not** waive setup. There 
 
 `/plan` reads `subscription_health.setup_fee_paid` (the RPC ORs the flag with any activated `billing_orders` row) and does not query `billing_orders` from the client. Annual cards do not show "+ free ₹5,000 setup" when setup is already paid.
 
-**Known gap:** two unpaid first orders created in parallel can both include setup. If both are captured, setup is charged twice.
+If two unpaid first orders both include setup and both are captured, Razorpay may charge setup twice. `activate_billing_order` still applies the later order's plan, then flags it `needs_review` with reason `setup_already_paid` so the admin refunds the extra ₹5,000. The institute is not treated as owing setup again. If that later order is also a mid-term tier hold, the hold wins (plan is not applied) and `review_reason` includes both the tier text and `setup_already_paid`.
 
 ## Migration order
 
@@ -69,7 +69,7 @@ Behaviour:
 3. Map `large` → `pro`.
 4. **Mid-term different-tier hold (SQL is the source of truth):** if the current *paid* plan (`plan <> free`, `plan_price > 0`, future `expiry_date`) is a different `plan_code` and more than **7 Asia/Kolkata calendar days** remain, do **not** extend or switch. The order stays `paid` with `activated_at` set (no silent loss, no webhook retry loop), `needs_review = true`, and `review_reason` filled. Admin sees it on the institute dialog. Return `{activated:false, reason:'tier_change_needs_review'}`. Verify and the webhook treat this as HTTP 200.
 5. Otherwise (same-tier renewal, ≤7 days left, expired, or free): `GREATEST(now(), COALESCE(expiry_date, now())) + 1 month` or `+ 12 months`. Postgres month arithmetic clamps (31 Jan + 1 month = 28/29 Feb). There is no JS `computeNewExpiry`.
-6. Preserve `notes` and `start_date`. `plan_price` is the `subscription_charge` line in rupees (never 0). Call live `apply_subscription_change(..., _confirm => true)`. Set `setup_fee_paid = true` on this captured paid order (also on a hold), whether or not `line_items` included setup.
+6. Preserve `notes` and `start_date`. `plan_price` is the `subscription_charge` line in rupees (never 0). Call live `apply_subscription_change(..., _confirm => true)`. Then set `setup_fee_paid = true` (so a first-time payer's new row is not left on the DEFAULT false). Also set the flag on a tier hold. If this order's line_items included setup but setup was already paid (flag or any *other* captured order), still apply the plan and set `needs_review` / `review_reason` `setup_already_paid` for a ₹5,000 refund.
 
 Verify and the webhook call **only** this RPC via `activateOrderOnce()` in `src/lib/billing-activation.ts`. Any exception rolls back `activated_at`, so Razorpay can retry. A `needs_review` hold does not roll back: the payment is recorded for admin.
 
@@ -117,5 +117,5 @@ RAZORPAY_WEBHOOK_SECRET=
 ## Known limitations
 
 - GST is not added to the order amount.
-- Concurrent unpaid first orders can both include setup (see above).
+- Concurrent unpaid first orders can both include setup; the later capture is flagged `setup_already_paid` for a refund (see above).
 - Refunds and mid-term plan changes are manual (WhatsApp/email). Held different-tier captures appear as `needs_review` on the admin subscriptions dialog.
