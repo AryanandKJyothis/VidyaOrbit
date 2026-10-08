@@ -1,0 +1,346 @@
+/**
+ * Tests for billing pricing logic (tier + cycle model)
+ */
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  assertRazorpayKeyMode,
+  computePricing,
+  hasSetupFeePaid,
+  isBillingEnabled,
+  lineItemsIncludeSetup,
+  razorpayKeyMode,
+  setupFeePaidFromSubscription,
+  type PlanTier,
+} from "@/lib/billing-pricing";
+
+describe("setupFeePaidFromSubscription", () => {
+  it("is true only when the admin flag is set", () => {
+    expect(
+      setupFeePaidFromSubscription({
+        setup_fee_paid: true,
+        plan: "free",
+        expiry_date: null,
+      }),
+    ).toBe(true);
+  });
+
+  it("is false for a non-free plan without the flag (trial/comp/admin-set)", () => {
+    expect(
+      setupFeePaidFromSubscription({
+        setup_fee_paid: false,
+        plan: "growth",
+        expiry_date: "2026-12-01",
+      }),
+    ).toBe(false);
+  });
+
+  it("is false when an expiry remains after returning to free", () => {
+    expect(
+      setupFeePaidFromSubscription({
+        setup_fee_paid: false,
+        plan: "free",
+        expiry_date: "2026-01-01",
+      }),
+    ).toBe(false);
+  });
+
+  it("is false for a brand-new free account", () => {
+    expect(
+      setupFeePaidFromSubscription({
+        setup_fee_paid: false,
+        plan: "free",
+        expiry_date: null,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("lineItemsIncludeSetup", () => {
+  it("is true when a setup_fee line has amount > 0", () => {
+    expect(
+      lineItemsIncludeSetup([
+        { item: "setup_fee", amount: 500000 },
+        { item: "subscription_charge", amount: 99900 },
+      ]),
+    ).toBe(true);
+  });
+
+  it("is false when setup is missing or zero", () => {
+    expect(
+      lineItemsIncludeSetup([{ item: "subscription_charge", amount: 99900 }]),
+    ).toBe(false);
+    expect(lineItemsIncludeSetup([{ item: "setup_fee", amount: 0 }])).toBe(
+      false,
+    );
+    expect(lineItemsIncludeSetup(null)).toBe(false);
+  });
+});
+
+function capturedOrdersDb(data: unknown[], error: unknown = null) {
+  const eqCalls: unknown[][] = [];
+  const chain: {
+    select: () => unknown;
+    eq: (...args: unknown[]) => unknown;
+    not: () => Promise<{ data: unknown; error: unknown }>;
+  } = {
+    select: () => chain,
+    eq: (...args: unknown[]) => {
+      eqCalls.push(args);
+      return chain;
+    },
+    not: async () => ({ data, error }),
+  };
+  return { db: { from: () => chain }, eqCalls };
+}
+
+describe("hasSetupFeePaid", () => {
+  it("is true when any captured live billing order exists", async () => {
+    const { db, eqCalls } = capturedOrdersDb([{ id: "order-1" }]);
+    await expect(
+      hasSetupFeePaid("owner", db as never, { setup_fee_paid: false }),
+    ).resolves.toBe(true);
+    expect(eqCalls).toContainEqual(["key_mode", "live"]);
+  });
+
+  it("is true for a captured annual order that did not include setup", async () => {
+    const { db } = capturedOrdersDb([{ id: "annual-1" }]);
+    await expect(
+      hasSetupFeePaid("owner", db as never, { setup_fee_paid: false }),
+    ).resolves.toBe(true);
+  });
+
+  it("is false when there are no captured live orders and the flag is off", async () => {
+    const { db } = capturedOrdersDb([]);
+    await expect(
+      hasSetupFeePaid("owner", db as never, { setup_fee_paid: false }),
+    ).resolves.toBe(false);
+  });
+});
+
+describe("assertRazorpayKeyMode / razorpayKeyMode", () => {
+  const previous = process.env.RAZORPAY_ALLOW_LIVE;
+  afterEach(() => {
+    if (previous === undefined) delete process.env.RAZORPAY_ALLOW_LIVE;
+    else process.env.RAZORPAY_ALLOW_LIVE = previous;
+  });
+
+  it("maps rzp_live_ to live and everything else to test", () => {
+    expect(razorpayKeyMode("rzp_live_abc")).toBe("live");
+    expect(razorpayKeyMode("rzp_test_abc")).toBe("test");
+    expect(razorpayKeyMode("other")).toBe("test");
+  });
+
+  it("refuses live keys unless RAZORPAY_ALLOW_LIVE is exactly true", () => {
+    delete process.env.RAZORPAY_ALLOW_LIVE;
+    expect(() => assertRazorpayKeyMode("rzp_live_abc")).toThrow(/ALLOW_LIVE/);
+    process.env.RAZORPAY_ALLOW_LIVE = "TRUE";
+    expect(() => assertRazorpayKeyMode("rzp_live_abc")).toThrow(/ALLOW_LIVE/);
+    process.env.RAZORPAY_ALLOW_LIVE = "true";
+    expect(() => assertRazorpayKeyMode("rzp_live_abc")).not.toThrow();
+    expect(() => assertRazorpayKeyMode("rzp_test_abc")).not.toThrow();
+  });
+});
+
+describe("isBillingEnabled", () => {
+  const previous = process.env.BILLING_ENABLED;
+  afterEach(() => {
+    if (previous === undefined) delete process.env.BILLING_ENABLED;
+    else process.env.BILLING_ENABLED = previous;
+  });
+
+  it("is true only for the exact string true", () => {
+    process.env.BILLING_ENABLED = "true";
+    expect(isBillingEnabled()).toBe(true);
+    process.env.BILLING_ENABLED = "TRUE";
+    expect(isBillingEnabled()).toBe(false);
+    process.env.BILLING_ENABLED = "True";
+    expect(isBillingEnabled()).toBe(false);
+    process.env.BILLING_ENABLED = "1";
+    expect(isBillingEnabled()).toBe(false);
+    process.env.BILLING_ENABLED = "yes";
+    expect(isBillingEnabled()).toBe(false);
+    process.env.BILLING_ENABLED = "false";
+    expect(isBillingEnabled()).toBe(false);
+    delete process.env.BILLING_ENABLED;
+    expect(isBillingEnabled()).toBe(false);
+  });
+});
+
+describe("Billing Pricing (Tier + Cycle)", () => {
+  describe("Starter tier", () => {
+    it("should compute monthly without setup (setup is ₹0)", () => {
+      const result = computePricing("starter", "monthly", false);
+
+      expect(result.total).toBe(49900); // ₹499
+      expect(result.currency).toBe("INR");
+      expect(result.line_items).toHaveLength(1);
+      expect(result.line_items[0]).toEqual({
+        item: "subscription_charge",
+        amount: 49900,
+      });
+      expect(result.months).toBe(1);
+    });
+
+    it("should compute annual without setup (setup is ₹0)", () => {
+      const result = computePricing("starter", "annual", false);
+
+      expect(result.total).toBe(499900); // ₹4,999
+      expect(result.line_items).toHaveLength(1);
+      expect(result.months).toBe(12);
+    });
+  });
+
+  describe("Growth tier", () => {
+    it("should compute monthly with setup on first order", () => {
+      const result = computePricing("growth", "monthly", false);
+
+      expect(result.total).toBe(599900); // ₹5,999 (₹999 + ₹5,000)
+      expect(result.line_items).toHaveLength(2);
+      expect(result.line_items[0]).toEqual({
+        item: "setup_fee",
+        amount: 500000, // ₹5,000
+      });
+      expect(result.line_items[1]).toEqual({
+        item: "subscription_charge",
+        amount: 99900, // ₹999
+      });
+    });
+
+    it("should compute monthly without setup if already paid", () => {
+      const result = computePricing("growth", "monthly", true);
+
+      expect(result.total).toBe(99900); // ₹999 only
+      expect(result.line_items).toHaveLength(1);
+      expect(result.line_items[0].item).toBe("subscription_charge");
+    });
+
+    it("should compute annual without setup (waived)", () => {
+      const result = computePricing("growth", "annual", false);
+
+      expect(result.total).toBe(1000000); // ₹10,000 only
+      expect(result.line_items).toHaveLength(1);
+      expect(result.line_items[0]).toEqual({
+        item: "subscription_charge",
+        amount: 1000000,
+      });
+      expect(result.months).toBe(12);
+    });
+
+    it("should compute annual without setup even if already paid", () => {
+      const result = computePricing("growth", "annual", true);
+
+      expect(result.total).toBe(1000000); // ₹10,000 only
+      expect(result.line_items).toHaveLength(1);
+    });
+  });
+
+  describe("Large tier", () => {
+    it("should compute monthly with setup on first order", () => {
+      const result = computePricing("large", "monthly", false);
+
+      expect(result.total).toBe(749900); // ₹7,499 (₹2,499 + ₹5,000)
+      expect(result.line_items).toHaveLength(2);
+      expect(result.line_items[0]).toEqual({
+        item: "setup_fee",
+        amount: 500000, // ₹5,000
+      });
+      expect(result.line_items[1]).toEqual({
+        item: "subscription_charge",
+        amount: 249900, // ₹2,499
+      });
+    });
+
+    it("should compute monthly without setup if already paid", () => {
+      const result = computePricing("large", "monthly", true);
+
+      expect(result.total).toBe(249900); // ₹2,499 only
+      expect(result.line_items).toHaveLength(1);
+    });
+
+    it("should compute annual without setup (waived)", () => {
+      const result = computePricing("large", "annual", false);
+
+      expect(result.total).toBe(2500000); // ₹25,000 only
+      expect(result.line_items).toHaveLength(1);
+      expect(result.months).toBe(12);
+    });
+  });
+
+  describe("Setup fee logic", () => {
+    it("annual waives setup for all tiers", () => {
+      const starter = computePricing("starter", "annual", false);
+      const growth = computePricing("growth", "annual", false);
+      const large = computePricing("large", "annual", false);
+
+      // None should have setup_fee in line_items
+      expect(starter.line_items.some((i) => i.item === "setup_fee")).toBe(
+        false,
+      );
+      expect(growth.line_items.some((i) => i.item === "setup_fee")).toBe(false);
+      expect(large.line_items.some((i) => i.item === "setup_fee")).toBe(false);
+    });
+
+    it("monthly charges setup only once", () => {
+      const firstOrder = computePricing("growth", "monthly", false);
+      const renewOrder = computePricing("growth", "monthly", true);
+
+      expect(firstOrder.line_items.some((i) => i.item === "setup_fee")).toBe(
+        true,
+      );
+      expect(renewOrder.line_items.some((i) => i.item === "setup_fee")).toBe(
+        false,
+      );
+    });
+
+    it("annual then monthly means no setup fee", () => {
+      const annual = computePricing("growth", "annual", false);
+      const monthly = computePricing("growth", "monthly", true);
+
+      expect(annual.line_items.some((i) => i.item === "setup_fee")).toBe(false);
+      expect(monthly.line_items.some((i) => i.item === "setup_fee")).toBe(
+        false,
+      );
+    });
+
+    it("captured Starter monthly then Growth monthly means no setup fee", () => {
+      const starter = computePricing("starter", "monthly", false);
+      const growth = computePricing("growth", "monthly", true);
+
+      expect(starter.line_items.some((i) => i.item === "setup_fee")).toBe(
+        false,
+      );
+      expect(growth.line_items.some((i) => i.item === "setup_fee")).toBe(false);
+      expect(growth.total).toBe(99900);
+    });
+
+    it("monthly to annual: smooth upgrade", () => {
+      // Scenario: user starts with monthly (setup paid), then upgrades to annual
+      const monthly = computePricing("growth", "monthly", false);
+      const annual = computePricing("growth", "annual", true);
+
+      expect(monthly.line_items.some((i) => i.item === "setup_fee")).toBe(true);
+      expect(annual.line_items.some((i) => i.item === "setup_fee")).toBe(false);
+    });
+  });
+
+  describe("Savings", () => {
+    it("should show correct savings for annual vs monthly", () => {
+      const tiers: PlanTier[] = ["starter", "growth", "large"];
+      const expectedSavings = [
+        989, // Starter: 12×499 − 4,999 = 5,988 − 4,999 = 989
+        1988, // Growth: 12×999 − 10,000 = 11,988 − 10,000 = 1,988
+        4988, // Large: 12×2,499 − 25,000 = 29,988 − 25,000 = 4,988
+      ];
+
+      tiers.forEach((tier, i) => {
+        const monthly = computePricing(tier, "monthly", true);
+        const annual = computePricing(tier, "annual", true);
+
+        const monthlyYearly = monthly.total * 12;
+        const savings = monthlyYearly - annual.total;
+
+        expect(savings).toBe(expectedSavings[i] * 100); // Convert to paise
+      });
+    });
+  });
+});

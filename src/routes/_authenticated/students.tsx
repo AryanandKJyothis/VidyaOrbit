@@ -41,6 +41,7 @@ import {
   type Student,
 } from "@/hooks/use-data";
 import { useSubscription } from "@/hooks/use-subscription";
+import { formatLimit, isUnlimited } from "@/lib/plan-limits";
 import { StudentDialog } from "@/components/student-dialog";
 import { formatINR, formatDate } from "@/lib/format";
 import { exportToExcel, exportToCsv } from "@/lib/export";
@@ -123,10 +124,9 @@ function StudentsList() {
 
   const currentCount = students.data?.length ?? 0;
   const planLimit = sub.data?.limit ?? Infinity;
-  const pct = Number.isFinite(planLimit)
-    ? Math.min(100, (currentCount / planLimit) * 100)
-    : 0;
-  const atLimit = Number.isFinite(planLimit) && currentCount >= planLimit;
+  const unlimited = isUnlimited(planLimit);
+  const pct = unlimited ? 0 : Math.min(100, (currentCount / planLimit) * 100);
+  const atLimit = !unlimited && currentCount >= planLimit;
 
   const isOwner = active?.role === "owner";
   const contactMsg = getContactMessage(isOwner);
@@ -250,7 +250,7 @@ function StudentsList() {
               disabled={atLimit}
               title={
                 atLimit
-                  ? `You've reached the ${planLimit}-student limit`
+                  ? `You've reached the ${formatLimit(planLimit)}-student limit`
                   : undefined
               }
             >
@@ -262,55 +262,50 @@ function StudentsList() {
 
       <OverLimitBanner />
 
-      {sub.data &&
-        Number.isFinite(planLimit) &&
-        !sub.data.over_limit &&
-        pct >= 80 && (
-          <Card
-            className={`mb-4 border-${atLimit ? "destructive/40" : "primary/30"} ${atLimit ? "bg-destructive/5" : "bg-primary/5"}`}
-          >
-            <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <Sparkles
-                  className={`mt-0.5 h-4 w-4 ${atLimit ? "text-destructive" : "text-primary"}`}
-                />
-                <div>
-                  <p className="text-sm font-medium">
-                    {atLimit
-                      ? `You've reached your ${sub.data.plan} plan limit (${planLimit} students).`
-                      : `Heads up — you're using ${currentCount} of ${planLimit} students.`}
-                  </p>
-                  {contactMsg && (
-                    <p className="text-xs text-muted-foreground">
-                      {contactMsg}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  asChild
-                  size="sm"
-                  variant={atLimit ? "default" : "outline"}
-                >
-                  <Link to="/plan">View plan</Link>
-                </Button>
-                {showContact && contactUrl && (
-                  <Button asChild size="sm" variant="outline">
-                    <a
-                      href={contactUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {contactLabel}{" "}
-                      <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
-                    </a>
-                  </Button>
+      {sub.data && !unlimited && !sub.data.over_limit && pct >= 80 && (
+        <Card
+          className={`mb-4 border-${atLimit ? "destructive/40" : "primary/30"} ${atLimit ? "bg-destructive/5" : "bg-primary/5"}`}
+        >
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <Sparkles
+                className={`mt-0.5 h-4 w-4 ${atLimit ? "text-destructive" : "text-primary"}`}
+              />
+              <div>
+                <p className="text-sm font-medium">
+                  {atLimit
+                    ? `You've reached your ${sub.data.plan} plan limit (${formatLimit(planLimit)} students).`
+                    : `Heads up — you're using ${currentCount} of ${formatLimit(planLimit)} students.`}
+                </p>
+                {contactMsg && (
+                  <p className="text-xs text-muted-foreground">{contactMsg}</p>
                 )}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                asChild
+                size="sm"
+                variant={atLimit ? "default" : "outline"}
+              >
+                <Link to="/plan">View plan</Link>
+              </Button>
+              {showContact && contactUrl && (
+                <Button asChild size="sm" variant="outline">
+                  <a
+                    href={contactUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {contactLabel}{" "}
+                    <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+                  </a>
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="mb-4">
         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">

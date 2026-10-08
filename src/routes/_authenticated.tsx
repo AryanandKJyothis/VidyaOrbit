@@ -13,7 +13,6 @@ import { useInstitute } from "@/hooks/use-data";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { LoadingScreen } from "@/components/loading-screen";
-import { BILLING_DISABLED } from "@/lib/feature-flags";
 import { WorkspaceProvider } from "@/hooks/use-active-workspace";
 import { cn } from "@/lib/utils";
 
@@ -117,7 +116,7 @@ function MobileNav() {
     { label: "Fees", to: "/fees", icon: Wallet },
     {
       label: "Plan",
-      to: BILLING_DISABLED ? "/plan" : "/billing",
+      to: "/plan",
       icon: CreditCard,
     },
   ];

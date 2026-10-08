@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, Sparkles } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useSubscription, PLANS } from "@/hooks/use-subscription";
-import { BILLING_DISABLED } from "@/lib/feature-flags";
+import { formatLimit } from "@/lib/plan-limits";
 
 /**
  * Banner shown when an institute's student count exceeds the plan limit
@@ -26,7 +26,7 @@ export function OverLimitBanner() {
           <div className="space-y-1">
             <p className="text-sm font-semibold">
               You have {sub.data.student_count} students on the {planName} plan
-              (limit {sub.data.limit}).
+              (limit {formatLimit(sub.data.limit)}).
             </p>
             <p className="text-xs text-muted-foreground">
               Your data is safe and usable — adding new students is paused until
@@ -35,16 +35,9 @@ export function OverLimitBanner() {
           </div>
         </div>
         <div className="flex shrink-0 gap-2">
-          <Button asChild size="sm" variant="outline">
-            <Link to="/plan">View plan</Link>
+          <Button asChild size="sm">
+            <Link to="/plan">View &amp; Upgrade</Link>
           </Button>
-          {!BILLING_DISABLED && (
-            <Button asChild size="sm">
-              <Link to="/billing">
-                <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Upgrade
-              </Link>
-            </Button>
-          )}
         </div>
       </CardContent>
     </Card>

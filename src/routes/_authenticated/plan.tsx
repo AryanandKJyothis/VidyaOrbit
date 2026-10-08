@@ -1,239 +1,359 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { format, differenceInCalendarDays } from "date-fns";
+import { createFileRoute } from "@tanstack/react-router";
 import {
-  CreditCard,
-  Calendar,
-  Users,
-  AlertTriangle,
-  Sparkles,
-} from "lucide-react";
-import { PageHeader } from "@/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useSubscription, PLANS, PLAN_LIMITS } from "@/hooks/use-subscription";
-import { useStudents } from "@/hooks/use-data";
-import { OverLimitBanner } from "@/components/over-limit-banner";
-import { ExpiryBanner } from "@/components/expiry-banner";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RenewalBanner } from "@/components/renewal-banner";
+import { RazorpayCheckout } from "@/components/razorpay-checkout";
+import {
+  useSubscription,
+  PLAN_RANK,
+  type PlanCode,
+} from "@/hooks/use-subscription";
+import { Check, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import {
+  formatLimit,
+  PLAN_DISPLAY_NAMES,
+  planCodeForTier,
+} from "@/lib/plan-limits";
+import { getContactLabel, getContactLink } from "@/lib/contact-config";
+
+type BillingCycle = "monthly" | "annual";
+type PlanTier = "starter" | "growth" | "large";
+
+type TierConfig = {
+  tier: PlanTier;
+  name: string;
+  description: string;
+  studentLimit: number | null;
+  monthlyPricePaise: number;
+  annualPricePaise: number;
+  setupFeePaise: number;
+  features: string[];
+};
+
+type PricingData = {
+  tiers: TierConfig[];
+  cycles: Array<{ cycle: BillingCycle; label: string }>;
+};
 
 export const Route = createFileRoute("/_authenticated/plan")({
   component: PlanPage,
 });
 
-function statusVariant(
-  status: string,
-): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "active":
-      return "default";
-    case "trial":
-    case "trialing":
-    case "pending_checkout":
-      return "secondary";
-    case "expired":
-    case "suspended":
-    case "canceled":
-    case "past_due":
-      return "destructive";
-    default:
-      return "outline";
-  }
-}
-
 function PlanPage() {
-  const sub = useSubscription();
-  const students = useStudents();
+  const subQuery = useSubscription();
+  const [cycle, setCycle] = useState<BillingCycle>("annual");
+  const [pricing, setPricing] = useState<PricingData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [billingEnabled, setBillingEnabled] = useState(false);
+  const [pricingError, setPricingError] = useState(false);
 
-  if (sub.isLoading || !sub.data) {
+  const subscription = subQuery.data;
+  const isOwner = subscription?.isOwner ?? false;
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/billing/pricing");
+        if (!res.ok) throw new Error("pricing failed");
+        const data = await res.json();
+        if (!Array.isArray(data.tiers)) throw new Error("bad pricing shape");
+        if (!cancelled) {
+          setPricing(data);
+          setBillingEnabled(Boolean(data.billingEnabled));
+        }
+      } catch {
+        if (!cancelled) setPricingError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-48 w-full" />
+      <div className="container mx-auto p-6">
+        <div className="text-center">Loading...</div>
       </div>
     );
   }
 
-  const data = sub.data;
-  const meta = PLANS.find((p) => p.code === data.plan) ?? PLANS[0];
-  const used = data.student_count ?? 0;
-  const limit = Number.isFinite(data.limit)
-    ? data.limit
-    : PLAN_LIMITS[data.plan];
-  const usagePct = Math.min(100, Math.round((used / limit) * 100));
-  const expiry = data.expiry_date ? new Date(data.expiry_date) : null;
-  const daysLeft = expiry ? differenceInCalendarDays(expiry, new Date()) : null;
-  const expired = data.expired;
-  const price = data.plan_price;
+  const currentPlan = subscription?.plan ?? "free";
+  const expiryDate = subscription?.expiry_date
+    ? new Date(subscription.expiry_date)
+    : null;
+  const isExpired = subscription?.expired ?? false;
+  const daysLeft = subscription?.days_until_expiry ?? null;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Plan & Subscription"
-        description="Your current plan, status, and usage."
-      />
+    <div className="container mx-auto p-6 max-w-7xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Plan &amp; Billing</h1>
+        <p className="text-muted-foreground mt-1">
+          Manage your subscription and billing preferences
+        </p>
+      </div>
 
-      {!data.isOwner && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="py-3 text-sm text-muted-foreground">
-            You're viewing the institute owner's plan. Only the owner can change
-            billing.
-          </CardContent>
-        </Card>
+      {/* Renewal banner */}
+      {expiryDate && isOwner && (
+        <RenewalBanner
+          expiryDate={expiryDate}
+          isOwner={isOwner}
+          isExpired={isExpired}
+        />
       )}
 
-      <ExpiryBanner />
-      <OverLimitBanner />
-
-      {expired && (
-        <Card className="border-destructive/40 bg-destructive/5">
-          <CardContent className="flex items-start gap-3 py-4">
-            <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
-            <div className="text-sm">
-              <p className="font-semibold text-destructive">
-                Your subscription has expired.
-              </p>
-              <p className="text-muted-foreground">
-                Premium features and higher student limits are temporarily
-                disabled. Your existing data is safe — contact your
-                administrator to renew.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
+      {/* Current plan status */}
+      <Card className="mb-8">
         <CardHeader>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <CreditCard className="h-5 w-5" />
-                {meta.name} Plan
-              </CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {meta.tagline}
-              </p>
-            </div>
-            <Badge variant={statusVariant(data.status)} className="capitalize">
-              {data.status}
+          <CardTitle>Current Plan</CardTitle>
+          <CardDescription>Your subscription details</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Plan</span>
+            <Badge variant="default" className="capitalize">
+              {PLAN_DISPLAY_NAMES[currentPlan as PlanCode] ?? currentPlan}
             </Badge>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat
-              label="Plan price"
-              value={
-                price != null
-                  ? `₹${Number(price).toLocaleString("en-IN")}`
-                  : "—"
-              }
-            />
-            <Stat
-              label="Start date"
-              value={
-                data.start_date
-                  ? format(new Date(data.start_date), "d MMM yyyy")
-                  : "—"
-              }
-            />
-            <Stat
-              label="Expiry date"
-              value={expiry ? format(expiry, "d MMM yyyy") : "—"}
-            />
-            <Stat
-              label="Days remaining"
-              value={
-                daysLeft == null
-                  ? "—"
-                  : daysLeft < 0
-                    ? "Expired"
-                    : `${daysLeft} day${daysLeft === 1 ? "" : "s"}`
-              }
-              tone={daysLeft != null && daysLeft <= 7 ? "warning" : undefined}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-1.5 text-muted-foreground">
-                <Users className="h-3.5 w-3.5" />
-                Students
+          {expiryDate && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Expires</span>
+                <span className="text-sm">{format(expiryDate, "PPP")}</span>
+              </div>
+              {daysLeft !== null && !isExpired && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Days remaining</span>
+                  <span className="text-sm font-semibold">{daysLeft}</span>
+                </div>
+              )}
+            </>
+          )}
+          {subscription && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Students</span>
+              <span className="text-sm">
+                {subscription.student_count} / {formatLimit(subscription.limit)}
               </span>
-              <span className="font-medium">
-                {used} / {limit.toLocaleString("en-IN")}
-              </span>
-            </div>
-            <Progress value={usagePct} />
-          </div>
-
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Included features
-            </p>
-            <ul className="grid gap-1.5 text-sm sm:grid-cols-2">
-              {meta.features.map((f) => {
-                const label =
-                  f === "Unlimited students" &&
-                  Number.isFinite(PLAN_LIMITS[data.plan])
-                    ? `Up to ${PLAN_LIMITS[data.plan].toLocaleString("en-IN")} students`
-                    : f;
-                return (
-                  <li key={f} className="flex items-center gap-2">
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    {label}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          {data.notes && (
-            <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Notes from your administrator
-              </p>
-              <p className="whitespace-pre-wrap text-foreground">
-                {data.notes}
-              </p>
             </div>
           )}
-
-          <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
-            <Calendar className="mr-2 inline h-4 w-4" />
-            To change your plan, extend your subscription, or update billing
-            details, please contact your administrator.
-          </div>
         </CardContent>
       </Card>
+
+      {/* Pricing toggle */}
+      <div className="flex justify-center mb-6">
+        <div className="inline-flex rounded-lg border p-1">
+          <Button
+            variant={cycle === "monthly" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setCycle("monthly")}
+          >
+            Monthly
+          </Button>
+          <Button
+            variant={cycle === "annual" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setCycle("annual")}
+          >
+            Annual
+            <Badge variant="secondary" className="ml-2">
+              Save
+            </Badge>
+          </Button>
+        </div>
+      </div>
+
+      {pricingError && (
+        <Alert variant="destructive" className="mb-8">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Could not load plan prices. Please refresh the page.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Pricing cards */}
+      <div className="grid gap-6 md:grid-cols-3 mb-8">
+        {Array.isArray(pricing?.tiers) &&
+          pricing.tiers.map((tier) => (
+            <PricingCard
+              key={tier.tier}
+              tier={tier}
+              cycle={cycle}
+              currentPlan={currentPlan}
+              currentExpiry={subscription?.expiry_date ?? null}
+              isOwner={isOwner}
+              billingEnabled={billingEnabled}
+              hasPaidSetup={Boolean(subscription?.setup_fee_paid)}
+              onSuccess={async () => {
+                const r = await subQuery.refetch();
+                return r.data;
+              }}
+            />
+          ))}
+      </div>
+
+      {/* GST notice */}
+      <Alert className="max-w-2xl mx-auto">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Prices are exclusive of GST. GST invoicing is coming soon.
+        </AlertDescription>
+      </Alert>
     </div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "warning";
-}) {
+type PricingCardProps = {
+  tier: TierConfig;
+  cycle: BillingCycle;
+  currentPlan: string;
+  currentExpiry: string | null;
+  isOwner: boolean;
+  billingEnabled: boolean;
+  hasPaidSetup: boolean;
+  onSuccess: () => void | Promise<unknown>;
+};
+
+function PricingCard({
+  tier,
+  cycle,
+  currentPlan,
+  currentExpiry,
+  isOwner,
+  billingEnabled,
+  hasPaidSetup,
+  onSuccess,
+}: PricingCardProps) {
+  const price =
+    cycle === "monthly" ? tier.monthlyPricePaise : tier.annualPricePaise;
+  const displayPrice = Math.floor(price / 100);
+
+  // Setup fee applies only on monthly for Growth/Large, and only if not yet paid
+  const setupApplies =
+    cycle === "monthly" && tier.setupFeePaise > 0 && !hasPaidSetup;
+  const setupFee = setupApplies ? tier.setupFeePaise / 100 : 0;
+  const firstPaymentTotal = displayPrice + setupFee;
+
+  // Calculate savings for annual
+  const monthlyCost = tier.monthlyPricePaise * 12;
+  const setupSavings = tier.setupFeePaise > 0 ? tier.setupFeePaise / 100 : 0;
+  const annualCost = tier.annualPricePaise;
+  const priceSavings =
+    cycle === "annual" ? Math.floor((monthlyCost - annualCost) / 100) : 0;
+
+  const isCurrent =
+    tier.tier === currentPlan ||
+    (tier.tier === "large" && currentPlan === "pro");
+  const requestedPlan = planCodeForTier(tier.tier);
+  const currentRank = PLAN_RANK[(currentPlan as PlanCode) ?? "free"] ?? 0;
+  const isDowngrade = PLAN_RANK[requestedPlan] < currentRank;
+  const checkoutLabel = isCurrent
+    ? "Renew Plan"
+    : isDowngrade
+      ? "Switch plan"
+      : "Upgrade";
+  const contactLink = getContactLink();
+  const contactLabel = getContactLabel();
+
   return (
-    <div className="rounded-lg border bg-card p-3">
-      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      <p
-        className={
-          "mt-1 text-sm font-semibold " +
-          (tone === "warning" ? "text-destructive" : "text-foreground")
-        }
-      >
-        {value}
-      </p>
-    </div>
+    <Card className={isCurrent ? "border-primary shadow-lg" : ""}>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          {tier.name}
+          {isCurrent && (
+            <Badge variant="default" className="ml-2">
+              Current
+            </Badge>
+          )}
+        </CardTitle>
+        <CardDescription>{tier.description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Pricing */}
+        <div>
+          <div className="text-3xl font-bold">
+            ₹{displayPrice.toLocaleString("en-IN")}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            per {cycle === "monthly" ? "month" : "year"}
+          </div>
+
+          {cycle === "annual" && priceSavings > 0 && (
+            <div className="text-sm font-medium text-green-600 mt-1">
+              Save ₹{priceSavings.toLocaleString("en-IN")}
+              {setupSavings > 0 && tier.tier !== "starter" && !hasPaidSetup && (
+                <span>
+                  {" "}
+                  + free ₹{setupSavings.toLocaleString("en-IN")} setup
+                </span>
+              )}
+            </div>
+          )}
+
+          {cycle === "monthly" && setupFee > 0 && (
+            <div className="mt-2 space-y-1">
+              <div className="text-sm text-muted-foreground">
+                + ₹{setupFee.toLocaleString("en-IN")} one-time setup
+              </div>
+              <div className="text-sm font-medium">
+                First payment: ₹{firstPaymentTotal.toLocaleString("en-IN")}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Features */}
+        <ul className="space-y-2 text-sm">
+          {tier.features.map((feature, idx) => (
+            <li key={idx} className="flex items-start gap-2">
+              <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+      <CardFooter>
+        {billingEnabled && isOwner ? (
+          <RazorpayCheckout
+            tier={tier.tier}
+            cycle={cycle}
+            currentPlan={currentPlan}
+            currentExpiry={currentExpiry}
+            buttonLabel={checkoutLabel}
+            onSuccess={onSuccess}
+          />
+        ) : !isOwner ? (
+          <Button variant="outline" className="w-full" disabled>
+            Owner Only
+          </Button>
+        ) : contactLink ? (
+          <Button asChild className="w-full">
+            <a href={contactLink} target="_blank" rel="noopener noreferrer">
+              {contactLabel}
+            </a>
+          </Button>
+        ) : (
+          <Button variant="outline" className="w-full" disabled>
+            Contact Us
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
   );
 }

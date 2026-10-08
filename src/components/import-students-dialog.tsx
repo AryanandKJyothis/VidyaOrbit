@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useBatches, useStudents } from "@/hooks/use-data";
-import { useSubscription, PLAN_LIMITS } from "@/hooks/use-subscription";
+import { useSubscription } from "@/hooks/use-subscription";
+import { isUnlimited, remainingStudentSlots } from "@/lib/plan-limits";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
@@ -130,9 +131,9 @@ export function ImportStudentsDialog({
     return m;
   }, [batches.data]);
 
-  const planLimit = sub.data ? PLAN_LIMITS[sub.data.plan] : Infinity;
+  const planLimit = sub.data?.limit ?? Infinity;
   const currentCount = sub.data?.student_count ?? 0;
-  const remainingSlots = Math.max(0, planLimit - currentCount);
+  const remainingSlots = remainingStudentSlots(planLimit, currentCount);
 
   const reset = () => {
     setStep(1);
@@ -902,7 +903,7 @@ function StepReview({
       </div>
 
       {/* Plan-limit warning */}
-      {Number.isFinite(planLimit) && overBy > 0 && (
+      {!isUnlimited(planLimit) && overBy > 0 && (
         <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
           <p className="font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
             <AlertTriangle className="h-3.5 w-3.5" /> Your {planName} plan only

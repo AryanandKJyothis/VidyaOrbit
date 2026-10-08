@@ -62,30 +62,28 @@ Authenticated app pages:
 - `/attendance`
 - `/batches`
 - `/analytics`
-- `/billing`
+- `/plan`
 - `/settings`
 - `/donate`
 - `/receipts/$paymentId`
 
 ### Razorpay billing flow
 
-The billing integration is implemented as:
+In-app billing is **one-time Razorpay Standard Checkout** (no Razorpay Subscriptions, no `RAZORPAY_PLAN_*` ids). Auto-capture must be ON.
 
-- Client-side plan checkout UI in `src/routes/_authenticated/billing.tsx`
-- Server-side billing route at `src/routes/api/billing/start-subscription.ts`
-- Razorpay HTTP helpers in `src/lib/razorpay-http.ts`
-- Webhook verification in `src/routes/api/webhooks/razorpay.ts`
-- Subscription sync logic in `src/server/subscriptions-razorpay-sync.ts`
-- Razorpay environment config in `src/lib/razorpay-env.ts`
+- Checkout UI: `src/routes/_authenticated/plan.tsx` + `src/components/razorpay-checkout.tsx`
+- Create order / verify: `src/routes/api/billing/create-order.ts`, `verify-payment.ts`
+- Webhook: `src/routes/api/webhooks/razorpay.ts` (`payment.captured` / `order.paid`)
+- Activation: SQL `activate_billing_order` via `src/lib/billing-activation.ts`
+- `billing_orders` rows are created at order time; `key_mode` is `test` or `live` from the server key prefix
 
-The app is ready to receive these credentials:
+Credentials (no plan IDs):
 
-- `RAZORPAY_KEY_ID`
-- `RAZORPAY_KEY_SECRET`
-- `RAZORPAY_WEBHOOK_SECRET`
-- `RAZORPAY_PLAN_STARTER`
-- `RAZORPAY_PLAN_GROWTH`
-- `RAZORPAY_PLAN_PRO`
+- `BILLING_ENABLED` (exact string `true` to enable)
+- `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` / `RAZORPAY_WEBHOOK_SECRET`
+- `RAZORPAY_ALLOW_LIVE` (exact string `true` required for `rzp_live_` keys)
+
+The webhook returns 503 while billing is off; enable billing before registering the webhook, or expect Razorpay retries.
 
 ### Supabase compatibility
 
@@ -134,7 +132,7 @@ The target audience for `Vidya Connect` is:
 
 - The application is fully coded and ready to build.
 - Supabase authentication and app data flows are implemented.
-- Razorpay billing is implemented but not enabled until credentials are provided.
+- Razorpay one-time-order billing is implemented but not enabled until `BILLING_ENABLED=true` and keys are set.
 - The project is ready for deployment once the secret keys are added.
 
 ## Recommended next step
@@ -145,8 +143,5 @@ Add the missing credentials to your deployment environment, including:
 - `RAZORPAY_KEY_ID`
 - `RAZORPAY_KEY_SECRET`
 - `RAZORPAY_WEBHOOK_SECRET`
-- `RAZORPAY_PLAN_STARTER`
-- `RAZORPAY_PLAN_GROWTH`
-- `RAZORPAY_PLAN_PRO`
 
-After that, the app should be ready to run with Supabase and Razorpay.
+Do **not** set `RAZORPAY_PLAN_*`. After that, apply the billing migrations (see `docs/payments.md`) before enabling billing.

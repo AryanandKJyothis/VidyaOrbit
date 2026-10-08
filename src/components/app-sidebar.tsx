@@ -36,7 +36,6 @@ import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
 import { WorkspaceSwitcher } from "@/components/workspace-switcher";
 import { listMyPendingInvites } from "@/lib/workspace.functions";
-import { BILLING_DISABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -66,23 +65,12 @@ const baseItems: NavItem[] = [
     resource: "attendance",
   },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  ...(BILLING_DISABLED
-    ? [
-        {
-          title: "Plan",
-          url: "/plan",
-          icon: CreditCard,
-          resource: "billing" as const,
-        },
-      ]
-    : [
-        {
-          title: "Billing",
-          url: "/billing",
-          icon: CreditCard,
-          resource: "billing" as const,
-        },
-      ]),
+  {
+    title: "Plan",
+    url: "/plan",
+    icon: CreditCard,
+    resource: "billing" as const,
+  },
   { title: "Settings", url: "/settings", icon: Settings, resource: "settings" },
 ];
 
@@ -279,7 +267,7 @@ function PlanBadge() {
   const meta = PLANS.find((p) => p.code === sub.data!.plan);
   return (
     <Link
-      to={BILLING_DISABLED ? "/plan" : "/billing"}
+      to="/plan"
       className="mx-1 mb-1 flex items-center justify-between rounded-lg border border-sidebar-border/60 bg-sidebar-accent/30 px-2.5 py-1.5 text-[11px] text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent/60"
     >
       <span className="uppercase tracking-wider opacity-70">Plan</span>

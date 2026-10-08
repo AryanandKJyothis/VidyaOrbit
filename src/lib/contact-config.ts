@@ -12,10 +12,10 @@ export interface ContactConfig {
   email: string | null;
 }
 
-const DEFAULT_PHONE = "+91 7025063047";
-const DEFAULT_WHATSAPP_NUMBER = "917025063047";
-const DEFAULT_WHATSAPP_URL = "https://wa.me/917025063047";
-const DEFAULT_EMAIL = "aryanandkjyothis4@gmail.com";
+export const DEFAULT_PHONE = "+91 7025063047";
+export const DEFAULT_WHATSAPP_NUMBER = "917025063047";
+export const DEFAULT_WHATSAPP_URL = "https://wa.me/917025063047";
+export const DEFAULT_EMAIL = "aryanandkjyothis4@gmail.com";
 
 export function getContactConfig(): ContactConfig {
   const envPhone = import.meta.env.VITE_CONTACT_PHONE;

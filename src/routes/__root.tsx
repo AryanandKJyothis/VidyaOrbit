@@ -80,7 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       meta: [
         { charSet: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
-        { title: "Vidya Orbit --- Manage your Center in One Orbit" },
+        { title: "Vidya Orbit — Manage your Centre" },
         {
           name: "description",
           content:
@@ -89,7 +89,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { name: "author", content: "Vidya" },
         {
           property: "og:title",
-          content: "Vidya Orbit --- Manage your Center in One Orbit",
+          content: "Vidya Orbit — Manage your Centre",
         },
         {
           property: "og:description",
@@ -99,7 +99,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { property: "og:type", content: "website" },
         {
           name: "twitter:title",
-          content: "Vidya Orbit --- Manage your Center in One Orbit",
+          content: "Vidya Orbit — Manage your Centre",
         },
         {
           name: "twitter:description",

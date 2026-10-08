@@ -1,0 +1,243 @@
+/**
+ * Razorpay in-app checkout pricing configuration (v3 - tier + cycle model)
+ * Server-side pricing configuration and logic.
+ */
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+import {
+  PLAN_STUDENT_LIMITS,
+  UNLIMITED_STUDENT_SENTINEL,
+  planCodeForTier,
+} from "@/lib/plan-limits";
+
+export type PlanTier = "starter" | "growth" | "large";
+export type BillingCycle = "monthly" | "annual";
+
+export type LineItem = {
+  item: "setup_fee" | "subscription_charge";
+  amount: number; // paise
+};
+
+export type PricingResult = {
+  total: number; // paise
+  currency: string;
+  line_items: LineItem[];
+  tier: PlanTier;
+  cycle: BillingCycle;
+  months: number; // 1 for monthly, 12 for annual
+};
+
+// ── Plan Configuration (code constants; match pricing-display.ts) ──
+export type TierConfig = {
+  tier: PlanTier;
+  student_limit: number;
+  setup_fee_paise: number;
+  monthly_price_paise: number;
+  annual_price_paise: number;
+  display_name: string;
+  description: string;
+};
+
+export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
+  starter: {
+    tier: "starter",
+    student_limit: PLAN_STUDENT_LIMITS.starter ?? 100,
+    setup_fee_paise: 0,
+    monthly_price_paise: 49900, // ₹499
+    annual_price_paise: 499900, // ₹4,999
+    display_name: "Starter",
+    description: "Up to 100 students",
+  },
+  growth: {
+    tier: "growth",
+    student_limit: PLAN_STUDENT_LIMITS.growth ?? 500,
+    setup_fee_paise: 500000, // ₹5,000 first monthly only
+    monthly_price_paise: 99900, // ₹999
+    annual_price_paise: 1000000, // ₹10,000
+    display_name: "Growth",
+    description: "Up to 500 students",
+  },
+  large: {
+    tier: "large",
+    student_limit: UNLIMITED_STUDENT_SENTINEL,
+    setup_fee_paise: 500000, // ₹5,000 first monthly only
+    monthly_price_paise: 249900, // ₹2,499
+    annual_price_paise: 2500000, // ₹25,000
+    display_name: "Large",
+    description: "Unlimited students",
+  },
+};
+
+/**
+ * Get tier config.
+ */
+export function getTierConfig(tier: PlanTier): TierConfig {
+  return TIER_CONFIGS[tier];
+}
+
+/**
+ * Validate tier.
+ */
+export function isValidTier(tier: string): tier is PlanTier {
+  return tier === "starter" || tier === "growth" || tier === "large";
+}
+
+/**
+ * Validate cycle.
+ */
+export function isValidCycle(cycle: string): cycle is BillingCycle {
+  return cycle === "monthly" || cycle === "annual";
+}
+
+/**
+ * Compute pricing for a plan purchase.
+ * Setup is a one-time onboarding fee: charged only when there is no prior
+ * captured payment, and only on monthly Growth/Large. Annual first orders
+ * do not include a setup line, but that capture still counts as paid so a
+ * later monthly switch is not charged setup.
+ * @param hasPriorPaidOrder Whether the workspace has any captured *live* paid
+ *   order or setup_fee_paid = true. Test-mode captures do not count.
+ */
+export function computePricing(
+  tier: PlanTier,
+  cycle: BillingCycle,
+  hasPriorPaidOrder: boolean,
+): PricingResult {
+  const config = getTierConfig(tier);
+  const line_items: LineItem[] = [];
+
+  if (!hasPriorPaidOrder && cycle === "monthly" && config.setup_fee_paise > 0) {
+    line_items.push({ item: "setup_fee", amount: config.setup_fee_paise });
+  }
+
+  // Subscription charge based on cycle
+  const price =
+    cycle === "monthly"
+      ? config.monthly_price_paise
+      : config.annual_price_paise;
+  line_items.push({ item: "subscription_charge", amount: price });
+
+  const total = line_items.reduce((sum, item) => sum + item.amount, 0);
+
+  return {
+    total,
+    currency: "INR",
+    line_items,
+    tier,
+    cycle,
+    months: cycle === "monthly" ? 1 : 12,
+  };
+}
+
+export type SetupFeeSubscriptionRow = {
+  setup_fee_paid?: boolean | null;
+  plan?: string | null;
+  expiry_date?: string | null;
+};
+
+export type SetupFeeLineItem = {
+  item?: string;
+  amount?: number | string | null;
+};
+
+/** True when captured line_items include a setup_fee with amount > 0. */
+export function lineItemsIncludeSetup(lineItems: unknown): boolean {
+  if (!Array.isArray(lineItems)) return false;
+  return lineItems.some((raw) => {
+    if (!raw || typeof raw !== "object") return false;
+    const li = raw as SetupFeeLineItem;
+    return li.item === "setup_fee" && Number(li.amount) > 0;
+  });
+}
+
+/**
+ * Setup is already paid when the admin flagged subscriptions.setup_fee_paid.
+ * A non-free plan or an expiry date does not waive setup.
+ */
+export function setupFeePaidFromSubscription(
+  sub: SetupFeeSubscriptionRow | null | undefined,
+): boolean {
+  return Boolean(sub?.setup_fee_paid);
+}
+
+/**
+ * Whether this workspace should skip the online setup fee.
+ * True when setup_fee_paid is set, or any captured *live* billing_orders row
+ * exists (any plan/cycle, with or without a setup line, including a hold).
+ * Test-mode captures never count. Throws on DB error (never silently overcharge).
+ */
+export async function hasSetupFeePaid(
+  ownerId: string,
+  db: SupabaseClient<Database>,
+  sub?: SetupFeeSubscriptionRow | null,
+): Promise<boolean> {
+  let row = sub;
+  if (row === undefined) {
+    const { data, error: subErr } = await db
+      .from("subscriptions")
+      .select("setup_fee_paid")
+      .eq("owner_id", ownerId)
+      .maybeSingle();
+    if (subErr) throw subErr;
+    row = data;
+  }
+  if (setupFeePaidFromSubscription(row)) return true;
+
+  const { data, error } = await db
+    .from("billing_orders")
+    .select("id")
+    .eq("owner_id", ownerId)
+    .eq("key_mode", "live")
+    .not("activated_at", "is", null);
+
+  if (error) throw error;
+  return (data ?? []).length > 0;
+}
+
+/** @deprecated Use hasSetupFeePaid */
+export const hasAnyPaidOrder = hasSetupFeePaid;
+
+/**
+ * Get the appropriate plan code for subscriptions table based on tier.
+ * Maps billing tiers to subscription plan codes.
+ */
+export function getSubscriptionPlanCode(
+  tier: PlanTier,
+): "starter" | "growth" | "pro" {
+  return planCodeForTier(tier);
+}
+
+export type RazorpayKeyMode = "test" | "live";
+
+/** Server-side only. rzp_live_ → live; anything else (including rzp_test_) → test. */
+export function razorpayKeyMode(keyId: string): RazorpayKeyMode {
+  return keyId.startsWith("rzp_live_") ? "live" : "test";
+}
+
+/**
+ * Test/live guard: refuse to run with live keys unless explicitly allowed.
+ * RAZORPAY_ALLOW_LIVE must be the exact string "true".
+ */
+export function assertRazorpayKeyMode(keyId: string | undefined): void {
+  if (!keyId) {
+    throw new Error("RAZORPAY_KEY_ID is not set");
+  }
+
+  const isLive = razorpayKeyMode(keyId) === "live";
+  const allowLive = process.env.RAZORPAY_ALLOW_LIVE === "true";
+
+  if (isLive && !allowLive) {
+    throw new Error(
+      "Refusing to use live Razorpay keys without RAZORPAY_ALLOW_LIVE=true",
+    );
+  }
+}
+
+/**
+ * Server-side billing enabled flag.
+ * MUST default to OFF (false) for safety.
+ */
+export function isBillingEnabled(): boolean {
+  return process.env.BILLING_ENABLED === "true";
+}

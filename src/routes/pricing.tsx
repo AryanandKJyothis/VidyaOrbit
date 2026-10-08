@@ -16,7 +16,7 @@ import {
   Mail,
 } from "lucide-react";
 
-const SITE_URL = "https://vidyaorbit.in";
+const SITE_URL = "https://www.vidyaorbit.in";
 const TITLE = "Pricing — Vidya Orbit";
 const DESC =
   "Simple INR pricing for Indian coaching centres. Start free for up to 25 students. Upgrade only when you grow.";

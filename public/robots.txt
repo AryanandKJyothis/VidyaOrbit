@@ -10,4 +10,4 @@ Disallow: /billing
 Disallow: /settings
 Disallow: /admin
 
-Sitemap: https://vidyaorbit.in/sitemap.xml
+Sitemap: https://www.vidyaorbit.in/sitemap.xml

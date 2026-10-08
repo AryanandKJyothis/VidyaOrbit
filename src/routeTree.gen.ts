@@ -33,8 +33,9 @@ import { Route as AuthenticatedReceiptsPaymentIdRouteImport } from './routes/_au
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedSettingsTeamRouteImport } from './routes/_authenticated/settings.team'
 import { Route as AuthenticatedStudentsIdRouteImport } from './routes/_authenticated/students.$id'
-import { Route as ApiBillingStartSubscriptionRouteImport } from './routes/api/billing/start-subscription'
-import { Route as ApiBillingSyncSubscriptionRouteImport } from './routes/api/billing/sync-subscription'
+import { Route as ApiBillingCreateOrderRouteImport } from './routes/api/billing/create-order'
+import { Route as ApiBillingPricingRouteImport } from './routes/api/billing/pricing'
+import { Route as ApiBillingVerifyPaymentRouteImport } from './routes/api/billing/verify-payment'
 import { Route as ApiWebhooksRazorpayRouteImport } from './routes/api/webhooks/razorpay'
 
 const IndexRoute = IndexRouteImport.update({
@@ -160,18 +161,21 @@ const AuthenticatedStudentsIdRoute = AuthenticatedStudentsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedStudentsRoute,
 } as any)
-const ApiBillingStartSubscriptionRoute =
-  ApiBillingStartSubscriptionRouteImport.update({
-    id: '/api/billing/start-subscription',
-    path: '/api/billing/start-subscription',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiBillingSyncSubscriptionRoute =
-  ApiBillingSyncSubscriptionRouteImport.update({
-    id: '/api/billing/sync-subscription',
-    path: '/api/billing/sync-subscription',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const ApiBillingCreateOrderRoute = ApiBillingCreateOrderRouteImport.update({
+  id: '/api/billing/create-order',
+  path: '/api/billing/create-order',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBillingPricingRoute = ApiBillingPricingRouteImport.update({
+  id: '/api/billing/pricing',
+  path: '/api/billing/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBillingVerifyPaymentRoute = ApiBillingVerifyPaymentRouteImport.update({
+  id: '/api/billing/verify-payment',
+  path: '/api/billing/verify-payment',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWebhooksRazorpayRoute = ApiWebhooksRazorpayRouteImport.update({
   id: '/api/webhooks/razorpay',
   path: '/api/webhooks/razorpay',
@@ -201,8 +205,9 @@ export interface FileRoutesByFullPath {
   '/receipts/$paymentId': typeof AuthenticatedReceiptsPaymentIdRoute
   '/settings/team': typeof AuthenticatedSettingsTeamRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
-  '/api/billing/start-subscription': typeof ApiBillingStartSubscriptionRoute
-  '/api/billing/sync-subscription': typeof ApiBillingSyncSubscriptionRoute
+  '/api/billing/create-order': typeof ApiBillingCreateOrderRoute
+  '/api/billing/pricing': typeof ApiBillingPricingRoute
+  '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
 }
@@ -228,8 +233,9 @@ export interface FileRoutesByTo {
   '/receipts/$paymentId': typeof AuthenticatedReceiptsPaymentIdRoute
   '/settings/team': typeof AuthenticatedSettingsTeamRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
-  '/api/billing/start-subscription': typeof ApiBillingStartSubscriptionRoute
-  '/api/billing/sync-subscription': typeof ApiBillingSyncSubscriptionRoute
+  '/api/billing/create-order': typeof ApiBillingCreateOrderRoute
+  '/api/billing/pricing': typeof ApiBillingPricingRoute
+  '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
 }
@@ -258,8 +264,9 @@ export interface FileRoutesById {
   '/_authenticated/receipts/$paymentId': typeof AuthenticatedReceiptsPaymentIdRoute
   '/_authenticated/settings/team': typeof AuthenticatedSettingsTeamRoute
   '/_authenticated/students/$id': typeof AuthenticatedStudentsIdRoute
-  '/api/billing/start-subscription': typeof ApiBillingStartSubscriptionRoute
-  '/api/billing/sync-subscription': typeof ApiBillingSyncSubscriptionRoute
+  '/api/billing/create-order': typeof ApiBillingCreateOrderRoute
+  '/api/billing/pricing': typeof ApiBillingPricingRoute
+  '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
 }
@@ -288,8 +295,9 @@ export interface FileRouteTypes {
     | '/receipts/$paymentId'
     | '/settings/team'
     | '/students/$id'
-    | '/api/billing/start-subscription'
-    | '/api/billing/sync-subscription'
+    | '/api/billing/create-order'
+    | '/api/billing/pricing'
+    | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
@@ -315,8 +323,9 @@ export interface FileRouteTypes {
     | '/receipts/$paymentId'
     | '/settings/team'
     | '/students/$id'
-    | '/api/billing/start-subscription'
-    | '/api/billing/sync-subscription'
+    | '/api/billing/create-order'
+    | '/api/billing/pricing'
+    | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
     | '/settings'
   id:
@@ -344,8 +353,9 @@ export interface FileRouteTypes {
     | '/_authenticated/receipts/$paymentId'
     | '/_authenticated/settings/team'
     | '/_authenticated/students/$id'
-    | '/api/billing/start-subscription'
-    | '/api/billing/sync-subscription'
+    | '/api/billing/create-order'
+    | '/api/billing/pricing'
+    | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
     | '/_authenticated/settings/'
   fileRoutesById: FileRoutesById
@@ -360,8 +370,9 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
   JoinTokenRoute: typeof JoinTokenRoute
-  ApiBillingStartSubscriptionRoute: typeof ApiBillingStartSubscriptionRoute
-  ApiBillingSyncSubscriptionRoute: typeof ApiBillingSyncSubscriptionRoute
+  ApiBillingCreateOrderRoute: typeof ApiBillingCreateOrderRoute
+  ApiBillingPricingRoute: typeof ApiBillingPricingRoute
+  ApiBillingVerifyPaymentRoute: typeof ApiBillingVerifyPaymentRoute
   ApiWebhooksRazorpayRoute: typeof ApiWebhooksRazorpayRoute
 }
 
@@ -535,18 +546,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudentsIdRouteImport
       parentRoute: typeof AuthenticatedStudentsRoute
     }
-    '/api/billing/start-subscription': {
-      id: '/api/billing/start-subscription'
-      path: '/api/billing/start-subscription'
-      fullPath: '/api/billing/start-subscription'
-      preLoaderRoute: typeof ApiBillingStartSubscriptionRouteImport
+    '/api/billing/create-order': {
+      id: '/api/billing/create-order'
+      path: '/api/billing/create-order'
+      fullPath: '/api/billing/create-order'
+      preLoaderRoute: typeof ApiBillingCreateOrderRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/billing/sync-subscription': {
-      id: '/api/billing/sync-subscription'
-      path: '/api/billing/sync-subscription'
-      fullPath: '/api/billing/sync-subscription'
-      preLoaderRoute: typeof ApiBillingSyncSubscriptionRouteImport
+    '/api/billing/pricing': {
+      id: '/api/billing/pricing'
+      path: '/api/billing/pricing'
+      fullPath: '/api/billing/pricing'
+      preLoaderRoute: typeof ApiBillingPricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/billing/verify-payment': {
+      id: '/api/billing/verify-payment'
+      path: '/api/billing/verify-payment'
+      fullPath: '/api/billing/verify-payment'
+      preLoaderRoute: typeof ApiBillingVerifyPaymentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/webhooks/razorpay': {
@@ -631,8 +649,9 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
   JoinTokenRoute: JoinTokenRoute,
-  ApiBillingStartSubscriptionRoute: ApiBillingStartSubscriptionRoute,
-  ApiBillingSyncSubscriptionRoute: ApiBillingSyncSubscriptionRoute,
+  ApiBillingCreateOrderRoute: ApiBillingCreateOrderRoute,
+  ApiBillingPricingRoute: ApiBillingPricingRoute,
+  ApiBillingVerifyPaymentRoute: ApiBillingVerifyPaymentRoute,
   ApiWebhooksRazorpayRoute: ApiWebhooksRazorpayRoute,
 }
 export const routeTree = rootRouteImport

@@ -139,6 +139,66 @@ export type Database = {
         };
         Relationships: [];
       };
+      billing_orders: {
+        Row: {
+          activated_at: string | null;
+          amount_paise: number;
+          created_at: string;
+          currency: string;
+          id: string;
+          intent: string;
+          line_items: Json | null;
+          owner_id: string;
+          paid_at: string | null;
+          razorpay_order_id: string;
+          razorpay_payment_id: string | null;
+          status: string;
+          tier: string;
+          cycle: string;
+          needs_review: boolean;
+          review_reason: string | null;
+          key_mode: "test" | "live";
+        };
+        Insert: {
+          activated_at?: string | null;
+          amount_paise: number;
+          created_at?: string;
+          currency?: string;
+          id?: string;
+          intent: string;
+          line_items?: Json | null;
+          owner_id: string;
+          paid_at?: string | null;
+          razorpay_order_id: string;
+          razorpay_payment_id?: string | null;
+          status?: string;
+          tier: string;
+          cycle: string;
+          needs_review?: boolean;
+          review_reason?: string | null;
+          key_mode: "test" | "live";
+        };
+        Update: {
+          activated_at?: string | null;
+          amount_paise?: number;
+          created_at?: string;
+          currency?: string;
+          id?: string;
+          intent?: string;
+          line_items?: Json | null;
+          owner_id?: string;
+          paid_at?: string | null;
+          razorpay_order_id?: string;
+          razorpay_payment_id?: string | null;
+          status?: string;
+          tier?: string;
+          cycle?: string;
+          needs_review?: boolean;
+          review_reason?: string | null;
+          key_mode?: "test" | "live";
+        };
+        Relationships: [];
+      };
       fee_payments: {
         Row: {
           amount: number;
@@ -408,6 +468,7 @@ export type Database = {
           plan_price: number | null;
           razorpay_customer_id: string | null;
           razorpay_subscription_id: string | null;
+          setup_fee_paid: boolean;
           start_date: string | null;
           status: string;
           updated_at: string;
@@ -425,6 +486,7 @@ export type Database = {
           plan_price?: number | null;
           razorpay_customer_id?: string | null;
           razorpay_subscription_id?: string | null;
+          setup_fee_paid?: boolean;
           start_date?: string | null;
           status?: string;
           updated_at?: string;
@@ -442,6 +504,7 @@ export type Database = {
           plan_price?: number | null;
           razorpay_customer_id?: string | null;
           razorpay_subscription_id?: string | null;
+          setup_fee_paid?: boolean;
           start_date?: string | null;
           status?: string;
           updated_at?: string;
@@ -556,6 +619,15 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      activate_billing_order: {
+        Args: {
+          _amount: number;
+          _currency: string;
+          _order_id: string;
+          _payment_id: string;
+        };
+        Returns: Json;
+      };
       admin_institute_health_detail: {
         Args: { _owner: string };
         Returns: Json;

@@ -2,8 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 import { APPROVED_PRICING, type PlanDisplay } from "@/lib/pricing-display";
+import {
+  PLAN_STUDENT_LIMITS,
+  toClientLimit,
+  type PlanCode,
+} from "@/lib/plan-limits";
 
-export type PlanCode = "free" | "starter" | "growth" | "pro";
+export type { PlanCode };
 
 function toPlanCode(code: PlanDisplay["code"]): PlanCode {
   return code === "large" ? "pro" : code;
@@ -16,10 +21,10 @@ function toPlanCode(code: PlanDisplay["code"]): PlanCode {
 export const TRIAL_MODE = false;
 
 export const PLAN_LIMITS: Record<PlanCode, number> = {
-  free: 25,
-  starter: 100,
-  growth: 500,
-  pro: 1000,
+  free: toClientLimit(PLAN_STUDENT_LIMITS.free),
+  starter: toClientLimit(PLAN_STUDENT_LIMITS.starter),
+  growth: toClientLimit(PLAN_STUDENT_LIMITS.growth),
+  pro: Infinity,
 };
 
 export const PLAN_RANK: Record<PlanCode, number> = {
@@ -62,7 +67,110 @@ type HealthRow = {
   over_by: number;
   days_until_expiry: number | null;
   expired: boolean;
+  setup_fee_paid?: boolean;
 };
+
+const FALLBACK_SUBSCRIPTION_COLUMNS =
+  "plan, status, current_period_end, start_date, expiry_date, plan_price, notes";
+
+type SubscriptionRpcClient = {
+  rpc: (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: unknown }>;
+  from: (table: string) => {
+    select: (cols: string) => {
+      eq: (
+        col: string,
+        val: string,
+      ) => {
+        maybeSingle: () => Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+  };
+};
+
+/** Exported for tests: staff must call RPC with the workspace owner id. */
+export async function fetchSubscriptionForOwner(
+  supabase: SubscriptionRpcClient,
+  ownerId: string,
+  isOwner: boolean,
+) {
+  const { data: healthRaw, error: healthErr } = await supabase.rpc(
+    "subscription_health",
+    { _uid: ownerId },
+  );
+
+  if (!healthErr && healthRaw) {
+    const h = healthRaw as HealthRow;
+    return {
+      plan: h.plan,
+      rawPlan: h.raw_plan,
+      status: h.status,
+      start_date: h.start_date,
+      expiry_date: h.expiry_date,
+      current_period_end: h.current_period_end,
+      plan_price: h.plan_price,
+      notes: h.notes,
+      limit: toClientLimit(h.limit),
+      student_count: h.student_count,
+      over_limit: h.over_limit,
+      over_by: h.over_by,
+      days_until_expiry: h.days_until_expiry,
+      expired: h.expired,
+      trial: false,
+      setup_fee_paid: Boolean(h.setup_fee_paid),
+      isOwner,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select(FALLBACK_SUBSCRIPTION_COLUMNS)
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+  if (error) throw error;
+  const row = data as {
+    plan: PlanCode;
+    status: string;
+    current_period_end: string | null;
+    start_date: string | null;
+    expiry_date: string | null;
+    plan_price: number | null;
+    notes: string | null;
+  } | null;
+  const plan = (row?.plan ?? "free") as PlanCode;
+  const status = row?.status ?? "active";
+  const expiry = row?.expiry_date ?? null;
+  const expired =
+    status === "expired" ||
+    status === "suspended" ||
+    status === "canceled" ||
+    (!!expiry && new Date(expiry).getTime() < Date.now());
+  const effectivePlan: PlanCode = expired ? "free" : plan;
+  const daysLeft = expiry
+    ? Math.ceil((new Date(expiry).getTime() - Date.now()) / 86_400_000)
+    : null;
+  return {
+    plan: effectivePlan,
+    rawPlan: plan,
+    status,
+    start_date: row?.start_date ?? null,
+    expiry_date: expiry,
+    current_period_end: row?.current_period_end ?? null,
+    plan_price: row?.plan_price ?? null,
+    notes: row?.notes ?? null,
+    limit: toClientLimit(PLAN_LIMITS[effectivePlan]),
+    student_count: 0,
+    over_limit: false,
+    over_by: 0,
+    days_until_expiry: daysLeft,
+    expired,
+    trial: false,
+    setup_fee_paid: false,
+    isOwner,
+  };
+}
 
 export function useSubscription() {
   const { user } = useAuth();
@@ -94,88 +202,17 @@ export function useSubscription() {
           days_until_expiry: null as number | null,
           expired: false,
           trial: true,
+          setup_fee_paid: true,
           isOwner,
         };
       }
 
       const { supabase } = await import("@/integrations/supabase/client");
-
-      // Single source of truth: SQL helper computes plan/limit/expiry/count atomically.
-      const { data: healthRaw, error: healthErr } = await supabase.rpc(
-        "subscription_health" as never,
-        { _uid: ownerId! } as never,
-      );
-
-      if (!healthErr && healthRaw) {
-        const h = healthRaw as unknown as HealthRow;
-        return {
-          plan: h.plan,
-          rawPlan: h.raw_plan,
-          status: h.status,
-          start_date: h.start_date,
-          expiry_date: h.expiry_date,
-          current_period_end: h.current_period_end,
-          plan_price: h.plan_price,
-          notes: h.notes,
-          limit: h.limit,
-          student_count: h.student_count,
-          over_limit: h.over_limit,
-          over_by: h.over_by,
-          days_until_expiry: h.days_until_expiry,
-          expired: h.expired,
-          trial: false,
-          isOwner,
-        };
-      }
-
-      // Fallback: legacy direct-table read (e.g. if RPC not yet migrated)
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .select(
-          "plan, status, current_period_end, start_date, expiry_date, plan_price, notes",
-        )
-        .eq("owner_id", ownerId!)
-        .maybeSingle();
-      if (error) throw error;
-      const row = data as {
-        plan: PlanCode;
-        status: string;
-        current_period_end: string | null;
-        start_date: string | null;
-        expiry_date: string | null;
-        plan_price: number | null;
-        notes: string | null;
-      } | null;
-      const plan = (row?.plan ?? "free") as PlanCode;
-      const status = row?.status ?? "active";
-      const expiry = row?.expiry_date ?? null;
-      const expired =
-        status === "expired" ||
-        status === "suspended" ||
-        status === "canceled" ||
-        (!!expiry && new Date(expiry).getTime() < Date.now());
-      const effectivePlan: PlanCode = expired ? "free" : plan;
-      const daysLeft = expiry
-        ? Math.ceil((new Date(expiry).getTime() - Date.now()) / 86_400_000)
-        : null;
-      return {
-        plan: effectivePlan,
-        rawPlan: plan,
-        status,
-        start_date: row?.start_date ?? null,
-        expiry_date: expiry,
-        current_period_end: row?.current_period_end ?? null,
-        plan_price: row?.plan_price ?? null,
-        notes: row?.notes ?? null,
-        limit: PLAN_LIMITS[effectivePlan],
-        student_count: 0,
-        over_limit: false,
-        over_by: 0,
-        days_until_expiry: daysLeft,
-        expired,
-        trial: false,
+      return fetchSubscriptionForOwner(
+        supabase as unknown as SubscriptionRpcClient,
+        ownerId!,
         isOwner,
-      };
+      );
     },
   });
 }
