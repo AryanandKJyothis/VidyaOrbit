@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import logoMark from "@/assets/logo-mark.png";
+import logoMark from "@/assets/logo-mark.webp";
 
 type LogoProps = {
   className?: string;

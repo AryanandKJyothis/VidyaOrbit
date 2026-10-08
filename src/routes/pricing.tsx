@@ -1,22 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { LogoWordmark } from "@/components/logo";
-import {
-  APPROVED_PRICING,
-  formatIndianPrice,
-  getAnnualSavingsLabel,
-  jsonLdOffers,
-} from "@/lib/pricing-display";
+import { jsonLdOffers } from "@/lib/pricing-display";
 import { getContactConfig } from "@/lib/contact-config";
-import {
-  Check,
-  ArrowRight,
-  ShieldCheck,
-  MessageCircle,
-  Mail,
-} from "lucide-react";
+import { SITE_URL } from "@/lib/site";
+import { ShieldCheck, MessageCircle, Mail } from "lucide-react";
+import { PublicPricingGrid } from "@/components/public/pricing-grid";
+import { SiteHeader } from "@/components/public/site-header";
+import { SiteFooter } from "@/components/public/site-footer";
 
-const SITE_URL = "https://www.vidyaorbit.in";
 const TITLE = "Pricing — Vidya Orbit";
 const DESC =
   "Simple INR pricing for Indian coaching centres. Start free for up to 25 students. Upgrade only when you grow.";
@@ -72,56 +63,6 @@ const FAQ = [
   },
 ];
 
-function PricingCTA({
-  plan,
-  isRecommended,
-}: {
-  plan: (typeof APPROVED_PRICING)[number];
-  isRecommended: boolean;
-}) {
-  const { whatsappUrl, email } = getContactConfig();
-  const planName = plan.displayName;
-  const message = `Hi, I'd like the ${planName} plan (monthly/annual) for my centre.`;
-  const emailSubject = `${planName} plan inquiry`;
-
-  return (
-    <div className="mt-6 flex flex-col gap-2">
-      {whatsappUrl && (
-        <a
-          href={`${whatsappUrl}?text=${encodeURIComponent(message)}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          <Button
-            className="w-full gap-1.5"
-            variant={isRecommended ? "default" : "outline"}
-            size="sm"
-          >
-            <MessageCircle className="h-3.5 w-3.5" />
-            WhatsApp us
-          </Button>
-        </a>
-      )}
-      {email && (
-        <a
-          href={`mailto:${email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(message)}`}
-        >
-          <Button
-            className="w-full gap-1.5"
-            variant={
-              whatsappUrl ? "ghost" : isRecommended ? "default" : "outline"
-            }
-            size="sm"
-          >
-            <Mail className="h-3.5 w-3.5" />
-            Email us
-          </Button>
-        </a>
-      )}
-    </div>
-  );
-}
-
 function ContactCard() {
   const { whatsappUrl, email } = getContactConfig();
   if (!whatsappUrl && !email) return null;
@@ -159,30 +100,7 @@ function ContactCard() {
 function PricingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link to="/" className="flex items-center">
-            <LogoWordmark />
-          </Link>
-          <div className="flex items-center gap-2">
-            <Link to="/login">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="hidden sm:inline-flex"
-              >
-                Sign in
-              </Button>
-            </Link>
-            <Link to="/login" search={{ mode: "signup" }}>
-              <Button size="sm">
-                Start free
-                <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <SiteHeader nav="pricing" />
 
       <main>
         <section className="relative overflow-hidden">
@@ -208,90 +126,7 @@ function PricingPage() {
         </section>
 
         <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {APPROVED_PRICING.map((plan) => {
-              const isRecommended = plan.code === "growth";
-              const savingsLabel = getAnnualSavingsLabel(plan);
-              return (
-                <div
-                  key={plan.code}
-                  className={
-                    "relative flex flex-col rounded-2xl border p-6 transition " +
-                    (isRecommended
-                      ? "border-[color:var(--brand-teal)]/60 bg-card shadow-[var(--shadow-lift)]"
-                      : "border-border bg-card hover:shadow-sm")
-                  }
-                >
-                  {isRecommended && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[color:var(--brand-teal)] px-3 py-1 text-[11px] font-semibold text-white">
-                      Recommended
-                    </span>
-                  )}
-                  <div className="flex items-baseline justify-between">
-                    <h2 className="font-display text-xl font-semibold">
-                      {plan.displayName}
-                    </h2>
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {plan.tagline}
-                  </p>
-                  <div className="mt-5">
-                    <div className="flex items-baseline gap-1">
-                      <span className="font-display text-3xl font-bold">
-                        {plan.monthlyPrice === 0
-                          ? "Free"
-                          : formatIndianPrice(plan.monthlyPrice)}
-                      </span>
-                      {plan.monthlyPrice !== 0 && (
-                        <span className="text-sm text-muted-foreground">
-                          /month
-                        </span>
-                      )}
-                    </div>
-                    {plan.monthlyPrice > 0 && (
-                      <>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {formatIndianPrice(plan.annualPrice)}/year
-                        </p>
-                        {savingsLabel && (
-                          <p className="mt-0.5 text-xs font-medium text-[color:var(--brand-teal)]">
-                            {savingsLabel}
-                          </p>
-                        )}
-                        {plan.setupFee > 0 && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {formatIndianPrice(plan.setupFee)} one-time setup on
-                            monthly (waived on annual)
-                          </p>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <ul className="mt-5 space-y-2.5 text-sm flex-1">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2">
-                        <Check className="mt-0.5 h-4 w-4 flex-none text-[color:var(--brand-teal)]" />
-                        <span className="text-foreground/90">{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  {plan.code === "free" ? (
-                    <Link
-                      to="/login"
-                      search={{ mode: "signup" }}
-                      className="mt-6"
-                    >
-                      <Button className="w-full" variant="outline" size="sm">
-                        {plan.ctaLabel}
-                      </Button>
-                    </Link>
-                  ) : (
-                    <PricingCTA plan={plan} isRecommended={isRecommended} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <PublicPricingGrid />
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Paid plans are arranged by invoice (monthly or annual). Online
@@ -301,7 +136,7 @@ function PricingPage() {
           <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 text-[color:var(--brand-teal)]" />
-              Data encrypted in transit &amp; at rest
+              Data encrypted in transit and at rest
             </span>
             <span>Multi-level permissions</span>
             <span>Export data anytime</span>
@@ -333,26 +168,8 @@ function PricingPage() {
             <ContactCard />
           </div>
         </section>
-
-        <footer className="border-t border-border">
-          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-8 text-xs text-muted-foreground sm:flex-row sm:px-6">
-            <div className="flex items-center gap-2">
-              <LogoWordmark />
-            </div>
-            <div className="flex items-center gap-4">
-              <Link to="/" className="hover:text-foreground">
-                Home
-              </Link>
-              <Link to="/privacy" className="hover:text-foreground">
-                Privacy
-              </Link>
-              <Link to="/terms" className="hover:text-foreground">
-                Terms
-              </Link>
-            </div>
-          </div>
-        </footer>
       </main>
+      <SiteFooter />
     </div>
   );
 }

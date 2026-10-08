@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { computePricing, TIER_CONFIGS } from "@/lib/billing-pricing";
-import { APPROVED_PRICING, getPlanByCode } from "@/lib/pricing-display";
+import {
+  APPROVED_PRICING,
+  formatIndianPrice,
+  getAnnualSavings,
+  getAnnualSavingsLabel,
+  getPlanByCode,
+} from "@/lib/pricing-display";
 
 const rupees = (paise: number) => paise / 100;
 
@@ -73,5 +79,47 @@ describe("pricing-display matches billing-pricing", () => {
       "growth",
       "large",
     ]);
+  });
+});
+
+describe("approved public prices", () => {
+  it("matches the locked price table", () => {
+    const byCode = Object.fromEntries(APPROVED_PRICING.map((p) => [p.code, p]));
+    expect(byCode.free).toMatchObject({
+      monthlyPrice: 0,
+      studentLimit: "Up to 25 students",
+      setupFee: 0,
+    });
+    expect(byCode.starter).toMatchObject({
+      monthlyPrice: 499,
+      annualPrice: 4999,
+      setupFee: 0,
+    });
+    expect(byCode.growth).toMatchObject({
+      monthlyPrice: 999,
+      annualPrice: 10000,
+      setupFee: 5000,
+    });
+    expect(byCode.large).toMatchObject({
+      monthlyPrice: 2499,
+      annualPrice: 25000,
+      setupFee: 5000,
+    });
+  });
+
+  it("does not use a Most popular badge label", () => {
+    const blob = JSON.stringify(APPROVED_PRICING).toLowerCase();
+    expect(blob).not.toContain("most popular");
+  });
+
+  it("formats INR the Indian way", () => {
+    expect(formatIndianPrice(499)).toBe("₹499");
+    expect(formatIndianPrice(4999)).toBe("₹4,999");
+  });
+
+  it("computes annual savings without mixing in setup", () => {
+    const growth = APPROVED_PRICING.find((p) => p.code === "growth")!;
+    expect(getAnnualSavings(growth)).toBe(999 * 12 - 10000);
+    expect(getAnnualSavingsLabel(growth)).toBe("Save ₹1,988 + free setup");
   });
 });
