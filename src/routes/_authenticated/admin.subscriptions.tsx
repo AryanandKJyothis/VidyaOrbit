@@ -106,7 +106,11 @@ type Filter =
   | "trials"
   | "free";
 type Sort =
-  "expiring" | "most_students" | "least_active" | "recently_active" | "name";
+  | "expiring"
+  | "most_students"
+  | "least_active"
+  | "recently_active"
+  | "name";
 
 function AdminSubscriptionsManager() {
   const [search, setSearch] = useState("");
@@ -588,7 +592,11 @@ function EditDialog({
       ].includes(s)
     ) {
       return s as
-        "active" | "trialing" | "past_due" | "canceled" | "pending_checkout";
+        | "active"
+        | "trialing"
+        | "past_due"
+        | "canceled"
+        | "pending_checkout";
     }
     return "active";
   };

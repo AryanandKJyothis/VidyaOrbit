@@ -76,9 +76,7 @@ export function ExpiryBanner() {
             size="sm"
             variant={severity === "danger" ? "default" : "outline"}
           >
-            <Link to="/plan">
-              {expired ? "Renew now" : "Renew"}
-            </Link>
+            <Link to="/plan">{expired ? "Renew now" : "Renew"}</Link>
           </Button>
           <Button
             size="icon"

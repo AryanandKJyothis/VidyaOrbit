@@ -107,7 +107,10 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
           );
 
         if (upsertErr) {
-          console.error("[Razorpay webhook] Upsert delivery failed:", upsertErr);
+          console.error(
+            "[Razorpay webhook] Upsert delivery failed:",
+            upsertErr,
+          );
           return Response.json({ error: "DB_UPSERT_FAILED" }, { status: 500 });
         }
 
@@ -183,19 +186,16 @@ export const Route = createFileRoute("/api/webhooks/razorpay")({
               paymentEntity.currency.toUpperCase() !==
                 order.currency.toUpperCase()
             ) {
-              console.error(
-                "[Razorpay webhook] Amount or currency mismatch:",
-                {
-                  expected: {
-                    amount: order.amount_paise,
-                    currency: order.currency,
-                  },
-                  received: {
-                    amount: paymentEntity.amount,
-                    currency: paymentEntity.currency,
-                  },
+              console.error("[Razorpay webhook] Amount or currency mismatch:", {
+                expected: {
+                  amount: order.amount_paise,
+                  currency: order.currency,
                 },
-              );
+                received: {
+                  amount: paymentEntity.amount,
+                  currency: paymentEntity.currency,
+                },
+              });
               // Return 200 but log as alert (don't retry)
               return Response.json({
                 ok: true,

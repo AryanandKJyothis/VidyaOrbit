@@ -37,15 +37,13 @@ export async function activateOrderOnce(
   currency: string,
 ): Promise<ActivationResult> {
   // Call the atomic activation RPC
-  const { data, error } = await supabase.rpc(
-    "activate_billing_order" as any,
-    {
-      _order_id: orderId,
-      _payment_id: paymentId,
-      _amount: BigInt(amount),
-      _currency: currency,
-    },
-  );
+  // @ts-expect-error - activate_billing_order exists but types aren't regenerated
+  const { data, error } = await supabase.rpc("activate_billing_order", {
+    _order_id: orderId,
+    _payment_id: paymentId,
+    _amount: BigInt(amount),
+    _currency: currency,
+  });
 
   if (error) {
     console.error("Activation RPC error:", error);

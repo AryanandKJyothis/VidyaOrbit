@@ -39,7 +39,7 @@ function getEnvInt(key: string, fallback: number): number {
   const val = process.env[key];
   if (!val) return fallback;
   const parsed = parseInt(val, 10);
-  
+
   // Validate: must be a positive integer >= 100 paise for prices, >= 0 for setup
   if (isNaN(parsed)) {
     console.warn(
@@ -47,21 +47,21 @@ function getEnvInt(key: string, fallback: number): number {
     );
     return fallback;
   }
-  
+
   if (key.includes("SETUP") && parsed < 0) {
     console.warn(
       `[billing-pricing] Invalid ${key}: ${parsed} is negative, using fallback ${fallback}`,
     );
     return fallback;
   }
-  
+
   if (!key.includes("SETUP") && parsed < 100) {
     console.warn(
       `[billing-pricing] Invalid ${key}: ${parsed} is less than 100 paise, using fallback ${fallback}`,
     );
     return fallback;
   }
-  
+
   return parsed;
 }
 

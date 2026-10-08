@@ -23,8 +23,7 @@ export const Route = createFileRoute("/api/billing/pricing")({
             tier: t,
             name: TIER_CONFIGS[t].display_name,
             description: TIER_CONFIGS[t].description,
-            studentLimit:
-              t === "large" ? null : TIER_CONFIGS[t].student_limit,
+            studentLimit: t === "large" ? null : TIER_CONFIGS[t].student_limit,
             monthlyPricePaise: TIER_CONFIGS[t].monthly_price_paise,
             annualPricePaise: TIER_CONFIGS[t].annual_price_paise,
             setupFeePaise: TIER_CONFIGS[t].setup_fee_paise,
