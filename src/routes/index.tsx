@@ -20,7 +20,8 @@ import {
 import {
   APPROVED_PRICING,
   formatIndianPrice,
-  getAnnualSavings,
+  getAnnualSavingsLabel,
+  jsonLdOffers,
 } from "@/lib/pricing-display";
 import { getContactConfig } from "@/lib/contact-config";
 
@@ -62,12 +63,7 @@ export const Route = createFileRoute("/")({
           applicationCategory: "BusinessApplication",
           operatingSystem: "Web",
           description: HERO_SUB,
-          offers: APPROVED_PRICING.map((p) => ({
-            "@type": "Offer",
-            name: p.displayName,
-            price: p.monthlyPrice.toString(),
-            priceCurrency: "INR",
-          })),
+          offers: jsonLdOffers(SITE_URL + "/"),
           url: SITE_URL,
         }),
       },
@@ -77,32 +73,12 @@ export const Route = createFileRoute("/")({
 });
 
 function IndexRoute() {
-  const { session, loading } = useAuth();
+  const { session } = useAuth();
   if (session) return <Navigate to="/dashboard" />;
-  return <Landing loading={loading} />;
+  return <Landing />;
 }
 
-function Landing({ loading }: { loading: boolean }) {
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background text-foreground">
-        <SiteHeader />
-        <main>
-          <Hero />
-          <TrustStrip />
-          <Pains />
-          <FeatureGrid />
-          <WorkflowStrip />
-          <ProofStrip />
-          <Pricing />
-          <FAQ />
-          <CTA />
-        </main>
-        <SiteFooter />
-      </div>
-    );
-  }
-
+function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
@@ -221,7 +197,7 @@ function ProductPreview() {
           <span className="ml-3 text-[11px] font-medium text-muted-foreground">
             vidyaorbit.in/dashboard
           </span>
-          <span className="ml-auto text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+          <span className="ml-auto rounded bg-foreground/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground">
             Sample data
           </span>
         </div>
@@ -397,7 +373,7 @@ function FeatureGrid() {
   const features = [
     {
       icon: Users,
-      title: "Students &amp; batches",
+      title: "Students & batches",
       body: "A clean roster with parent contacts, batch tags, fee status and history — searchable in one click.",
     },
     {
@@ -422,7 +398,7 @@ function FeatureGrid() {
     },
     {
       icon: ShieldCheck,
-      title: "Team roles &amp; permissions",
+      title: "Team roles & permissions",
       body: "Invite tutors or admin staff with read or write access per area — billing stays with you.",
     },
   ];
@@ -453,10 +429,9 @@ function FeatureGrid() {
               >
                 <f.icon className="h-5 w-5 text-[color:var(--brand-teal)]" />
               </div>
-              <h3
-                className="mt-4 font-display text-lg font-semibold"
-                dangerouslySetInnerHTML={{ __html: f.title }}
-              />
+              <h3 className="mt-4 font-display text-lg font-semibold">
+                {f.title}
+              </h3>
               <p className="mt-1.5 text-sm text-muted-foreground">{f.body}</p>
             </div>
           ))}
@@ -569,11 +544,6 @@ function ProofStrip() {
 }
 
 function Pricing() {
-  const displayPlans = [
-    APPROVED_PRICING[0],
-    APPROVED_PRICING[2],
-    APPROVED_PRICING[3],
-  ];
   return (
     <section id="pricing" className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
       <div className="mx-auto max-w-2xl text-center">
@@ -581,18 +551,19 @@ function Pricing() {
           Honest pricing. Start free.
         </h2>
         <p className="mt-3 text-muted-foreground">
-          Pay only when your centre grows. No hidden charges, no commitments.
+          Pay only when your centre grows. Cancel anytime.
         </p>
       </div>
-      <div className="mt-12 grid gap-5 md:grid-cols-3">
-        {displayPlans.map((plan) => {
+      <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {APPROVED_PRICING.map((plan) => {
           const isRecommended = plan.code === "growth";
+          const savingsLabel = getAnnualSavingsLabel(plan);
           return (
             <div
               key={plan.code}
-              className={`rounded-2xl border bg-card p-6 ${
+              className={`rounded-2xl border bg-card p-5 ${
                 isRecommended
-                  ? "border-[color:var(--brand-teal)] shadow-[var(--shadow-lift)] md:-mt-4"
+                  ? "border-[color:var(--brand-teal)] shadow-[var(--shadow-lift)]"
                   : "border-border"
               }`}
             >
@@ -601,28 +572,41 @@ function Pricing() {
                   Recommended
                 </span>
               )}
-              <h3 className="font-display text-xl font-bold">
+              <h3 className="font-display text-lg font-bold">
                 {plan.displayName}
               </h3>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {plan.tagline}
               </p>
               <div className="mt-4">
-                <p className="font-display text-3xl font-bold">
+                <p className="font-display text-2xl font-bold">
                   {plan.monthlyPrice === 0
                     ? "Free"
                     : formatIndianPrice(plan.monthlyPrice)}
                 </p>
                 {plan.monthlyPrice > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    /month or {formatIndianPrice(plan.annualPrice)}/year
-                  </p>
+                  <>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      /month or {formatIndianPrice(plan.annualPrice)}/year
+                    </p>
+                    {savingsLabel && (
+                      <p className="mt-0.5 text-xs font-medium text-[color:var(--brand-teal)]">
+                        {savingsLabel}
+                      </p>
+                    )}
+                    {plan.setupFee > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatIndianPrice(plan.setupFee)} one-time setup on
+                        monthly (waived on annual)
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
-              <ul className="mt-5 space-y-2 text-sm">
+              <ul className="mt-4 space-y-1.5 text-xs">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--brand-teal)]" />
+                  <li key={f} className="flex items-start gap-1.5">
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--brand-teal)]" />
                     <span>{f}</span>
                   </li>
                 ))}
@@ -630,13 +614,14 @@ function Pricing() {
               <Link
                 to={plan.code === "free" ? "/login" : "/pricing"}
                 search={plan.code === "free" ? { mode: "signup" } : undefined}
-                className="mt-6 block"
+                className="mt-4 block"
               >
                 <Button
                   className="w-full"
+                  size="sm"
                   variant={isRecommended ? "default" : "outline"}
                 >
-                  {plan.ctaLabel}
+                  {plan.code === "free" ? "Start free" : "Learn more"}
                 </Button>
               </Link>
             </div>
@@ -663,7 +648,7 @@ function FAQ() {
     },
     {
       q: "Can I cancel?",
-      a: "Anytime. You stay on the free plan with your data intact — data beyond the free tier limit becomes read-only until you upgrade again.",
+      a: "Anytime. You stay on the free plan with your data intact. If you are over the free student limit, existing students stay fully accessible — adding new ones is paused until you upgrade or archive some.",
     },
   ];
   return (

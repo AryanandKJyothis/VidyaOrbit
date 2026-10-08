@@ -52,7 +52,7 @@ export const APPROVED_PRICING: PlanDisplay[] = [
       "Up to 100 students",
       "Everything in Free",
       "Analytics dashboard",
-      "Email support",
+      "Email & WhatsApp support",
     ],
     ctaLabel: "Choose Starter",
   },
@@ -68,8 +68,7 @@ export const APPROVED_PRICING: PlanDisplay[] = [
     features: [
       "Up to 500 students",
       "Everything in Starter",
-      "Team permissions",
-      "Email support",
+      "Email & WhatsApp support",
     ],
     ctaLabel: "Choose Growth",
   },
@@ -85,22 +84,65 @@ export const APPROVED_PRICING: PlanDisplay[] = [
     features: [
       "Unlimited students",
       "Everything in Growth",
-      "Priority email support",
+      "Email & WhatsApp support",
     ],
     ctaLabel: "Choose Large",
   },
 ];
 
+/** 12 × monthly minus annual. Setup fee is not included. */
 export function getAnnualSavings(plan: PlanDisplay): number {
-  const monthlyCost = plan.monthlyPrice * 12 + plan.setupFee;
-  const annualCost = plan.annualPrice + plan.annualSetupFee;
-  return monthlyCost - annualCost;
+  return plan.monthlyPrice * 12 - plan.annualPrice;
 }
 
 export function formatIndianPrice(amount: number): string {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
 
+export function getAnnualSavingsLabel(plan: PlanDisplay): string | null {
+  const savings = getAnnualSavings(plan);
+  if (savings <= 0) return null;
+  if (plan.setupFee > 0) {
+    return `Save ${formatIndianPrice(savings)} + free setup`;
+  }
+  return `Save ${formatIndianPrice(savings)}`;
+}
+
 export function getPlanByCode(code: string): PlanDisplay | undefined {
   return APPROVED_PRICING.find((p) => p.code === code);
+}
+
+export function jsonLdOffers(pageUrl: string) {
+  return APPROVED_PRICING.flatMap((p) => {
+    const monthly = {
+      "@type": "Offer",
+      name: `${p.displayName} (monthly)`,
+      price: p.monthlyPrice,
+      priceCurrency: "INR",
+      url: pageUrl,
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: p.monthlyPrice,
+        priceCurrency: "INR",
+        billingDuration: "P1M",
+      },
+    };
+    if (p.annualPrice <= 0) return [monthly];
+    return [
+      monthly,
+      {
+        "@type": "Offer",
+        name: `${p.displayName} (annual)`,
+        price: p.annualPrice,
+        priceCurrency: "INR",
+        url: pageUrl,
+        priceSpecification: {
+          "@type": "UnitPriceSpecification",
+          price: p.annualPrice,
+          priceCurrency: "INR",
+          billingDuration: "P1Y",
+        },
+      },
+    ];
+  });
 }

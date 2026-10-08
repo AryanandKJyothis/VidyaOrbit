@@ -4,7 +4,8 @@ import { LogoWordmark } from "@/components/logo";
 import {
   APPROVED_PRICING,
   formatIndianPrice,
-  getAnnualSavings,
+  getAnnualSavingsLabel,
+  jsonLdOffers,
 } from "@/lib/pricing-display";
 import { getContactConfig } from "@/lib/contact-config";
 import {
@@ -40,13 +41,7 @@ export const Route = createFileRoute("/pricing")({
           "@type": "Product",
           name: "Vidya Orbit",
           description: DESC,
-          offers: APPROVED_PRICING.map((p) => ({
-            "@type": "Offer",
-            name: p.displayName,
-            price: p.monthlyPrice,
-            priceCurrency: "INR",
-            url: SITE_URL + "/pricing",
-          })),
+          offers: jsonLdOffers(SITE_URL + "/pricing"),
         }),
       },
     ],
@@ -61,7 +56,7 @@ const FAQ = [
   },
   {
     q: "What happens if I cross my student limit?",
-    a: "You can still view and manage existing students. Adding new ones is paused until you upgrade — your data is never deleted.",
+    a: "Your data stays safe and fully accessible. You just can't add new students until you upgrade or archive some.",
   },
   {
     q: "How do I upgrade?",
@@ -76,6 +71,56 @@ const FAQ = [
     a: "Yes. Data is encrypted in transit and at rest, isolated per institute, and only your authorised team can access it. We never sell or share institute data.",
   },
 ];
+
+function PricingCTA({
+  plan,
+  isRecommended,
+}: {
+  plan: (typeof APPROVED_PRICING)[number];
+  isRecommended: boolean;
+}) {
+  const { whatsappUrl, email } = getContactConfig();
+  const planName = plan.displayName;
+  const message = `Hi, I'd like the ${planName} plan (monthly/annual) for my centre.`;
+  const emailSubject = `${planName} plan inquiry`;
+
+  return (
+    <div className="mt-6 flex flex-col gap-2">
+      {whatsappUrl && (
+        <a
+          href={`${whatsappUrl}?text=${encodeURIComponent(message)}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <Button
+            className="w-full gap-1.5"
+            variant={isRecommended ? "default" : "outline"}
+            size="sm"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            WhatsApp us
+          </Button>
+        </a>
+      )}
+      {email && (
+        <a
+          href={`mailto:${email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(message)}`}
+        >
+          <Button
+            className="w-full gap-1.5"
+            variant={
+              whatsappUrl ? "ghost" : isRecommended ? "default" : "outline"
+            }
+            size="sm"
+          >
+            <Mail className="h-3.5 w-3.5" />
+            Email us
+          </Button>
+        </a>
+      )}
+    </div>
+  );
+}
 
 function ContactCard() {
   const { whatsappUrl, email } = getContactConfig();
@@ -155,8 +200,8 @@ function PricingPage() {
                 Simple, INR-first pricing
               </h1>
               <p className="mt-4 text-muted-foreground sm:text-lg">
-                Start free. Upgrade only when your centre grows. No hidden
-                charges.
+                Start free. Upgrade only when your centre grows. Paid plans are
+                arranged by invoice; online payment is coming soon.
               </p>
             </div>
           </div>
@@ -166,7 +211,7 @@ function PricingPage() {
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {APPROVED_PRICING.map((plan) => {
               const isRecommended = plan.code === "growth";
-              const savings = getAnnualSavings(plan);
+              const savingsLabel = getAnnualSavingsLabel(plan);
               return (
                 <div
                   key={plan.code}
@@ -208,16 +253,15 @@ function PricingPage() {
                         <p className="mt-1 text-xs text-muted-foreground">
                           {formatIndianPrice(plan.annualPrice)}/year
                         </p>
-                        {savings > 0 && (
+                        {savingsLabel && (
                           <p className="mt-0.5 text-xs font-medium text-[color:var(--brand-teal)]">
-                            Save {formatIndianPrice(savings)} annually
-                            {plan.setupFee > 0 && " + free setup"}
+                            {savingsLabel}
                           </p>
                         )}
                         {plan.setupFee > 0 && (
                           <p className="mt-1 text-xs text-muted-foreground">
-                            {formatIndianPrice(plan.setupFee)} setup fee for
-                            monthly billing
+                            {formatIndianPrice(plan.setupFee)} one-time setup on
+                            monthly (waived on annual)
                           </p>
                         )}
                       </>
@@ -231,27 +275,30 @@ function PricingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Link
-                    to={plan.code === "free" ? "/login" : "/pricing"}
-                    search={
-                      plan.code === "free" ? { mode: "signup" } : undefined
-                    }
-                    className="mt-6"
-                  >
-                    <Button
-                      className="w-full"
-                      variant={isRecommended ? "default" : "outline"}
-                      size="sm"
+                  {plan.code === "free" ? (
+                    <Link
+                      to="/login"
+                      search={{ mode: "signup" }}
+                      className="mt-6"
                     >
-                      {plan.ctaLabel}
-                    </Button>
-                  </Link>
+                      <Button className="w-full" variant="outline" size="sm">
+                        {plan.ctaLabel}
+                      </Button>
+                    </Link>
+                  ) : (
+                    <PricingCTA plan={plan} isRecommended={isRecommended} />
+                  )}
                 </div>
               );
             })}
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Paid plans are arranged by invoice (monthly or annual). Online
+            payment is coming soon.
+          </p>
+
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 text-[color:var(--brand-teal)]" />
               Data encrypted in transit &amp; at rest
