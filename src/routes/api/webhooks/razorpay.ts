@@ -23,13 +23,20 @@ async function activateFromOrder(
     return { ok: false, error: "Order not found or not paid" };
   }
 
-  const { isValidPlanId, getSubscriptionPlanCode } = await import(
+  const { isValidTier, isValidCycle, getSubscriptionPlanCode } = await import(
     "@/lib/billing-pricing"
   );
 
-  const planId = order.intent; // We stored plan_id in intent field
-  if (!isValidPlanId(planId)) {
-    return { ok: false, error: `Invalid plan_id: ${planId}` };
+  // Parse tier and cycle from stored intent
+  const intentParts = order.intent.split("_");
+  if (intentParts.length !== 2) {
+    return { ok: false, error: `Invalid intent format: ${order.intent}` };
+  }
+
+  const [tier, cycle] = intentParts;
+
+  if (!isValidTier(tier) || !isValidCycle(cycle)) {
+    return { ok: false, error: `Invalid tier or cycle: ${tier}, ${cycle}` };
   }
 
   try {
@@ -50,11 +57,13 @@ async function activateFromOrder(
       }
     }
 
+    // Add months based on cycle
+    const monthsToAdd = cycle === "monthly" ? 1 : 12;
     const expiryDate = new Date(baseDate);
-    expiryDate.setDate(expiryDate.getDate() + 365);
+    expiryDate.setMonth(expiryDate.getMonth() + monthsToAdd);
 
-    // Map plan_id to subscription plan code
-    const planCode = getSubscriptionPlanCode(planId);
+    // Map tier to subscription plan code
+    const planCode = getSubscriptionPlanCode(tier);
 
     const { error } = await supabaseAdmin.rpc(
       "apply_subscription_change" as never,
@@ -66,7 +75,7 @@ async function activateFromOrder(
         _start: now.toISOString(),
         _expiry: expiryDate.toISOString(),
         _price: null,
-        _notes: `Annual plan ${planId} activated`,
+        _notes: `${tier} ${cycle} plan activated`,
         _note: `Razorpay payment: ${order.razorpay_payment_id ?? orderId}`,
         _confirm: true,
       } as never,

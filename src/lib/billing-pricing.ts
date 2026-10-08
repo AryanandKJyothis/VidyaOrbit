@@ -1,12 +1,13 @@
 /**
- * Razorpay in-app checkout pricing configuration (v2)
+ * Razorpay in-app checkout pricing configuration (v3 - tier + cycle model)
  * Server-only — never send these values to the client.
  */
 
-export type PlanId = "annual_500" | "annual_large";
+export type PlanTier = "starter" | "growth" | "large";
+export type BillingCycle = "monthly" | "annual";
 
 export type LineItem = {
-  item: "setup_fee" | "annual_plan";
+  item: "setup_fee" | "subscription_charge";
   amount: number; // paise
 };
 
@@ -14,89 +15,111 @@ export type PricingResult = {
   total: number; // paise
   currency: string;
   line_items: LineItem[];
-  plan_id: PlanId;
+  tier: PlanTier;
+  cycle: BillingCycle;
+  months: number; // 1 for monthly, 12 for annual
 };
 
 // ── Plan Configuration (server-side, env-overridable) ──
-export type PlanConfig = {
-  id: PlanId;
-  annual_price_paise: number;
-  student_limit: number; // Use Number.MAX_SAFE_INTEGER for unlimited
+export type TierConfig = {
+  tier: PlanTier;
+  student_limit: number;
   setup_fee_paise: number;
+  monthly_price_paise: number;
+  annual_price_paise: number;
   display_name: string;
   description: string;
 };
 
-export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
-  annual_500: {
-    id: "annual_500",
-    annual_price_paise: parseInt(
-      process.env.BILLING_ANNUAL_500_PRICE_PAISE ?? "1000000", // ₹10,000
-      10,
-    ),
-    student_limit: parseInt(
-      process.env.BILLING_ANNUAL_500_STUDENT_LIMIT ?? "500",
-      10,
-    ),
-    setup_fee_paise: parseInt(
-      process.env.BILLING_ANNUAL_500_SETUP_FEE_PAISE ?? "500000", // ₹5,000
-      10,
-    ),
-    display_name: "Annual Plan (500 students)",
-    description: "For growing coaching centres",
+// Helper to get env var with fallback
+function getEnvInt(key: string, fallback: number): number {
+  const val = process.env[key];
+  if (!val) return fallback;
+  const parsed = parseInt(val, 10);
+  return isNaN(parsed) ? fallback : parsed;
+}
+
+export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
+  starter: {
+    tier: "starter",
+    student_limit: getEnvInt("BILLING_STARTER_STUDENT_LIMIT", 100),
+    setup_fee_paise: getEnvInt("BILLING_STARTER_SETUP_FEE_PAISE", 0), // ₹0 (free)
+    monthly_price_paise: getEnvInt("BILLING_STARTER_MONTHLY_PRICE_PAISE", 49900), // ₹499
+    annual_price_paise: getEnvInt("BILLING_STARTER_ANNUAL_PRICE_PAISE", 499900), // ₹4,999
+    display_name: "Starter",
+    description: "Up to 100 students",
   },
-  annual_large: {
-    id: "annual_large",
-    annual_price_paise: parseInt(
-      process.env.BILLING_ANNUAL_LARGE_PRICE_PAISE ?? "2500000", // ₹25,000
-      10,
-    ),
-    student_limit: parseInt(
-      process.env.BILLING_ANNUAL_LARGE_STUDENT_LIMIT ?? String(Number.MAX_SAFE_INTEGER), // Unlimited
-      10,
-    ),
-    setup_fee_paise: parseInt(
-      process.env.BILLING_ANNUAL_LARGE_SETUP_FEE_PAISE ?? "500000", // ₹5,000
-      10,
-    ),
-    display_name: "Annual Plan (Large centres)",
-    description: "For institutions with 1,000+ students",
+  growth: {
+    tier: "growth",
+    student_limit: getEnvInt("BILLING_GROWTH_STUDENT_LIMIT", 500),
+    setup_fee_paise: getEnvInt("BILLING_GROWTH_SETUP_FEE_PAISE", 500000), // ₹5,000 (monthly only)
+    monthly_price_paise: getEnvInt("BILLING_GROWTH_MONTHLY_PRICE_PAISE", 99900), // ₹999
+    annual_price_paise: getEnvInt("BILLING_GROWTH_ANNUAL_PRICE_PAISE", 1000000), // ₹10,000
+    display_name: "Growth",
+    description: "Up to 500 students",
+  },
+  large: {
+    tier: "large",
+    student_limit: getEnvInt("BILLING_LARGE_STUDENT_LIMIT", Number.MAX_SAFE_INTEGER), // Unlimited
+    setup_fee_paise: getEnvInt("BILLING_LARGE_SETUP_FEE_PAISE", 500000), // ₹5,000 (monthly only)
+    monthly_price_paise: getEnvInt("BILLING_LARGE_MONTHLY_PRICE_PAISE", 249900), // ₹2,499
+    annual_price_paise: getEnvInt("BILLING_LARGE_ANNUAL_PRICE_PAISE", 2500000), // ₹25,000
+    display_name: "Large",
+    description: "Unlimited students",
   },
 };
 
 /**
- * Get plan config by ID.
+ * Get tier config.
  */
-export function getPlanConfig(planId: PlanId): PlanConfig {
-  return PLAN_CONFIGS[planId];
+export function getTierConfig(tier: PlanTier): TierConfig {
+  return TIER_CONFIGS[tier];
 }
 
 /**
- * Validate plan ID.
+ * Validate tier.
  */
-export function isValidPlanId(planId: string): planId is PlanId {
-  return planId === "annual_500" || planId === "annual_large";
+export function isValidTier(tier: string): tier is PlanTier {
+  return tier === "starter" || tier === "growth" || tier === "large";
+}
+
+/**
+ * Validate cycle.
+ */
+export function isValidCycle(cycle: string): cycle is BillingCycle {
+  return cycle === "monthly" || cycle === "annual";
 }
 
 /**
  * Compute pricing for a plan purchase.
- * @param planId The plan being purchased ('annual_500' or 'annual_large')
- * @param hasPaidSetup Whether the workspace has paid setup fee before (checked from billing_orders)
+ * Setup rule: charged only on first paid order, and only for monthly cycle on Growth/Large tiers.
+ * Annual waives setup fee.
+ * @param tier The plan tier ('starter', 'growth', or 'large')
+ * @param cycle The billing cycle ('monthly' or 'annual')
+ * @param hasPaidSetup Whether the workspace has paid setup fee before
  */
 export function computePricing(
-  planId: PlanId,
+  tier: PlanTier,
+  cycle: BillingCycle,
   hasPaidSetup: boolean,
 ): PricingResult {
-  const plan = getPlanConfig(planId);
+  const config = getTierConfig(tier);
   const line_items: LineItem[] = [];
 
-  // Setup fee only if not already paid
-  if (!hasPaidSetup) {
-    line_items.push({ item: "setup_fee", amount: plan.setup_fee_paise });
+  // Setup fee rule:
+  // - Annual: setup is waived (₹0)
+  // - Monthly: setup charged only on first paid order (if hasPaidSetup = false)
+  // - Starter: setup is ₹0 for both cycles
+  if (!hasPaidSetup && cycle === "monthly" && config.setup_fee_paise > 0) {
+    line_items.push({ item: "setup_fee", amount: config.setup_fee_paise });
   }
 
-  // Annual plan charge
-  line_items.push({ item: "annual_plan", amount: plan.annual_price_paise });
+  // Subscription charge based on cycle
+  const price =
+    cycle === "monthly"
+      ? config.monthly_price_paise
+      : config.annual_price_paise;
+  line_items.push({ item: "subscription_charge", amount: price });
 
   const total = line_items.reduce((sum, item) => sum + item.amount, 0);
 
@@ -104,7 +127,9 @@ export function computePricing(
     total,
     currency: "INR",
     line_items,
-    plan_id: planId,
+    tier,
+    cycle,
+    months: cycle === "monthly" ? 1 : 12,
   };
 }
 
@@ -132,13 +157,16 @@ export async function hasPaidSetupFee(
 }
 
 /**
- * Get the appropriate plan code for subscriptions table based on plan_id.
- * Maps billing plan IDs to subscription plan codes.
+ * Get the appropriate plan code for subscriptions table based on tier.
+ * Maps billing tiers to subscription plan codes.
  */
-export function getSubscriptionPlanCode(planId: PlanId): "growth" | "pro" {
-  // annual_500 -> growth (500 students)
-  // annual_large -> pro (1000 students)
-  return planId === "annual_500" ? "growth" : "pro";
+export function getSubscriptionPlanCode(tier: PlanTier): "starter" | "growth" | "pro" {
+  // starter -> starter (100 students)
+  // growth -> growth (500 students)
+  // large -> pro (unlimited)
+  if (tier === "starter") return "starter";
+  if (tier === "growth") return "growth";
+  return "pro";
 }
 
 /**
@@ -162,10 +190,9 @@ export function assertRazorpayKeyMode(keyId: string | undefined): void {
 
 /**
  * Server-side billing enabled flag.
+ * MUST default to OFF (false) for safety.
  */
 export function isBillingEnabled(): boolean {
-  const disabled =
-    process.env.BILLING_ENABLED?.toLowerCase() === "false" ||
-    process.env.BILLING_DISABLED?.toLowerCase() === "true";
-  return !disabled;
+  const enabled = process.env.BILLING_ENABLED?.toLowerCase() === "true";
+  return enabled;
 }

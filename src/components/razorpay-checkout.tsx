@@ -1,5 +1,5 @@
 /**
- * Razorpay checkout component for in-app annual plan purchase.
+ * Razorpay checkout component for in-app plan purchases (tier + cycle).
  * Loads Razorpay checkout.js and handles the payment flow.
  */
 import { useEffect, useState } from "react";
@@ -15,7 +15,8 @@ declare global {
 }
 
 type CheckoutProps = {
-  intent: "activate" | "renew";
+  tier: "starter" | "growth" | "large";
+  cycle: "monthly" | "annual";
   onSuccess?: () => void;
   onError?: (error: Error) => void;
   buttonLabel?: string;
@@ -23,7 +24,8 @@ type CheckoutProps = {
 };
 
 export function RazorpayCheckout({
-  intent,
+  tier,
+  cycle,
   onSuccess,
   onError,
   buttonLabel,
@@ -84,7 +86,7 @@ export function RazorpayCheckout({
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ intent }),
+        body: JSON.stringify({ tier, cycle }),
       });
 
       if (!orderRes.ok) {
@@ -106,7 +108,7 @@ export function RazorpayCheckout({
         amount: orderData.amount,
         currency: orderData.currency,
         name: "Vidya Orbit",
-        description: intent === "activate" ? "Annual Plan Activation" : "Annual Plan Renewal",
+        description: `${tier.charAt(0).toUpperCase() + tier.slice(1)} ${cycle} plan`,
         order_id: orderData.orderId,
         handler: async (response: any) => {
           try {

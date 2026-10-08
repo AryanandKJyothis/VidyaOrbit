@@ -14,12 +14,15 @@ import {
   hasPaidSetupFee,
   assertRazorpayKeyMode,
   isBillingEnabled,
-  isValidPlanId,
-  type PlanId,
+  isValidTier,
+  isValidCycle,
+  type PlanTier,
+  type BillingCycle,
 } from "@/lib/billing-pricing";
 
 const bodySchema = z.object({
-  plan_id: z.string().min(1),
+  tier: z.string().min(1),
+  cycle: z.string().min(1),
 });
 
 export const Route = createFileRoute("/api/billing/create-order")({
@@ -95,19 +98,31 @@ export const Route = createFileRoute("/api/billing/create-order")({
           );
         }
 
-        // Validate plan_id
-        if (!isValidPlanId(body.plan_id)) {
+        // Validate tier and cycle
+        if (!isValidTier(body.tier)) {
           return Response.json(
             {
               ok: false,
-              code: "INVALID_PLAN",
-              message: "Invalid plan ID. Must be 'annual_500' or 'annual_large'.",
+              code: "INVALID_TIER",
+              message: "Invalid tier. Must be 'starter', 'growth', or 'large'.",
             },
             { status: 400 },
           );
         }
 
-        const planId = body.plan_id as PlanId;
+        if (!isValidCycle(body.cycle)) {
+          return Response.json(
+            {
+              ok: false,
+              code: "INVALID_CYCLE",
+              message: "Invalid cycle. Must be 'monthly' or 'annual'.",
+            },
+            { status: 400 },
+          );
+        }
+
+        const tier = body.tier as PlanTier;
+        const cycle = body.cycle as BillingCycle;
 
         // Check that the user is the workspace owner
         const { data: inst, error: instErr } = await supabaseAdmin
@@ -144,15 +159,16 @@ export const Route = createFileRoute("/api/billing/create-order")({
         const paidSetup = await hasPaidSetupFee(userId, supabaseAdmin);
 
         // Compute server-side pricing
-        const pricing = computePricing(planId, paidSetup);
+        const pricing = computePricing(tier, cycle, paidSetup);
 
         // Create Razorpay order
         const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
 
-        const receipt = `vidya_${planId}_${Date.now().toString(36)}`;
+        const receipt = `vidya_${tier}_${cycle}_${Date.now().toString(36)}`;
         const notes = {
           owner_id: userId,
-          plan_id: planId,
+          tier,
+          cycle,
         };
 
         let rzOrder: any;
@@ -178,13 +194,13 @@ export const Route = createFileRoute("/api/billing/create-order")({
           );
         }
 
-        // Store order in DB with plan_id
-        const { error: insertErr } = await supabaseAdmin
+        // Store order in DB with tier and cycle
+        const { error: insertErr} = await supabaseAdmin
           .from("billing_orders")
           .insert({
             owner_id: userId,
             razorpay_order_id: rzOrder.id,
-            intent: planId, // Store plan_id as intent for now
+            intent: `${tier}_${cycle}`, // Store as "tier_cycle"
             amount_paise: pricing.total,
             currency: pricing.currency,
             status: "created",

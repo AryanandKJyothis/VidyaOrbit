@@ -13,8 +13,10 @@ import {
   assertRazorpayKeyMode,
   isBillingEnabled,
   getSubscriptionPlanCode,
-  isValidPlanId,
-  type PlanId,
+  isValidTier,
+  isValidCycle,
+  type PlanTier,
+  type BillingCycle,
 } from "@/lib/billing-pricing";
 
 const bodySchema = z.object({
@@ -25,11 +27,13 @@ const bodySchema = z.object({
 
 /**
  * Activate the subscription via apply_subscription_change RPC.
- * Sets the plan to Growth (500 students) with 365-day expiry from max(now, current_expiry).
+ * Extends expiry by 1 month (monthly) or 12 months (annual) from max(now, current expiry).
+ * Maps tier to subscription plan code.
  */
 async function activateSubscription(
   ownerId: string,
-  intent: string,
+  tier: PlanTier,
+  cycle: BillingCycle,
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     // Get current subscription if exists
@@ -42,30 +46,34 @@ async function activateSubscription(
     const now = new Date();
     let baseDate = now;
 
-    // If renewing and current expiry is in the future, extend from there
-    if (intent === "renew" && currentSub?.expiry_date) {
+    // Extend from current expiry if it's in the future
+    if (currentSub?.expiry_date) {
       const currentExpiry = new Date(currentSub.expiry_date);
       if (currentExpiry > now) {
         baseDate = currentExpiry;
       }
     }
 
-    // Add 365 days
+    // Add months based on cycle (1 for monthly, 12 for annual)
+    const monthsToAdd = cycle === "monthly" ? 1 : 12;
     const expiryDate = new Date(baseDate);
-    expiryDate.setDate(expiryDate.getDate() + 365);
+    expiryDate.setMonth(expiryDate.getMonth() + monthsToAdd);
+
+    // Map tier to subscription plan code
+    const planCode = getSubscriptionPlanCode(tier);
 
     const { data: result, error } = await supabaseAdmin.rpc(
       "apply_subscription_change" as never,
       {
         _owner: ownerId,
         _changed_by: ownerId,
-        _plan: "growth", // Annual plan = Growth tier (500 students)
+        _plan: planCode, // 'starter', 'growth', or 'pro'
         _status: "active",
         _start: now.toISOString(),
         _expiry: expiryDate.toISOString(),
         _price: null, // Price is in billing_orders, not subscriptions
-        _notes: `Annual plan activated via ${intent}`,
-        _note: `Razorpay checkout: ${intent}`,
+        _notes: `${tier} ${cycle} plan activated`,
+        _note: `Razorpay checkout: ${tier} ${cycle}`,
         _confirm: true,
       } as never,
     );
@@ -264,6 +272,21 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
           );
         }
 
+        // Check currency matches
+        if (payment.currency !== order.currency) {
+          console.error(
+            `[verify-payment] Currency mismatch: expected ${order.currency}, got ${payment.currency}`,
+          );
+          return Response.json(
+            {
+              ok: false,
+              code: "CURRENCY_MISMATCH",
+              message: "Payment currency does not match order.",
+            },
+            { status: 400 },
+          );
+        }
+
         // Mark order as paid (idempotent conditional update)
         const { data: updateResult, error: updateErr } = await supabaseAdmin
           .from("billing_orders")
@@ -293,17 +316,34 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
         const alreadyPaid = !updateResult;
 
         if (!alreadyPaid) {
-          // Validate and activate subscription
-          const planId = order.intent; // We stored plan_id in intent field
-          if (!isValidPlanId(planId)) {
+          // Parse tier and cycle from stored intent ("tier_cycle")
+          const intentParts = order.intent.split("_");
+          if (intentParts.length !== 2) {
             console.error(
-              `[verify-payment] Invalid plan_id in order: ${planId}`,
+              `[verify-payment] Invalid intent format: ${order.intent}`,
             );
             return Response.json(
               {
                 ok: false,
-                code: "INVALID_PLAN_IN_ORDER",
-                message: "Order contains invalid plan ID.",
+                code: "INVALID_INTENT_FORMAT",
+                message: "Order contains invalid intent format.",
+              },
+              { status: 500 },
+            );
+          }
+
+          const [tier, cycle] = intentParts;
+
+          // Validate tier and cycle
+          if (!isValidTier(tier) || !isValidCycle(cycle)) {
+            console.error(
+              `[verify-payment] Invalid tier or cycle: ${tier}, ${cycle}`,
+            );
+            return Response.json(
+              {
+                ok: false,
+                code: "INVALID_TIER_OR_CYCLE",
+                message: "Order contains invalid tier or cycle.",
               },
               { status: 500 },
             );
@@ -311,7 +351,8 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
 
           const activationResult = await activateSubscription(
             userId,
-            planId as PlanId,
+            tier as PlanTier,
+            cycle as BillingCycle,
           );
 
           if (!activationResult.ok) {

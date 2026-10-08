@@ -23,6 +23,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { isBillingEnabled } from "@/lib/billing-pricing";
 
 export const Route = createFileRoute("/_authenticated/plan")({
+  beforeLoad: () => {
+    // Redirect to root - billing UI is being replaced
+    throw redirect({ to: "/" });
+  },
   component: PlanPage,
 });
 
