@@ -109,7 +109,7 @@ REVOKE ALL ON FUNCTION public.subscription_health(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.subscription_health(uuid) TO authenticated, service_role;
 
 COMMENT ON FUNCTION public.subscription_health(uuid) IS
-  'Plan/limit/expiry plus active (non-archived) student count. Must match enforce_student_limit. Workspace members may read the owner's plan. Later 094000 adds setup_fee_paid to this payload.';
+  'Plan/limit/expiry plus active (non-archived) student count. Must match enforce_student_limit. Workspace members may read the owner''s plan. Later 094000 adds setup_fee_paid to this payload.';
 
 -- Archived-student counts on admin/over-limit paths. Bodies match live except
 -- student_count / total_students / apply_subscription_change v_count exclude

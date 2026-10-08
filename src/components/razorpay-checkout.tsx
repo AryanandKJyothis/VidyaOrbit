@@ -284,6 +284,9 @@ export function RazorpayCheckout({
             if (verifyData.needsReview) {
               toastHeldPlanChange();
               await onSuccess?.();
+            } else if (verifyData.alreadyProcessed) {
+              toast.info(verifyData.message || "Payment already processed");
+              await onSuccess?.();
             } else if (verifyData.status === "pending") {
               toast.info(
                 "Payment received, processing. We'll confirm shortly.",

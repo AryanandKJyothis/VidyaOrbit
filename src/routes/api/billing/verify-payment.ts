@@ -252,10 +252,14 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
         );
 
         if (!activation.success) {
+          const orderFlags = order as {
+            needs_review?: boolean | null;
+            review_reason?: string | null;
+          };
           const held =
             activation.needsReview === true ||
             activation.reason === "tier_change_needs_review" ||
-            Boolean((order as { needs_review?: boolean | null }).needs_review);
+            Boolean(orderFlags.needs_review);
           if (held) {
             console.warn(
               "[verify-payment] Paid order held for admin review:",
@@ -268,6 +272,15 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
             });
           }
           if (activation.reason === "already_activated") {
+            // Dismissed hold: review_reason remains, plan was never switched.
+            // Do not let checkout toast "Your plan is now active".
+            if (orderFlags.review_reason) {
+              return Response.json({
+                ok: true,
+                alreadyProcessed: true,
+                message: "Payment already processed",
+              });
+            }
             console.log(
               "[verify-payment] Already activated, returning success",
             );

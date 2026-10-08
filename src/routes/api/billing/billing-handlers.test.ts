@@ -611,6 +611,46 @@ describe("POST /api/billing/verify-payment", () => {
     expect((await res.json()).needsReview).toBe(true);
   });
 
+  it("returns alreadyProcessed when a dismissed hold is verified again", async () => {
+    fromMock.mockImplementation(() =>
+      thenable({
+        data: {
+          ...storedOrder,
+          needs_review: false,
+          review_reason:
+            "Paid large monthly order captured while current paid plan is starter",
+        },
+        error: null,
+      }),
+    );
+    paymentsFetch.mockResolvedValue({
+      id: RZ_PAY,
+      order_id: RZ_ORDER,
+      status: "captured",
+      amount: 99900,
+      currency: "INR",
+    });
+    rpcMock.mockResolvedValue({
+      data: {
+        activated: false,
+        reason: "already_activated",
+        needs_review: false,
+      },
+      error: null,
+    });
+    const res = await postVerify({
+      razorpay_order_id: RZ_ORDER,
+      razorpay_payment_id: RZ_PAY,
+      razorpay_signature: checkoutSig(RZ_ORDER, RZ_PAY),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.needsReview).toBeUndefined();
+    expect(body.alreadyProcessed).toBe(true);
+    expect(body.message).toBe("Payment already processed");
+  });
+
   it("returns 404 for the wrong owner", async () => {
     fromMock.mockImplementation((table: string) => {
       if (table === "billing_orders")

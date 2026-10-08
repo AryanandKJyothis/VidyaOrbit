@@ -45,6 +45,11 @@ describe("billing SQL migrations", () => {
     );
   });
 
+  it("091700 COMMENT escapes the owner's apostrophe", () => {
+    expect(health091700).not.toMatch(/the owner's plan/);
+    expect(health091700).toContain("the owner''s plan");
+  });
+
   it("091700 excludes archived students from admin/apply counts", () => {
     expect(health091700).toContain(
       "COUNT(*) FILTER (WHERE st.status IS DISTINCT FROM 'archived')",
