@@ -237,11 +237,16 @@ describe("POST /api/billing/create-order", () => {
     );
   });
 
-  it("skips setup on a later monthly order after an activated order exists", async () => {
+  it("skips setup on a later monthly order after an activated order charged setup", async () => {
     fromMock.mockImplementation((table: string) => {
       if (table === "subscriptions")
         return thenable({
-          data: { plan: "growth", plan_price: 999, expiry_date: "2026-11-01" },
+          data: {
+            plan: "growth",
+            plan_price: 999,
+            expiry_date: "2026-11-01",
+            setup_fee_paid: false,
+          },
           error: null,
         });
       if (table === "institutes")
@@ -249,7 +254,18 @@ describe("POST /api/billing/create-order", () => {
       if (table === "students")
         return thenable({ data: null, error: null, count: 10 });
       if (table === "billing_orders")
-        return thenable({ data: null, error: null, count: 1 });
+        return thenable({
+          data: [
+            {
+              line_items: [
+                { item: "setup_fee", amount: 500000 },
+                { item: "subscription_charge", amount: 99900 },
+              ],
+            },
+          ],
+          error: null,
+          count: 1,
+        });
       return thenable({ data: null, error: null });
     });
     const res = await postCreate({ tier: "growth", cycle: "monthly" });
@@ -387,7 +403,7 @@ describe("POST /api/billing/create-order", () => {
     expect((await res.json()).code).toBe("BILLING_DISABLED");
   });
 
-  it("does not charge setup to an invoice-paid centre with no online orders", async () => {
+  it("charges setup to a non-free plan unless the admin toggle is on", async () => {
     fromMock.mockImplementation((table: string) => {
       if (table === "subscriptions")
         return thenable({
@@ -404,7 +420,32 @@ describe("POST /api/billing/create-order", () => {
       if (table === "students")
         return thenable({ data: null, error: null, count: 10 });
       if (table === "billing_orders")
-        return thenable({ data: null, error: null, count: 0 });
+        return thenable({ data: [], error: null, count: 0 });
+      return thenable({ data: null, error: null });
+    });
+    const res = await postCreate({ tier: "growth", cycle: "monthly" });
+    expect(res.status).toBe(200);
+    expect((await res.json()).amount).toBe(599900);
+  });
+
+  it("skips setup when the admin toggle marks it paid (offline invoice)", async () => {
+    fromMock.mockImplementation((table: string) => {
+      if (table === "subscriptions")
+        return thenable({
+          data: {
+            plan: "growth",
+            plan_price: 999,
+            expiry_date: "2026-12-01",
+            setup_fee_paid: true,
+          },
+          error: null,
+        });
+      if (table === "institutes")
+        return thenable({ data: { owner_id: OWNER }, error: null });
+      if (table === "students")
+        return thenable({ data: null, error: null, count: 10 });
+      if (table === "billing_orders")
+        return thenable({ data: [], error: null, count: 0 });
       return thenable({ data: null, error: null });
     });
     const res = await postCreate({ tier: "growth", cycle: "monthly" });

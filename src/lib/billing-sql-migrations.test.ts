@@ -9,6 +9,10 @@ const health094000 = readFileSync(
   "supabase/migrations/20261008094000_atomic_billing_activation.sql",
   "utf8",
 );
+const revoke095000 = readFileSync(
+  "supabase/migrations/20261008095000_revoke_client_writes_subscriptions.sql",
+  "utf8",
+);
 
 function subscriptionHealthBody(sql: string) {
   const start = sql.indexOf(
@@ -37,12 +41,37 @@ describe("billing SQL migrations", () => {
     },
   );
 
+  it("094000 setup_fee_paid is only real payments, not non-free/expiry", () => {
+    expect(health094000).toMatch(
+      /UPDATE public\.subscriptions\s+SET setup_fee_paid = false/,
+    );
+    expect(health094000).not.toMatch(
+      /SET setup_fee_paid = true\s+WHERE plan IS DISTINCT FROM 'free'/,
+    );
+    const health = subscriptionHealthBody(health094000);
+    expect(health).not.toMatch(
+      /v_setup_paid :=[\s\S]*plan IS DISTINCT FROM 'free'/,
+    );
+    expect(health).not.toMatch(/v_setup_paid :=[\s\S]*expiry_date IS NOT NULL/);
+    expect(health).toContain("li->>'item' = 'setup_fee'");
+    expect(health094000).toMatch(
+      /jsonb_array_elements\(COALESCE\(o\.line_items[\s\S]*setup_fee[\s\S]*SET setup_fee_paid = true/,
+    );
+  });
+
   it("094000 hold branch marks needs_review and returns it on already_activated", () => {
     expect(health094000).toContain("tier_change_needs_review");
     expect(health094000).toContain("needs_review = true");
     expect(health094000).toMatch(
       /reason',\s*'already_activated'[\s\S]*needs_review',\s*COALESCE\(existing_order\.needs_review/,
     );
+  });
+
+  it("095000 revokes client writes on subscriptions and keeps SELECT", () => {
+    expect(revoke095000).toMatch(
+      /REVOKE INSERT,\s*UPDATE,\s*DELETE,\s*TRUNCATE ON public\.subscriptions FROM anon,\s*authenticated/,
+    );
+    expect(revoke095000).not.toMatch(/REVOKE SELECT/);
   });
 
   it("091700 COMMENT escapes the owner's apostrophe", () => {

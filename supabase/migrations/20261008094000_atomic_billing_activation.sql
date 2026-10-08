@@ -56,18 +56,17 @@ REVOKE ALL ON public.billing_orders FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON public.billing_orders TO authenticated;
 
 -- ── subscriptions.setup_fee_paid ───────────────────────────────────
--- Invoice / admin-set paid centres must not be charged the online setup
--- fee. Flag is admin-toggleable; backfill currently paid plans to true.
+-- True only after a real setup payment: an online order that charged
+-- setup, or an admin toggle (invoices / special deals). Trials, comps,
+-- and admin-set non-free plans do not waive setup.
 ALTER TABLE public.subscriptions
   ADD COLUMN IF NOT EXISTS setup_fee_paid boolean NOT NULL DEFAULT false;
 
 UPDATE public.subscriptions
-   SET setup_fee_paid = true
- WHERE plan IS DISTINCT FROM 'free'
-   AND NOT setup_fee_paid;
+   SET setup_fee_paid = false;
 
 COMMENT ON COLUMN public.subscriptions.setup_fee_paid IS
-  'True once setup has been paid (online order or invoice). Admin-toggleable. Backfilled true for any institute currently on a paid plan.';
+  'True once setup has actually been paid: captured online order that included a setup_fee line, or admin toggle for offline invoices / special deals. Not implied by a non-free plan or an expiry date.';
 
 -- Health RPC: exclude archived students and expose setup_fee_paid.
 -- Mirrors 091700 archived count; this later migration is the live definition.
@@ -124,12 +123,16 @@ BEGIN
 
   v_setup_paid :=
     COALESCE(v_sub.setup_fee_paid, false)
-    OR (v_sub.plan IS NOT NULL AND v_sub.plan IS DISTINCT FROM 'free'::public.plan_code)
-    OR v_sub.expiry_date IS NOT NULL
     OR EXISTS (
       SELECT 1 FROM public.billing_orders bo
        WHERE bo.owner_id = _uid
          AND bo.activated_at IS NOT NULL
+         AND EXISTS (
+           SELECT 1
+             FROM jsonb_array_elements(COALESCE(bo.line_items, '[]'::jsonb)) li
+            WHERE li->>'item' = 'setup_fee'
+              AND COALESCE((li->>'amount')::numeric, 0) > 0
+         )
     );
 
   RETURN jsonb_build_object(
@@ -232,6 +235,18 @@ BEGIN
    WHERE owner_id = o.owner_id
      FOR UPDATE;
 
+  -- Captured setup is paid even if this order is later held for review.
+  IF EXISTS (
+    SELECT 1
+      FROM jsonb_array_elements(COALESCE(o.line_items, '[]'::jsonb)) li
+     WHERE li->>'item' = 'setup_fee'
+       AND COALESCE((li->>'amount')::numeric, 0) > 0
+  ) THEN
+    UPDATE public.subscriptions
+       SET setup_fee_paid = true
+     WHERE owner_id = o.owner_id;
+  END IF;
+
   v_order_plan := CASE o.tier
                     WHEN 'starter' THEN 'starter'
                     WHEN 'growth' THEN 'growth'
@@ -268,11 +283,6 @@ BEGIN
        SET needs_review = true,
            review_reason = v_review_reason
      WHERE id = o.id;
-
-    -- Setup was paid as part of this captured order; do not charge it again.
-    UPDATE public.subscriptions
-       SET setup_fee_paid = true
-     WHERE owner_id = o.owner_id;
 
     RETURN jsonb_build_object(
       'activated', false,
@@ -313,10 +323,6 @@ BEGIN
     _confirm    => true
   );
 
-  UPDATE public.subscriptions
-     SET setup_fee_paid = true
-   WHERE owner_id = o.owner_id;
-
   RETURN jsonb_build_object(
     'activated', true,
     'owner_id', o.owner_id,
@@ -333,4 +339,4 @@ GRANT EXECUTE ON FUNCTION public.activate_billing_order(uuid, text, bigint, text
   TO service_role;
 
 COMMENT ON FUNCTION public.activate_billing_order IS
-  'Atomically mark a billing order paid and apply the subscription, or hold a mid-term different-tier capture as needs_review. Service-role only. Idempotent. Same-tier extends from GREATEST(now(), expiry). Different paid tier with >7 Asia/Kolkata calendar days remaining is not applied: the order stays paid/visible for admin review. SQL month math is the source of truth (not JS).';
+  'Atomically mark a billing order paid and apply the subscription, or hold a mid-term different-tier capture as needs_review. Sets setup_fee_paid when the captured order line_items include a setup_fee amount > 0 (including a hold: the customer paid it either way). Service-role only. Idempotent. Same-tier extends from GREATEST(now(), expiry). Different paid tier with >7 Asia/Kolkata calendar days remaining is not applied: the order stays paid/visible for admin review. SQL month math is the source of truth (not JS).';

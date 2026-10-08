@@ -4,12 +4,14 @@
 import { describe, it, expect } from "vitest";
 import {
   computePricing,
+  hasSetupFeePaid,
+  lineItemsIncludeSetup,
   setupFeePaidFromSubscription,
   type PlanTier,
 } from "@/lib/billing-pricing";
 
 describe("setupFeePaidFromSubscription", () => {
-  it("is true for admin-flagged invoice centres", () => {
+  it("is true only when the admin flag is set", () => {
     expect(
       setupFeePaidFromSubscription({
         setup_fee_paid: true,
@@ -19,24 +21,24 @@ describe("setupFeePaidFromSubscription", () => {
     ).toBe(true);
   });
 
-  it("is true for any current non-free plan (invoice-only today)", () => {
+  it("is false for a non-free plan without the flag (trial/comp/admin-set)", () => {
     expect(
       setupFeePaidFromSubscription({
         setup_fee_paid: false,
         plan: "growth",
         expiry_date: "2026-12-01",
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
-  it("is true when an expiry remains even after returning to free", () => {
+  it("is false when an expiry remains after returning to free", () => {
     expect(
       setupFeePaidFromSubscription({
         setup_fee_paid: false,
         plan: "free",
         expiry_date: "2026-01-01",
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("is false for a brand-new free account", () => {
@@ -47,6 +49,78 @@ describe("setupFeePaidFromSubscription", () => {
         expiry_date: null,
       }),
     ).toBe(false);
+  });
+});
+
+describe("lineItemsIncludeSetup", () => {
+  it("is true when a setup_fee line has amount > 0", () => {
+    expect(
+      lineItemsIncludeSetup([
+        { item: "setup_fee", amount: 500000 },
+        { item: "subscription_charge", amount: 99900 },
+      ]),
+    ).toBe(true);
+  });
+
+  it("is false when setup is missing or zero", () => {
+    expect(
+      lineItemsIncludeSetup([{ item: "subscription_charge", amount: 99900 }]),
+    ).toBe(false);
+    expect(lineItemsIncludeSetup([{ item: "setup_fee", amount: 0 }])).toBe(
+      false,
+    );
+    expect(lineItemsIncludeSetup(null)).toBe(false);
+  });
+});
+
+describe("hasSetupFeePaid", () => {
+  it("is true when an activated online order included setup", async () => {
+    const db = {
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            not: async () => ({
+              data: [
+                {
+                  line_items: [
+                    { item: "setup_fee", amount: 500000 },
+                    { item: "subscription_charge", amount: 99900 },
+                  ],
+                },
+              ],
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    };
+    await expect(
+      hasSetupFeePaid("owner", db as never, { setup_fee_paid: false }),
+    ).resolves.toBe(true);
+  });
+
+  it("is false when activated orders did not include setup", async () => {
+    const db = {
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            not: async () => ({
+              data: [
+                {
+                  line_items: [
+                    { item: "subscription_charge", amount: 1000000 },
+                  ],
+                },
+              ],
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    };
+    await expect(
+      hasSetupFeePaid("owner", db as never, { setup_fee_paid: false }),
+    ).resolves.toBe(false);
   });
 });
 

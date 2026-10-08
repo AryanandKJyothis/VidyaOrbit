@@ -119,9 +119,7 @@ export async function fetchSubscriptionForOwner(
       days_until_expiry: h.days_until_expiry,
       expired: h.expired,
       trial: false,
-      setup_fee_paid: Boolean(
-        h.setup_fee_paid || h.raw_plan !== "free" || !!h.expiry_date,
-      ),
+      setup_fee_paid: Boolean(h.setup_fee_paid),
       isOwner,
     };
   }
@@ -169,7 +167,7 @@ export async function fetchSubscriptionForOwner(
     days_until_expiry: daysLeft,
     expired,
     trial: false,
-    setup_fee_paid: plan !== "free" || !!expiry,
+    setup_fee_paid: false,
     isOwner,
   };
 }

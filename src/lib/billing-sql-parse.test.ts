@@ -9,6 +9,7 @@ const PR_MIGRATIONS = [
   "20261008091800_create_billing_orders_table.sql",
   "20261008093000_pro_plan_unlimited.sql",
   "20261008094000_atomic_billing_activation.sql",
+  "20261008095000_revoke_client_writes_subscriptions.sql",
 ] as const;
 
 const MIGRATIONS_DIR = "supabase/migrations";

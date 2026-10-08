@@ -31,8 +31,33 @@ describe("fetchSubscriptionForOwner", () => {
     const result = await fetchSubscriptionForOwner(supabase, OWNER, false);
     expect(rpc).toHaveBeenCalledWith("subscription_health", { _uid: OWNER });
     expect(result.plan).toBe("growth");
+    expect(result.setup_fee_paid).toBe(false);
     expect(result.isOwner).toBe(false);
     expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("uses subscription_health.setup_fee_paid as-is (no non-free/expiry waiver)", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        plan: "growth",
+        raw_plan: "growth",
+        status: "active",
+        expiry_date: "2026-12-01",
+        setup_fee_paid: true,
+        limit: 500,
+        student_count: 1,
+        over_limit: false,
+        over_by: 0,
+        expired: false,
+      },
+      error: null,
+    });
+    const result = await fetchSubscriptionForOwner(
+      { rpc, from: vi.fn() },
+      OWNER,
+      true,
+    );
+    expect(result.setup_fee_paid).toBe(true);
   });
 
   it("does not select setup_fee_paid in the fallback read", async () => {
@@ -68,6 +93,7 @@ describe("fetchSubscriptionForOwner", () => {
     expect(selected).toBeTruthy();
     expect(selected).not.toMatch(/setup_fee_paid/);
     expect(result.plan).toBe("growth");
+    expect(result.setup_fee_paid).toBe(false);
     expect(result.isOwner).toBe(false);
   });
 });

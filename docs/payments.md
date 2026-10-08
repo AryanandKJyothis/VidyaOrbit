@@ -22,14 +22,16 @@ Public `/pricing` display strings in `use-subscription.ts` `PLANS` stay on maste
 
 Charged only on **monthly** Growth/Large when setup is not already paid. Annual always waives it.
 
-Setup is already paid (server-side, same answer for create-order and `/plan`) when any of:
+Setup is already paid (server-side, same answer for create-order and `/plan`) **only** when:
 
-- `subscriptions.setup_fee_paid` is true (admin toggle; backfilled true for institutes currently on a paid plan)
-- current `plan` is not `free` (invoice / admin-set paid centres)
-- `expiry_date` is set (past paid_until)
-- an activated online `billing_orders` row exists
+- `subscriptions.setup_fee_paid` is true (admin toggle in the subscriptions dialog — invoices paid offline and special deals), or
+- an **activated** online `billing_orders` row included a `setup_fee` line with amount > 0
 
-A paid capture also sets `setup_fee_paid = true`. `/plan` reads `subscription_health.setup_fee_paid` and does not query `billing_orders` from the client. Annual cards do not show "+ free ₹5,000 setup" when setup is already paid.
+Trials, comps, and any non-free plan an admin set do **not** waive setup. `094000` backfills `setup_fee_paid = false` for everyone.
+
+`activate_billing_order` sets `setup_fee_paid = true` when the captured order's `line_items` included setup — including a `needs_review` hold, because the customer paid it either way. Starter / annual / renewal captures that did not charge setup leave the flag unchanged.
+
+`/plan` reads `subscription_health.setup_fee_paid` (the RPC already ORs in an activated setup order) and does not query `billing_orders` from the client. Annual cards do not show "+ free ₹5,000 setup" when setup is already paid.
 
 **Known gap:** two unpaid first orders created in parallel can both include setup. If both are captured, setup is charged twice.
 
@@ -40,7 +42,8 @@ Apply on the Supabase project that Preview uses (today that is prod `qyqomxuxtpb
 1. `20261008091700_fix_enforce_student_limit_exclude_archived.sql` — insert trigger **and** `subscription_health` ignore `status = 'archived'`. Workspace members (and service_role) may read the owner's plan. Admin summary/detail and `apply_subscription_change` use the same non-archived student count. Over-limit error labels `pro` as **Large**.
 2. `20261008091800_create_billing_orders_table.sql` — table, RLS, `ON DELETE RESTRICT` so payment rows survive user deletion, owner SELECT only.
 3. `20261008093000_pro_plan_unlimited.sql` — `plan_student_limit('pro')` = 2147483647 with `SET search_path = public` as a function attribute. Required before selling Large as unlimited.
-4. `20261008094000_atomic_billing_activation.sql` — idempotent `tier`/`cycle`/`needs_review` columns, `subscriptions.setup_fee_paid`, grant hardening, `activate_billing_order` (mid-term tier hold).
+4. `20261008094000_atomic_billing_activation.sql` — idempotent `tier`/`cycle`/`needs_review` columns, `subscriptions.setup_fee_paid` (default/backfill false; only real setup payments), grant hardening, `activate_billing_order` (mid-term tier hold).
+5. `20261008095000_revoke_client_writes_subscriptions.sql` — `REVOKE INSERT, UPDATE, DELETE, TRUNCATE` on `public.subscriptions` from `anon`/`authenticated`. SELECT and `service_role` unchanged.
 
 Do not apply these from this agent. An operator applies them.
 
@@ -66,7 +69,7 @@ Behaviour:
 3. Map `large` → `pro`.
 4. **Mid-term different-tier hold (SQL is the source of truth):** if the current *paid* plan (`plan <> free`, `plan_price > 0`, future `expiry_date`) is a different `plan_code` and more than **7 Asia/Kolkata calendar days** remain, do **not** extend or switch. The order stays `paid` with `activated_at` set (no silent loss, no webhook retry loop), `needs_review = true`, and `review_reason` filled. Admin sees it on the institute dialog. Return `{activated:false, reason:'tier_change_needs_review'}`. Verify and the webhook treat this as HTTP 200.
 5. Otherwise (same-tier renewal, ≤7 days left, expired, or free): `GREATEST(now(), COALESCE(expiry_date, now())) + 1 month` or `+ 12 months`. Postgres month arithmetic clamps (31 Jan + 1 month = 28/29 Feb). There is no JS `computeNewExpiry`.
-6. Preserve `notes` and `start_date`. `plan_price` is the `subscription_charge` line in rupees (never 0). Call live `apply_subscription_change(..., _confirm => true)`. Set `setup_fee_paid = true`.
+6. Preserve `notes` and `start_date`. `plan_price` is the `subscription_charge` line in rupees (never 0). Call live `apply_subscription_change(..., _confirm => true)`. If this captured order's `line_items` included a `setup_fee` amount > 0, set `setup_fee_paid = true` (also on a hold).
 
 Verify and the webhook call **only** this RPC via `activateOrderOnce()` in `src/lib/billing-activation.ts`. Any exception rolls back `activated_at`, so Razorpay can retry. A `needs_review` hold does not roll back: the payment is recorded for admin.
 
