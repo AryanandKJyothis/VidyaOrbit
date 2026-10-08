@@ -13,6 +13,10 @@ const revoke095000 = readFileSync(
   "supabase/migrations/20261008095000_revoke_client_writes_subscriptions.sql",
   "utf8",
 );
+const unlimited093000 = readFileSync(
+  "supabase/migrations/20261008093000_pro_plan_unlimited.sql",
+  "utf8",
+);
 
 function subscriptionHealthBody(sql: string) {
   const start = sql.indexOf(
@@ -77,6 +81,15 @@ describe("billing SQL migrations", () => {
   it("091700 COMMENT escapes the owner's apostrophe", () => {
     expect(health091700).not.toMatch(/the owner's plan/);
     expect(health091700).toContain("the owner''s plan");
+  });
+
+  it("093000 is CREATE OR REPLACE and safe to re-run", () => {
+    expect(unlimited093000).toMatch(
+      /CREATE OR REPLACE FUNCTION public\.plan_student_limit/,
+    );
+    expect(unlimited093000).toContain("WHEN 'pro' THEN 2147483647");
+    expect(unlimited093000).not.toMatch(/\bDROP FUNCTION\b/i);
+    expect(unlimited093000).not.toMatch(/\bALTER FUNCTION\b/i);
   });
 
   it("091700 excludes archived students from admin/apply counts", () => {

@@ -45,10 +45,24 @@ export function studentLimitForTier(tier: PlanTier): number | null {
 export function isUnlimited(limit: number | null | undefined): boolean {
   return (
     limit == null ||
-    limit === Infinity ||
-    limit === UNLIMITED_STUDENT_SENTINEL ||
-    !Number.isFinite(limit)
+    !Number.isFinite(limit) ||
+    limit >= UNLIMITED_STUDENT_SENTINEL
   );
+}
+
+/** Map a DB/RPC cap to a client number. Sentinel and above become Infinity. */
+export function toClientLimit(limit: number | null | undefined): number {
+  if (isUnlimited(limit)) return Infinity;
+  return limit as number;
+}
+
+/** Remaining import/add slots. Unlimited plans never cap at a finite number. */
+export function remainingStudentSlots(
+  limit: number | null | undefined,
+  currentCount: number,
+): number {
+  if (isUnlimited(limit)) return Infinity;
+  return Math.max(0, (limit as number) - currentCount);
 }
 
 /** @deprecated Use isUnlimited */

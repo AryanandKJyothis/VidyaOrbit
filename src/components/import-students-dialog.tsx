@@ -22,7 +22,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useBatches, useStudents } from "@/hooks/use-data";
 import { useSubscription } from "@/hooks/use-subscription";
-import { isUnlimited } from "@/lib/plan-limits";
+import { isUnlimited, remainingStudentSlots } from "@/lib/plan-limits";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
@@ -133,9 +133,7 @@ export function ImportStudentsDialog({
 
   const planLimit = sub.data?.limit ?? Infinity;
   const currentCount = sub.data?.student_count ?? 0;
-  const remainingSlots = isUnlimited(planLimit)
-    ? Number.POSITIVE_INFINITY
-    : Math.max(0, planLimit - currentCount);
+  const remainingSlots = remainingStudentSlots(planLimit, currentCount);
 
   const reset = () => {
     setStep(1);

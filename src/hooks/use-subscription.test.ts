@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchSubscriptionForOwner } from "@/hooks/use-subscription";
+import {
+  fetchSubscriptionForOwner,
+  PLAN_LIMITS,
+} from "@/hooks/use-subscription";
+import {
+  formatLimit,
+  remainingStudentSlots,
+  UNLIMITED_STUDENT_SENTINEL,
+} from "@/lib/plan-limits";
 
 const OWNER = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
@@ -95,5 +103,116 @@ describe("fetchSubscriptionForOwner", () => {
     expect(result.plan).toBe("growth");
     expect(result.setup_fee_paid).toBe(false);
     expect(result.isOwner).toBe(false);
+  });
+
+  it("maps Large/pro to Infinity and any limit >= 2147483647 to Infinity", async () => {
+    expect(PLAN_LIMITS.pro).toBe(Infinity);
+    expect(PLAN_LIMITS.pro).not.toBe(1000);
+    expect(PLAN_LIMITS.pro).not.toBe(UNLIMITED_STUDENT_SENTINEL);
+
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        plan: "pro",
+        raw_plan: "pro",
+        status: "active",
+        start_date: "2026-01-01",
+        expiry_date: "2026-12-01",
+        current_period_end: null,
+        plan_price: 2499,
+        notes: null,
+        limit: UNLIMITED_STUDENT_SENTINEL,
+        student_count: 1000,
+        over_limit: false,
+        over_by: 0,
+        days_until_expiry: 40,
+        expired: false,
+        setup_fee_paid: false,
+      },
+      error: null,
+    });
+    const result = await fetchSubscriptionForOwner(
+      { rpc, from: vi.fn() },
+      OWNER,
+      true,
+    );
+    expect(result.limit).toBe(Infinity);
+    expect(result.student_count).toBe(1000);
+
+    rpc.mockResolvedValueOnce({
+      data: {
+        plan: "pro",
+        raw_plan: "pro",
+        status: "active",
+        limit: UNLIMITED_STUDENT_SENTINEL + 1,
+        student_count: 12,
+        over_limit: false,
+        over_by: 0,
+        expired: false,
+      },
+      error: null,
+    });
+    const above = await fetchSubscriptionForOwner(
+      { rpc, from: vi.fn() },
+      OWNER,
+      true,
+    );
+    expect(above.limit).toBe(Infinity);
+  });
+
+  it("never renders N / 2,14,74,83,647 for Large usage", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        plan: "pro",
+        raw_plan: "pro",
+        status: "active",
+        limit: UNLIMITED_STUDENT_SENTINEL,
+        student_count: 87,
+        over_limit: false,
+        over_by: 0,
+        expired: false,
+      },
+      error: null,
+    });
+    const result = await fetchSubscriptionForOwner(
+      { rpc, from: vi.fn() },
+      OWNER,
+      true,
+    );
+    const label = `${result.student_count} / ${formatLimit(result.limit)}`;
+    expect(label).toBe("87 / Unlimited");
+    expect(label).not.toMatch(/2,?14,?74,?83,?647/);
+    expect(label).not.toContain(String(UNLIMITED_STUDENT_SENTINEL));
+    expect(UNLIMITED_STUDENT_SENTINEL.toLocaleString("en-IN")).toBe(
+      "2,14,74,83,647",
+    );
+  });
+
+  it("does not stop Large imports at 1,000 students", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        plan: "pro",
+        raw_plan: "pro",
+        status: "active",
+        limit: UNLIMITED_STUDENT_SENTINEL,
+        student_count: 1000,
+        over_limit: false,
+        over_by: 0,
+        expired: false,
+      },
+      error: null,
+    });
+    const result = await fetchSubscriptionForOwner(
+      { rpc, from: vi.fn() },
+      OWNER,
+      true,
+    );
+    const remaining = remainingStudentSlots(result.limit, result.student_count);
+    expect(remaining).toBe(Infinity);
+    expect(remaining).toBeGreaterThan(1000);
+    const wouldInsert = Array.from({ length: 1500 }, (_, i) => i).slice(
+      0,
+      remaining,
+    );
+    expect(wouldInsert).toHaveLength(1500);
   });
 });

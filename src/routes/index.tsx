@@ -25,7 +25,7 @@ import {
 } from "@/lib/pricing-display";
 import { getContactConfig } from "@/lib/contact-config";
 
-const SITE_URL = "https://vidyaorbit.in";
+const SITE_URL = "https://www.vidyaorbit.in";
 const HERO_TITLE = "Run your coaching centre — without the spreadsheet chaos.";
 const HERO_SUB =
   "Vidya Orbit gives Indian coaching centres and tuition institutes one calm place to manage students, batches, attendance, fees and receipts. Built for owners who'd rather teach than chase WhatsApp messages.";
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "One simple dashboard for Indian coaching centres: students, batches, attendance, fee receipts and analytics. Replace your spreadsheets in a single afternoon.",
+          "One simple dashboard for Indian coaching centres: students, batches, attendance, fee receipts and analytics. Replace your spreadsheets.",
       },
       {
         property: "og:title",

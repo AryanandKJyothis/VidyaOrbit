@@ -4,7 +4,7 @@ import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 import { APPROVED_PRICING, type PlanDisplay } from "@/lib/pricing-display";
 import {
   PLAN_STUDENT_LIMITS,
-  UNLIMITED_STUDENT_SENTINEL,
+  toClientLimit,
   type PlanCode,
 } from "@/lib/plan-limits";
 
@@ -21,10 +21,10 @@ function toPlanCode(code: PlanDisplay["code"]): PlanCode {
 export const TRIAL_MODE = false;
 
 export const PLAN_LIMITS: Record<PlanCode, number> = {
-  free: PLAN_STUDENT_LIMITS.free ?? 25,
-  starter: PLAN_STUDENT_LIMITS.starter ?? 100,
-  growth: PLAN_STUDENT_LIMITS.growth ?? 500,
-  pro: UNLIMITED_STUDENT_SENTINEL,
+  free: toClientLimit(PLAN_STUDENT_LIMITS.free),
+  starter: toClientLimit(PLAN_STUDENT_LIMITS.starter),
+  growth: toClientLimit(PLAN_STUDENT_LIMITS.growth),
+  pro: Infinity,
 };
 
 export const PLAN_RANK: Record<PlanCode, number> = {
@@ -112,7 +112,7 @@ export async function fetchSubscriptionForOwner(
       current_period_end: h.current_period_end,
       plan_price: h.plan_price,
       notes: h.notes,
-      limit: h.limit,
+      limit: toClientLimit(h.limit),
       student_count: h.student_count,
       over_limit: h.over_limit,
       over_by: h.over_by,
@@ -160,7 +160,7 @@ export async function fetchSubscriptionForOwner(
     current_period_end: row?.current_period_end ?? null,
     plan_price: row?.plan_price ?? null,
     notes: row?.notes ?? null,
-    limit: PLAN_LIMITS[effectivePlan],
+    limit: toClientLimit(PLAN_LIMITS[effectivePlan]),
     student_count: 0,
     over_limit: false,
     over_by: 0,
