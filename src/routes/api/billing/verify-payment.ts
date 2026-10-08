@@ -6,6 +6,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import crypto from "node:crypto";
 import Razorpay from "razorpay";
+import type { Payments } from "razorpay/dist/types/payments";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { parseBearerUserId } from "@/server/require-bearer-user";
 import { allowRequest, clientAddress, tooManyRequests } from "@/lib/rate-limit";
@@ -144,7 +145,7 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
 
         // Fetch payment from Razorpay API to validate amount & currency
         const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
-        let payment: Razorpay.Payments.RazorpayPayment;
+        let payment: Payments.RazorpayPayment;
 
         try {
           payment = await rzp.payments.fetch(razorpay_payment_id);

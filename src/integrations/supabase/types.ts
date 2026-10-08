@@ -153,6 +153,8 @@ export type Database = {
           razorpay_order_id: string;
           razorpay_payment_id: string | null;
           status: string;
+          tier: string;
+          cycle: string;
         };
         Insert: {
           activated_at?: string | null;
@@ -167,6 +169,8 @@ export type Database = {
           razorpay_order_id: string;
           razorpay_payment_id?: string | null;
           status?: string;
+          tier: string;
+          cycle: string;
         };
         Update: {
           activated_at?: string | null;
@@ -181,6 +185,8 @@ export type Database = {
           razorpay_order_id?: string;
           razorpay_payment_id?: string | null;
           status?: string;
+          tier?: string;
+          cycle?: string;
         };
         Relationships: [];
       };
@@ -678,6 +684,16 @@ export type Database = {
       };
       subscription_health: { Args: { _uid: string }; Returns: Json };
     };
+      activate_billing_order: {
+        Args: {
+          _order_id: string;
+          _payment_id: string;
+          _amount: number;
+          _currency: string;
+        };
+        Returns: Json;
+      };
+
     Enums: {
       app_role: "admin" | "user";
       invite_status: "pending" | "accepted" | "revoked" | "expired";

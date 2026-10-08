@@ -6,6 +6,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import Razorpay from "razorpay";
+import type { Orders } from "razorpay/dist/types/orders";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { parseBearerUserId } from "@/server/require-bearer-user";
 import { allowRequest, clientAddress, tooManyRequests } from "@/lib/rate-limit";
@@ -260,7 +261,7 @@ export const Route = createFileRoute("/api/billing/create-order")({
           cycle,
         };
 
-        let rzOrder: Razorpay.Orders.RazorpayOrder;
+        let rzOrder: Orders.RazorpayOrder;
         try {
           rzOrder = await rzp.orders.create({
             amount: pricing.total,

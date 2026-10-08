@@ -23,7 +23,11 @@ describe("Comped Account Logic", () => {
   it("allows no subscription (null) to buy", () => {
     const sub: Subscription | null = null;
     // When sub is null, it's not comped (free centres can buy)
-    const isComped = !!(sub && sub.plan !== "free" && (sub.plan_price === 0 || sub.expiry_date === null));
+    let isComped = false;
+    if (sub) {
+      const s: Subscription = sub;
+      isComped = s.plan !== "free" && (s.plan_price === 0 || s.expiry_date === null);
+    }
     expect(isComped).toBe(false);
   });
 

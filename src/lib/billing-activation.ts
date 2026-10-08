@@ -37,12 +37,15 @@ export async function activateOrderOnce(
   currency: string,
 ): Promise<ActivationResult> {
   // Call the atomic activation RPC
-  const { data, error } = await supabase.rpc("activate_billing_order", {
-    _order_id: orderId,
-    _payment_id: paymentId,
-    _amount: BigInt(amount),
-    _currency: currency,
-  });
+  const { data, error } = await supabase.rpc(
+    "activate_billing_order" as any,
+    {
+      _order_id: orderId,
+      _payment_id: paymentId,
+      _amount: BigInt(amount),
+      _currency: currency,
+    },
+  );
 
   if (error) {
     console.error("Activation RPC error:", error);
@@ -73,8 +76,11 @@ export async function activateOrderOnce(
   if (!result.activated) {
     return {
       success: false,
-      reason: (result.reason ||
-        "order_not_found") as ActivationResult["reason"],
+      reason: (result.reason || "order_not_found") as
+        | "already_activated"
+        | "order_not_found"
+        | "amount_or_currency_mismatch"
+        | "rpc_error",
     };
   }
 
