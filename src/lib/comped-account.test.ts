@@ -16,10 +16,7 @@ describe("Comped Account Logic", () => {
       plan_price: null,
       expiry_date: null,
     };
-    const isComped =
-      sub !== null &&
-      sub.plan !== "free" &&
-      (sub.plan_price === 0 || sub.expiry_date === null);
+    const isComped = sub.plan !== "free" && (sub.plan_price === 0 || sub.expiry_date === null);
     expect(isComped).toBe(false);
   });
 
@@ -58,10 +55,7 @@ describe("Comped Account Logic", () => {
       plan_price: 10000,
       expiry_date: "2025-01-01",
     };
-    const isComped =
-      sub !== null &&
-      sub.plan !== "free" &&
-      (sub.plan_price === 0 || sub.expiry_date === null);
+    const isComped = sub.plan !== "free" && (sub.plan_price === 0 || sub.expiry_date === null);
     expect(isComped).toBe(false);
   });
 
@@ -71,10 +65,7 @@ describe("Comped Account Logic", () => {
       plan_price: 10000,
       expiry_date: "2027-01-01",
     };
-    const isComped =
-      sub !== null &&
-      sub.plan !== "free" &&
-      (sub.plan_price === 0 || sub.expiry_date === null);
+    const isComped = sub.plan !== "free" && (sub.plan_price === 0 || sub.expiry_date === null);
     expect(isComped).toBe(false);
   });
 });
