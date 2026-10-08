@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Sparkles,
   Users,
+  ExternalLink,
 } from "lucide-react";
 import { ImportStudentsDialog } from "@/components/import-students-dialog";
 import { PageHeader } from "@/components/page-header";
@@ -49,19 +50,39 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/empty-state";
 import { OverLimitBanner } from "@/components/over-limit-banner";
-import { useActiveWorkspace } from "@/hooks/use-active-workspace";
+import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
+import {
+  getContactMessage,
+  getContactLink,
+  getContactLabel,
+  hasAnyContact,
+} from "@/lib/contact-config";
 
 export const Route = createFileRoute("/_authenticated/students")({
   component: StudentsPage,
 });
 
 function StudentsPage() {
+  // Check if we're on a child route (e.g., /students/$id)
+  const isChildRoute = Route.useMatch({
+    select: (match) => match.id !== "/_authenticated/students/",
+  });
+
+  if (isChildRoute) {
+    return <Outlet />;
+  }
+
+  return <StudentsList />;
+}
+
+function StudentsList() {
   const students = useStudents();
   const batches = useBatches();
   const payments = usePayments();
   const sub = useSubscription();
   const { active } = useActiveWorkspace();
   const qc = useQueryClient();
+  const canViewFees = useCan("fees", "read");
 
   const [q, setQ] = useState("");
   const [batchFilter, setBatchFilter] = useState<string>("all");
@@ -102,6 +123,12 @@ function StudentsPage() {
     ? Math.min(100, (currentCount / planLimit) * 100)
     : 0;
   const atLimit = Number.isFinite(planLimit) && currentCount >= planLimit;
+
+  const isOwner = active?.role === "owner";
+  const contactMsg = getContactMessage(isOwner);
+  const contactUrl = getContactLink();
+  const contactLabel = getContactLabel();
+  const showContact = hasAnyContact();
 
   const archive = async (s: Student) => {
     const next = s.status === "archived" ? "active" : "archived";
@@ -234,18 +261,27 @@ function StudentsPage() {
                       ? `You've reached your ${sub.data.plan} plan limit (${planLimit} students).`
                       : `Heads up — you're using ${currentCount} of ${planLimit} students.`}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    Contact your administrator to raise your student limit.
-                  </p>
+                  {contactMsg && (
+                    <p className="text-xs text-muted-foreground">{contactMsg}</p>
+                  )}
                 </div>
               </div>
-              <Button
-                asChild
-                size="sm"
-                variant={atLimit ? "default" : "outline"}
-              >
-                <Link to="/plan">View plan</Link>
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  asChild
+                  size="sm"
+                  variant={atLimit ? "default" : "outline"}
+                >
+                  <Link to="/plan">View plan</Link>
+                </Button>
+                {showContact && contactUrl && (
+                  <Button asChild size="sm" variant="outline">
+                    <a href={contactUrl} target="_blank" rel="noopener noreferrer">
+                      {contactLabel} <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+                    </a>
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}
@@ -350,8 +386,12 @@ function StudentsPage() {
                       <th className="px-4 py-3">Student</th>
                       <th className="px-4 py-3">Batch</th>
                       <th className="px-4 py-3">Joined</th>
-                      <th className="px-4 py-3 text-right">Fee</th>
-                      <th className="px-4 py-3 text-right">Balance</th>
+                      {canViewFees && (
+                        <>
+                          <th className="px-4 py-3 text-right">Fee</th>
+                          <th className="px-4 py-3 text-right">Balance</th>
+                        </>
+                      )}
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3"></th>
                     </tr>
@@ -388,14 +428,18 @@ function StudentsPage() {
                           <td className="px-4 py-3 text-muted-foreground">
                             {formatDate(s.joining_date)}
                           </td>
-                          <td className="px-4 py-3 text-right font-mono">
-                            {formatINR(Number(s.fee_total))}
-                          </td>
-                          <td
-                            className={`px-4 py-3 text-right font-mono ${bal > 0 ? "font-semibold" : "text-muted-foreground"}`}
-                          >
-                            {formatINR(bal)}
-                          </td>
+                          {canViewFees && (
+                            <>
+                              <td className="px-4 py-3 text-right font-mono">
+                                {formatINR(Number(s.fee_total))}
+                              </td>
+                              <td
+                                className={`px-4 py-3 text-right font-mono ${bal > 0 ? "font-semibold" : "text-muted-foreground"}`}
+                              >
+                                {formatINR(bal)}
+                              </td>
+                            </>
+                          )}
                           <td className="px-4 py-3">
                             {overdue ? (
                               <Badge variant="destructive">Overdue</Badge>
@@ -483,14 +527,16 @@ function StudentsPage() {
                             </div>
                           )}
                         </div>
-                        <div className="text-right shrink-0">
-                          <div className="font-mono text-sm font-semibold">
-                            {formatINR(bal)}
+                        {canViewFees && (
+                          <div className="text-right shrink-0">
+                            <div className="font-mono text-sm font-semibold">
+                              {formatINR(bal)}
+                            </div>
+                            <div className="text-[10px] uppercase text-muted-foreground">
+                              balance
+                            </div>
                           </div>
-                          <div className="text-[10px] uppercase text-muted-foreground">
-                            balance
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </Link>
                   );
