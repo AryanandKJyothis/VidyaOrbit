@@ -3,9 +3,13 @@ import crypto from "node:crypto";
 import {
   evaluatePendingFollowup,
   getBillingSupportContact,
+  heldPaymentMessage,
   isCompedSubscription,
+  isSetupRefundReview,
   isTierChangeBlocked,
   kolkataCalendarDaysUntil,
+  SETUP_ALREADY_PAID_MESSAGE,
+  TIER_CHANGE_HELD_MESSAGE,
   tierChangeSupportMessage,
 } from "@/lib/billing-guards";
 import { verifyCheckoutSignature } from "@/lib/billing-signature";
@@ -245,6 +249,67 @@ describe("evaluatePendingFollowup", () => {
         order: { needs_review: true, activated_at: "2026-10-08T00:00:00Z" },
       }),
     ).toBe("held");
+  });
+
+  it("returns setup_refund when needs_review is setup_already_paid (plan applied)", () => {
+    expect(
+      evaluatePendingFollowup({
+        expectedPlan: "growth",
+        previousPlan: "growth",
+        previousExpiry: "2026-11-01T00:00:00Z",
+        subscription: {
+          plan: "growth",
+          status: "active",
+          expired: false,
+          expiry_date: "2026-12-01T00:00:00Z",
+        },
+        order: {
+          needs_review: true,
+          activated_at: "2026-10-08T00:00:00Z",
+          review_reason:
+            "setup_already_paid. Refund the ₹5,000 setup — another captured payment already covered onboarding. The plan was still applied.",
+        },
+      }),
+    ).toBe("setup_refund");
+  });
+
+  it("returns held when a tier hold also records setup_already_paid", () => {
+    expect(
+      evaluatePendingFollowup({
+        expectedPlan: "pro",
+        previousPlan: "starter",
+        previousExpiry: "2026-11-01T00:00:00Z",
+        subscription: {
+          plan: "starter",
+          status: "active",
+          expired: false,
+          expiry_date: "2026-11-01T00:00:00Z",
+        },
+        order: {
+          needs_review: true,
+          activated_at: "2026-10-08T00:00:00Z",
+          review_reason:
+            "Paid large monthly order captured while current paid plan is starter with 30 Asia/Kolkata days left. Not applied: mid-term tier changes are manual. setup_already_paid.",
+        },
+      }),
+    ).toBe("held");
+  });
+});
+
+describe("heldPaymentMessage", () => {
+  it("uses the refund copy only when the plan was applied", () => {
+    expect(isSetupRefundReview("setup_already_paid. Refund the ₹5,000")).toBe(
+      true,
+    );
+    expect(heldPaymentMessage("setup_already_paid. Refund the ₹5,000")).toBe(
+      SETUP_ALREADY_PAID_MESSAGE,
+    );
+    expect(heldPaymentMessage("Not applied: mid-term")).toBe(
+      TIER_CHANGE_HELD_MESSAGE,
+    );
+    expect(
+      heldPaymentMessage("Not applied: mid-term. setup_already_paid."),
+    ).toBe(TIER_CHANGE_HELD_MESSAGE);
   });
 });
 

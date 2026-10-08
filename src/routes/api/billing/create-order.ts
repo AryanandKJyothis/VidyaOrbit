@@ -17,6 +17,7 @@ import {
   isBillingEnabled,
   isValidTier,
   isValidCycle,
+  razorpayKeyMode,
   type PlanTier,
   type BillingCycle,
 } from "@/lib/billing-pricing";
@@ -297,6 +298,7 @@ export const Route = createFileRoute("/api/billing/create-order")({
             currency: pricing.currency,
             status: "created",
             line_items: pricing.line_items,
+            key_mode: razorpayKeyMode(keyId),
           });
 
         if (insertErr) {

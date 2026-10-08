@@ -51,6 +51,8 @@ DECLARE
   v_count integer;
   v_days_left integer;
   v_expired boolean;
+  v_setup_paid boolean;
+  v_has_live boolean;
 BEGIN
   -- Live semantics (null-safe): service_role is allowed. Otherwise auth.uid()
   -- IS NULL is forbidden. Allowed when _uid is the caller or a workspace they
@@ -66,8 +68,9 @@ BEGIN
     END IF;
   END IF;
 
-  SELECT plan, status, start_date, expiry_date, plan_price, notes, current_period_end
-    INTO v_sub
+  -- SELECT * so a re-run after 094000 still reads setup_fee_paid, while a
+  -- first apply (column not yet added) does not fail.
+  SELECT * INTO v_sub
     FROM public.subscriptions
     WHERE owner_id = _uid
     LIMIT 1;
@@ -86,6 +89,37 @@ BEGIN
     ELSE EXTRACT(DAY FROM (v_sub.expiry_date - now()))::int
   END;
 
+  v_setup_paid := COALESCE((to_jsonb(v_sub)->>'setup_fee_paid')::boolean, false);
+  v_has_live := false;
+  IF to_regclass('public.billing_orders') IS NOT NULL THEN
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+       WHERE table_schema = 'public'
+         AND table_name = 'billing_orders'
+         AND column_name = 'key_mode'
+    ) THEN
+      EXECUTE
+        'SELECT EXISTS (
+           SELECT 1 FROM public.billing_orders bo
+            WHERE bo.owner_id = $1
+              AND bo.activated_at IS NOT NULL
+              AND bo.key_mode = ''live''
+         )'
+        INTO v_has_live
+        USING _uid;
+    ELSE
+      EXECUTE
+        'SELECT EXISTS (
+           SELECT 1 FROM public.billing_orders bo
+            WHERE bo.owner_id = $1
+              AND bo.activated_at IS NOT NULL
+         )'
+        INTO v_has_live
+        USING _uid;
+    END IF;
+  END IF;
+  v_setup_paid := v_setup_paid OR v_has_live;
+
   RETURN jsonb_build_object(
     'plan', v_effective_plan,
     'raw_plan', COALESCE(v_sub.plan, 'free'::public.plan_code),
@@ -100,7 +134,8 @@ BEGIN
     'over_limit', v_count > v_limit,
     'over_by', GREATEST(0, v_count - v_limit),
     'days_until_expiry', v_days_left,
-    'expired', v_expired
+    'expired', v_expired,
+    'setup_fee_paid', v_setup_paid
   );
 END;
 $$;
@@ -109,7 +144,7 @@ REVOKE ALL ON FUNCTION public.subscription_health(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.subscription_health(uuid) TO authenticated, service_role;
 
 COMMENT ON FUNCTION public.subscription_health(uuid) IS
-  'Plan/limit/expiry plus active (non-archived) student count. Must match enforce_student_limit. Workspace members may read the owner''s plan. Later 094000 adds setup_fee_paid to this payload.';
+  'Plan/limit/expiry plus active (non-archived) student count. Must match enforce_student_limit. Workspace members may read the owner''s plan. setup_fee_paid is the admin flag OR any live (key_mode=live) activated billing_orders row; test-mode captures do not count. Defensive: a first apply before 091800/094000 still works; a re-run after 094000 does not drop the field.';
 
 -- Archived-student counts on admin/over-limit paths. Bodies match live except
 -- student_count / total_students / apply_subscription_change v_count exclude

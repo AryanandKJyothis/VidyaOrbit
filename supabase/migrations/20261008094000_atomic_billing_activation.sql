@@ -42,6 +42,32 @@ ALTER TABLE public.billing_orders
   ALTER COLUMN tier SET NOT NULL,
   ALTER COLUMN cycle SET NOT NULL;
 
+-- key_mode: Preview shares the prod DB, so test-card payments must never
+-- count as real. Idempotent if 091800 already created the column.
+ALTER TABLE public.billing_orders
+  ADD COLUMN IF NOT EXISTS key_mode text;
+
+UPDATE public.billing_orders
+   SET key_mode = 'test'
+ WHERE key_mode IS NULL;
+
+ALTER TABLE public.billing_orders
+  ALTER COLUMN key_mode SET NOT NULL;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.billing_orders'::regclass
+      AND conname = 'billing_orders_key_mode_check'
+  ) THEN
+    ALTER TABLE public.billing_orders
+      ADD CONSTRAINT billing_orders_key_mode_check
+      CHECK (key_mode IN ('test', 'live'));
+  END IF;
+END
+$$;
+
 ALTER TABLE public.billing_orders DROP CONSTRAINT IF EXISTS chk_activated_implies_paid;
 ALTER TABLE public.billing_orders
   ADD CONSTRAINT chk_activated_implies_paid
@@ -54,6 +80,7 @@ CREATE INDEX IF NOT EXISTS billing_orders_needs_review_idx
 -- Harden grants (re-grant is safe)
 REVOKE ALL ON public.billing_orders FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON public.billing_orders TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.billing_orders TO service_role;
 
 -- ── subscriptions.setup_fee_paid ───────────────────────────────────
 -- One-time onboarding: any captured paid billing order (monthly or
@@ -126,6 +153,7 @@ BEGIN
       SELECT 1 FROM public.billing_orders bo
        WHERE bo.owner_id = _uid
          AND bo.activated_at IS NOT NULL
+         AND bo.key_mode = 'live'
     );
 
   RETURN jsonb_build_object(
@@ -217,7 +245,8 @@ BEGIN
         RETURN jsonb_build_object(
           'activated', false,
           'reason', 'already_activated',
-          'needs_review', COALESCE(existing_order.needs_review, false)
+          'needs_review', COALESCE(existing_order.needs_review, false),
+          'review_reason', existing_order.review_reason
         );
       END IF;
 
@@ -237,8 +266,9 @@ BEGIN
        AND COALESCE((li->>'amount')::numeric, 0) > 0
   );
 
-  -- Already paid *before this order*: the flag, or any OTHER captured order
-  -- (this row already has activated_at from the UPDATE above).
+  -- Already paid *before this order*: the flag, or any OTHER captured *live*
+  -- order (this row already has activated_at from the UPDATE above).
+  -- Test-mode captures never count as already paid.
   v_setup_already :=
     COALESCE(s.setup_fee_paid, false)
     OR EXISTS (
@@ -246,6 +276,7 @@ BEGIN
        WHERE bo.owner_id = o.owner_id
          AND bo.id IS DISTINCT FROM o.id
          AND bo.activated_at IS NOT NULL
+         AND bo.key_mode = 'live'
     );
 
   v_order_plan := CASE o.tier
@@ -291,9 +322,13 @@ BEGIN
            review_reason = v_review_reason
      WHERE id = o.id;
 
-    UPDATE public.subscriptions
-       SET setup_fee_paid = true
-     WHERE owner_id = o.owner_id;
+    -- Subscriptions row is locked above (handle_new_user always creates it).
+    -- Test-mode captures must not set the flag.
+    IF o.key_mode = 'live' THEN
+      UPDATE public.subscriptions
+         SET setup_fee_paid = true
+       WHERE owner_id = o.owner_id;
+    END IF;
 
     RETURN jsonb_build_object(
       'activated', false,
@@ -334,11 +369,14 @@ BEGIN
     _confirm    => true
   );
 
-  -- After apply: INSERT … ON CONFLICT does not set setup_fee_paid, so a
-  -- first-time payer would otherwise keep DEFAULT false.
-  UPDATE public.subscriptions
-     SET setup_fee_paid = true
-   WHERE owner_id = o.owner_id;
+  -- After apply (the upsert has created the row if needed). Test-mode
+  -- captures must not set the flag. INSERT … ON CONFLICT does not set
+  -- setup_fee_paid, so a first-time live payer would otherwise keep DEFAULT false.
+  IF o.key_mode = 'live' THEN
+    UPDATE public.subscriptions
+       SET setup_fee_paid = true
+     WHERE owner_id = o.owner_id;
+  END IF;
 
   IF v_setup_in_order AND v_setup_already THEN
     UPDATE public.billing_orders
@@ -373,4 +411,4 @@ GRANT EXECUTE ON FUNCTION public.activate_billing_order(uuid, text, bigint, text
   TO service_role;
 
 COMMENT ON FUNCTION public.activate_billing_order IS
-  'Atomically mark a billing order paid and apply the subscription, or hold a mid-term different-tier capture as needs_review. Sets setup_fee_paid AFTER apply_subscription_change (and on a hold) so a first-time payer gets the flag. If this order charged setup but setup was already paid (flag or any OTHER captured order), still apply the plan and flag needs_review reason setup_already_paid for a ₹5,000 refund. A tier hold is not applied; review_reason then includes both the tier text and setup_already_paid. Service-role only. Idempotent. Same-tier extends from GREATEST(now(), expiry). SQL month math is the source of truth (not JS).';
+  'Atomically mark a billing order paid and apply the subscription, or hold a mid-term different-tier capture as needs_review. Sets setup_fee_paid AFTER apply_subscription_change (and on a hold) only for key_mode=live, and only after the subscriptions row exists (handle_new_user / upsert). Test-mode captures still activate so Preview can be tested, but never count as already paid. If this order charged setup but setup was already paid (flag or any OTHER captured live order), still apply the plan and flag needs_review reason setup_already_paid for a ₹5,000 refund. A tier hold is not applied; review_reason then includes both the tier text and setup_already_paid. Service-role only. Idempotent. Same-tier extends from GREATEST(now(), expiry). SQL month math is the source of truth (not JS).';

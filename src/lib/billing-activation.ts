@@ -13,6 +13,9 @@ export type ActivationResult =
       ownerId: string;
       tier: string;
       cycle: string;
+      reason?: "setup_already_paid";
+      needsReview?: boolean;
+      reviewReason?: string | null;
     }
   | {
       success: false;
@@ -21,9 +24,11 @@ export type ActivationResult =
         | "order_not_found"
         | "amount_or_currency_mismatch"
         | "tier_change_needs_review"
+        | "setup_already_paid"
         | "rpc_error";
       message?: string;
       needsReview?: boolean;
+      reviewReason?: string | null;
     };
 
 /**
@@ -70,6 +75,7 @@ export async function activateOrderOnce(
     tier?: string;
     cycle?: string;
     needs_review?: boolean;
+    review_reason?: string | null;
   };
 
   if (!result.activated) {
@@ -78,13 +84,17 @@ export async function activateOrderOnce(
       | "order_not_found"
       | "amount_or_currency_mismatch"
       | "tier_change_needs_review"
+      | "setup_already_paid"
       | "rpc_error";
     const needsReview =
       result.needs_review === true ||
       result.reason === "tier_change_needs_review";
-    return needsReview
-      ? { success: false, reason, needsReview: true }
-      : { success: false, reason };
+    return {
+      success: false,
+      reason,
+      ...(needsReview ? { needsReview: true as const } : {}),
+      ...(result.review_reason ? { reviewReason: result.review_reason } : {}),
+    };
   }
 
   return {
@@ -93,5 +103,10 @@ export async function activateOrderOnce(
     ownerId: result.owner_id || "",
     tier: result.tier || "",
     cycle: result.cycle || "",
+    ...(result.reason === "setup_already_paid"
+      ? { reason: "setup_already_paid" as const }
+      : {}),
+    ...(result.needs_review === true ? { needsReview: true } : {}),
+    ...(result.review_reason ? { reviewReason: result.review_reason } : {}),
   };
 }

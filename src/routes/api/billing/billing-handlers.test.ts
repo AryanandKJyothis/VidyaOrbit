@@ -239,6 +239,7 @@ describe("POST /api/billing/create-order", () => {
     expect(saved?.amount_paise).toBe(599900);
     expect(saved?.tier).toBe("growth");
     expect(saved?.cycle).toBe("monthly");
+    expect((saved as { key_mode?: string } | null)?.key_mode).toBe("test");
     expect(ordersCreate).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 599900, currency: "INR" }),
     );
@@ -400,6 +401,71 @@ describe("POST /api/billing/create-order", () => {
     });
     const res = await postCreate({ tier: "growth", cycle: "monthly" });
     expect(res.status).toBe(200);
+  });
+
+  it("ignores a client-sent amount and uses server pricing", async () => {
+    let inserted: { amount_paise?: number } | null = null;
+    fromMock.mockImplementation((table: string) => {
+      if (table === "subscriptions")
+        return thenable({
+          data: { plan: "free", plan_price: null, expiry_date: null },
+          error: null,
+        });
+      if (table === "institutes")
+        return thenable({ data: { owner_id: OWNER }, error: null });
+      if (table === "students")
+        return thenable({ data: null, error: null, count: 10 });
+      if (table === "billing_orders") {
+        const t = thenable({ data: null, error: null, count: 0 });
+        (t.insert as ReturnType<typeof vi.fn>).mockImplementation((row) => {
+          inserted = row as { amount_paise?: number };
+          return t;
+        });
+        return t;
+      }
+      return thenable({ data: null, error: null });
+    });
+    const res = await postCreate({
+      tier: "growth",
+      cycle: "monthly",
+      amount: 1,
+    });
+    expect(res.status).toBe(200);
+    expect((await res.json()).amount).toBe(599900);
+    const savedAmt = inserted as { amount_paise?: number } | null;
+    expect(savedAmt?.amount_paise).toBe(599900);
+    expect(ordersCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 599900 }),
+    );
+  });
+
+  it("refuses live keys unless RAZORPAY_ALLOW_LIVE is exactly true", async () => {
+    process.env.RAZORPAY_KEY_ID = "rzp_live_abc";
+    process.env.RAZORPAY_ALLOW_LIVE = "TRUE";
+    const denied = await postCreate({ tier: "growth", cycle: "monthly" });
+    expect(denied.status).toBe(403);
+    expect((await denied.json()).code).toBe("LIVE_KEY_BLOCKED");
+
+    process.env.RAZORPAY_ALLOW_LIVE = "true";
+    fromMock.mockImplementation((table: string) => {
+      if (table === "subscriptions")
+        return thenable({
+          data: { plan: "free", plan_price: null, expiry_date: null },
+          error: null,
+        });
+      if (table === "institutes")
+        return thenable({ data: { owner_id: OWNER }, error: null });
+      if (table === "students")
+        return thenable({ data: null, error: null, count: 10 });
+      if (table === "billing_orders") {
+        const t = thenable({ data: null, error: null, count: 0 });
+        (t.insert as ReturnType<typeof vi.fn>).mockImplementation(() => t);
+        return t;
+      }
+      return thenable({ data: null, error: null });
+    });
+    const allowed = await postCreate({ tier: "starter", cycle: "monthly" });
+    expect(allowed.status).toBe(200);
   });
 
   it("returns 503 when billing is disabled", async () => {
@@ -618,6 +684,43 @@ describe("POST /api/billing/verify-payment", () => {
     expect(body.message).toMatch(/We'll contact you to switch your plan/i);
   });
 
+  it("returns the setup-refund message when a duplicate setup capture applied the plan", async () => {
+    fromMock.mockImplementation(() =>
+      thenable({ data: storedOrder, error: null }),
+    );
+    paymentsFetch.mockResolvedValue({
+      id: RZ_PAY,
+      order_id: RZ_ORDER,
+      status: "captured",
+      amount: 99900,
+      currency: "INR",
+    });
+    rpcMock.mockResolvedValue({
+      data: {
+        activated: true,
+        needs_review: true,
+        reason: "setup_already_paid",
+        review_reason:
+          "setup_already_paid. Refund the ₹5,000 setup — another captured payment already covered onboarding. The plan was still applied.",
+        owner_id: OWNER,
+        tier: "growth",
+        cycle: "monthly",
+      },
+      error: null,
+    });
+    const res = await postVerify({
+      razorpay_order_id: RZ_ORDER,
+      razorpay_payment_id: RZ_PAY,
+      razorpay_signature: checkoutSig(RZ_ORDER, RZ_PAY),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.setupRefund).toBe(true);
+    expect(body.message).toMatch(/refund the extra ₹5,000 setup fee/i);
+    expect(body.message).not.toMatch(/switch your plan/i);
+  });
+
   it("returns needsReview when webhook holds between order fetch and activate", async () => {
     fromMock.mockImplementation(() =>
       thenable({ data: storedOrder, error: null }),
@@ -783,6 +886,26 @@ describe("POST /api/billing/verify-payment", () => {
     expect((await res.json()).code).toBe("AMOUNT_MISMATCH");
   });
 
+  it("returns 400 on currency mismatch", async () => {
+    fromMock.mockImplementation(() =>
+      thenable({ data: storedOrder, error: null }),
+    );
+    paymentsFetch.mockResolvedValue({
+      id: RZ_PAY,
+      order_id: RZ_ORDER,
+      status: "captured",
+      amount: 99900,
+      currency: "USD",
+    });
+    const res = await postVerify({
+      razorpay_order_id: RZ_ORDER,
+      razorpay_payment_id: RZ_PAY,
+      razorpay_signature: checkoutSig(RZ_ORDER, RZ_PAY),
+    });
+    expect(res.status).toBe(400);
+    expect((await res.json()).code).toBe("CURRENCY_MISMATCH");
+  });
+
   it("returns pending for authorized payments and does not activate", async () => {
     fromMock.mockImplementation(() =>
       thenable({ data: storedOrder, error: null }),
@@ -915,6 +1038,15 @@ describe("POST /api/webhooks/razorpay", () => {
     status: "captured",
     method: "card",
   };
+
+  it("returns 503 while BILLING_ENABLED is off", async () => {
+    disableBilling();
+    const res = await postHook({
+      event: "payment.captured",
+      payload: { payment: { entity: paymentEntity } },
+    });
+    expect(res.status).toBe(503);
+  });
 
   it("returns 400 on a bad signature", async () => {
     const res = await postHook(

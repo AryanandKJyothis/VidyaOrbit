@@ -12,7 +12,11 @@ import { allowRequest, clientAddress, tooManyRequests } from "@/lib/rate-limit";
 import { assertRazorpayKeyMode, isBillingEnabled } from "@/lib/billing-pricing";
 import { activateOrderOnce } from "@/lib/billing-activation";
 import { verifyCheckoutSignature } from "@/lib/billing-signature";
-import { TIER_CHANGE_HELD_MESSAGE } from "@/lib/billing-guards";
+import {
+  heldPaymentMessage,
+  isSetupRefundReview,
+  SETUP_ALREADY_PAID_MESSAGE,
+} from "@/lib/billing-guards";
 
 const bodySchema = z.object({
   razorpay_order_id: z.string().min(1),
@@ -256,11 +260,14 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
             needs_review?: boolean | null;
             review_reason?: string | null;
           };
+          const reviewReason =
+            activation.reviewReason ?? orderFlags.review_reason;
           const held =
             activation.needsReview === true ||
             activation.reason === "tier_change_needs_review" ||
             Boolean(orderFlags.needs_review);
           if (held) {
+            const setupRefund = isSetupRefundReview(reviewReason);
             console.warn(
               "[verify-payment] Paid order held for admin review:",
               order.id,
@@ -268,7 +275,8 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
             return Response.json({
               ok: true,
               needsReview: true,
-              message: TIER_CHANGE_HELD_MESSAGE,
+              ...(setupRefund ? { setupRefund: true } : {}),
+              message: heldPaymentMessage(reviewReason),
             });
           }
           if (activation.reason === "already_activated") {
@@ -307,6 +315,18 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
           "[verify-payment] Successfully activated order:",
           activation.orderId,
         );
+        if (
+          activation.reason === "setup_already_paid" ||
+          (activation.needsReview &&
+            isSetupRefundReview(activation.reviewReason))
+        ) {
+          return Response.json({
+            ok: true,
+            needsReview: true,
+            setupRefund: true,
+            message: SETUP_ALREADY_PAID_MESSAGE,
+          });
+        }
         return Response.json({ ok: true });
       },
     },

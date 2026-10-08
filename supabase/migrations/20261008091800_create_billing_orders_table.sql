@@ -11,6 +11,10 @@ CREATE TABLE IF NOT EXISTS public.billing_orders (
   currency text NOT NULL DEFAULT 'INR',
   status text NOT NULL DEFAULT 'created' CHECK (status IN ('created', 'paid', 'failed')),
   line_items jsonb,
+  -- Set server-side from RAZORPAY_KEY_ID (rzp_test_ → test, rzp_live_ → live).
+  -- Test-mode captures must never count as a real payment (Preview shares prod DB).
+  key_mode text NOT NULL,
+  CONSTRAINT billing_orders_key_mode_check CHECK (key_mode IN ('test', 'live')),
 
   created_at timestamptz NOT NULL DEFAULT now(),
   paid_at timestamptz,
@@ -57,6 +61,9 @@ CREATE POLICY "no client delete billing orders" ON public.billing_orders
   FOR DELETE TO anon, authenticated
   USING (false);
 
+GRANT SELECT ON public.billing_orders TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.billing_orders TO service_role;
+
 COMMENT ON TABLE public.billing_orders IS
   'Tracks Razorpay Standard Checkout orders and payments. Server-only writes via service_role. Client can SELECT own rows. Payment rows survive user deletion (ON DELETE RESTRICT).';
 
@@ -65,3 +72,6 @@ COMMENT ON COLUMN public.billing_orders.intent IS
 
 COMMENT ON COLUMN public.billing_orders.line_items IS
   'JSON array of charge items, e.g. [{"item": "setup_fee", "amount": 500000}, {"item": "subscription_charge", "amount": 99900}]';
+
+COMMENT ON COLUMN public.billing_orders.key_mode IS
+  'test or live, set server-side from the RAZORPAY_KEY_ID prefix (rzp_test_ / rzp_live_). Never from the client. Test-mode captures must not count as real payments.';

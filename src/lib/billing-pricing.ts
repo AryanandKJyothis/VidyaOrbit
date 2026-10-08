@@ -96,8 +96,8 @@ export function isValidCycle(cycle: string): cycle is BillingCycle {
  * captured payment, and only on monthly Growth/Large. Annual first orders
  * do not include a setup line, but that capture still counts as paid so a
  * later monthly switch is not charged setup.
- * @param hasPriorPaidOrder Whether the workspace has any captured paid order
- *   or setup_fee_paid = true
+ * @param hasPriorPaidOrder Whether the workspace has any captured *live* paid
+ *   order or setup_fee_paid = true. Test-mode captures do not count.
  */
 export function computePricing(
   tier: PlanTier,
@@ -163,9 +163,9 @@ export function setupFeePaidFromSubscription(
 
 /**
  * Whether this workspace should skip the online setup fee.
- * True when setup_fee_paid is set, or any captured billing_orders row exists
- * (any plan/cycle, with or without a setup line, including a hold).
- * Throws on DB error (never silently overcharge setup).
+ * True when setup_fee_paid is set, or any captured *live* billing_orders row
+ * exists (any plan/cycle, with or without a setup line, including a hold).
+ * Test-mode captures never count. Throws on DB error (never silently overcharge).
  */
 export async function hasSetupFeePaid(
   ownerId: string,
@@ -188,6 +188,7 @@ export async function hasSetupFeePaid(
     .from("billing_orders")
     .select("id")
     .eq("owner_id", ownerId)
+    .eq("key_mode", "live")
     .not("activated_at", "is", null);
 
   if (error) throw error;
@@ -207,16 +208,24 @@ export function getSubscriptionPlanCode(
   return planCodeForTier(tier);
 }
 
+export type RazorpayKeyMode = "test" | "live";
+
+/** Server-side only. rzp_live_ → live; anything else (including rzp_test_) → test. */
+export function razorpayKeyMode(keyId: string): RazorpayKeyMode {
+  return keyId.startsWith("rzp_live_") ? "live" : "test";
+}
+
 /**
  * Test/live guard: refuse to run with live keys unless explicitly allowed.
+ * RAZORPAY_ALLOW_LIVE must be the exact string "true".
  */
 export function assertRazorpayKeyMode(keyId: string | undefined): void {
   if (!keyId) {
     throw new Error("RAZORPAY_KEY_ID is not set");
   }
 
-  const isLive = keyId.startsWith("rzp_live_");
-  const allowLive = process.env.RAZORPAY_ALLOW_LIVE?.toLowerCase() === "true";
+  const isLive = razorpayKeyMode(keyId) === "live";
+  const allowLive = process.env.RAZORPAY_ALLOW_LIVE === "true";
 
   if (isLive && !allowLive) {
     throw new Error(

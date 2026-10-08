@@ -116,6 +116,8 @@ describe("activateOrderOnce", () => {
       success: true,
       ownerId: "owner-1",
       tier: "growth",
+      reason: "setup_already_paid",
+      needsReview: true,
     });
   });
 

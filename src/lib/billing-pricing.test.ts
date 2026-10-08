@@ -3,10 +3,12 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  assertRazorpayKeyMode,
   computePricing,
   hasSetupFeePaid,
   isBillingEnabled,
   lineItemsIncludeSetup,
+  razorpayKeyMode,
   setupFeePaidFromSubscription,
   type PlanTier,
 } from "@/lib/billing-pricing";
@@ -74,59 +76,68 @@ describe("lineItemsIncludeSetup", () => {
   });
 });
 
+function capturedOrdersDb(data: unknown[], error: unknown = null) {
+  const eqCalls: unknown[][] = [];
+  const chain: {
+    select: () => unknown;
+    eq: (...args: unknown[]) => unknown;
+    not: () => Promise<{ data: unknown; error: unknown }>;
+  } = {
+    select: () => chain,
+    eq: (...args: unknown[]) => {
+      eqCalls.push(args);
+      return chain;
+    },
+    not: async () => ({ data, error }),
+  };
+  return { db: { from: () => chain }, eqCalls };
+}
+
 describe("hasSetupFeePaid", () => {
-  it("is true when any captured billing order exists", async () => {
-    const db = {
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            not: async () => ({
-              data: [{ id: "order-1" }],
-              error: null,
-            }),
-          }),
-        }),
-      }),
-    };
+  it("is true when any captured live billing order exists", async () => {
+    const { db, eqCalls } = capturedOrdersDb([{ id: "order-1" }]);
     await expect(
       hasSetupFeePaid("owner", db as never, { setup_fee_paid: false }),
     ).resolves.toBe(true);
+    expect(eqCalls).toContainEqual(["key_mode", "live"]);
   });
 
   it("is true for a captured annual order that did not include setup", async () => {
-    const db = {
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            not: async () => ({
-              data: [{ id: "annual-1" }],
-              error: null,
-            }),
-          }),
-        }),
-      }),
-    };
+    const { db } = capturedOrdersDb([{ id: "annual-1" }]);
     await expect(
       hasSetupFeePaid("owner", db as never, { setup_fee_paid: false }),
     ).resolves.toBe(true);
   });
 
-  it("is false when there are no captured orders and the flag is off", async () => {
-    const db = {
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            not: async () => ({
-              data: [],
-              error: null,
-            }),
-          }),
-        }),
-      }),
-    };
+  it("is false when there are no captured live orders and the flag is off", async () => {
+    const { db } = capturedOrdersDb([]);
     await expect(
       hasSetupFeePaid("owner", db as never, { setup_fee_paid: false }),
     ).resolves.toBe(false);
+  });
+});
+
+describe("assertRazorpayKeyMode / razorpayKeyMode", () => {
+  const previous = process.env.RAZORPAY_ALLOW_LIVE;
+  afterEach(() => {
+    if (previous === undefined) delete process.env.RAZORPAY_ALLOW_LIVE;
+    else process.env.RAZORPAY_ALLOW_LIVE = previous;
+  });
+
+  it("maps rzp_live_ to live and everything else to test", () => {
+    expect(razorpayKeyMode("rzp_live_abc")).toBe("live");
+    expect(razorpayKeyMode("rzp_test_abc")).toBe("test");
+    expect(razorpayKeyMode("other")).toBe("test");
+  });
+
+  it("refuses live keys unless RAZORPAY_ALLOW_LIVE is exactly true", () => {
+    delete process.env.RAZORPAY_ALLOW_LIVE;
+    expect(() => assertRazorpayKeyMode("rzp_live_abc")).toThrow(/ALLOW_LIVE/);
+    process.env.RAZORPAY_ALLOW_LIVE = "TRUE";
+    expect(() => assertRazorpayKeyMode("rzp_live_abc")).toThrow(/ALLOW_LIVE/);
+    process.env.RAZORPAY_ALLOW_LIVE = "true";
+    expect(() => assertRazorpayKeyMode("rzp_live_abc")).not.toThrow();
+    expect(() => assertRazorpayKeyMode("rzp_test_abc")).not.toThrow();
   });
 });
 
@@ -267,30 +278,6 @@ describe("Billing Pricing (Tier + Cycle)", () => {
       );
       expect(growth.line_items.some((i) => i.item === "setup_fee")).toBe(false);
       expect(large.line_items.some((i) => i.item === "setup_fee")).toBe(false);
-    });
-
-    it("A/B race: after B is captured, Growth monthly with setup is not owed again", async () => {
-      const orderA = computePricing("growth", "monthly", false);
-      expect(lineItemsIncludeSetup(orderA.line_items)).toBe(true);
-
-      const db = {
-        from: () => ({
-          select: () => ({
-            eq: () => ({
-              not: async () => ({
-                data: [{ id: "order-b-captured" }],
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      };
-      await expect(
-        hasSetupFeePaid("owner", db as never, { setup_fee_paid: false }),
-      ).resolves.toBe(true);
-
-      const laterCheckout = computePricing("growth", "monthly", true);
-      expect(lineItemsIncludeSetup(laterCheckout.line_items)).toBe(false);
     });
 
     it("monthly charges setup only once", () => {

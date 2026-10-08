@@ -2,17 +2,17 @@
 
 Vidya Orbit uses **Razorpay Standard Checkout** with **one-time orders**. There is no Razorpay Subscription object, no auto-renewal, and no `RAZORPAY_PLAN_*` ids.
 
-Each successful capture creates (or reuses) a row in `billing_orders` and calls the transactional SQL function `activate_billing_order`. That function is the **only** path that marks an order paid and extends `subscriptions`.
+`billing_orders` rows are created at **order time** (create-order), not at capture. Each successful capture calls the transactional SQL function `activate_billing_order`. That function is the **only** path that marks an order paid and extends `subscriptions`. The concurrency guarantee is the `SELECT … FOR UPDATE` of the `subscriptions` row; `handle_new_user` always creates that row on signup, so the lock is always taken.
 
 ## Pricing
 
 Amounts are computed on the server in paise from **code constants** in `src/lib/billing-pricing.ts`, kept in lockstep with `src/lib/pricing-display.ts`. They are **not** env-overridable (no `BILLING_*_PAISE`).
 
-| Tier (checkout) | `plan_code` | Students | Monthly | Annual | Setup (monthly, first paid order only) |
-|---|---|---|---|---|---|
-| Starter | `starter` | 100 | ₹499 | ₹4,999 | ₹0 |
-| Growth | `growth` | 500 | ₹999 | ₹10,000 | ₹5,000 |
-| Large | `pro` | Unlimited | ₹2,499 | ₹25,000 | ₹5,000 |
+| Tier (checkout) | `plan_code` | Students  | Monthly | Annual  | Setup (monthly, first paid order only) |
+| --------------- | ----------- | --------- | ------- | ------- | -------------------------------------- |
+| Starter         | `starter`   | 100       | ₹499    | ₹4,999  | ₹0                                     |
+| Growth          | `growth`    | 500       | ₹999    | ₹10,000 | ₹5,000                                 |
+| Large           | `pro`       | Unlimited | ₹2,499  | ₹25,000 | ₹5,000                                 |
 
 Student caps live in `src/lib/plan-limits.ts` and in `public.plan_student_limit` (after `20261008093000`). They are **not** env-overridable. UI helpers `isUnlimited` / `formatLimit` never print the Postgres sentinel `2147483647`.
 
@@ -20,30 +20,33 @@ Public `/pricing` and in-app `/plan` both read the same display/checkout amounts
 
 ### Setup fee
 
-Setup is a **one-time onboarding fee**. Charged only on **monthly** Growth/Large when the centre has not yet made a real payment. Annual first orders do not include a setup line; that capture still counts as paid, so a later monthly switch is not charged setup. Starter setup is ₹0.
+Setup is a **one-time onboarding fee**. Charged only on **monthly** Growth/Large when the centre has not yet made a **live** payment. Annual first orders do not include a setup line; a live annual capture still counts as paid, so a later monthly switch is not charged setup. Starter setup is ₹0.
+
+Preview shares the production database. Test-card payments (`key_mode = 'test'`, set server-side from a `rzp_test_` `RAZORPAY_KEY_ID`) still activate so Preview can be tested end to end, but they **never** set `setup_fee_paid` and **never** count as already paid (SQL activation, `subscription_health`, `hasSetupFeePaid`, and the “other captured order” duplicate-setup check). Only `key_mode = 'live'` activated orders count.
 
 Setup is already paid (server-side, same answer for create-order and `/plan`) when **either**:
 
 - `subscriptions.setup_fee_paid` is true (admin toggle — invoices marked paid offline and special deals), or
-- any **captured** (activated) online `billing_orders` row exists for the institute — any plan or period, with or without a setup line, including a `needs_review` hold
+- any **captured live** (`key_mode = 'live'`) online `billing_orders` row exists for the institute — any plan or period, with or without a setup line, including a `needs_review` hold
 
 Trials, comps, and any non-free plan an admin set do **not** waive setup. There is **no** table-wide backfill `UPDATE` of `setup_fee_paid`; `ADD COLUMN … DEFAULT false` is enough, and a re-run of `094000` must not wipe admin invoice flags.
 
-`activate_billing_order` sets `setup_fee_paid = true` on **any** captured paid order, including a `needs_review` hold.
+`activate_billing_order` sets `setup_fee_paid = true` on a **live** captured paid order (including a `needs_review` hold), after the `subscriptions` row exists (`apply_subscription_change` upsert / `handle_new_user`). Test-mode captures skip the flag.
 
-`/plan` reads `subscription_health.setup_fee_paid` (the RPC ORs the flag with any activated `billing_orders` row) and does not query `billing_orders` from the client. Annual cards do not show "+ free ₹5,000 setup" when setup is already paid.
+`/plan` reads `subscription_health.setup_fee_paid` (the RPC ORs the flag with any **live** activated `billing_orders` row) and does not query `billing_orders` from the client. Annual cards do not show "+ free ₹5,000 setup" when setup is already paid. `091700`’s `subscription_health` includes the same live-only field (defensively, so a first apply before `billing_orders` exists still works, and a re-run after `094000` does not drop it).
 
-If two unpaid first orders both include setup and both are captured, Razorpay may charge setup twice. `activate_billing_order` still applies the later order's plan, then flags it `needs_review` with reason `setup_already_paid` so the admin refunds the extra ₹5,000. The institute is not treated as owing setup again. If that later order is also a mid-term tier hold, the hold wins (plan is not applied) and `review_reason` includes both the tier text and `setup_already_paid`.
+If two unpaid first **live** orders both include setup and both are captured, Razorpay may charge setup twice. `activate_billing_order` still applies the later order's plan, then flags it `needs_review` with reason `setup_already_paid` so the admin refunds the extra ₹5,000. The customer sees “Your plan is active. We'll refund the extra ₹5,000 setup fee.” If that later order is also a mid-term tier hold, the hold wins (plan is not applied) and `review_reason` includes both the tier text and `setup_already_paid`; only then does the UI say the plan was not changed.
 
 ## Migration order
 
-Apply on the Supabase project that Preview uses (today that is prod `qyqomxuxtpbhnicbtmbq`) **before** setting `BILLING_ENABLED=true`. Preview uses the production database. Apply **individually**, never `supabase db push --include-all`:
+Apply on the Supabase project that Preview uses (today that is prod `qyqomxuxtpbhnicbtmbq`) **before** setting `BILLING_ENABLED=true`. Preview uses the production database. Apply **individually, one at a time**, never `supabase db push --include-all`:
 
-1. `20261008091700_fix_enforce_student_limit_exclude_archived.sql` — insert trigger **and** `subscription_health` ignore `status = 'archived'`. Workspace members (and service_role) may read the owner's plan. Admin summary/detail and `apply_subscription_change` use the same non-archived student count. Over-limit error labels `pro` as **Large**.
-2. `20261008091800_create_billing_orders_table.sql` — table, RLS, `ON DELETE RESTRICT` so payment rows survive user deletion, owner SELECT only.
-3. `20261008093000_pro_plan_unlimited.sql` — `plan_student_limit('pro')` = 2147483647 with `SET search_path = public` as a function attribute. **Already live in prod** as `pro_plan_unlimited`; keep the file so the repo matches the DB. `CREATE OR REPLACE` only; safe to re-run.
-4. `20261008094000_atomic_billing_activation.sql` — idempotent `tier`/`cycle`/`needs_review` columns, `subscriptions.setup_fee_paid` (`DEFAULT false`, **no** table-wide backfill `UPDATE`), grant hardening, `activate_billing_order` (mid-term tier hold; any captured paid order sets `setup_fee_paid`).
-5. `20261008095000_revoke_client_writes_subscriptions.sql` — `REVOKE INSERT, UPDATE, DELETE, TRUNCATE` on `public.subscriptions` from `anon`/`authenticated`. SELECT and `service_role` unchanged.
+1. `20261008091700_fix_enforce_student_limit_exclude_archived.sql` — insert trigger **and** `subscription_health` ignore `status = 'archived'`. Workspace members (and service_role) may read the owner's plan. Admin summary/detail and `apply_subscription_change` use the same non-archived student count. Over-limit error labels `pro` as **Large**. Health includes live-only `setup_fee_paid` (safe before `billing_orders` exists).
+2. `20261008091800_create_billing_orders_table.sql` — table, RLS, `key_mode` (`test`|`live`, NOT NULL), `ON DELETE RESTRICT` so payment rows survive user deletion, owner SELECT only, `GRANT SELECT, INSERT, UPDATE` to `service_role`.
+3. `20261008094000_atomic_billing_activation.sql` — idempotent `tier`/`cycle`/`needs_review`/`key_mode` columns, `subscriptions.setup_fee_paid` (`DEFAULT false`, **no** table-wide backfill `UPDATE`), grant hardening, `activate_billing_order` (mid-term tier hold; live captures set `setup_fee_paid`).
+4. `20261008095000_revoke_client_writes_subscriptions.sql` — `REVOKE INSERT, UPDATE, DELETE, TRUNCATE` on `public.subscriptions` from `anon`/`authenticated`; `REVOKE ALL` on `public.razorpay_webhook_deliveries` from `anon`/`authenticated` (TRUNCATE ignores RLS). SELECT and `service_role` unchanged.
+
+`20261008093000_pro_plan_unlimited.sql` is **already live** in prod as `pro_plan_unlimited` (`plan_student_limit('pro')` = 2147483647). Keep the file so the repo matches the DB. Skip unless that function is missing; `CREATE OR REPLACE` only if you re-apply.
 
 Do not apply these from this agent. An operator applies them.
 
@@ -67,9 +70,9 @@ Behaviour:
 1. Conditional `UPDATE billing_orders … WHERE id = _order_id AND activated_at IS NULL AND amount_paise = _amount AND upper(currency) = upper(_currency) RETURNING *`.
 2. If no row: `already_activated` / `amount_or_currency_mismatch` / `order_not_found`.
 3. Map `large` → `pro`.
-4. **Mid-term different-tier hold (SQL is the source of truth):** if the current *paid* plan (`plan <> free`, `plan_price > 0`, future `expiry_date`) is a different `plan_code` and more than **7 Asia/Kolkata calendar days** remain, do **not** extend or switch. The order stays `paid` with `activated_at` set (no silent loss, no webhook retry loop), `needs_review = true`, and `review_reason` filled. Admin sees it on the institute dialog. Return `{activated:false, reason:'tier_change_needs_review'}`. Verify and the webhook treat this as HTTP 200.
+4. **Mid-term different-tier hold (SQL is the source of truth):** if the current _paid_ plan (`plan <> free`, `plan_price > 0`, future `expiry_date`) is a different `plan_code` and more than **7 Asia/Kolkata calendar days** remain, do **not** extend or switch. The order stays `paid` with `activated_at` set (no silent loss, no webhook retry loop), `needs_review = true`, and `review_reason` filled. Admin sees it on the institute dialog. Return `{activated:false, reason:'tier_change_needs_review'}`. Verify and the webhook treat this as HTTP 200.
 5. Otherwise (same-tier renewal, ≤7 days left, expired, or free): `GREATEST(now(), COALESCE(expiry_date, now())) + 1 month` or `+ 12 months`. Postgres month arithmetic clamps (31 Jan + 1 month = 28/29 Feb). There is no JS `computeNewExpiry`.
-6. Preserve `notes` and `start_date`. `plan_price` is the `subscription_charge` line in rupees (never 0). Call live `apply_subscription_change(..., _confirm => true)`. Then set `setup_fee_paid = true` (so a first-time payer's new row is not left on the DEFAULT false). Also set the flag on a tier hold. If this order's line_items included setup but setup was already paid (flag or any *other* captured order), still apply the plan and set `needs_review` / `review_reason` `setup_already_paid` for a ₹5,000 refund.
+6. Preserve `notes` and `start_date`. `plan_price` is the `subscription_charge` line in rupees (never 0). Call live `apply_subscription_change(..., _confirm => true)`. Then, if `key_mode = 'live'`, set `setup_fee_paid = true` (so a first-time live payer's new row is not left on the DEFAULT false). Also set the flag on a live tier hold, after the subscriptions row exists. Test-mode skips the flag. If this order's line_items included setup but setup was already paid (flag or any _other_ captured **live** order), still apply the plan and set `needs_review` / `review_reason` `setup_already_paid` for a ₹5,000 refund.
 
 Verify and the webhook call **only** this RPC via `activateOrderOnce()` in `src/lib/billing-activation.ts`. Any exception rolls back `activated_at`, so Razorpay can retry. A `needs_review` hold does not roll back: the payment is recorded for admin.
 
@@ -77,12 +80,13 @@ Race this closes: Starter with ≤7 days left, open Large checkout (tab A), buy 
 
 ## Payment flow
 
-1. Owner POSTs `{tier, cycle}` to `/api/billing/create-order`. Server computes amount, stores `tier`/`cycle`/`line_items`, creates a Razorpay order.
+1. Owner POSTs `{tier, cycle}` to `/api/billing/create-order`. Server computes amount (a client-sent amount is ignored), stores `tier`/`cycle`/`line_items`/`key_mode`, creates a Razorpay order.
 2. Checkout.js opens. Client never sends an amount.
 3. On success the client POSTs the Checkout payload to `/api/billing/verify-payment`.
 4. Verify: HMAC of `order_id|payment_id` with **byte-length**-checked `timingSafeEqual`, fetch payment, require `payment.order_id` match, amount/currency match, owner match. Order lookup DB errors return **500** (not 404).
    - `captured` + applied → `activate_billing_order`. UI: "Your plan is now active".
-   - `captured` + hold (`tier_change_needs_review`, or `already_activated` with `needs_review` when the webhook won the race) → 200 `{ok:true, needsReview:true}`. UI: "Payment received. We'll contact you to switch your plan and adjust your remaining time" plus the contact link.
+   - `captured` + duplicate setup (`setup_already_paid`, plan applied) → 200 `{ok:true, needsReview:true, setupRefund:true}`. UI: "Your plan is active. We'll refund the extra ₹5,000 setup fee."
+   - `captured` + hold (`tier_change_needs_review`, or `already_activated` with `needs_review` when the webhook won the race) → 200 `{ok:true, needsReview:true}`. UI: "Payment received. We'll contact you to switch your plan and adjust your remaining time" plus the contact link. Only tier holds use this copy.
    - `already_activated` after an admin dismissed `needs_review` (`review_reason` still set) → 200 `{ok:true, alreadyProcessed:true, message:"Payment already processed"}`. UI does not claim the plan is active.
    - `authorized` → `{ok:true,status:"pending"}`. UI: "Payment received, processing. We'll confirm shortly." Then poll until expiry moves (same-tier renewal), the order shows `activated_at`, the purchased plan becomes active, or the order is `needs_review` (held message instead of a silent timeout). Does not claim success on timeout unless one of those succeeded.
 5. Webhook (`payment.captured` / `order.paid`): signature over **raw** `request.text()`, dedupe `x-razorpay-event-id` into `delivery_hash` (upsert ignoreDuplicates; reprocess if `handled` is false). Payment is `payload.payment.entity` for both events. DB errors on order lookup return **500**. Genuine unknown order ids return 200 `order_not_found`. Stored `raw_body` is ids/event/amount/currency/status/method only (no customer PII).
@@ -92,7 +96,7 @@ Race this closes: Starter with ≤7 days left, open Large checkout (tab A), buy 
 - 503 unless `BILLING_ENABLED=true`.
 - Bearer owner only. No institute row → 403 `NOT_OWNER`.
 - Comped non-free (`plan_price = 0` or `expiry_date` null) → 400.
-- **Mid-term tier change:** if the current *paid* plan is a different `plan_code` and more than 7 **Asia/Kolkata** calendar days remain, 409 `TIER_CHANGE_CONTACT_SUPPORT` with `contactLink` (wa.me if `VITE_CONTACT_WHATSAPP` is set, else mailto). Message says "message us on WhatsApp" only when WhatsApp is configured, otherwise "contact us". Same-tier renewals still extend from current expiry. Free, expired, or ≤7 days left may buy any tier. Activation enforces the same rule (see above).
+- **Mid-term tier change:** if the current _paid_ plan is a different `plan_code` and more than 7 **Asia/Kolkata** calendar days remain, 409 `TIER_CHANGE_CONTACT_SUPPORT` with `contactLink` (wa.me if `VITE_CONTACT_WHATSAPP` is set, else mailto). Message says "message us on WhatsApp" only when WhatsApp is configured, otherwise "contact us". Same-tier renewals still extend from current expiry. Free, expired, or ≤7 days left may buy any tier. Activation enforces the same rule (see above).
 - Active (non-archived) student count above the target tier cap → 409 `OVER_TIER_LIMIT` (skipped for Large).
 - Razorpay errors are logged server-side; the client gets a generic message.
 
@@ -109,13 +113,14 @@ BILLING_ENABLED=false
 RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
 RAZORPAY_WEBHOOK_SECRET=
-# RAZORPAY_ALLOW_LIVE=true
+# RAZORPAY_ALLOW_LIVE=true   # exact string "true" only; required for rzp_live_ keys
 # VITE_CONTACT_WHATSAPP / VITE_CONTACT_EMAIL
 ```
-
 
 ## Known limitations
 
 - GST is not added to the order amount.
-- Concurrent unpaid first orders can both include setup; the later capture is flagged `setup_already_paid` for a refund (see above).
+- Concurrent unpaid first live orders can both include setup; the later capture is flagged `setup_already_paid` for a refund (see above).
 - Refunds and mid-term plan changes are manual (WhatsApp/email). Held different-tier captures appear as `needs_review` on the admin subscriptions dialog.
+- The webhook returns **503** while `BILLING_ENABLED` is off. Razorpay will retry and eventually disable the webhook, so enable billing before registering it, or expect retries.
+- Razorpay **auto-capture must be ON**. If capture is off, verify returns `pending` and the webhook activates on `payment.captured`.

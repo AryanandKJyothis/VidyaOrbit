@@ -17,6 +17,10 @@ const unlimited093000 = readFileSync(
   "supabase/migrations/20261008093000_pro_plan_unlimited.sql",
   "utf8",
 );
+const orders091800 = readFileSync(
+  "supabase/migrations/20261008091800_create_billing_orders_table.sql",
+  "utf8",
+);
 
 function subscriptionHealthBody(sql: string) {
   const start = sql.indexOf(
@@ -69,6 +73,7 @@ describe("billing SQL migrations", () => {
     );
     expect(health).not.toMatch(/v_setup_paid :=[\s\S]*expiry_date IS NOT NULL/);
     expect(health).toMatch(/bo\.activated_at IS NOT NULL/);
+    expect(health).toMatch(/bo\.key_mode = 'live'/);
     expect(health).not.toMatch(/li->>'item' = 'setup_fee'/);
     expect(health094000).toMatch(
       /UPDATE public\.subscriptions\s+SET setup_fee_paid = true\s+WHERE owner_id = o\.owner_id/,
@@ -79,6 +84,7 @@ describe("billing SQL migrations", () => {
     const activate = activateBody(health094000);
     expect(activate).toContain("setup_already_paid");
     expect(activate).toMatch(/bo\.id IS DISTINCT FROM o\.id/);
+    expect(activate).toMatch(/bo\.key_mode = 'live'/);
     expect(activate).toMatch(/v_setup_in_order AND v_setup_already/);
     const applyAt = activate.indexOf("public.apply_subscription_change");
     expect(applyAt).toBeGreaterThan(-1);
@@ -116,11 +122,33 @@ describe("billing SQL migrations", () => {
     );
   });
 
-  it("095000 revokes client writes on subscriptions and keeps SELECT", () => {
+  it("095000 revokes client writes on subscriptions and webhook deliveries", () => {
     expect(revoke095000).toMatch(
       /REVOKE INSERT,\s*UPDATE,\s*DELETE,\s*TRUNCATE ON public\.subscriptions FROM anon,\s*authenticated/,
     );
     expect(revoke095000).not.toMatch(/REVOKE SELECT/);
+    expect(revoke095000).toMatch(
+      /REVOKE ALL ON public\.razorpay_webhook_deliveries FROM anon,\s*authenticated/,
+    );
+  });
+
+  it("091800 and 094000 define key_mode and grant service_role writes", () => {
+    expect(orders091800).toMatch(/key_mode text NOT NULL/);
+    expect(orders091800).toContain("billing_orders_key_mode_check");
+    expect(orders091800).toMatch(/key_mode IN \('test', 'live'\)/);
+    expect(orders091800).toMatch(
+      /GRANT SELECT, INSERT, UPDATE ON public\.billing_orders TO service_role/,
+    );
+    expect(health094000).toMatch(/ADD COLUMN IF NOT EXISTS key_mode text/);
+    expect(health094000).toMatch(
+      /GRANT SELECT, INSERT, UPDATE ON public\.billing_orders TO service_role/,
+    );
+  });
+
+  it("091700 subscription_health includes live-only setup_fee_paid", () => {
+    const body = subscriptionHealthBody(health091700);
+    expect(body).toContain("setup_fee_paid");
+    expect(body).toMatch(/key_mode = ''live''/);
   });
 
   it("091700 COMMENT escapes the owner's apostrophe", () => {

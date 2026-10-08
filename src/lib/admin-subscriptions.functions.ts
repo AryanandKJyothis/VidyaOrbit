@@ -232,7 +232,10 @@ export const updateSubscription = createServerFn({ method: "POST" })
       note: data.note ?? "Manual update",
       confirm: data.confirm ?? false,
     });
-    if (typeof data.setup_fee_paid === "boolean") {
+    if (
+      typeof data.setup_fee_paid === "boolean" &&
+      !("requires_confirmation" in result)
+    ) {
       const { error } = await supabaseAdmin
         .from("subscriptions")
         .update({ setup_fee_paid: data.setup_fee_paid })

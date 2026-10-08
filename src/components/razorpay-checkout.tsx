@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getContactLabel, getContactLink } from "@/lib/contact-config";
 import {
   evaluatePendingFollowup,
+  SETUP_ALREADY_PAID_MESSAGE,
   TIER_CHANGE_HELD_MESSAGE,
   TIER_CHANGE_MESSAGE,
 } from "@/lib/billing-guards";
@@ -125,7 +126,7 @@ async function pollSubscriptionRefresh(args: {
     } | null;
     const { data: order } = await supabase
       .from("billing_orders")
-      .select("needs_review, activated_at")
+      .select("needs_review, activated_at, review_reason")
       .eq("razorpay_order_id", args.razorpayOrderId)
       .maybeSingle();
     return evaluatePendingFollowup({
@@ -139,6 +140,10 @@ async function pollSubscriptionRefresh(args: {
 
   while (Date.now() < deadline) {
     const state = await tick();
+    if (state === "setup_refund") {
+      toast.info(SETUP_ALREADY_PAID_MESSAGE);
+      return;
+    }
     if (state === "held") {
       toastHeldPlanChange();
       return;
@@ -151,6 +156,10 @@ async function pollSubscriptionRefresh(args: {
   }
 
   const last = await tick();
+  if (last === "setup_refund") {
+    toast.info(SETUP_ALREADY_PAID_MESSAGE);
+    return;
+  }
   if (last === "held") {
     toastHeldPlanChange();
     return;
@@ -281,7 +290,10 @@ export function RazorpayCheckout({
               );
             }
 
-            if (verifyData.needsReview) {
+            if (verifyData.setupRefund) {
+              toast.info(verifyData.message || SETUP_ALREADY_PAID_MESSAGE);
+              await onSuccess?.();
+            } else if (verifyData.needsReview) {
               toastHeldPlanChange();
               await onSuccess?.();
             } else if (verifyData.alreadyProcessed) {

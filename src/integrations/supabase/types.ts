@@ -157,6 +157,7 @@ export type Database = {
           cycle: string;
           needs_review: boolean;
           review_reason: string | null;
+          key_mode: "test" | "live";
         };
         Insert: {
           activated_at?: string | null;
@@ -175,6 +176,7 @@ export type Database = {
           cycle: string;
           needs_review?: boolean;
           review_reason?: string | null;
+          key_mode: "test" | "live";
         };
         Update: {
           activated_at?: string | null;
@@ -193,6 +195,7 @@ export type Database = {
           cycle?: string;
           needs_review?: boolean;
           review_reason?: string | null;
+          key_mode?: "test" | "live";
         };
         Relationships: [];
       };

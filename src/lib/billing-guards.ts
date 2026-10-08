@@ -129,7 +129,23 @@ export const TIER_CHANGE_MESSAGE = tierChangeSupportMessage("whatsapp");
 export const TIER_CHANGE_HELD_MESSAGE =
   "Payment received. We'll contact you to switch your plan and adjust your remaining time";
 
-export type PendingFollowup = "success" | "held" | "wait";
+export const SETUP_ALREADY_PAID_MESSAGE =
+  "Your plan is active. We'll refund the extra ₹5,000 setup fee.";
+
+/** Duplicate-setup review (plan applied). False when a tier hold is also present. */
+export function isSetupRefundReview(reviewReason?: string | null): boolean {
+  const r = reviewReason ?? "";
+  return r.includes("setup_already_paid") && !r.includes("Not applied");
+}
+
+/** Customer copy for a needs_review capture. Only tier holds say the plan wasn't changed. */
+export function heldPaymentMessage(reviewReason?: string | null): string {
+  return isSetupRefundReview(reviewReason)
+    ? SETUP_ALREADY_PAID_MESSAGE
+    : TIER_CHANGE_HELD_MESSAGE;
+}
+
+export type PendingFollowup = "success" | "held" | "setup_refund" | "wait";
 
 /**
  * Same-tier renewals succeed when expiry moves past its old value or the
@@ -149,9 +165,14 @@ export function evaluatePendingFollowup(args: {
   order: {
     needs_review?: boolean | null;
     activated_at?: string | null;
+    review_reason?: string | null;
   } | null;
 }): PendingFollowup {
-  if (args.order?.needs_review) return "held";
+  if (args.order?.needs_review) {
+    return isSetupRefundReview(args.order.review_reason)
+      ? "setup_refund"
+      : "held";
+  }
 
   const newExpiry = args.subscription?.expiry_date
     ? new Date(args.subscription.expiry_date).getTime()
