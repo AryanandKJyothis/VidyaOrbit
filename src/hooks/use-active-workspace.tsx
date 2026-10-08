@@ -89,11 +89,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // Default active = own workspace, and validate stored workspace against memberships
   useEffect(() => {
     if (workspaces.length === 0) return;
-    
+
     // Validate stored workspace is still in memberships
     const exists =
       activeOwnerId && workspaces.find((w) => w.ownerId === activeOwnerId);
-    
+
     if (!exists) {
       // Stored workspace not found, default to own workspace
       const own = workspaces.find((w) => w.isOwn) ?? workspaces[0];

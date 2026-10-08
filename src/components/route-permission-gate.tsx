@@ -2,7 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { LockKeyhole } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useCan, type Permissions } from "@/hooks/use-active-workspace";
+import { useCan } from "@/hooks/use-active-workspace";
+import type { Permissions } from "@/lib/workspace.functions";
 
 export function RoutePermissionGate({
   resource,

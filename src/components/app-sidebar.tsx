@@ -46,7 +46,12 @@ type NavItem = {
   url: string;
   icon: typeof LayoutDashboard;
   resource?:
-    "students" | "batches" | "fees" | "attendance" | "settings" | "billing";
+    | "students"
+    | "batches"
+    | "fees"
+    | "attendance"
+    | "settings"
+    | "billing";
 };
 
 const baseItems: NavItem[] = [

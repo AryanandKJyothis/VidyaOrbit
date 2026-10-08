@@ -71,8 +71,7 @@ export function PlanGate({
           {showContact && contactUrl && (
             <Button asChild variant={BILLING_DISABLED ? "default" : "outline"}>
               <a href={contactUrl} target="_blank" rel="noopener noreferrer">
-                {contactLabel}{" "}
-                <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+                {contactLabel} <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
               </a>
             </Button>
           )}

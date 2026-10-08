@@ -86,7 +86,7 @@ export function useStudents() {
   const ownerId = useOwnerId();
   const { active } = useActiveWorkspace();
   const isOwner = active?.role === "owner";
-  
+
   return useQuery({
     queryKey: ["students", ownerId],
     enabled: !!ownerId,
@@ -94,7 +94,7 @@ export function useStudents() {
     queryFn: async () => {
       // Owners query the students table directly (faster, no permission check)
       // Non-owners query students_gated view (hides fee amounts for non-fees members)
-      const table = isOwner ? "students" : "students_gated";
+      const table = isOwner ? "students" : ("students_gated" as "students");
       const { data, error } = await supabase
         .from(table)
         .select("*")
@@ -111,13 +111,13 @@ export function useStudent(id: string | undefined) {
   const ownerId = useOwnerId();
   const { active } = useActiveWorkspace();
   const isOwner = active?.role === "owner";
-  
+
   return useQuery({
     queryKey: ["student", id, ownerId],
     enabled: !!id && !!ownerId,
     staleTime: 30_000,
     queryFn: async () => {
-      const table = isOwner ? "students" : "students_gated";
+      const table = isOwner ? "students" : ("students_gated" as "students");
       const { data, error } = await supabase
         .from(table)
         .select("*")
