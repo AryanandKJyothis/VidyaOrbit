@@ -73,11 +73,15 @@ function Dashboard() {
       const since = subDays(new Date(), 30).toISOString().slice(0, 10);
       const { data, error } = await supabase
         .from("attendance_records")
-        .select("status, created_at")
+        .select("status, created_at, attendance_sessions(session_date)")
         .eq("owner_id", active!.ownerId)
         .gte("created_at", since);
       if (error) throw error;
-      return data as { status: string; created_at: string }[];
+      return data as Array<{
+        status: string;
+        created_at: string;
+        attendance_sessions: { session_date: string } | null;
+      }>;
     },
   });
 
@@ -228,7 +232,8 @@ function Dashboard() {
       days.push({ date: format(d, "yyyy-MM-dd"), total: 0, present: 0 });
     }
     for (const a of att) {
-      const k = a.created_at.slice(0, 10);
+      // Use session_date (class date) instead of created_at (mark time)
+      const k = a.attendance_sessions?.session_date ?? a.created_at.slice(0, 10);
       const day = days.find((d) => d.date === k);
       if (day) {
         day.total += 1;
