@@ -15,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { usePrefers } from "@/hooks/use-prefers";
+import { fadeOnly, springDefault } from "@/lib/motion";
 import { formatINR } from "@/lib/format";
 
 type Tone = "danger" | "warning" | "celebrate" | "growth" | "info";
@@ -252,12 +254,14 @@ function pickSpotlight(i: SpotlightInput): Spotlight {
 export function DashboardSpotlight(props: SpotlightInput) {
   const s = useMemo(() => pickSpotlight(props), [props]);
   const styles = toneStyles[s.tone];
+  const { reducedMotion } = usePrefers();
+  const transition = reducedMotion ? fadeOnly : springDefault;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      transition={transition}
       className="mb-6"
     >
       <Card
@@ -302,13 +306,11 @@ export function DashboardSpotlight(props: SpotlightInput) {
             <div className="mt-4 flex items-center gap-3">
               <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                 <motion.span
-                  initial={{ width: 0 }}
+                  initial={
+                    reducedMotion ? { width: `${s.progress}%` } : { width: 0 }
+                  }
                   animate={{ width: `${s.progress}%` }}
-                  transition={{
-                    duration: 0.9,
-                    ease: [0.16, 1, 0.3, 1],
-                    delay: 0.15,
-                  }}
+                  transition={transition}
                   className={cn(
                     "absolute inset-y-0 left-0 bg-gradient-to-r",
                     styles.bar,

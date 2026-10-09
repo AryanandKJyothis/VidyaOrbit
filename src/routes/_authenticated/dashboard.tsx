@@ -2,6 +2,8 @@ import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
+import { usePrefers } from "@/hooks/use-prefers";
+import { fadeOnly, springDefault } from "@/lib/motion";
 import {
   Users,
   Layers,
@@ -65,6 +67,8 @@ function Dashboard() {
   const payments = usePayments();
   const { active } = useActiveWorkspace();
   const canViewFees = useCan("fees", "read");
+  const { reducedMotion } = usePrefers();
+  const itemTransition = reducedMotion ? fadeOnly : springDefault;
 
   const attendance = useQuery({
     queryKey: ["att-summary", active?.ownerId],
@@ -507,10 +511,15 @@ function Dashboard() {
                 return (
                   <motion.div
                     key={b.id}
-                    initial={{ opacity: 0, x: -6 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="group flex items-center justify-between gap-3 rounded-lg border border-subtle bg-card p-3 hover:border-primary/30 hover:shadow-sm transition-all"
+                    initial={
+                      reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }
+                    }
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      ...itemTransition,
+                      delay: reducedMotion ? 0 : i * 0.04,
+                    }}
+                    className="group flex items-center justify-between gap-3 rounded-lg border border-subtle bg-card p-3 transition-[background-color] duration-100 hover:bg-muted/40"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-semibold">
@@ -579,10 +588,15 @@ function Dashboard() {
                   return (
                     <motion.div
                       key={s.id}
-                      initial={{ opacity: 0, x: -4 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.03 }}
-                      className="flex items-center justify-between rounded-lg border border-subtle bg-card p-3 hover:bg-muted/40 transition-colors"
+                      initial={
+                        reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }
+                      }
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        ...itemTransition,
+                        delay: reducedMotion ? 0 : i * 0.03,
+                      }}
+                      className="flex items-center justify-between rounded-lg border border-subtle bg-card p-3 transition-colors duration-100 hover:bg-muted/40"
                     >
                       <div className="min-w-0 flex-1">
                         <Link

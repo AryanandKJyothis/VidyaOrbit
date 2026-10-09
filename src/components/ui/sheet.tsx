@@ -3,11 +3,43 @@
 import * as React from "react";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
+import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 
+import { usePrefers } from "@/hooks/use-prefers";
+import { fadeOnly, springDefault } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-const Sheet = SheetPrimitive.Root;
+type SheetPresence = { open: boolean };
+const SheetPresenceContext = React.createContext<SheetPresence>({
+  open: false,
+});
+
+const Sheet = ({
+  open: openProp,
+  defaultOpen,
+  onOpenChange,
+  children,
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Root>) => {
+  const [uncontrolled, setUncontrolled] = React.useState(!!defaultOpen);
+  const open = openProp ?? uncontrolled;
+
+  return (
+    <SheetPresenceContext.Provider value={{ open }}>
+      <SheetPrimitive.Root
+        open={open}
+        onOpenChange={(next) => {
+          if (openProp === undefined) setUncontrolled(next);
+          onOpenChange?.(next);
+        }}
+        {...props}
+      >
+        {children}
+      </SheetPrimitive.Root>
+    </SheetPresenceContext.Provider>
+  );
+};
 
 const SheetTrigger = SheetPrimitive.Trigger;
 
@@ -20,34 +52,44 @@ const SheetOverlay = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Overlay
+    ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "absolute inset-0 bg-black/45 backdrop-blur-sm",
+      "motion-reduce:backdrop-blur-none contrast-more:bg-black/70 contrast-more:backdrop-blur-none",
       className,
     )}
     {...props}
-    ref={ref}
   />
 ));
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
-const sheetVariants = cva(
-  "fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out",
-  {
-    variants: {
-      side: {
-        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
-        bottom:
-          "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-        left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
-        right:
-          "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
-      },
-    },
-    defaultVariants: {
-      side: "right",
+const sheetVariants = cva("flex h-full w-full flex-col gap-4 p-6", {
+  variants: {
+    side: {
+      top: "",
+      bottom: "",
+      left: "",
+      right: "",
     },
   },
-);
+  defaultVariants: {
+    side: "right",
+  },
+});
+
+const sheetFrame = {
+  top: "inset-x-0 top-0 border-b",
+  bottom: "inset-x-0 bottom-0 border-t",
+  left: "inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm",
+  right: "inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
+} as const;
+
+const sheetMotion = {
+  top: { hidden: { y: "-100%" }, visible: { y: 0 } },
+  bottom: { hidden: { y: "100%" }, visible: { y: 0 } },
+  left: { hidden: { x: "-100%" }, visible: { x: 0 } },
+  right: { hidden: { x: "100%" }, visible: { x: 0 } },
+} as const;
 
 interface SheetContentProps
   extends
@@ -57,22 +99,60 @@ interface SheetContentProps
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
-  <SheetPortal>
-    <SheetOverlay />
-    <SheetPrimitive.Content
-      ref={ref}
-      className={cn(sheetVariants({ side }), className)}
-      {...props}
-    >
-      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background cursor-pointer transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-        <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
-      </SheetPrimitive.Close>
-      {children}
-    </SheetPrimitive.Content>
-  </SheetPortal>
-));
+>(({ side = "right", className, children, ...props }, ref) => {
+  const { open } = React.useContext(SheetPresenceContext);
+  const { reducedMotion } = usePrefers();
+  const transition = reducedMotion ? fadeOnly : springDefault;
+  const edge = side ?? "right";
+  const axis = sheetMotion[edge];
+
+  return (
+    <SheetPortal forceMount>
+      <AnimatePresence>
+        {open ? (
+          <motion.div
+            key="sheet-overlay"
+            className="fixed inset-0 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={transition}
+          >
+            <SheetOverlay />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+      <AnimatePresence>
+        {open ? (
+          <motion.div
+            key="sheet-panel"
+            className={cn(
+              "fixed z-50 overflow-y-auto bg-background shadow-[var(--shadow-elevated)] material-sheet",
+              sheetFrame[edge],
+              className,
+            )}
+            initial={reducedMotion ? { opacity: 0 } : axis.hidden}
+            animate={reducedMotion ? { opacity: 1 } : axis.visible}
+            exit={reducedMotion ? { opacity: 0 } : axis.hidden}
+            transition={transition}
+          >
+            <SheetPrimitive.Content
+              ref={ref}
+              className={cn(sheetVariants({ side }), className)}
+              {...props}
+            >
+              <SheetPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1 opacity-70 ring-offset-background transition-[transform,opacity] duration-100 ease-out hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none active:scale-95">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </SheetPrimitive.Close>
+              {children}
+            </SheetPrimitive.Content>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </SheetPortal>
+  );
+});
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 
 const SheetHeader = ({

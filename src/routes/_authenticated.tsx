@@ -14,6 +14,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { LoadingScreen } from "@/components/loading-screen";
 import { WorkspaceProvider } from "@/hooks/use-active-workspace";
+import { usePrefers } from "@/hooks/use-prefers";
+import { fadeOnly, springDefault } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -72,8 +74,8 @@ function TopBar() {
   const inst = useInstitute();
   const name = inst.data?.name;
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 sm:px-6 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
-      <SidebarTrigger className="h-10 w-10 hover:bg-muted transition-colors rounded-lg md:hidden" />
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 px-4 material-chrome scroll-edge sm:px-6">
+      <SidebarTrigger className="h-10 w-10 rounded-lg transition-colors duration-100 hover:bg-muted md:hidden" />
       <div className="hidden md:block h-5 w-px bg-border" />
       {name && name !== "My Institute" && (
         <span className="hidden text-sm font-medium text-foreground/80 md:block truncate max-w-xs lg:max-w-md">
@@ -92,14 +94,16 @@ function TopBar() {
 
 function PageTransition() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { reducedMotion } = usePrefers();
+  const transition = reducedMotion ? fadeOnly : springDefault;
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence>
       <motion.div
         key={pathname}
-        initial={{ opacity: 0, y: 6 }}
+        initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -4 }}
-        transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
+        exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+        transition={transition}
       >
         <Outlet />
       </motion.div>
@@ -122,27 +126,21 @@ function MobileNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 z-40 w-full border-t border-border bg-background/97 px-2 py-2 backdrop-blur-md md:hidden safe-area-inset-bottom">
+    <nav className="fixed bottom-0 left-0 z-40 w-full px-2 py-2 material-chrome-dark scroll-edge-top md:hidden safe-area-inset-bottom">
       <div className="mx-auto flex max-w-5xl items-stretch justify-between gap-1.5">
-        {items.map((item, idx) => {
+        {items.map((item) => {
           const Icon = item.icon;
           const active =
             pathname === item.to || pathname.startsWith(item.to + "/");
           return (
-            <motion.div
-              key={item.to}
-              className="flex-1"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05, duration: 0.3 }}
-            >
+            <div key={item.to} className="flex-1">
               <Link
                 to={item.to}
                 className={cn(
-                  "flex h-14 flex-col items-center justify-center gap-1 rounded-2xl px-2 text-[10px] font-semibold transition-all duration-200 active:scale-95",
+                  "flex h-14 flex-col items-center justify-center gap-1 rounded-2xl px-2 text-[10px] font-semibold tracking-[0.01em] transition-[transform,background-color,color] duration-100 ease-out active:scale-[0.97] motion-reduce:active:scale-100",
                   active
-                    ? "bg-muted text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                    ? "bg-muted/80 text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
                 )}
               >
                 <Icon
@@ -154,7 +152,7 @@ function MobileNav() {
                 />
                 <span className="line-clamp-1 leading-tight">{item.label}</span>
               </Link>
-            </motion.div>
+            </div>
           );
         })}
       </div>

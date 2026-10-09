@@ -6,6 +6,8 @@ import { ArrowRight, CalendarCheck, Wallet, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useCan } from "@/hooks/use-active-workspace";
+import { usePrefers } from "@/hooks/use-prefers";
+import { fadeOnly, springDefault } from "@/lib/motion";
 import { formatINR } from "@/lib/format";
 
 function greetingFor(date = new Date()) {
@@ -45,12 +47,13 @@ export function DashboardHero({
   );
   const today = useMemo(() => new Date(), []);
   const greeting = greetingFor(today);
+  const { reducedMotion } = usePrefers();
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: -8 }}
+      initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      transition={reducedMotion ? fadeOnly : springDefault}
       className="hero-gradient relative mb-6 overflow-hidden rounded-2xl border border-subtle p-5 sm:p-7"
     >
       {/* soft orbital decoration */}
@@ -63,7 +66,7 @@ export function DashboardHero({
           <p className="text-xs sm:text-sm font-medium text-muted-foreground">
             {format(today, "EEEE, d MMMM")}
           </p>
-          <h1 className="mt-1 font-display text-2xl sm:text-3xl lg:text-[2.25rem] font-bold tracking-tight leading-tight">
+          <h1 className="mt-1 font-display text-2xl font-bold leading-[1.08] tracking-[-0.028em] sm:text-3xl lg:text-[2.25rem]">
             {greeting}, <span className="gradient-text">{displayName}</span>
           </h1>
           {instituteName && (

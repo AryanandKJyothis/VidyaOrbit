@@ -1,11 +1,13 @@
 import { useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
+import { usePrefers } from "@/hooks/use-prefers";
 
 /**
  * Slim top progress bar that appears whenever the router is navigating /
  * loading a route chunk. Eliminates the "stuck for 1s on click" feel.
  */
 export function RouteProgress() {
+  const { reducedMotion } = usePrefers();
   const isLoading = useRouterState({
     select: (s) => s.status === "pending" || s.isLoading,
   });
@@ -27,8 +29,12 @@ export function RouteProgress() {
           <motion.div
             className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-brand-teal via-brand-saffron to-brand-coral"
             initial={{ x: "-100%" }}
-            animate={{ x: ["-100%", "350%"] }}
-            transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+            animate={reducedMotion ? { x: "120%" } : { x: ["-100%", "350%"] }}
+            transition={
+              reducedMotion
+                ? { duration: 0.2 }
+                : { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
+            }
           />
         </motion.div>
       )}

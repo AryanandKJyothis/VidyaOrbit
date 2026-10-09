@@ -1,5 +1,4 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -139,35 +138,21 @@ export function AppSidebar() {
       <SidebarHeader className="relative border-b border-sidebar-border transition-colors duration-300">
         {/* Orbital gradient accent */}
         <div className="absolute inset-0 bg-gradient-to-b from-sidebar-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
-          className="relative flex items-center gap-3 px-3 py-3.5"
-        >
-          <motion.div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sidebar-primary/30 to-sidebar-primary/15 ring-1 ring-sidebar-primary/40 transition-all duration-300 hover:ring-sidebar-primary/60"
-            whileHover={{ scale: 1.12, rotate: -8 }}
-            whileTap={{ scale: 0.92 }}
-          >
+        <div className="relative flex items-center gap-3 px-3 py-3.5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sidebar-primary/30 to-sidebar-primary/15 ring-1 ring-sidebar-primary/40 transition-transform duration-100 ease-out active:scale-[0.97]">
             <Logo size={28} />
-          </motion.div>
+          </div>
           {!collapsed && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.08 }}
-              className="flex flex-1 flex-col leading-tight"
-            >
+            <div className="flex flex-1 flex-col leading-tight">
               <span className="font-display text-base font-bold tracking-tight text-sidebar-foreground">
                 Vidya
               </span>
               <span className="text-[8.5px] uppercase tracking-[0.18em] text-sidebar-foreground/60 font-semibold">
                 Orbit
               </span>
-            </motion.div>
+            </div>
           )}
-        </motion.div>
+        </div>
       </SidebarHeader>
 
       <SidebarContent>
@@ -203,12 +188,11 @@ export function AppSidebar() {
                     >
                       <Link
                         to={item.url}
-                        className="group relative flex items-center gap-2.5 transition-colors"
+                        className="group relative flex items-center gap-2.5 transition-colors duration-100 active:scale-[0.98]"
                       >
-                        {/* Active accent bar */}
                         <span
                           className={cn(
-                            "absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-sidebar-primary transition-all",
+                            "absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-sidebar-primary transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none",
                             active
                               ? "opacity-100 scale-y-100"
                               : "opacity-0 scale-y-50",
@@ -216,10 +200,10 @@ export function AppSidebar() {
                         />
                         <item.icon
                           className={cn(
-                            "h-4 w-4 shrink-0 transition-transform duration-200",
+                            "h-4 w-4 shrink-0",
                             active
                               ? "text-sidebar-primary"
-                              : "text-sidebar-foreground/70 group-hover:text-sidebar-foreground group-hover:scale-110",
+                              : "text-sidebar-foreground/70 group-hover:text-sidebar-foreground",
                           )}
                         />
                         {!collapsed && (

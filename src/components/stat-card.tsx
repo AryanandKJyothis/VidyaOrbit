@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, useInView } from "framer-motion";
 import { ArrowDownRight, ArrowUpRight, type LucideIcon } from "lucide-react";
+import { usePrefers } from "@/hooks/use-prefers";
+import { fadeOnly, springDefault } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -129,20 +131,19 @@ export function StatCard({
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-40px" });
-  const displayValue = useCountUp(value, inView);
+  const { reducedMotion } = usePrefers();
+  const displayValue = useCountUp(value, inView && !reducedMotion);
   const deltaUp = (deltaPct ?? 0) >= 0;
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 12 }}
+      initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{
-        duration: 0.4,
-        delay: index * 0.05,
-        ease: [0.16, 1, 0.3, 1],
+        ...(reducedMotion ? fadeOnly : springDefault),
+        delay: reducedMotion ? 0 : index * 0.04,
       }}
-      whileHover={{ y: -3 }}
       className="group h-full"
     >
       <Card className="card-premium relative overflow-hidden h-full">
@@ -169,7 +170,7 @@ export function StatCard({
             </div>
             <div
               className={cn(
-                "flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6",
+                "flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl shadow-sm",
                 toneIcon[tone],
               )}
             >
