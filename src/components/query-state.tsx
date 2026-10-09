@@ -67,7 +67,7 @@ export function QueryLoadingSkeleton({
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="h-12 rounded-md bg-muted animate-pulse"
+          className="h-12 rounded-md bg-muted/55"
           aria-hidden="true"
         />
       ))}

@@ -31,21 +31,23 @@ const PREVIEWS = [
 export function ProductPreviews() {
   const [hero, ...rest] = PREVIEWS;
   return (
-    <div>
-      <p className="mb-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="mx-auto max-w-[780px]">
+      <p className="mb-3 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         {SAMPLE_CENTRE} · {SAMPLE_LABEL}
       </p>
       <figure className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[var(--shadow-elevated)]">
-        <figcaption className="sr-only">{hero.label}</figcaption>
-        <img
-          src={hero.src}
-          alt={hero.alt}
-          width={hero.width}
-          height={hero.height}
-          className="h-auto w-full"
-          loading="lazy"
-          decoding="async"
-        />
+        <div className="bg-muted/20">
+          <figcaption className="sr-only">{hero.label}</figcaption>
+          <img
+            src={hero.src}
+            alt={hero.alt}
+            width={hero.width}
+            height={hero.height}
+            className="block h-auto w-full"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
       </figure>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         {rest.map((p) => (
