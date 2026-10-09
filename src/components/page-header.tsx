@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
+import { usePrefers } from "@/hooks/use-prefers";
+import { fadeOnly, springDefault } from "@/lib/motion";
 
 export function PageHeader({
   title,
@@ -10,45 +12,37 @@ export function PageHeader({
   description?: string;
   actions?: ReactNode;
 }) {
+  const { reducedMotion } = usePrefers();
+  const transition = reducedMotion ? fadeOnly : springDefault;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: -12 }}
+      initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.2, 0.8, 0.2, 1] }}
+      transition={transition}
       className="mb-8 sm:mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
     >
-      <div className="relative group min-w-0">
-        <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-balance leading-tight transition-colors duration-300">
+      <div className="relative min-w-0">
+        <h1 className="font-display text-3xl font-bold leading-[1.08] tracking-[-0.028em] text-balance sm:text-4xl lg:text-5xl">
           {title}
         </h1>
-        {/* Accent underline — animated draw with orbital gradient */}
         <motion.span
           aria-hidden
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ duration: 0.7, delay: 0.12, ease: [0.2, 0.8, 0.2, 1] }}
-          className="mt-3 sm:mt-4 block h-1.5 sm:h-2 w-16 sm:w-20 rounded-full bg-gradient-to-r from-brand-teal via-brand-saffron to-brand-coral origin-left shadow-lg"
+          initial={reducedMotion ? { opacity: 0 } : { scaleX: 0 }}
+          animate={reducedMotion ? { opacity: 1 } : { scaleX: 1 }}
+          transition={transition}
+          className="mt-3 sm:mt-4 block h-1 w-14 origin-left rounded-full bg-gradient-to-r from-brand-teal via-brand-saffron to-brand-coral"
         />
         {description && (
-          <motion.p
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground max-w-lg leading-relaxed"
-          >
+          <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground sm:mt-4 sm:text-base">
             {description}
-          </motion.p>
+          </p>
         )}
       </div>
       {actions && (
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.25 }}
-          className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto"
-        >
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
           {actions}
-        </motion.div>
+        </div>
       )}
     </motion.div>
   );

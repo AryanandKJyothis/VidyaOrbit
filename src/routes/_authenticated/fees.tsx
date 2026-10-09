@@ -316,7 +316,10 @@ function FeesPageContent() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {filtered.map(({ s, paid, balance, overdue }) => (
-                      <tr key={s.id} className="hover:bg-muted/30">
+                      <tr
+                        key={s.id}
+                        className="transition-colors duration-100 hover:bg-muted/30"
+                      >
                         <td className="px-4 py-3">
                           <Link
                             to="/students/$id"
@@ -435,7 +438,10 @@ function FeesPageContent() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {payments.data!.map((p) => (
-                      <tr key={p.id} className="hover:bg-muted/30">
+                      <tr
+                        key={p.id}
+                        className="transition-colors duration-100 hover:bg-muted/30"
+                      >
                         <td className="px-4 py-3 font-mono text-xs">
                           {p.receipt_number}
                         </td>

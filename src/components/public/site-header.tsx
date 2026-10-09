@@ -24,7 +24,7 @@ export function SiteHeader({
   const wa = getWhatsAppHref(WHATSAPP_PREFILL);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border/60 bg-background/90">
+    <header className="sticky top-0 z-30 material-chrome scroll-edge">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4 sm:h-16 sm:px-6">
         <Link to="/" aria-label="Vidya Orbit home" className="shrink-0">
           <LogoWordmark size={28} />
@@ -32,18 +32,30 @@ export function SiteHeader({
         <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
           {nav === "landing" ? (
             <>
-              <a href="#setup" className="hover:text-foreground transition">
+              <a
+                href="#setup"
+                className="rounded-md px-1 py-1 transition-[color,opacity] duration-100 hover:text-foreground"
+              >
                 How we set you up
               </a>
-              <a href="#product" className="hover:text-foreground transition">
+              <a
+                href="#product"
+                className="rounded-md px-1 py-1 transition-[color,opacity] duration-100 hover:text-foreground"
+              >
                 The app
               </a>
-              <Link to="/pricing" className="hover:text-foreground transition">
+              <Link
+                to="/pricing"
+                className="rounded-md px-1 py-1 transition-[color,opacity] duration-100 hover:text-foreground"
+              >
                 Pricing
               </Link>
             </>
           ) : (
-            <Link to="/" className="hover:text-foreground transition">
+            <Link
+              to="/"
+              className="rounded-md px-1 py-1 transition-[color,opacity] duration-100 hover:text-foreground"
+            >
               Home
             </Link>
           )}
@@ -83,7 +95,7 @@ export function SiteHeader({
             </a>
           )}
           <Link to="/login" search={{ mode: "signup" }}>
-            <Button size="sm" className="min-h-10 shadow-sm">
+            <Button size="sm" className="min-h-10">
               {CTA_START_FREE}
               <ArrowRight className="h-4 w-4" />
             </Button>

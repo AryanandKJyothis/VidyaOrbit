@@ -5,21 +5,20 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold cursor-pointer transition-[transform,background-color,box-shadow,border-color,opacity] duration-100 ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 motion-reduce:transition-none motion-reduce:active:scale-100",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-md hover:bg-primary/85 active:scale-[0.97] hover:shadow-[0_12px_32px_-6px_oklch(0.28_0.08_260_/_0.2)] hover:-translate-y-0.5 disabled:shadow-none transition-[background-color,transform,box-shadow,filter]",
+          "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-md hover:bg-destructive/85 active:scale-[0.97] hover:shadow-[0_12px_32px_-6px_oklch(0.62_0.2_28_/_0.2)] hover:-translate-y-0.5 transition-[background-color,transform,box-shadow]",
+          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
-          "border-2 border-input bg-background shadow-sm hover:bg-primary/8 hover:border-primary/40 hover:text-primary active:scale-[0.97] transition-[background-color,border-color,transform,box-shadow]",
+          "border border-input bg-background/80 shadow-xs hover:bg-primary/6 hover:border-primary/30",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/70 active:scale-[0.97] transition-[background-color,transform,box-shadow]",
-        ghost:
-          "hover:bg-brand-teal/12 hover:text-primary active:scale-[0.96] transition-[background-color,transform]",
-        link: "text-primary underline-offset-4 hover:underline active:opacity-75 transition-opacity",
+          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+        ghost: "hover:bg-brand-teal/10 hover:text-primary",
+        link: "text-primary underline-offset-4 hover:underline active:scale-100 active:opacity-75",
       },
       size: {
         default: "h-10 sm:h-11 px-4 py-2",

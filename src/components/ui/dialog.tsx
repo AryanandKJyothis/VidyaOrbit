@@ -2,11 +2,43 @@
 
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 
+import { usePrefers } from "@/hooks/use-prefers";
+import { fadeOnly, springDefault } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-const Dialog = DialogPrimitive.Root;
+type DialogPresence = { open: boolean };
+const DialogPresenceContext = React.createContext<DialogPresence>({
+  open: false,
+});
+
+const Dialog = ({
+  open: openProp,
+  defaultOpen,
+  onOpenChange,
+  children,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Root>) => {
+  const [uncontrolled, setUncontrolled] = React.useState(!!defaultOpen);
+  const open = openProp ?? uncontrolled;
+
+  return (
+    <DialogPresenceContext.Provider value={{ open }}>
+      <DialogPrimitive.Root
+        open={open}
+        onOpenChange={(next) => {
+          if (openProp === undefined) setUncontrolled(next);
+          onOpenChange?.(next);
+        }}
+        {...props}
+      >
+        {children}
+      </DialogPrimitive.Root>
+    </DialogPresenceContext.Provider>
+  );
+};
 
 const DialogTrigger = DialogPrimitive.Trigger;
 
@@ -21,7 +53,8 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "absolute inset-0 bg-black/45 backdrop-blur-md",
+      "motion-reduce:backdrop-blur-none contrast-more:bg-black/70 contrast-more:backdrop-blur-none",
       className,
     )}
     {...props}
@@ -32,25 +65,54 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 rounded-xl shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg opacity-70 ring-offset-background cursor-pointer transition-all hover:opacity-100 hover:bg-accent/10 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none p-1 data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-        <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
-      </DialogPrimitive.Close>
-    </DialogPrimitive.Content>
-  </DialogPortal>
-));
+>(({ className, children, ...props }, ref) => {
+  const { open } = React.useContext(DialogPresenceContext);
+  const { reducedMotion } = usePrefers();
+  const transition = reducedMotion ? fadeOnly : springDefault;
+
+  return (
+    <DialogPortal forceMount>
+      <AnimatePresence>
+        {open ? (
+          <motion.div
+            key="dialog-layer"
+            className="fixed inset-0 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={transition}
+          >
+            <DialogOverlay />
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
+              <motion.div
+                className="pointer-events-auto w-full max-w-lg"
+                initial={reducedMotion ? { opacity: 1 } : { scale: 0.96 }}
+                animate={{ scale: 1 }}
+                transition={transition}
+              >
+                <DialogPrimitive.Content
+                  ref={ref}
+                  className={cn(
+                    "relative grid w-full gap-4 rounded-2xl border border-white/50 bg-card p-6 shadow-[var(--shadow-elevated)] material-sheet",
+                    "contrast-more:border-foreground contrast-more:bg-background",
+                    className,
+                  )}
+                  {...props}
+                >
+                  {children}
+                  <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1 opacity-70 ring-offset-background transition-[transform,opacity,background-color] duration-100 ease-out hover:opacity-100 hover:bg-accent/10 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none active:scale-95">
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Close</span>
+                  </DialogPrimitive.Close>
+                </DialogPrimitive.Content>
+              </motion.div>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </DialogPortal>
+  );
+});
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({
@@ -88,7 +150,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      "text-xl font-bold leading-none tracking-tight text-foreground",
+      "text-xl font-bold leading-tight tracking-tight text-foreground",
       className,
     )}
     {...props}

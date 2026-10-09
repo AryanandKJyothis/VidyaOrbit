@@ -428,7 +428,10 @@ function StudentsList() {
                         new Date(s.fee_due_date) < new Date() &&
                         bal > 0;
                       return (
-                        <tr key={s.id} className="hover:bg-muted/30">
+                        <tr
+                          key={s.id}
+                          className="transition-colors duration-100 hover:bg-muted/30"
+                        >
                           <td className="px-4 py-3">
                             <Link
                               to="/students/$id"
@@ -514,7 +517,7 @@ function StudentsList() {
                       key={s.id}
                       to="/students/$id"
                       params={{ id: s.id }}
-                      className="block px-4 py-3.5 hover:bg-muted/30 active:bg-muted/40 transition-colors"
+                      className="block px-4 py-3.5 transition-[transform,background-color] duration-100 ease-out hover:bg-muted/30 active:scale-[0.99] active:bg-muted/40 motion-reduce:active:scale-100"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">

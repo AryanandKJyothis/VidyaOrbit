@@ -68,7 +68,7 @@ function ContactCard() {
   if (!whatsappUrl && !email) return null;
 
   return (
-    <div className="mt-10 rounded-2xl border border-border bg-card p-6 text-center">
+    <div className="mt-10 rounded-2xl border border-border/80 bg-card p-6 text-center shadow-[var(--shadow-card)]">
       <h3 className="font-display text-xl font-semibold">
         Still have questions?
       </h3>
@@ -114,7 +114,7 @@ function PricingPage() {
           />
           <div className="mx-auto max-w-6xl px-4 pb-10 pt-14 sm:px-6 sm:pt-20">
             <div className="mx-auto max-w-2xl text-center">
-              <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
+              <h1 className="font-display text-4xl font-bold tracking-[-0.03em] sm:text-5xl">
                 Simple, INR-first pricing
               </h1>
               <p className="mt-4 text-muted-foreground sm:text-lg">
@@ -145,17 +145,17 @@ function PricingPage() {
 
         <section className="border-t border-border bg-muted/30">
           <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-            <h2 className="font-display text-center text-3xl font-bold tracking-tight">
+            <h2 className="font-display text-center text-3xl font-bold tracking-[-0.022em]">
               Frequently asked
             </h2>
-            <div className="mt-8 space-y-4">
+            <div className="mt-8 space-y-3">
               {FAQ.map((f) => (
                 <details
                   key={f.q}
-                  className="group rounded-xl border border-border bg-card p-5 open:shadow-sm"
+                  className="group rounded-2xl border border-border/80 bg-card p-5 shadow-[var(--shadow-xs)]"
                 >
-                  <summary className="cursor-pointer list-none text-sm font-semibold text-foreground">
-                    <span className="mr-2 inline-block transition group-open:rotate-90">
+                  <summary className="cursor-pointer list-none text-sm font-semibold text-foreground [-webkit-tap-highlight-color:transparent]">
+                    <span className="mr-2 inline-block transition-transform duration-200 ease-out group-open:rotate-90 motion-reduce:transition-none motion-reduce:group-open:rotate-0">
                       ›
                     </span>
                     {f.q}

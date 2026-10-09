@@ -67,8 +67,8 @@ export function PublicPricingGrid() {
             className={
               "relative flex flex-col rounded-2xl border bg-card p-5 sm:p-6 " +
               (isRecommended
-                ? "border-[color:var(--brand-teal)]/60 shadow-[var(--shadow-lift)]"
-                : "border-border")
+                ? "border-[color:var(--brand-teal)]/50 shadow-[var(--shadow-elevated)] material-thick"
+                : "border-border/80 shadow-[var(--shadow-card)]")
             }
           >
             {isRecommended && (
