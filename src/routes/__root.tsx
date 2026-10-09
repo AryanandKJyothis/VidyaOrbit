@@ -11,6 +11,15 @@ import {
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
 import { RouteProgress } from "@/components/route-progress";
+import {
+  OG_IMAGE_ALT,
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_URL,
+  OG_IMAGE_WIDTH,
+  PUBLIC_PAGES,
+  SITE_NAME,
+  verificationMeta,
+} from "@/lib/seo";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -80,47 +89,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       meta: [
         { charSet: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
-        { title: "Vidya Orbit — Coaching centre management" },
-        {
-          name: "description",
-          content:
-            "Vidya Orbit helps coaching centres and tuition institutes manage students, batches, fees, attendance, and receipts in one place.",
-        },
+        { title: PUBLIC_PAGES.home.title },
+        { name: "description", content: PUBLIC_PAGES.home.description },
         { name: "author", content: "Aryanand, Vidya Orbit" },
-        {
-          property: "og:title",
-          content: "Vidya Orbit — Coaching centre management",
-        },
-        {
-          property: "og:description",
-          content:
-            "Vidya Orbit helps coaching centres and tuition institutes manage students, batches, fees, attendance, and receipts in one place.",
-        },
+        { property: "og:site_name", content: SITE_NAME },
+        { property: "og:locale", content: "en_IN" },
         { property: "og:type", content: "website" },
-        {
-          name: "twitter:title",
-          content: "Vidya Orbit — Coaching centre management",
-        },
-        {
-          name: "twitter:description",
-          content:
-            "Vidya Orbit helps coaching centres and tuition institutes manage students, batches, fees, attendance, and receipts in one place.",
-        },
-        {
-          property: "og:image",
-          content: "https://www.vidyaorbit.in/og-image.png",
-        },
-        { property: "og:image:width", content: "1200" },
-        { property: "og:image:height", content: "630" },
-        {
-          property: "og:image:alt",
-          content: "Vidya Orbit — Coaching centre management, made calm",
-        },
-        {
-          name: "twitter:image",
-          content: "https://www.vidyaorbit.in/og-image.png",
-        },
+        { property: "og:image", content: OG_IMAGE_URL },
+        { property: "og:image:width", content: OG_IMAGE_WIDTH },
+        { property: "og:image:height", content: OG_IMAGE_HEIGHT },
+        { property: "og:image:alt", content: OG_IMAGE_ALT },
         { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:image", content: OG_IMAGE_URL },
+        { name: "twitter:image:alt", content: OG_IMAGE_ALT },
+        ...verificationMeta(),
       ],
       links: [
         { rel: "stylesheet", href: appCss },

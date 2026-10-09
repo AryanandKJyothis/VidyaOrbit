@@ -1,8 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.vidyaorbit.in/</loc></url>
-  <url><loc>https://www.vidyaorbit.in/pricing</loc></url>
-  <url><loc>https://www.vidyaorbit.in/login</loc></url>
-  <url><loc>https://www.vidyaorbit.in/privacy</loc></url>
-  <url><loc>https://www.vidyaorbit.in/terms</loc></url>
+  <url>
+    <loc>https://www.vidyaorbit.in/</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://www.vidyaorbit.in/pricing</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://www.vidyaorbit.in/login</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://www.vidyaorbit.in/privacy</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://www.vidyaorbit.in/terms</loc>
+    <changefreq>weekly</changefreq>
+  </url>
 </urlset>

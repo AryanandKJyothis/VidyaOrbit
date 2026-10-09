@@ -1,17 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getContactConfig } from "@/lib/contact-config";
+import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/privacy")({
   component: PrivacyPage,
-  head: () => ({
-    meta: [
-      { title: "Privacy Policy — Vidya Orbit" },
-      {
-        name: "description",
-        content: "Privacy policy describing how Vidya Orbit handles your data.",
-      },
-    ],
-  }),
+  head: () => pageHead(PUBLIC_PAGES.privacy),
 });
 
 function PrivacyPage() {

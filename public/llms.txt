@@ -1,0 +1,51 @@
+# Vidya Orbit
+
+> Vidya Orbit — Coaching centre management software in Kerala
+
+Vidya Orbit is coaching and tuition centre software for Kerala — attendance, fees, students, staff and receipts. Built in Valanchery, Malappuram.
+
+Vidya Orbit is a SaaS product for coaching centres and tuition centres in Kerala. The founder, Aryanand, is based in Valanchery, Kerala (Malappuram district). After a WhatsApp or phone call he imports the centre's students from Excel or CSV, sets up batches and fees, adds staff, and gives a 30-minute training.
+
+The product screens are in English. The student import template includes Malayalam instructions. Setup help is on WhatsApp from Valanchery.
+
+## Who it is for
+
+Owners of coaching centres, tuition centres, and small institutes who currently track students, attendance and fees in notebooks, WhatsApp chats, or spreadsheets.
+
+## Features
+
+- Students and batches (name, parent/guardian phone, fee total, due date)
+- Attendance on a phone: present / late / absent, including All present
+- Fee tracking: paid, pending, overdue; cash, UPI or bank
+- Numbered receipts with the centre name; print or save as PDF, then send on WhatsApp yourself
+- Staff invites with a join link (owner chooses whether staff can see fees)
+- Excel / CSV import (.xlsx, .xls, .csv) — pasting cells is not supported
+- Export students, batches, dues and payments as Excel or CSV
+- Analytics dashboard on Starter and above
+
+The app does not message parents. Receipts and reminders are sent by the centre on WhatsApp the way they already do.
+
+## Pricing (INR)
+
+Prices below are the public plans in the product. Paid plans are arranged by invoice; in-app online payment is coming soon.
+
+- Free: ₹0/month — Up to 25 students. For trying things out.
+- Starter: ₹499/month or ₹4,999/year — Up to 100 students. Save ₹989.
+- Growth: ₹999/month or ₹10,000/year — Up to 500 students. First monthly invoice includes a ₹5,000 setup fee (waived on annual). Save ₹1,988 + free setup.
+- Large: ₹2,499/month or ₹25,000/year — Unlimited students. First monthly invoice includes a ₹5,000 setup fee (waived on annual). Save ₹4,988 + free setup.
+
+## Location and contact
+
+- Place: Valanchery, Malappuram, Kerala, India
+- Founder: Aryanand
+- Phone: +91 7025063047
+- WhatsApp: https://wa.me/917025063047
+- Email: aryanandkjyothis4@gmail.com
+
+## URLs
+
+- Home: https://www.vidyaorbit.in/
+- Pricing: https://www.vidyaorbit.in/pricing
+- Sign in: https://www.vidyaorbit.in/login
+- Privacy: https://www.vidyaorbit.in/privacy
+- Terms: https://www.vidyaorbit.in/terms

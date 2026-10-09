@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { credentialsSchema, signupSchema } from "@/lib/validation";
 import { formatUserError } from "@/lib/format-error";
 import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
+import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
 
 const searchSchema = z.object({
   invite: z.string().min(10).max(200).optional(),
@@ -24,6 +25,7 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s) => searchSchema.parse(s),
+  head: () => pageHead(PUBLIC_PAGES.login),
   component: LoginPage,
 });
 

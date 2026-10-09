@@ -8,8 +8,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { newPasswordSchema } from "@/lib/validation";
 import { formatUserError } from "@/lib/format-error";
 import { toast } from "sonner";
+import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/reset-password")({
+  head: () => pageHead(PUBLIC_PAGES.resetPassword),
   component: ResetPassword,
 });
 

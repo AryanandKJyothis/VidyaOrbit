@@ -7,8 +7,10 @@ import { GraduationCap, Loader2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { emailSchema } from "@/lib/validation";
 import { toast } from "sonner";
+import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/forgot-password")({
+  head: () => pageHead(PUBLIC_PAGES.forgotPassword),
   component: ForgotPassword,
 });
 

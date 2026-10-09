@@ -44,6 +44,12 @@ export function SiteHeader({
               >
                 The app
               </a>
+              <a
+                href="#faq"
+                className="rounded-md px-1 py-1 transition-[color,opacity] duration-100 hover:text-foreground"
+              >
+                FAQ
+              </a>
               <Link
                 to="/pricing"
                 className="rounded-md px-1 py-1 transition-[color,opacity] duration-100 hover:text-foreground"

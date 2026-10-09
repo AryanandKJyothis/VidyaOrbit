@@ -5,9 +5,10 @@
  *   ഞങ്ങൾ എല്ലാം ഒരുക്കിത്തരാം — ഒരു തലവേദനയും വേണ്ട.
  */
 
-export const LANDING_TITLE = "Vidya Orbit — We set up your coaching centre";
+export const LANDING_TITLE =
+  "Vidya Orbit — Coaching centre management software in Kerala";
 export const LANDING_DESCRIPTION =
-  "For Kerala tuition and coaching centres. We import your students from Excel or CSV, set up batches and fees, add staff, and train you in 30 minutes. See who hasn't paid this month in one tap.";
+  "Vidya Orbit is coaching and tuition centre software for Kerala — attendance, fees, students, staff and receipts. Built in Valanchery, Malappuram.";
 
 export const HERO_EYEBROW = "Built in Valanchery, Kerala";
 export const HERO_TITLE = "We set everything up for you, zero headache.";

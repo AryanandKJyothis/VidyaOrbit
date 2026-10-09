@@ -23,6 +23,7 @@ import {
   HERO_TITLE,
   WHATSAPP_PREFILL,
 } from "@/lib/landing-copy";
+import { LANDING_FAQS } from "@/lib/public-faqs";
 
 export function LandingPage() {
   return (
@@ -363,35 +364,13 @@ function Pricing() {
 }
 
 function FAQ() {
-  const faqs = [
-    {
-      q: "Do I have to set this up myself?",
-      a: "No. WhatsApp or call Aryanand. We import your Excel or CSV, set up batches and fees, add staff, and train you for 30 minutes.",
-    },
-    {
-      q: "Can I move from Excel?",
-      a: "Yes — upload a .xlsx, .xls or .csv file. Pasting cells is not supported. We usually do this with you on the setup call.",
-    },
-    {
-      q: "Do students or parents need to install anything?",
-      a: "No. Vidya Orbit is for you and your staff. You still send receipts on WhatsApp yourself. The app does not message parents.",
-    },
-    {
-      q: "Is my data safe?",
-      a: "Hosted on Supabase: encrypted in transit and at rest, isolated per institute. You can export students, batches, dues and payments anytime.",
-    },
-    {
-      q: "Can I cancel?",
-      a: "Anytime. You stay on the free plan with your data intact. If you are over 25 students, existing data stays usable — adding new students is paused until you upgrade.",
-    },
-  ];
   return (
     <section id="faq" className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
       <h2 className="text-center font-display text-3xl font-bold tracking-[-0.022em] sm:text-4xl">
         Questions owners actually ask
       </h2>
       <div className="mt-10 divide-y divide-border/80 rounded-2xl border border-border/80 bg-card shadow-[var(--shadow-card)]">
-        {faqs.map((f) => (
+        {LANDING_FAQS.map((f) => (
           <details key={f.q} className="group p-5">
             <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg font-medium transition-colors duration-100 hover:text-foreground [-webkit-tap-highlight-color:transparent]">
               {f.q}
@@ -399,7 +378,9 @@ function FAQ() {
                 +
               </span>
             </summary>
-            <p className="mt-3 text-sm text-muted-foreground">{f.a}</p>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              {f.a}
+            </p>
           </details>
         ))}
       </div>
