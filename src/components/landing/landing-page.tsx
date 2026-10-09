@@ -133,7 +133,7 @@ function Hero() {
         }}
       />
       <div className="mx-auto max-w-6xl px-4 pb-10 pt-8 sm:px-6 sm:pb-16 sm:pt-16">
-        <Reveal className="mx-auto max-w-2xl text-center">
+        <div className="mx-auto max-w-2xl text-center">
           <span className="inline-flex items-center rounded-full border border-border/80 bg-card/80 px-3 py-1 text-xs font-medium tracking-[0.01em] text-muted-foreground shadow-[var(--shadow-xs)]">
             {HERO_EYEBROW}
           </span>
@@ -153,7 +153,7 @@ function Hero() {
           <p className="mt-4 text-xs tracking-[0.01em] text-muted-foreground">
             {FOUNDER_LINE}
           </p>
-        </Reveal>
+        </div>
       </div>
     </section>
   );
