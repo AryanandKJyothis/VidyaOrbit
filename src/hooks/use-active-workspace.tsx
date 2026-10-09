@@ -43,15 +43,6 @@ export function getStorageKey(userId: string) {
   return `vidya.active-workspace.${userId}`;
 }
 
-const OWNER_PERMISSIONS: Permissions = {
-  students: "write",
-  batches: "write",
-  attendance: "write",
-  fees: "write",
-  settings: "write",
-  billing: "write",
-};
-
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const fetchWorkspaces = useServerFn(listMyWorkspaces);
@@ -62,20 +53,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     staleTime: 30_000,
   });
 
-  // The signed-in owner still gets a full menu if the workspace request fails.
-  const workspaces = useMemo<Workspace[]>(() => {
-    if (query.data && query.data.length > 0) return query.data;
-    if (!query.isError || !user) return [];
-    return [
-      {
-        ownerId: user.id,
-        role: "owner",
-        permissions: OWNER_PERMISSIONS,
-        name: "My Institute",
-        isOwn: true,
-      },
-    ];
-  }, [query.data, query.isError, user]);
+  // Never invent permissions when membership loading fails. RLS may reject writes,
+  // and showing owner controls would make a transient read failure misleading.
+  const workspaces = useMemo<Workspace[]>(
+    () => (query.isError ? [] : query.data ?? []),
+    [query.data, query.isError],
+  );
 
   const [activeOwnerId, setActiveOwnerId] = useState<string | null>(() => {
     if (typeof window === "undefined" || !user) return null;

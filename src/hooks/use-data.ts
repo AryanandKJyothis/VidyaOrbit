@@ -77,10 +77,19 @@ function useOwnerId() {
   return active?.ownerId ?? null;
 }
 
-// Supabase caps a single response at 1000 rows by default. Lift it explicitly
-// so growing institutes don't silently lose data; pair with staleTime so the
-// browser stops re-hammering the API when navigating between screens.
-const ROW_LIMIT = 5000;
+// Read in bounded pages so Supabase's response cap can never silently truncate
+// a growing institute. Callers still receive the same array-shaped API.
+const PAGE_SIZE = 1000;
+async function fetchAllRows<T>(buildQuery: (from: number, to: number) => any): Promise<T[]> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await buildQuery(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    const page = (data ?? []) as T[];
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) return rows;
+  }
+}
 
 export function useStudents() {
   const ownerId = useOwnerId();
@@ -92,15 +101,14 @@ export function useStudents() {
     queryFn: async () => {
       // All users (owners and staff) query via students_gated view
       // View handles permission gating: shows fee columns only to fees:read+ users
-      const { data, error } = await supabase
-        .from("students_gated" as "students")
-        .select("*")
-        .eq("owner_id", ownerId!)
-        .order("created_at", { ascending: false })
-        .limit(ROW_LIMIT);
-
-      if (error) throw error;
-      return data as Student[];
+      return fetchAllRows<Student>((from, to) =>
+        supabase
+          .from("students_gated" as "students")
+          .select("*")
+          .eq("owner_id", ownerId!)
+          .order("created_at", { ascending: false })
+          .range(from, to),
+      );
     },
   });
 }
@@ -134,14 +142,14 @@ export function useBatches() {
     enabled: !!ownerId,
     staleTime: 5 * 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("batches")
-        .select("*")
-        .eq("owner_id", ownerId!)
-        .order("created_at", { ascending: false })
-        .limit(ROW_LIMIT);
-      if (error) throw error;
-      return data as Batch[];
+      return fetchAllRows<Batch>((from, to) =>
+        supabase
+          .from("batches")
+          .select("*")
+          .eq("owner_id", ownerId!)
+          .order("created_at", { ascending: false })
+          .range(from, to),
+      );
     },
   });
 }
@@ -153,16 +161,16 @@ export function usePayments(studentId?: string) {
     enabled: !!ownerId,
     staleTime: 30_000,
     queryFn: async () => {
-      let q = supabase
-        .from("fee_payments")
-        .select("*")
-        .eq("owner_id", ownerId!)
-        .order("payment_date", { ascending: false })
-        .limit(ROW_LIMIT);
-      if (studentId) q = q.eq("student_id", studentId);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as Payment[];
+      return fetchAllRows<Payment>((from, to) => {
+        let q = supabase
+          .from("fee_payments")
+          .select("*")
+          .eq("owner_id", ownerId!)
+          .order("payment_date", { ascending: false })
+          .range(from, to);
+        if (studentId) q = q.eq("student_id", studentId);
+        return q;
+      });
     },
   });
 }

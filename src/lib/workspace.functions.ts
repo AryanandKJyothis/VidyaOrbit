@@ -114,7 +114,7 @@ export const listMyWorkspaces = createServerFn({ method: "GET" })
 // Owner sees everything; non-owners see active members only (no invite tokens).
 export const listTeam = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { ownerId: string }) =>
+  .validator((input: { ownerId: string }) =>
     z.object({ ownerId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -240,7 +240,7 @@ export const listTeam = createServerFn({ method: "POST" })
 // ============ Invite a member ============
 export const inviteMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         ownerId: z.string().uuid(),
@@ -317,7 +317,7 @@ export const inviteMember = createServerFn({ method: "POST" })
 // ============ Resend invite (rotates token + extends expiry) ============
 export const resendInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { inviteId: string }) =>
+  .validator((input: { inviteId: string }) =>
     z.object({ inviteId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -343,7 +343,7 @@ export const resendInvite = createServerFn({ method: "POST" })
 
 export const revokeInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { inviteId: string }) =>
+  .validator((input: { inviteId: string }) =>
     z.object({ inviteId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -367,7 +367,7 @@ export const revokeInvite = createServerFn({ method: "POST" })
 // Lets the /join/$token landing page show "X invited you to join Y as Staff"
 // to brand-new users before they sign up. Returns only non-sensitive fields.
 export const previewInvite = createServerFn({ method: "POST" })
-  .inputValidator((input: { token: string }) =>
+  .validator((input: { token: string }) =>
     z.object({ token: z.string().min(10).max(200) }).parse(input),
   )
   .handler(async ({ data }) => {
@@ -450,7 +450,7 @@ export const listMyPendingInvites = createServerFn({ method: "GET" })
 // ============ Accept invite ============
 export const acceptInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { token: string }) =>
+  .validator((input: { token: string }) =>
     z.object({ token: z.string().min(10).max(200) }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -519,7 +519,7 @@ export const acceptInvite = createServerFn({ method: "POST" })
 
 export const declineInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { token: string }) =>
+  .validator((input: { token: string }) =>
     z.object({ token: z.string().min(10).max(200) }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -544,7 +544,7 @@ export const declineInvite = createServerFn({ method: "POST" })
 // ============ Update member ============
 export const updateMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         memberId: z.string().uuid(),
@@ -574,7 +574,7 @@ export const updateMember = createServerFn({ method: "POST" })
 // ============ Remove member ============
 export const removeMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { memberId: string }) =>
+  .validator((input: { memberId: string }) =>
     z.object({ memberId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -601,7 +601,7 @@ export const removeMember = createServerFn({ method: "POST" })
 // orphan all institute data); they must contact support to delete the account.
 export const leaveWorkspace = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { ownerId: string }) =>
+  .validator((input: { ownerId: string }) =>
     z.object({ ownerId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {

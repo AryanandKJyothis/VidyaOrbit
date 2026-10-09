@@ -2,7 +2,11 @@ type Bucket = { count: number; resetAt: number };
 
 const buckets = new Map<string, Bucket>();
 
-/** Best-effort per-instance limit. Returns true when the request is allowed. */
+/**
+ * Temporary safety net for local development only. Production deployments must
+ * provide a shared edge limiter (for example Durable Objects or Upstash) and
+ * reject requests before they reach this fallback.
+ */
 export function allowRequest(
   key: string,
   limit: number,
@@ -19,9 +23,14 @@ export function allowRequest(
 }
 
 export function clientAddress(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
-  return request.headers.get("x-real-ip")?.trim() || "unknown";
+  // Only use headers set by the hosting platform. User-controlled forwarded
+  // headers are trivially spoofed and must not be used as an identity key.
+  return (
+    request.headers.get("x-vercel-forwarded-for")?.trim() ||
+    request.headers.get("cf-connecting-ip")?.trim() ||
+    request.headers.get("true-client-ip")?.trim() ||
+    "unknown"
+  );
 }
 
 export function tooManyRequests(): Response {
