@@ -1,3 +1,31 @@
+# Vidya Orbit
+# https://www.vidyaorbit.in
+
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: PerplexityBot
+User-agent: ClaudeBot
+User-agent: Google-Extended
+User-agent: Applebot
+Allow: /
+Disallow: /dashboard
+Disallow: /students
+Disallow: /fees
+Disallow: /attendance
+Disallow: /batches
+Disallow: /analytics
+Disallow: /billing
+Disallow: /plan
+Disallow: /settings
+Disallow: /invites
+Disallow: /admin
+Disallow: /receipts
+Disallow: /api
+Disallow: /join
+
 User-agent: *
 Allow: /
 Disallow: /dashboard
@@ -7,7 +35,12 @@ Disallow: /attendance
 Disallow: /batches
 Disallow: /analytics
 Disallow: /billing
+Disallow: /plan
 Disallow: /settings
+Disallow: /invites
 Disallow: /admin
+Disallow: /receipts
+Disallow: /api
+Disallow: /join
 
 Sitemap: https://www.vidyaorbit.in/sitemap.xml

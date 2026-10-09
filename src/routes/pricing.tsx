@@ -1,67 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { JsonLd } from "@/components/json-ld";
 import { Button } from "@/components/ui/button";
-import { jsonLdOffers } from "@/lib/pricing-display";
 import { getContactConfig } from "@/lib/contact-config";
-import { SITE_URL } from "@/lib/site";
+import { PRICING_FAQS } from "@/lib/public-faqs";
+import { PUBLIC_PAGES, pageHead, pricingJsonLd } from "@/lib/seo";
 import { ShieldCheck, MessageCircle, Mail } from "lucide-react";
 import { PublicPricingGrid } from "@/components/public/pricing-grid";
 import { SiteHeader } from "@/components/public/site-header";
 import { SiteFooter } from "@/components/public/site-footer";
 
-const TITLE = "Pricing — Vidya Orbit";
-const DESC =
-  "Simple INR pricing for Indian coaching centres. Start free for up to 25 students. Upgrade only when you grow.";
+const jsonLd = pricingJsonLd();
 
 export const Route = createFileRoute("/pricing")({
-  head: () => ({
-    meta: [
-      { title: TITLE },
-      { name: "description", content: DESC },
-      { property: "og:title", content: TITLE },
-      { property: "og:description", content: DESC },
-      { property: "og:url", content: SITE_URL + "/pricing" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-    links: [{ rel: "canonical", href: SITE_URL + "/pricing" }],
-    scripts: [
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Product",
-          name: "Vidya Orbit",
-          description: DESC,
-          offers: jsonLdOffers(SITE_URL + "/pricing"),
-        }),
-      },
-    ],
-  }),
+  head: () => pageHead(PUBLIC_PAGES.pricing, jsonLd),
   component: PricingPage,
 });
-
-const FAQ = [
-  {
-    q: "Can I really start free?",
-    a: "Yes. The Free plan supports up to 25 students with no credit card required. Use it as long as you like.",
-  },
-  {
-    q: "What happens if I cross my student limit?",
-    a: "Existing data stays safe and usable. Adding new students is paused until you upgrade.",
-  },
-  {
-    q: "How do I upgrade?",
-    a: "Contact us and we'll help you upgrade to a paid plan that fits your needs. Online payment is coming soon.",
-  },
-  {
-    q: "Can I cancel or downgrade?",
-    a: "Yes. Contact us and we'll help you adjust your plan the same day.",
-  },
-  {
-    q: "Is my data safe?",
-    a: "Yes. Data is encrypted in transit and at rest, isolated per institute, and only your authorised team can access it. We never sell or share institute data.",
-  },
-];
 
 function ContactCard() {
   const { whatsappUrl, email } = getContactConfig();
@@ -100,6 +53,7 @@ function ContactCard() {
 function PricingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <JsonLd data={jsonLd} />
       <SiteHeader nav="pricing" />
 
       <main>
@@ -149,7 +103,7 @@ function PricingPage() {
               Frequently asked
             </h2>
             <div className="mt-8 space-y-3">
-              {FAQ.map((f) => (
+              {PRICING_FAQS.map((f) => (
                 <details
                   key={f.q}
                   className="group rounded-2xl border border-border/80 bg-card p-5 shadow-[var(--shadow-xs)]"

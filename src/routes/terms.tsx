@@ -1,18 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getContactConfig } from "@/lib/contact-config";
+import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/terms")({
   component: TermsPage,
-  head: () => ({
-    meta: [
-      { title: "Terms of Service — Vidya Orbit" },
-      {
-        name: "description",
-        content:
-          "Terms of service for the Vidya Orbit institute management platform.",
-      },
-    ],
-  }),
+  head: () => pageHead(PUBLIC_PAGES.terms),
 });
 
 function TermsPage() {

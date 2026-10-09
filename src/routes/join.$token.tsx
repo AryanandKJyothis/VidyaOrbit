@@ -27,23 +27,11 @@ import { getStorageKey } from "@/hooks/use-active-workspace";
 import { previewInvite, acceptInvite } from "@/lib/workspace.functions";
 import { formatUserError } from "@/lib/format-error";
 import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
+import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/join/$token")({
   component: JoinPage,
-  head: () => ({
-    meta: [
-      { title: "You've been invited — Vidya Orbit" },
-      {
-        name: "description",
-        content: "Join your team's workspace on Vidya Orbit.",
-      },
-      { property: "og:title", content: "You've been invited to Vidya Orbit" },
-      {
-        property: "og:description",
-        content: "Accept your invite and start collaborating with your team.",
-      },
-    ],
-  }),
+  head: () => pageHead(PUBLIC_PAGES.join),
 });
 
 function GoogleIcon() {
