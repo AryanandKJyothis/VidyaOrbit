@@ -80,12 +80,17 @@ function useOwnerId() {
 // Read in bounded pages so Supabase's response cap can never silently truncate
 // a growing institute. Callers still receive the same array-shaped API.
 const PAGE_SIZE = 1000;
-async function fetchAllRows<T>(buildQuery: (from: number, to: number) => any): Promise<T[]> {
+async function fetchAllRows<T>(
+  buildQuery: (
+    from: number,
+    to: number,
+  ) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<T[]> {
   const rows: T[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await buildQuery(from, from + PAGE_SIZE - 1);
     if (error) throw error;
-    const page = (data ?? []) as T[];
+    const page = data ?? [];
     rows.push(...page);
     if (page.length < PAGE_SIZE) return rows;
   }

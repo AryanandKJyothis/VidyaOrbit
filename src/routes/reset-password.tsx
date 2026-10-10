@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { GraduationCap, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,9 +90,8 @@ function ResetPassword() {
           )}
           <div className="space-y-2">
             <Label htmlFor="np">New password</Label>
-            <Input
+            <PasswordInput
               id="np"
-              type="password"
               required
               minLength={8}
               value={password}
@@ -105,9 +104,8 @@ function ResetPassword() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="cp">Confirm password</Label>
-            <Input
+            <PasswordInput
               id="cp"
-              type="password"
               required
               minLength={8}
               value={confirm}

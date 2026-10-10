@@ -56,7 +56,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // Never invent permissions when membership loading fails. RLS may reject writes,
   // and showing owner controls would make a transient read failure misleading.
   const workspaces = useMemo<Workspace[]>(
-    () => (query.isError ? [] : query.data ?? []),
+    () => (query.isError ? [] : (query.data ?? [])),
     [query.data, query.isError],
   );
 

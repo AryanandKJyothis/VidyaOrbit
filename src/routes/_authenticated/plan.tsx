@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Card,
   CardContent,
@@ -212,7 +212,14 @@ function PlanPage() {
       <Alert className="max-w-2xl mx-auto">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Prices are exclusive of GST. GST invoicing is coming soon.
+          Prices are exclusive of GST. GST invoicing is coming soon.{" "}
+          <Link
+            to="/terms"
+            hash="refund"
+            className="font-medium underline-offset-4 hover:underline"
+          >
+            Refunds &amp; cancellations
+          </Link>
         </AlertDescription>
       </Alert>
     </div>

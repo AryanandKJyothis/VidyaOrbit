@@ -6,6 +6,7 @@ import { Reveal } from "@/components/landing/reveal";
 import { PublicPricingGrid } from "@/components/public/pricing-grid";
 import { SiteFooter } from "@/components/public/site-footer";
 import { SiteHeader } from "@/components/public/site-header";
+import { SkipToContent } from "@/components/skip-to-content";
 import {
   FOUNDER_NAME,
   FOUNDER_TOWN,
@@ -28,8 +29,9 @@ import { LANDING_FAQS } from "@/lib/public-faqs";
 export function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SkipToContent />
       <SiteHeader />
-      <main>
+      <main id="main-content">
         <Hero />
         <section
           id="product"
@@ -84,40 +86,39 @@ function HeroCtas({
           </Button>
         </a>
       )}
-      {tel && phone && (
-        <a href={tel} className="w-full sm:w-auto">
-          <Button
-            size="lg"
-            variant="outline"
+      <div
+        className={
+          stacked
+            ? "flex flex-col gap-2"
+            : "flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center"
+        }
+      >
+        {tel && phone && (
+          <a
+            href={tel}
             className={
               onDark
-                ? "h-12 w-full min-h-12 border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground sm:w-auto"
-                : "h-12 w-full min-h-12 sm:w-auto"
+                ? "inline-flex h-12 min-h-12 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-primary-foreground/85 underline-offset-4 hover:underline"
+                : "inline-flex h-12 min-h-12 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
             }
           >
             <Phone className="h-4 w-4" />
             Call {phone}
-          </Button>
-        </a>
-      )}
-      <Link
-        to="/login"
-        search={{ mode: "signup" }}
-        className="w-full sm:w-auto"
-      >
-        <Button
-          size="lg"
-          variant="ghost"
+          </a>
+        )}
+        <Link
+          to="/login"
+          search={{ mode: "signup" }}
           className={
             onDark
-              ? "h-12 w-full min-h-12 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground sm:w-auto"
-              : "h-12 w-full min-h-12 sm:w-auto"
+              ? "inline-flex h-12 min-h-12 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-primary-foreground/85 underline-offset-4 hover:underline"
+              : "inline-flex h-12 min-h-12 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           }
         >
           {CTA_START_FREE}
           <ArrowRight className="h-4 w-4" />
-        </Button>
-      </Link>
+        </Link>
+      </div>
     </div>
   );
 }

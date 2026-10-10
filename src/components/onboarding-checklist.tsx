@@ -102,7 +102,36 @@ export function OnboardingChecklist({
   const doneCount = steps.filter((s) => s.done).length;
   const allDone = doneCount === steps.length;
 
-  if (dismissedChecklist || allDone) return null;
+  if (dismissedChecklist) return null;
+
+  if (allDone) {
+    return (
+      <Card className="mb-6 border-success/30 bg-success/5">
+        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-2">
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                Setup complete
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Your institute basics are in place — students, batches,
+                attendance and fees are ready to run.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0 self-start sm:self-center"
+            onClick={dismissChecklist}
+          >
+            Got it
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="mb-6 border-primary/25 bg-gradient-to-br from-primary/5 via-transparent to-transparent">

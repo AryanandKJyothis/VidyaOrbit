@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { formatUserError } from "@/lib/format-error";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/empty-state";
+import { QueryErrorState } from "@/components/query-state";
 
 export const Route = createFileRoute("/_authenticated/attendance")({
   component: AttendancePage,
@@ -202,6 +203,25 @@ function AttendancePage() {
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-96 w-full" />
         </div>
+      </div>
+    );
+  }
+
+  if (batches.isError || students.isError) {
+    return (
+      <div className="pb-24 md:pb-6">
+        <PageHeader
+          title="Attendance"
+          description="Mark daily attendance — optimised for phones and tablets."
+        />
+        <QueryErrorState
+          error={(batches.error ?? students.error) as Error}
+          title="Failed to load attendance data"
+          onRetry={() => {
+            void qc.invalidateQueries({ queryKey: ["batches"] });
+            void qc.invalidateQueries({ queryKey: ["students"] });
+          }}
+        />
       </div>
     );
   }

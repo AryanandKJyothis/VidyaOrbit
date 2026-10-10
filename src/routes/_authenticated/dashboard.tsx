@@ -33,6 +33,7 @@ import {
   QueryErrorState,
   QueryLoadingSkeleton,
 } from "@/components/query-state";
+import { EmptyState } from "@/components/empty-state";
 import {
   useStudents,
   useBatches,
@@ -41,6 +42,7 @@ import {
 } from "@/hooks/use-data";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR, formatDate } from "@/lib/format";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { SetupPrompt } from "@/components/setup-prompt";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
@@ -51,6 +53,7 @@ import { OverLimitBanner } from "@/components/over-limit-banner";
 import { ExpiryBanner } from "@/components/expiry-banner";
 import { WelcomeBackBanner } from "@/components/welcome-back-banner";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
+import { useOnboarding } from "@/hooks/use-onboarding";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -65,8 +68,10 @@ function Dashboard() {
   const students = useStudents();
   const batches = useBatches();
   const payments = usePayments();
+  const qc = useQueryClient();
   const { active } = useActiveWorkspace();
   const canViewFees = useCan("fees", "read");
+  const { dismissedChecklist } = useOnboarding();
   const { reducedMotion } = usePrefers();
   const itemTransition = reducedMotion ? fadeOnly : springDefault;
 
@@ -283,6 +288,26 @@ function Dashboard() {
         duesWeekAmount={stats.duesWeekAmount}
       />
 
+      {!loading &&
+        dismissedChecklist &&
+        !students.isError &&
+        stats.totalStudents === 0 &&
+        (batches.data?.length ?? 0) === 0 && (
+          <EmptyState
+            className="mb-6"
+            icon={Users}
+            title="Your institute is ready"
+            description="Add a batch, then enrol students. The dashboard fills in as you run attendance and collect fees."
+          >
+            <Button asChild>
+              <Link to="/batches">Create a batch</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/students">Add students</Link>
+            </Button>
+          </EmptyState>
+        )}
+
       {!loading && (
         <DashboardSpotlight
           overdueCount={stats.overdue.length}
@@ -318,6 +343,11 @@ function Dashboard() {
                   : (payments.error as Error)
             }
             title="Failed to load statistics"
+            onRetry={() => {
+              void qc.invalidateQueries({ queryKey: ["students"] });
+              void qc.invalidateQueries({ queryKey: ["batches"] });
+              void qc.invalidateQueries({ queryKey: ["payments"] });
+            }}
           />
         ) : (
           <>
@@ -389,7 +419,12 @@ function Dashboard() {
             </CardHeader>
             <CardContent>
               {payments.isError ? (
-                <QueryErrorState error={payments.error as Error} />
+                <QueryErrorState
+                  error={payments.error as Error}
+                  onRetry={() =>
+                    qc.invalidateQueries({ queryKey: ["payments"] })
+                  }
+                />
               ) : payments.isLoading ? (
                 <QueryLoadingSkeleton
                   count={1}
@@ -501,7 +536,9 @@ function Dashboard() {
               <QueryLoadingSkeleton count={3} className="h-14" />
             ) : stats.todaysBatches.length === 0 ? (
               <div className="rounded-lg border border-dashed border-subtle p-5 text-center text-xs sm:text-sm text-muted-foreground">
-                No classes scheduled today. Enjoy the break! ☕
+                {(batches.data ?? []).length === 0
+                  ? "No batches yet — create one to schedule classes."
+                  : "No classes scheduled for today."}
               </div>
             ) : (
               stats.todaysBatches.slice(0, 5).map((b, i) => {
@@ -579,7 +616,9 @@ function Dashboard() {
             <CardContent className="space-y-2">
               {stats.overdue.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-subtle p-5 text-center text-xs sm:text-sm text-muted-foreground">
-                  No overdue dues. 🎉
+                  {stats.totalStudents === 0
+                    ? "Add students with fee totals to track dues here."
+                    : "No overdue dues right now."}
                 </div>
               ) : (
                 stats.overdue.slice(0, 6).map((s, i) => {
@@ -634,7 +673,15 @@ function Dashboard() {
             </CardHeader>
             <CardContent>
               {(payments.data?.length ?? 0) === 0 ? (
-                <EmptyHint text="No payments recorded yet." />
+                <EmptyState
+                  className="border-0 bg-transparent py-8"
+                  title="No payments yet"
+                  description="Record the first fee collection to see receipts and recent activity here."
+                >
+                  <Button asChild size="sm">
+                    <Link to="/fees">Record a payment</Link>
+                  </Button>
+                </EmptyState>
               ) : (
                 <div className="divide-y divide-border space-y-1">
                   {payments.data!.slice(0, 6).map((p) => (
@@ -664,14 +711,6 @@ function Dashboard() {
           </Card>
         </div>
       )}
-    </div>
-  );
-}
-
-function EmptyHint({ text }: { text: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-subtle p-8 text-center">
-      <p className="text-sm text-muted-foreground">{text}</p>
     </div>
   );
 }

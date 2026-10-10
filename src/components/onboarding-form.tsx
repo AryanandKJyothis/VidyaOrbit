@@ -3,6 +3,7 @@ import { Loader2, CheckCircle2, ArrowRight } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { OnboardingPhoneInput } from "./onboarding-phone-input";
 import { cn } from "@/lib/utils";
@@ -243,30 +244,60 @@ export function OnboardingForm({
                       )}
                     </Label>
 
-                    <Input
-                      id={field.id}
-                      type={field.type}
-                      required={field.required}
-                      minLength={field.minLength}
-                      value={value}
-                      onChange={(e) =>
-                        handleFieldChange(field.id, e.target.value)
-                      }
-                      onBlur={() => handleFieldBlur(field.id)}
-                      placeholder={field.placeholder}
-                      autoComplete={field.autoComplete}
-                      className={cn(
-                        "transition-all duration-200",
-                        isTouched &&
-                          error &&
-                          "border-destructive/50 bg-destructive/5 focus:ring-destructive/30",
-                        isComplete &&
-                          "border-success/50 bg-success/5 focus:ring-success/30",
-                      )}
-                      aria-invalid={isTouched && !!error}
-                      aria-describedby={error ? `${field.id}-error` : undefined}
-                      disabled={isSubmitting || isLoading}
-                    />
+                    {field.type === "password" ? (
+                      <PasswordInput
+                        id={field.id}
+                        required={field.required}
+                        minLength={field.minLength}
+                        value={value}
+                        onChange={(e) =>
+                          handleFieldChange(field.id, e.target.value)
+                        }
+                        onBlur={() => handleFieldBlur(field.id)}
+                        placeholder={field.placeholder}
+                        autoComplete={field.autoComplete}
+                        className={cn(
+                          "transition-all duration-200",
+                          isTouched &&
+                            error &&
+                            "border-destructive/50 bg-destructive/5 focus:ring-destructive/30",
+                          isComplete &&
+                            "border-success/50 bg-success/5 focus:ring-success/30",
+                        )}
+                        aria-invalid={isTouched && !!error}
+                        aria-describedby={
+                          error ? `${field.id}-error` : undefined
+                        }
+                        disabled={isSubmitting || isLoading}
+                      />
+                    ) : (
+                      <Input
+                        id={field.id}
+                        type={field.type}
+                        required={field.required}
+                        minLength={field.minLength}
+                        value={value}
+                        onChange={(e) =>
+                          handleFieldChange(field.id, e.target.value)
+                        }
+                        onBlur={() => handleFieldBlur(field.id)}
+                        placeholder={field.placeholder}
+                        autoComplete={field.autoComplete}
+                        className={cn(
+                          "transition-all duration-200",
+                          isTouched &&
+                            error &&
+                            "border-destructive/50 bg-destructive/5 focus:ring-destructive/30",
+                          isComplete &&
+                            "border-success/50 bg-success/5 focus:ring-success/30",
+                        )}
+                        aria-invalid={isTouched && !!error}
+                        aria-describedby={
+                          error ? `${field.id}-error` : undefined
+                        }
+                        disabled={isSubmitting || isLoading}
+                      />
+                    )}
 
                     {/* Error Message */}
                     <AnimatePresence mode="wait">

@@ -43,6 +43,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/empty-state";
+import { QueryErrorState } from "@/components/query-state";
 import { formatUserError } from "@/lib/format-error";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
 
@@ -159,6 +160,12 @@ function BatchesPage() {
             <Skeleton key={i} className="h-44" />
           ))}
         </div>
+      ) : batches.isError ? (
+        <QueryErrorState
+          error={batches.error as Error}
+          title="Failed to load batches"
+          onRetry={() => qc.invalidateQueries({ queryKey: ["batches"] })}
+        />
       ) : (batches.data ?? []).length === 0 ? (
         <EmptyState
           icon={Layers}
