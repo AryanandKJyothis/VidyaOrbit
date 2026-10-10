@@ -150,7 +150,7 @@ function MobileNav() {
               >
                 <Icon
                   className={cn(
-                    "h-5 w-5 transition-all duration-200",
+                    "h-5 w-5 transition-colors duration-150 [transition-timing-function:var(--ease-out)]",
                     active ? "text-brand-teal" : "text-muted-foreground",
                   )}
                   aria-hidden

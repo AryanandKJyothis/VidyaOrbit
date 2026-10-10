@@ -36,11 +36,9 @@ export function LandingPage() {
         <ProofStrip />
         <section
           id="product"
-          className="mx-auto max-w-5xl px-4 pb-10 sm:px-6 sm:pb-16"
+          className="mx-auto max-w-5xl scroll-mt-28 px-4 pb-10 sm:px-6 sm:pb-16"
         >
-          <Reveal>
-            <ProductPreviews />
-          </Reveal>
+          <ProductPreviews />
         </section>
         <Benefits />
         <Setup />
@@ -211,7 +209,7 @@ function Benefits() {
   return (
     <section
       id="benefits"
-      className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20"
+      className="mx-auto max-w-6xl scroll-mt-28 px-4 py-14 sm:px-6 sm:py-20"
     >
       <Reveal className="mx-auto max-w-[680px] text-center">
         <h2 className="font-display text-3xl font-bold tracking-[-0.022em] sm:text-4xl">
@@ -270,7 +268,10 @@ function Setup() {
     },
   ];
   return (
-    <section id="setup" className="border-y border-border/50 bg-card/40">
+    <section
+      id="setup"
+      className="scroll-mt-28 border-y border-border/50 bg-card/40"
+    >
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
         <Reveal className="mx-auto max-w-[680px] text-center">
           <h2 className="font-display text-3xl font-bold tracking-[-0.022em] sm:text-4xl">
@@ -306,7 +307,10 @@ function Setup() {
 
 function Pricing() {
   return (
-    <section id="pricing" className="border-t border-border/50 bg-card/40">
+    <section
+      id="pricing"
+      className="scroll-mt-28 border-t border-border/50 bg-card/40"
+    >
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-[680px] text-center">
           <h2 className="font-display text-3xl font-bold tracking-[-0.022em] sm:text-4xl">
@@ -331,7 +335,10 @@ function Pricing() {
 
 function FAQ() {
   return (
-    <section id="faq" className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
+    <section
+      id="faq"
+      className="mx-auto max-w-3xl scroll-mt-28 px-4 py-14 sm:px-6 sm:py-20"
+    >
       <h2 className="text-center font-display text-3xl font-bold tracking-[-0.022em] sm:text-4xl">
         Questions owners actually ask
       </h2>
@@ -358,7 +365,7 @@ function CTA() {
   return (
     <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 sm:pb-20">
       <div
-        className="relative overflow-hidden rounded-3xl border border-white/10 p-8 text-center shadow-[var(--shadow-elevated)] sm:p-14"
+        className="relative overflow-hidden rounded-3xl border border-white/10 p-8 text-center shadow-[var(--shadow-elevated)] transition-[transform,box-shadow] duration-300 [transition-timing-function:var(--ease-out)] sm:p-14 [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-0.5 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-[var(--shadow-lift)]"
         style={{
           background:
             "linear-gradient(135deg, color-mix(in oklab, var(--primary) 95%, black), color-mix(in oklab, var(--brand-teal) 35%, var(--primary)))",

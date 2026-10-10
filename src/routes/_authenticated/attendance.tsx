@@ -469,7 +469,7 @@ function ToggleBtn({
       aria-label={label}
       title={label}
       className={cn(
-        "flex flex-1 sm:flex-none sm:h-9 sm:w-9 min-h-[48px] sm:min-h-0 items-center justify-center rounded-xl sm:rounded-lg border transition-all duration-150 touch-manipulation active:scale-[0.98]",
+        "flex flex-1 sm:flex-none sm:h-9 sm:w-9 min-h-[48px] sm:min-h-0 items-center justify-center rounded-xl sm:rounded-lg border transition-[transform,background-color,border-color,color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)] touch-manipulation active:scale-[0.98] motion-reduce:active:scale-100",
         active
           ? `${tones[tone]} shadow-sm ring-2 ring-offset-2 ring-offset-background ring-current/25`
           : "border-border text-muted-foreground hover:bg-muted",
