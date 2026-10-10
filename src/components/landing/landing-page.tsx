@@ -3,6 +3,7 @@ import { ArrowRight, Check, MessageCircle, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductPreviews } from "@/components/landing/product-previews";
 import { Reveal } from "@/components/landing/reveal";
+import { TaglineReveal } from "@/components/landing/tagline-reveal";
 import { PublicPricingGrid } from "@/components/public/pricing-grid";
 import { SiteFooter } from "@/components/public/site-footer";
 import { SiteHeader } from "@/components/public/site-header";
@@ -21,7 +22,6 @@ import {
   HERO_EYEBROW,
   HERO_MALAYALAM,
   HERO_SUB,
-  HERO_TITLE,
   WHATSAPP_PREFILL,
 } from "@/lib/landing-copy";
 import { LANDING_FAQS } from "@/lib/public-faqs";
@@ -33,6 +33,7 @@ export function LandingPage() {
       <SiteHeader />
       <main id="main-content">
         <Hero />
+        <ProofStrip />
         <section
           id="product"
           className="mx-auto max-w-5xl px-4 pb-10 sm:px-6 sm:pb-16"
@@ -41,9 +42,15 @@ export function LandingPage() {
             <ProductPreviews />
           </Reveal>
         </section>
+        <Benefits />
         <Setup />
-        <Pains />
-        <Features />
+        <TaglineReveal
+          lines={[
+            "We set everything up for you,",
+            "zero headache.",
+            HERO_MALAYALAM,
+          ]}
+        />
         <Pricing />
         <FAQ />
         <CTA />
@@ -79,7 +86,7 @@ function HeroCtas({
           <Button
             size="lg"
             variant={onDark ? "secondary" : "default"}
-            className="h-12 w-full min-h-12 sm:w-auto"
+            className="h-12 w-full min-h-12 text-base font-semibold sm:w-auto"
           >
             <MessageCircle className="h-4 w-4" />
             {CTA_WHATSAPP}
@@ -134,29 +141,112 @@ function Hero() {
             "radial-gradient(60% 50% at 20% 0%, color-mix(in oklab, var(--brand-teal) 18%, transparent), transparent 70%), radial-gradient(45% 40% at 90% 10%, color-mix(in oklab, var(--brand-saffron) 16%, transparent), transparent 70%)",
         }}
       />
-      <div className="mx-auto max-w-6xl px-4 pb-10 pt-8 sm:px-6 sm:pb-16 sm:pt-16">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center rounded-full border border-border/80 bg-card/80 px-3 py-1 text-xs font-medium tracking-[0.01em] text-muted-foreground shadow-[var(--shadow-xs)]">
+      <div className="mx-auto max-w-6xl px-4 pb-8 pt-6 sm:px-6 sm:pb-12 sm:pt-10">
+        <div className="mx-auto max-w-[680px] text-center">
+          <p className="text-xs font-medium tracking-[0.04em] text-muted-foreground">
             {HERO_EYEBROW}
-          </span>
-          <h1 className="font-display mt-5 text-[1.75rem] font-bold leading-[1.08] tracking-[-0.032em] sm:text-5xl md:text-6xl">
-            {HERO_TITLE}
+          </p>
+          <h1 className="hero-heading-gradient font-display mt-4 text-4xl font-bold leading-none tracking-[-0.03em] sm:text-5xl md:text-6xl">
+            We set everything up for you,
+            <br className="hidden sm:block" /> zero headache.
           </h1>
           <p
             lang="ml"
-            className="mt-3 text-sm leading-[1.75] text-muted-foreground sm:text-base"
+            className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base"
           >
             {HERO_MALAYALAM}
           </p>
-          <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-lg">
+          <p className="mx-auto mt-4 max-w-[680px] text-base leading-relaxed text-muted-foreground sm:text-lg">
             {HERO_SUB}
           </p>
           <HeroCtas />
-          <p className="mt-4 text-xs tracking-[0.01em] text-muted-foreground">
-            {FOUNDER_LINE}
-          </p>
         </div>
       </div>
+    </section>
+  );
+}
+
+function ProofStrip() {
+  return (
+    <section
+      aria-label="Founder proof"
+      className="mx-auto max-w-3xl px-4 pb-8 text-center sm:px-6"
+    >
+      <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+        {FOUNDER_LINE}
+      </p>
+      <p className="mt-2 text-xs text-muted-foreground">
+        Free for up to 25 students. Cancel anytime.{" "}
+        <Link
+          to="/terms"
+          hash="refund"
+          className="font-medium text-foreground underline-offset-4 hover:underline"
+        >
+          Refunds &amp; cancellations
+        </Link>
+      </p>
+    </section>
+  );
+}
+
+function Benefits() {
+  const items = [
+    {
+      title: "See who hasn't paid this month",
+      body: "Open Fees, filter overdue, record cash or UPI, then share a numbered receipt the way you already do on WhatsApp.",
+    },
+    {
+      title: "Mark a batch on your phone in a few taps",
+      body: "Present, late or absent for the whole class. A student's last 28 days sits on their profile when a parent asks.",
+    },
+    {
+      title: "One roster for students, batches and staff",
+      body: "Name, parent phone, fee total and due date in one place. Invite tutors with a link and only the screens they need.",
+    },
+    {
+      title: "Import from Excel without pasting cells",
+      body: "Upload .xlsx, .xls or .csv. We map names, batches and fees with you on the setup call.",
+    },
+  ];
+  return (
+    <section
+      id="benefits"
+      className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20"
+    >
+      <Reveal className="mx-auto max-w-[680px] text-center">
+        <h2 className="font-display text-3xl font-bold tracking-[-0.022em] sm:text-4xl">
+          Outcomes for the centre owner, not a tech team
+        </h2>
+        <p className="mt-3 text-muted-foreground">
+          If parents keep asking who paid and attendance lives in a notebook,
+          this is for you.
+        </p>
+      </Reveal>
+      <Reveal>
+        <div className="mt-10 grid gap-6 sm:grid-cols-2">
+          {items.map((f) => (
+            <div key={f.title} className="flex gap-3">
+              <div
+                className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                style={{
+                  background:
+                    "color-mix(in oklab, var(--brand-teal) 18%, transparent)",
+                }}
+              >
+                <Check className="h-4 w-4 text-[color:var(--brand-teal)]" />
+              </div>
+              <div>
+                <h3 className="font-display text-lg font-semibold">
+                  {f.title}
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  {f.body}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Reveal>
     </section>
   );
 }
@@ -166,43 +256,35 @@ function Setup() {
     {
       n: "1",
       t: "We import your students",
-      d: "Upload your Excel or CSV file (.xlsx, .xls or .csv). We map names, batches and fees for you.",
+      d: "Upload your Excel or CSV file. We map names, batches and fees for you.",
     },
     {
       n: "2",
-      t: "We set up batches and fees",
-      d: "Timings, due dates and who still owes — ready before you mark the first class.",
+      t: "We set up batches, fees and staff",
+      d: "Timings, due dates, who still owes, and tutor logins with the right access.",
     },
     {
       n: "3",
-      t: "We add your staff",
-      d: "Tutors get a login with the right access. Billing stays with you.",
-    },
-    {
-      n: "4",
-      t: "30-minute training",
-      d: "Aryanand walks you through attendance, recording a payment, and sending a receipt on WhatsApp.",
+      t: "30 minute training",
+      d: "Aryanand walks you through attendance, recording a payment, and sending a receipt.",
     },
   ];
   return (
     <section id="setup" className="border-y border-border/50 bg-card/40">
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
-        <Reveal className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-[680px] text-center">
           <h2 className="font-display text-3xl font-bold tracking-[-0.022em] sm:text-4xl">
             You teach. We set the software up.
           </h2>
           <p className="mt-3 text-muted-foreground">
-            This is the same setup Aryanand does after a sales call — not a
-            self-serve maze.
+            The same setup Aryanand does after a sales call, not a self serve
+            maze.
           </p>
         </Reveal>
         <Reveal>
-          <ol className="mt-10 grid gap-4 sm:grid-cols-2">
+          <ol className="mt-10 grid gap-6 md:grid-cols-3">
             {steps.map((s) => (
-              <li
-                key={s.n}
-                className="flex gap-4 rounded-2xl border border-border/80 bg-card p-5 shadow-[var(--shadow-card)]"
-              >
+              <li key={s.n} className="flex gap-4 md:flex-col md:gap-3">
                 <div
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-lg font-bold text-primary-foreground"
                   style={{ background: "var(--primary)" }}
@@ -222,129 +304,11 @@ function Setup() {
   );
 }
 
-function Pains() {
-  const items = [
-    {
-      pain: "Parents keep asking on WhatsApp who has paid.",
-      fix: "Open Fees, tap Overdue, see who still owes this month — then share a numbered receipt the way you already do on WhatsApp.",
-    },
-    {
-      pain: "Attendance lives in a notebook nobody can find.",
-      fix: "Pick a batch on your phone, tap present / late / absent, save. A student's last 28 days is on their profile when a parent asks.",
-    },
-    {
-      pain: "Batches, fees and staff are in three different places.",
-      fix: "One login for you. Staff get their own login with only the screens they need.",
-    },
-  ];
-  return (
-    <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
-      <Reveal className="mx-auto max-w-2xl text-center">
-        <h2 className="font-display text-3xl font-bold tracking-[-0.022em] sm:text-4xl">
-          Built for the centre owner, not a tech team.
-        </h2>
-        <p className="mt-3 text-muted-foreground">
-          If this is your Tuesday, Vidya Orbit is for you.
-        </p>
-      </Reveal>
-      <Reveal>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {items.map((it) => (
-            <div
-              key={it.pain}
-              className="rounded-2xl border border-border/80 bg-card p-6 shadow-[var(--shadow-card)]"
-            >
-              <p className="text-sm font-semibold text-[color:var(--brand-coral)]">
-                The problem
-              </p>
-              <p className="mt-1 text-base font-medium">{it.pain}</p>
-              <div className="my-4 h-px bg-border" />
-              <p className="text-sm font-semibold text-[color:var(--brand-teal)]">
-                In the app
-              </p>
-              <p className="mt-1 text-base text-muted-foreground">{it.fix}</p>
-            </div>
-          ))}
-        </div>
-      </Reveal>
-    </section>
-  );
-}
-
-function Features() {
-  const features = [
-    {
-      title: "Who hasn't paid",
-      body: "Filter overdue, pending or paid. Record cash, UPI or bank. Export dues if you still like a spreadsheet.",
-    },
-    {
-      title: "Attendance on your phone",
-      body: "Mark a whole batch in a few taps. All present, then fix the absentees. Built for a busy evening class.",
-    },
-    {
-      title: "Students and batches",
-      body: "Name, parent phone, batch, fee total and due date in one roster. Search instead of scrolling WhatsApp.",
-    },
-    {
-      title: "Numbered receipts",
-      body: "Centre name on the receipt. Print or save as PDF from the browser, then send it yourself on WhatsApp.",
-    },
-    {
-      title: "Excel / CSV import",
-      body: "Upload .xlsx, .xls or .csv. We do not ask you to paste rows. A template is in the app if you want to tidy the sheet first.",
-    },
-    {
-      title: "Staff logins",
-      body: "Invite a tutor with a link. You choose whether they can see fees. Your login stays the owner login.",
-    },
-  ];
-  return (
-    <section
-      id="features"
-      className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20"
-    >
-      <Reveal className="mx-auto max-w-2xl text-center">
-        <h2 className="font-display text-3xl font-bold tracking-[-0.022em] sm:text-4xl">
-          What you get on day one
-        </h2>
-        <p className="mt-3 text-muted-foreground">
-          Only what the app does today. Charts of collections sit on Starter and
-          above.
-        </p>
-      </Reveal>
-      <Reveal>
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className="rounded-2xl border border-border/80 bg-card p-6 shadow-[var(--shadow-card)]"
-            >
-              <div
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl"
-                style={{
-                  background:
-                    "color-mix(in oklab, var(--brand-teal) 18%, transparent)",
-                }}
-              >
-                <Check className="h-5 w-5 text-[color:var(--brand-teal)]" />
-              </div>
-              <h3 className="mt-4 font-display text-lg font-semibold">
-                {f.title}
-              </h3>
-              <p className="mt-1.5 text-sm text-muted-foreground">{f.body}</p>
-            </div>
-          ))}
-        </div>
-      </Reveal>
-    </section>
-  );
-}
-
 function Pricing() {
   return (
     <section id="pricing" className="border-t border-border/50 bg-card/40">
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
-        <div className="mx-auto max-w-2xl text-center">
+        <div className="mx-auto max-w-[680px] text-center">
           <h2 className="font-display text-3xl font-bold tracking-[-0.022em] sm:text-4xl">
             Start free. Pay when you grow.
           </h2>
@@ -353,7 +317,8 @@ function Pricing() {
             <Link to="/pricing" className="underline underline-offset-2">
               pricing page
             </Link>
-            . Paid plans by invoice; online payment is coming soon.
+            . Free plan, no card required. Paid plans by invoice; cancel
+            anytime.
           </p>
         </div>
         <div className="mt-12">
@@ -373,9 +338,9 @@ function FAQ() {
       <div className="mt-10 divide-y divide-border/80 rounded-2xl border border-border/80 bg-card shadow-[var(--shadow-card)]">
         {LANDING_FAQS.map((f) => (
           <details key={f.q} className="group p-5">
-            <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg font-medium transition-colors duration-100 hover:text-foreground [-webkit-tap-highlight-color:transparent]">
+            <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg font-medium transition-colors duration-150 [transition-timing-function:var(--ease-out)] hover:text-foreground [-webkit-tap-highlight-color:transparent]">
               {f.q}
-              <span className="ml-4 text-muted-foreground transition-transform duration-200 ease-out group-open:rotate-45 motion-reduce:transition-none motion-reduce:group-open:rotate-0">
+              <span className="ml-4 text-muted-foreground transition-transform duration-200 [transition-timing-function:var(--ease-out)] group-open:rotate-45 motion-reduce:transition-none motion-reduce:group-open:rotate-0">
                 +
               </span>
             </summary>

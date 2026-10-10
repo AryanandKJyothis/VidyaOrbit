@@ -86,8 +86,21 @@ const DialogContent = React.forwardRef<
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
               <motion.div
                 className="pointer-events-auto w-full max-w-lg"
-                initial={reducedMotion ? { opacity: 1 } : { scale: 0.96 }}
-                animate={{ scale: 1 }}
+                initial={
+                  reducedMotion
+                    ? { opacity: 1 }
+                    : { opacity: 0, transform: "scale(0.96)" }
+                }
+                animate={
+                  reducedMotion
+                    ? { opacity: 1 }
+                    : { opacity: 1, transform: "scale(1)" }
+                }
+                exit={
+                  reducedMotion
+                    ? { opacity: 0 }
+                    : { opacity: 0, transform: "scale(0.96)" }
+                }
                 transition={transition}
               >
                 <DialogPrimitive.Content

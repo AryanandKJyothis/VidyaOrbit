@@ -25,12 +25,16 @@ export function Reveal({
     <motion.div
       ref={ref}
       className={cn(className)}
-      initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 14 }}
+      initial={
+        reducedMotion
+          ? { opacity: 0 }
+          : { opacity: 0, transform: "translateY(40px)" }
+      }
       animate={
         inView
           ? reducedMotion
             ? { opacity: 1 }
-            : { opacity: 1, y: 0 }
+            : { opacity: 1, transform: "translateY(0px)" }
           : undefined
       }
       transition={{

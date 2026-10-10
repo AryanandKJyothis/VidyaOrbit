@@ -53,6 +53,18 @@ export const LANDING_FAQS: FaqItem[] = [
     q: "Can I move from Excel?",
     a: "Yes — upload a .xlsx, .xls or .csv file. Pasting cells is not supported. The import template includes English and Malayalam instructions. We usually do this with you on the setup call.",
   },
+  {
+    q: "Can I cancel anytime?",
+    a: "Yes. Contact us and we adjust your plan. Your account reverts to Free; existing data stays accessible. Fees already paid are non-refundable except where required by law.",
+  },
+  {
+    q: "Do I need a credit card to start?",
+    a: "No. The Free plan supports up to 25 students with no card required. Use it as long as you like.",
+  },
+  {
+    q: "Will my staff see fees?",
+    a: "Only if you grant fees access. Invite tutors with a join link and choose the screens they can open. Billing stays with the owner login.",
+  },
 ];
 
 export const PRICING_FAQS: FaqItem[] = [
