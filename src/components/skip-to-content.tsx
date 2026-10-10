@@ -2,11 +2,7 @@
  * First focusable control for keyboard / screen-reader users so sticky
  * chrome doesn't trap them. Checklist Design accessibility baseline.
  */
-export function SkipToContent({
-  href = "#main-content",
-}: {
-  href?: string;
-}) {
+export function SkipToContent({ href = "#main-content" }: { href?: string }) {
   return (
     <a
       href={href}
