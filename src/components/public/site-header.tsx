@@ -20,11 +20,24 @@ import { easeDrawer, fadeOnly, springSnappy } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const LANDING_LINKS = [
-  { href: "#product", label: "The app" },
-  { href: "#setup", label: "How we set you up" },
-  { href: "#benefits", label: "Benefits" },
-  { href: "#faq", label: "FAQ" },
+  { hash: "product", label: "The app" },
+  { hash: "setup", label: "How we set you up" },
+  { hash: "benefits", label: "Benefits" },
+  { hash: "faq", label: "FAQ" },
 ] as const;
+
+function scrollToHash(hash: string, smooth: boolean) {
+  const el = document.getElementById(hash);
+  if (!el) return;
+  el.scrollIntoView({
+    behavior: smooth ? "smooth" : "auto",
+    block: "start",
+  });
+  // Keep the URL in sync without a router round-trip fighting scroll.
+  if (window.location.hash !== `#${hash}`) {
+    history.replaceState(null, "", `#${hash}`);
+  }
+}
 
 export function SiteHeader({
   nav = "landing",
@@ -51,6 +64,12 @@ export function SiteHeader({
     };
   }, [open]);
 
+  const onSectionNav = (hash: string) => {
+    setOpen(false);
+    // Wait a tick so the mobile drawer unmounts before measuring scroll.
+    requestAnimationFrame(() => scrollToHash(hash, !reducedMotion));
+  };
+
   return (
     <>
       <div className="pointer-events-none sticky top-0 z-40 px-4 pt-4 sm:px-6 sm:pt-6">
@@ -73,13 +92,23 @@ export function SiteHeader({
             {nav === "landing" ? (
               <>
                 {LANDING_LINKS.map((l) => (
-                  <a
-                    key={l.href}
-                    href={l.href}
+                  <Link
+                    key={l.hash}
+                    to="/"
+                    hash={l.hash}
+                    hashScrollIntoView={{
+                      behavior: reducedMotion ? "instant" : "smooth",
+                      block: "start",
+                    }}
                     className="rounded-full px-2.5 py-1.5 transition-[color,background-color] duration-150 [transition-timing-function:var(--ease-out)] hover:bg-muted/70 hover:text-foreground"
+                    onClick={(e) => {
+                      // Same-route hash: ensure scroll even if the router no-ops.
+                      e.preventDefault();
+                      onSectionNav(l.hash);
+                    }}
                   >
                     {l.label}
-                  </a>
+                  </Link>
                 ))}
                 <Link
                   to="/pricing"
@@ -200,7 +229,7 @@ export function SiteHeader({
                   <>
                     {LANDING_LINKS.map((l, i) => (
                       <motion.li
-                        key={l.href}
+                        key={l.hash}
                         initial={
                           reducedMotion ? { opacity: 0 } : { opacity: 0, y: 48 }
                         }
@@ -211,9 +240,12 @@ export function SiteHeader({
                         }}
                       >
                         <a
-                          href={l.href}
+                          href={`#${l.hash}`}
                           className="block rounded-2xl px-3 py-3 font-display text-2xl font-semibold tracking-tight"
-                          onClick={() => setOpen(false)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            onSectionNav(l.hash);
+                          }}
                         >
                           {l.label}
                         </a>

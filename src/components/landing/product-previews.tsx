@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils";
 
 /**
  * Capture assets are 780px-wide lossy WebPs of phone UI.
- * Display at ≤390 CSS px so retina (2×) stays sharp — never stretch to 780.
+ * Display well under half that width so retina (2×) stays sharp — never
+ * stretch toward the capture width (that is what made desktop look soft).
  */
-const FRAME_CSS_PX = 360;
+const FRAME_CSS_PX = 300;
 
 const PREVIEWS = [
   {
