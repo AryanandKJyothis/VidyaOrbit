@@ -84,11 +84,24 @@ const sheetFrame = {
   right: "inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
 } as const;
 
+/** Full transform strings stay hardware-accelerated under load (animate skill). */
 const sheetMotion = {
-  top: { hidden: { y: "-100%" }, visible: { y: 0 } },
-  bottom: { hidden: { y: "100%" }, visible: { y: 0 } },
-  left: { hidden: { x: "-100%" }, visible: { x: 0 } },
-  right: { hidden: { x: "100%" }, visible: { x: 0 } },
+  top: {
+    hidden: { transform: "translateY(-100%)" },
+    visible: { transform: "translateY(0%)" },
+  },
+  bottom: {
+    hidden: { transform: "translateY(100%)" },
+    visible: { transform: "translateY(0%)" },
+  },
+  left: {
+    hidden: { transform: "translateX(-100%)" },
+    visible: { transform: "translateX(0%)" },
+  },
+  right: {
+    hidden: { transform: "translateX(100%)" },
+    visible: { transform: "translateX(0%)" },
+  },
 } as const;
 
 interface SheetContentProps

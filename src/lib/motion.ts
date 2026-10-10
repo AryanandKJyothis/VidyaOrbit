@@ -37,8 +37,16 @@ export const springMomentum: Transition = {
 export const fadeOnly: Transition = {
   type: "tween",
   duration: 0.2,
-  ease: "easeOut",
+  ease: [0.23, 1, 0.32, 1],
 };
+
+/** Strong ease-out for CSS-style tweens (Emil / animate tables). */
+export const easeOutStrong = [0.23, 1, 0.32, 1] as const;
+export const easeInOutStrong = [0.77, 0, 0.175, 1] as const;
+export const easeDrawer = [0.32, 0.72, 0, 1] as const;
+
+/** List / section stagger delay between items (30–80ms). */
+export const staggerMs = 48;
 
 export function motionTransition(reduceMotion: boolean): Transition {
   return reduceMotion ? fadeOnly : springDefault;

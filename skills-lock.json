@@ -6,6 +6,26 @@
       "sourceType": "github",
       "skillPath": "skills/checklist-design/SKILL.md",
       "computedHash": "bdc483ed88370fcfdc2036965ab06ce4f5e0bef24991cd53e32f59c201b9e63d"
+    },
+    "emil-design-eng": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/emil-design-eng/SKILL.md"
+    },
+    "animate": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/animate/SKILL.md"
+    },
+    "apple-design": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/apple-design/SKILL.md"
+    },
+    "landing-page-design": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/landing-page-design/SKILL.md"
     }
   }
 }

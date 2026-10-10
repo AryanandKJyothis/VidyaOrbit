@@ -156,7 +156,7 @@ export function StatCard({
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-gradient-to-br from-brand-teal/15 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-70"
+          className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-gradient-to-br from-brand-teal/15 to-transparent opacity-0 transition-opacity duration-200 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-70"
         />
         <CardContent className="relative p-4 sm:p-5 flex flex-col justify-between h-full gap-3">
           <div className="flex items-start justify-between gap-3 min-w-0">

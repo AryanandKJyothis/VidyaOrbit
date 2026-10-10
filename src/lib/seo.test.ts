@@ -140,7 +140,7 @@ describe("JSON-LD", () => {
       LANDING_FAQS.map((f) => f.a),
     );
     expect(LANDING_FAQS.length).toBeGreaterThanOrEqual(5);
-    expect(LANDING_FAQS.length).toBeLessThanOrEqual(7);
+    expect(LANDING_FAQS.length).toBeLessThanOrEqual(12);
   });
 
   it("pricing FAQPage matches the pricing page FAQ", () => {

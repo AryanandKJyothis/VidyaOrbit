@@ -236,7 +236,7 @@ function BatchesPage() {
                       </div>
                       <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
                         <div
-                          className={`h-full rounded-full transition-all duration-500 ${pct >= 90 ? "bg-destructive" : pct >= 70 ? "bg-warning" : "bg-accent"}`}
+                          className={`h-full rounded-full transition-[width,background-color] duration-200 [transition-timing-function:var(--ease-out)] ${pct >= 90 ? "bg-destructive" : pct >= 70 ? "bg-warning" : "bg-accent"}`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
