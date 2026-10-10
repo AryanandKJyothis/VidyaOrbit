@@ -184,6 +184,16 @@
     border-color: var(--color-border);
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
   html,
   body {
     background-color: var(--color-background);
@@ -606,6 +616,17 @@
     transform: translateY(-4px);
     box-shadow: 0 12px 32px -6px oklch(0.28 0.08 260 / 0.2);
   }
+}
+
+/*
+ * Downscaled product screenshots: keep edges crisp when 780px WebPs
+ * render at phone CSS widths (~360px → ~2× on retina).
+ */
+.screenshot {
+  image-rendering: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .card-elevated {

@@ -165,7 +165,7 @@ export function AppSidebar() {
           <div className="px-2 pt-2">
             <Link
               to="/invites"
-              className="flex items-center gap-2 rounded-md border border-sidebar-border/60 bg-sidebar-accent/30 px-2.5 py-2 text-xs hover:bg-sidebar-accent/60"
+              className="flex items-center gap-2 rounded-md border border-sidebar-border/60 bg-sidebar-accent/30 px-2.5 py-2 text-xs transition-[transform,background-color] duration-150 [transition-timing-function:var(--ease-out)] hover:bg-sidebar-accent/60 active:scale-[0.98] motion-reduce:active:scale-100"
             >
               <Mail className="h-3.5 w-3.5" />
               {!collapsed && <span className="flex-1">Pending invites</span>}
@@ -188,11 +188,11 @@ export function AppSidebar() {
                     >
                       <Link
                         to={item.url}
-                        className="group relative flex items-center gap-2.5 transition-colors duration-100 active:scale-[0.98]"
+                        className="group relative flex items-center gap-2.5 transition-[transform,color,background-color] duration-100 [transition-timing-function:var(--ease-out)] active:scale-[0.97] motion-reduce:active:scale-100"
                       >
                         <span
                           className={cn(
-                            "absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-sidebar-primary transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none",
+                            "absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-sidebar-primary transition-[opacity,transform] duration-200 [transition-timing-function:var(--ease-out)] motion-reduce:transition-none",
                             active
                               ? "opacity-100 scale-y-100"
                               : "opacity-0 scale-y-50",
@@ -252,7 +252,7 @@ function PlanBadge() {
   return (
     <Link
       to="/plan"
-      className="mx-1 mb-1 flex items-center justify-between rounded-lg border border-sidebar-border/60 bg-sidebar-accent/30 px-2.5 py-1.5 text-[11px] text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent/60"
+      className="mx-1 mb-1 flex items-center justify-between rounded-lg border border-sidebar-border/60 bg-sidebar-accent/30 px-2.5 py-1.5 text-[11px] text-sidebar-foreground/80 transition-[transform,background-color] duration-150 [transition-timing-function:var(--ease-out)] hover:bg-sidebar-accent/60 active:scale-[0.98] motion-reduce:active:scale-100"
     >
       <span className="uppercase tracking-wider opacity-70">Plan</span>
       <span className="font-semibold">{meta?.name ?? sub.data.plan}</span>
