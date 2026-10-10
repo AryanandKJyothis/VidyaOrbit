@@ -33,10 +33,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session);
       setLoading(false);
 
-      const listener = supabase.auth.onAuthStateChange((_event, nextSession) => {
-        if (!mounted) return;
-        setSession(nextSession);
-      });
+      const listener = supabase.auth.onAuthStateChange(
+        (_event, nextSession) => {
+          if (!mounted) return;
+          setSession(nextSession);
+        },
+      );
       subscription = listener.data.subscription;
     });
 
