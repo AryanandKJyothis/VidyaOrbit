@@ -74,7 +74,7 @@ function TermsPage() {
           </p>
         </Section>
 
-        <Section title="6. Paid subscriptions, billing and refunds">
+        <Section id="refund" title="6. Paid subscriptions, billing and refunds">
           <p>
             Paid plans are arranged directly with us by invoice (monthly or
             annual). Online payment is coming soon. You can request to cancel or
@@ -121,14 +121,16 @@ function TermsPage() {
 }
 
 function Section({
+  id,
   title,
   children,
 }: {
+  id?: string;
   title: string;
   children: React.ReactNode;
 }) {
   return (
-    <section>
+    <section id={id} className={id ? "scroll-mt-24" : undefined}>
       <h2 className="font-display text-lg font-semibold">{title}</h2>
       <div className="mt-2 text-sm leading-relaxed text-muted-foreground">
         {children}

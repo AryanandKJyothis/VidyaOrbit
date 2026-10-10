@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { emailSchema } from "@/lib/validation";
 import { toast } from "sonner";
 import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
+import { SkipToContent } from "@/components/skip-to-content";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => pageHead(PUBLIC_PAGES.forgotPassword),
@@ -39,7 +40,8 @@ function ForgotPassword() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-md">
+      <SkipToContent href="#reset-panel" />
+      <div id="reset-panel" className="w-full max-w-md">
         <div className="mb-8 flex items-center gap-2.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <GraduationCap className="h-5 w-5" />

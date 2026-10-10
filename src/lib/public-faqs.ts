@@ -70,7 +70,11 @@ export const PRICING_FAQS: FaqItem[] = [
   },
   {
     q: "Can I cancel or downgrade?",
-    a: "Yes. Contact us and we'll help you adjust your plan the same day.",
+    a: "Yes. Contact us and we'll help you adjust your plan the same day. Changes take effect at the end of the current billing period where applicable.",
+  },
+  {
+    q: "What is the refund policy?",
+    a: "Because the service is delivered digitally and immediately on payment, fees already paid are non-refundable except where required by law. You can cancel anytime; your account reverts to Free and existing data stays accessible.",
   },
   {
     q: "Is my data safe?",

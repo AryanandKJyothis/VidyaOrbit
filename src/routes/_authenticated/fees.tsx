@@ -33,11 +33,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/empty-state";
+import { QueryErrorState } from "@/components/query-state";
 import { useStudents, useBatches, usePayments } from "@/hooks/use-data";
 import { PaymentDialog } from "@/components/payment-dialog";
 import { formatINR, formatDate } from "@/lib/format";
 import { exportToExcel, exportToCsv } from "@/lib/export";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/fees")({
   component: FeesPage,
@@ -55,6 +57,7 @@ function FeesPageContent() {
   const students = useStudents();
   const batches = useBatches();
   const payments = usePayments();
+  const qc = useQueryClient();
 
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -119,6 +122,10 @@ function FeesPageContent() {
   );
 
   const loading = students.isLoading || batches.isLoading || payments.isLoading;
+  const loadError =
+    students.isError || batches.isError || payments.isError
+      ? ((students.error ?? batches.error ?? payments.error) as Error)
+      : null;
 
   if (loading) {
     return (
@@ -134,6 +141,26 @@ function FeesPageContent() {
         </div>
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="space-y-4">
+        <PageHeader
+          title="Fees"
+          description="Track fee collection and pending dues"
+        />
+        <QueryErrorState
+          error={loadError}
+          title="Failed to load fees"
+          onRetry={() => {
+            void qc.invalidateQueries({ queryKey: ["students"] });
+            void qc.invalidateQueries({ queryKey: ["batches"] });
+            void qc.invalidateQueries({ queryKey: ["payments"] });
+          }}
+        />
       </div>
     );
   }

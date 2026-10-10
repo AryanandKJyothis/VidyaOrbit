@@ -4,9 +4,11 @@ import { z } from "zod";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Mail } from "lucide-react";
+import { SkipToContent } from "@/components/skip-to-content";
 import { Logo } from "@/components/logo";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,6 +63,11 @@ function LoginPage() {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loginErrors, setLoginErrors] = useState<{
+    email?: string;
+    password?: string;
+    form?: string;
+  }>({});
 
   const postLoginPath = joiningTeam
     ? `/invites?token=${encodeURIComponent(invite!)}`
@@ -74,15 +81,30 @@ function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginErrors({});
     const parsed = credentialsSchema.safeParse({ email, password });
-    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+    if (!parsed.success) {
+      const next: { email?: string; password?: string } = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0];
+        if (key === "email" || key === "password") next[key] = issue.message;
+      }
+      setLoginErrors(
+        Object.keys(next).length
+          ? next
+          : { form: parsed.error.issues[0]?.message },
+      );
+      return;
+    }
     setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword(parsed.data);
     setSubmitting(false);
-    if (error)
-      return toast.error(
-        formatUserError(error, "Sign-in failed. Please try again."),
-      );
+    if (error) {
+      setLoginErrors({
+        form: formatUserError(error, "Sign-in failed. Please try again."),
+      });
+      return;
+    }
     toast.success("Welcome back");
     navigate({ to: postLoginPath });
   };
@@ -206,6 +228,7 @@ function LoginPage() {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
+      <SkipToContent href="#auth-panel" />
       <div className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex">
         <div
           className="absolute inset-0 opacity-70"
@@ -255,7 +278,10 @@ function LoginPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center p-6 sm:p-10">
+      <div
+        id="auth-panel"
+        className="flex items-center justify-center p-6 sm:p-10"
+      >
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -339,7 +365,7 @@ function LoginPage() {
                 </>
               )}
 
-              <form onSubmit={handleLogin} className="mt-6 space-y-4">
+              <form onSubmit={handleLogin} className="mt-6 space-y-4" noValidate>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -347,10 +373,35 @@ function LoginPage() {
                     type="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setLoginErrors((prev) => ({
+                        ...prev,
+                        email: undefined,
+                        form: undefined,
+                      }));
+                    }}
                     placeholder="admin@institute.in"
                     autoComplete="email"
+                    aria-invalid={!!loginErrors.email}
+                    aria-describedby={
+                      loginErrors.email ? "login-email-error" : undefined
+                    }
+                    className={
+                      loginErrors.email
+                        ? "border-destructive/50 focus-visible:ring-destructive/30"
+                        : undefined
+                    }
                   />
+                  {loginErrors.email && (
+                    <p
+                      id="login-email-error"
+                      className="text-xs text-destructive"
+                      role="alert"
+                    >
+                      {loginErrors.email}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -362,16 +413,48 @@ function LoginPage() {
                       Forgot password?
                     </Link>
                   </div>
-                  <Input
+                  <PasswordInput
                     id="password"
-                    type="password"
                     required
                     minLength={8}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setLoginErrors((prev) => ({
+                        ...prev,
+                        password: undefined,
+                        form: undefined,
+                      }));
+                    }}
                     autoComplete="current-password"
+                    aria-invalid={!!loginErrors.password}
+                    aria-describedby={
+                      loginErrors.password ? "login-password-error" : undefined
+                    }
+                    className={
+                      loginErrors.password
+                        ? "border-destructive/50 focus-visible:ring-destructive/30"
+                        : undefined
+                    }
                   />
+                  {loginErrors.password && (
+                    <p
+                      id="login-password-error"
+                      className="text-xs text-destructive"
+                      role="alert"
+                    >
+                      {loginErrors.password}
+                    </p>
+                  )}
                 </div>
+                {loginErrors.form && (
+                  <p
+                    className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+                    role="alert"
+                  >
+                    {loginErrors.form}
+                  </p>
+                )}
                 <Button type="submit" disabled={submitting} className="w-full">
                   {submitting && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

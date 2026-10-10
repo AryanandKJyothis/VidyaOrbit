@@ -13,6 +13,7 @@ import { useInstitute } from "@/hooks/use-data";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { LoadingScreen } from "@/components/loading-screen";
+import { SkipToContent } from "@/components/skip-to-content";
 import { WorkspaceProvider } from "@/hooks/use-active-workspace";
 import { usePrefers } from "@/hooks/use-prefers";
 import { fadeOnly, springDefault } from "@/lib/motion";
@@ -37,10 +38,14 @@ function AuthenticatedLayout() {
     <WorkspaceProvider>
       <SidebarProvider>
         <div className="flex min-h-screen w-full bg-background">
+          <SkipToContent />
           <AppSidebar />
           <div className="flex flex-1 flex-col">
             <TopBar />
-            <main className="relative flex flex-1 flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 pb-24 sm:pb-8">
+            <main
+              id="main-content"
+              className="relative flex flex-1 flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 pb-24 sm:pb-8"
+            >
               <div className="flex-1 min-h-0 max-w-7xl mx-auto w-full">
                 <PageTransition />
               </div>

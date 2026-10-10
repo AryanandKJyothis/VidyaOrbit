@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Loader2, CheckCircle2, XCircle, Mail, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Card,
   CardContent,
@@ -332,15 +333,18 @@ function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
         />
       </div>
       <div className="space-y-2">
-        <label className="text-xs font-medium text-muted-foreground">
+        <label
+          htmlFor="join-password"
+          className="text-xs font-medium text-muted-foreground"
+        >
           Password (8+ characters)
         </label>
-        <input
-          type="password"
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+        <PasswordInput
+          id="join-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           minLength={8}
+          autoComplete="current-password"
         />
       </div>
       <div className="grid grid-cols-2 gap-2">

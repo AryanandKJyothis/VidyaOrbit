@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { JsonLd } from "@/components/json-ld";
 import { Button } from "@/components/ui/button";
 import { getContactConfig } from "@/lib/contact-config";
@@ -8,6 +8,7 @@ import { ShieldCheck, MessageCircle, Mail } from "lucide-react";
 import { PublicPricingGrid } from "@/components/public/pricing-grid";
 import { SiteHeader } from "@/components/public/site-header";
 import { SiteFooter } from "@/components/public/site-footer";
+import { SkipToContent } from "@/components/skip-to-content";
 
 const jsonLd = pricingJsonLd();
 
@@ -54,9 +55,10 @@ function PricingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <JsonLd data={jsonLd} />
+      <SkipToContent />
       <SiteHeader nav="pricing" />
 
-      <main>
+      <main id="main-content">
         <section className="relative overflow-hidden">
           <div
             aria-hidden
@@ -84,7 +86,14 @@ function PricingPage() {
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Paid plans are arranged by invoice (monthly or annual). Online
-            payment is coming soon.
+            payment is coming soon.{" "}
+            <Link
+              to="/terms"
+              hash="refund"
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              Refunds &amp; cancellations
+            </Link>
           </p>
 
           <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
