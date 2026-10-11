@@ -53,6 +53,7 @@ function SettingsPageContent() {
     receipt_prefix: "RCT",
     receipt_footer: "",
     logo_url: "",
+    upi_vpa: "",
   });
 
   useEffect(() => {
@@ -65,6 +66,7 @@ function SettingsPageContent() {
         receipt_prefix: inst.data.receipt_prefix ?? "RCT",
         receipt_footer: inst.data.receipt_footer ?? "",
         logo_url: inst.data.logo_url ?? "",
+        upi_vpa: inst.data.upi_vpa ?? "",
       });
   }, [inst.data]);
 
@@ -150,6 +152,22 @@ function SettingsPageContent() {
                   }
                   placeholder="https://..."
                 />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>UPI ID</Label>
+                <Input
+                  value={form.upi_vpa}
+                  onChange={(e) =>
+                    setForm({ ...form, upi_vpa: e.target.value })
+                  }
+                  placeholder="centre@oksbi"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Parents pay this ID directly. VidyaOrbit does not receive the
+                  money.
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label>Receipt prefix</Label>

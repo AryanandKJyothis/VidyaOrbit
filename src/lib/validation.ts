@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { UPI_VPA_PATTERN } from "@/lib/fee-reminder";
 
 const phoneRegex = /^[0-9+\-\s()]{6,20}$/;
 
@@ -154,6 +155,13 @@ export const instituteSchema = z.object({
       .optional(),
   ),
   receipt_footer: nullableText(500),
+  upi_vpa: z.preprocess(
+    coalesceEmptyToNull,
+    z.union([
+      z.null(),
+      z.string().regex(UPI_VPA_PATTERN, "Enter a UPI ID like name@bank"),
+    ]),
+  ),
 });
 
 export const credentialsSchema = z.object({

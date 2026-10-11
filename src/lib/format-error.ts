@@ -25,6 +25,7 @@ const FIELD_LABELS: Record<string, string> = {
   contact_email: "Contact email",
   receipt_prefix: "Receipt prefix",
   receipt_footer: "Receipt footer",
+  upi_vpa: "UPI ID",
   email: "Email",
   password: "Password",
   institute_name: "Institute name",

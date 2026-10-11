@@ -63,6 +63,7 @@ export type Institute = {
   address: string | null;
   receipt_prefix: string;
   receipt_footer: string | null;
+  upi_vpa: string | null;
   currency: string;
   timezone: string;
 };
@@ -190,7 +191,7 @@ export function useInstitute() {
       const { data, error } = await supabase
         .from("institutes")
         .select(
-          "id, owner_id, name, logo_url, contact_phone, contact_email, address, receipt_prefix, receipt_footer, currency, timezone",
+          "id, owner_id, name, logo_url, contact_phone, contact_email, address, receipt_prefix, receipt_footer, upi_vpa, currency, timezone",
         )
         .eq("owner_id", ownerId!)
         .maybeSingle();
