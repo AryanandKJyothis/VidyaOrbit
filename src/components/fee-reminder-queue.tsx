@@ -49,8 +49,8 @@ export function FeeReminderQueue({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md min-w-0 overflow-hidden">
+        <DialogHeader className="min-w-0 pr-8">
           <DialogTitle>Send fee reminders</DialogTitle>
         </DialogHeader>
         {finished ? (
@@ -60,20 +60,20 @@ export function FeeReminderQueue({
               : "Those reminders are ready in WhatsApp."}
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="min-w-0 space-y-3">
             <p className="text-sm text-muted-foreground">
               {index + 1} of {sendable.length} · {current.studentName}
               {current.result.phoneSource === "student"
                 ? " · student phone"
                 : " · guardian phone"}
             </p>
-            <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-muted/50 p-3 text-sm">
+            <div className="max-h-48 min-w-0 overflow-x-hidden overflow-y-auto rounded-lg bg-muted/50 p-3 text-sm whitespace-pre-wrap break-all [overflow-wrap:anywhere]">
               {current.result.message}
-            </pre>
+            </div>
           </div>
         )}
         {skipped.length > 0 && (
-          <ul className="space-y-1 text-xs text-muted-foreground">
+          <ul className="min-w-0 space-y-1 text-xs text-muted-foreground break-words">
             {skipped.map((item) => (
               <li key={item.studentId}>
                 {item.studentName}
@@ -84,7 +84,7 @@ export function FeeReminderQueue({
             ))}
           </ul>
         )}
-        <DialogFooter>
+        <DialogFooter className="min-w-0 flex-wrap gap-2 sm:flex-row sm:justify-end">
           {current && (
             <Button
               type="button"
