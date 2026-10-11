@@ -27,10 +27,14 @@ export function PaymentDialog({
   open,
   onOpenChange,
   defaultStudentId,
+  defaultAmount,
+  defaultMethod = "cash",
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   defaultStudentId?: string;
+  defaultAmount?: number;
+  defaultMethod?: string;
 }) {
   const students = useStudents();
   const mut = useAddPayment();
@@ -48,14 +52,14 @@ export function PaymentDialog({
     if (open) {
       setForm({
         student_id: defaultStudentId ?? "",
-        amount: "",
+        amount: defaultAmount && defaultAmount > 0 ? String(defaultAmount) : "",
         payment_date: new Date().toISOString().slice(0, 10),
-        method: "cash",
+        method: defaultMethod,
         reference: "",
         notes: "",
       });
     }
-  }, [open, defaultStudentId]);
+  }, [open, defaultStudentId, defaultAmount, defaultMethod]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

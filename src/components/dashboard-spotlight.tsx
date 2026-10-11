@@ -44,7 +44,11 @@ type Spotlight = {
   metric: string;
   metricLabel: string;
   icon: LucideIcon;
-  cta: { label: string; to: string };
+  cta: {
+    label: string;
+    to: "/fees" | "/analytics" | "/students";
+    search?: { status: "overdue" };
+  };
   // 0-100, progress toward a "good" state (used for the visual bar)
   progress: number;
   progressHint: string;
@@ -103,7 +107,11 @@ function pickSpotlight(i: SpotlightInput): Spotlight {
       metric: formatINR(i.overdueAmount),
       metricLabel: "Overdue balance",
       icon: AlertTriangle,
-      cta: { label: "Collect dues", to: "/fees" },
+      cta: {
+        label: "Collect dues",
+        to: "/fees",
+        search: { status: "overdue" },
+      },
       progress: 100,
       progressHint: `${i.overdueCount} ${i.overdueCount === 1 ? "case" : "cases"} pending`,
     };
@@ -333,10 +341,17 @@ export function DashboardSpotlight(props: SpotlightInput) {
               </div>
             </div>
             <Button asChild size="sm" className="gap-1.5">
-              <Link to={s.cta.to}>
-                {s.cta.label}
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
+              {s.cta.search ? (
+                <Link to="/fees" search={s.cta.search}>
+                  {s.cta.label}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              ) : (
+                <Link to={s.cta.to}>
+                  {s.cta.label}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              )}
             </Button>
           </div>
         </div>

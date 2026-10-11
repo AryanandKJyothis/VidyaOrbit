@@ -65,9 +65,9 @@ export const LANDING_CLAIMS: LandingClaim[] = [
     source: "src/routes/_authenticated/receipts.$paymentId.tsx window.print()",
   },
   {
-    text: "Students store parent/guardian name and phone; the app does not message parents for you.",
+    text: "Students store parent/guardian name and phone. VidyaOrbit prepares a WhatsApp fee reminder with the centre UPI link; the owner sends it, and the parent pays the centre.",
     source:
-      "src/components/student-dialog.tsx guardian fields; no parent WhatsApp send",
+      "src/lib/fee-reminder.ts; src/routes/_authenticated/fees.tsx Remind on WhatsApp",
   },
   {
     text: "Free plan is up to 25 students. Analytics is a Starter+ feature, not on Free.",

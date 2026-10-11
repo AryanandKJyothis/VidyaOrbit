@@ -35,7 +35,7 @@ export const LANDING_FAQS: FaqItem[] = [
   },
   {
     q: "Can it send fee reminders or receipts on WhatsApp?",
-    a: "You still send receipts on WhatsApp yourself. The app does not message parents. Numbered receipts show your centre name; print or save as PDF from the browser, then share the way you already do.",
+    a: "VidyaOrbit prepares a WhatsApp message with the student name, month, amount due, your centre name, and your centre's UPI payment link. You tap send. The parent pays your centre directly. After you mark the fee received, share the numbered receipt the same way, or print it from the browser.",
   },
   {
     q: "Is my data safe?",

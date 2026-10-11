@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import {
   Plus,
   Search,
@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Download,
   ChevronDown,
+  MessageCircle,
 } from "lucide-react";
 import { RoutePermissionGate } from "@/components/route-permission-gate";
 import { PageHeader } from "@/components/page-header";
@@ -34,14 +35,46 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/empty-state";
 import { QueryErrorState } from "@/components/query-state";
-import { useStudents, useBatches, usePayments } from "@/hooks/use-data";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  useStudents,
+  useBatches,
+  usePayments,
+  useInstitute,
+} from "@/hooks/use-data";
 import { PaymentDialog } from "@/components/payment-dialog";
+import {
+  FeeReminderQueue,
+  type ReminderQueueItem,
+} from "@/components/fee-reminder-queue";
 import { formatINR, formatDate } from "@/lib/format";
 import { exportToExcel, exportToCsv } from "@/lib/export";
+import {
+  buildFeeReminder,
+  feeCollectionStatus,
+  feeStatusLabel,
+  openWhatsApp,
+  type FeeCollectionStatus,
+} from "@/lib/fee-reminder";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
+const FEE_STATUSES = ["all", "pending", "partial", "overdue", "paid"] as const;
+type FeeStatusFilter = (typeof FEE_STATUSES)[number];
+
 export const Route = createFileRoute("/_authenticated/fees")({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { status?: FeeStatusFilter } => {
+    const status = search.status;
+    if (
+      typeof status === "string" &&
+      (FEE_STATUSES as readonly string[]).includes(status)
+    ) {
+      return { status: status as FeeStatusFilter };
+    }
+    return {};
+  },
   component: FeesPage,
 });
 
@@ -57,12 +90,28 @@ function FeesPageContent() {
   const students = useStudents();
   const batches = useBatches();
   const payments = usePayments();
+  const institute = useInstitute();
   const qc = useQueryClient();
+  const search = useSearch({ from: "/_authenticated/fees" });
 
   const [open, setOpen] = useState(false);
+  const [paymentDefaults, setPaymentDefaults] = useState<{
+    studentId?: string;
+    amount?: number;
+    method?: string;
+  }>({});
   const [q, setQ] = useState("");
   const [batchFilter, setBatchFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<FeeStatusFilter>(
+    search.status ?? "all",
+  );
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [queueOpen, setQueueOpen] = useState(false);
+  const [queue, setQueue] = useState<ReminderQueueItem[]>([]);
+
+  useEffect(() => {
+    if (search.status) setStatusFilter(search.status);
+  }, [search.status]);
 
   const paidByStudent = useMemo(() => {
     const m: Record<string, number> = {};
@@ -105,13 +154,15 @@ function FeesPageContent() {
   }, [rows]);
 
   const filtered = useMemo(() => {
-    return rows.filter(({ s, balance, overdue }) => {
+    return rows.filter(({ s, paid, balance, overdue }) => {
       if (q && !s.full_name.toLowerCase().includes(q.toLowerCase()))
         return false;
       if (batchFilter !== "all" && s.batch_id !== batchFilter) return false;
-      if (statusFilter === "paid" && balance > 0) return false;
-      if (statusFilter === "pending" && balance === 0) return false;
-      if (statusFilter === "overdue" && !overdue) return false;
+      const status = feeCollectionStatus({ paid, balance, overdue });
+      if (statusFilter === "paid" && status !== "paid") return false;
+      if (statusFilter === "pending" && status !== "pending") return false;
+      if (statusFilter === "partial" && status !== "partial") return false;
+      if (statusFilter === "overdue" && status !== "overdue") return false;
       return true;
     });
   }, [rows, q, batchFilter, statusFilter]);
@@ -120,6 +171,73 @@ function FeesPageContent() {
     () => Object.fromEntries((students.data ?? []).map((s) => [s.id, s])),
     [students.data],
   );
+
+  const centreName = institute.data?.name ?? "your centre";
+  const upiVpa = institute.data?.upi_vpa;
+
+  const remindRows = (
+    targets: { s: (typeof rows)[number]["s"]; balance: number }[],
+  ) => {
+    if (!upiVpa?.trim()) {
+      toast.error(
+        "Add your centre UPI ID in Settings before sending reminders.",
+      );
+      return;
+    }
+    if (targets.length === 0) {
+      toast.error("Select at least one student.");
+      return;
+    }
+    const items: ReminderQueueItem[] = targets.map(({ s, balance }) => ({
+      studentId: s.id,
+      studentName: s.full_name,
+      result: buildFeeReminder({
+        centreName,
+        upiVpa,
+        studentName: s.full_name,
+        guardianPhone: s.guardian_phone,
+        studentPhone: s.phone,
+        feeDueDate: s.fee_due_date,
+        balance,
+      }),
+    }));
+    if (items.length === 1 && items[0].result.ok) {
+      if (!openWhatsApp(items[0].result.href)) {
+        toast.error("Allow pop-ups to open WhatsApp.");
+      }
+      return;
+    }
+    setQueue(items);
+    setQueueOpen(true);
+  };
+
+  const selectOverdueInBatch = () => {
+    setQ("");
+    setStatusFilter("overdue");
+    setSelected(
+      new Set(
+        rows
+          .filter(
+            (r) =>
+              r.overdue &&
+              (batchFilter === "all" || r.s.batch_id === batchFilter),
+          )
+          .map((r) => r.s.id),
+      ),
+    );
+  };
+
+  const selectAllOverdue = () => {
+    setQ("");
+    setBatchFilter("all");
+    setStatusFilter("overdue");
+    setSelected(new Set(rows.filter((r) => r.overdue).map((r) => r.s.id)));
+  };
+
+  const markReceived = (studentId: string, balance: number) => {
+    setPaymentDefaults({ studentId, amount: balance, method: "upi" });
+    setOpen(true);
+  };
 
   const loading = students.isLoading || batches.isLoading || payments.isLoading;
   const loadError =
@@ -190,12 +308,9 @@ function FeesPageContent() {
                         "Total fee": Number(s.fee_total),
                         Paid: paid,
                         Balance: balance,
-                        Status:
-                          balance === 0
-                            ? "Paid"
-                            : overdue
-                              ? "Overdue"
-                              : "Pending",
+                        Status: feeStatusLabel(
+                          feeCollectionStatus({ paid, balance, overdue }),
+                        ),
                       }),
                     );
                     await exportToExcel(duesRows, "fee-dues", "Dues");
@@ -214,12 +329,9 @@ function FeesPageContent() {
                         "Total fee": Number(s.fee_total),
                         Paid: paid,
                         Balance: balance,
-                        Status:
-                          balance === 0
-                            ? "Paid"
-                            : overdue
-                              ? "Overdue"
-                              : "Pending",
+                        Status: feeStatusLabel(
+                          feeCollectionStatus({ paid, balance, overdue }),
+                        ),
                       }),
                     );
                     exportToCsv(duesRows, "fee-dues");
@@ -230,7 +342,12 @@ function FeesPageContent() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button onClick={() => setOpen(true)}>
+            <Button
+              onClick={() => {
+                setPaymentDefaults({});
+                setOpen(true);
+              }}
+            >
               <Plus className="mr-1.5 h-4 w-4" /> Record payment
             </Button>
           </div>
@@ -294,19 +411,67 @@ function FeesPageContent() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => setStatusFilter(v as FeeStatusFilter)}
+              >
                 <SelectTrigger className="w-full sm:w-[160px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="partial">Partial</SelectItem>
                   <SelectItem value="overdue">Overdue</SelectItem>
                   <SelectItem value="paid">Paid</SelectItem>
                 </SelectContent>
               </Select>
             </CardContent>
           </Card>
+
+          {!upiVpa?.trim() && (
+            <div className="mb-4 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm">
+              Add your centre UPI ID so reminders include a pay link. Parents
+              pay that ID directly.{" "}
+              <Link to="/settings" className="font-medium underline">
+                Open settings
+              </Link>
+            </div>
+          )}
+
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={selectOverdueInBatch}
+            >
+              Select overdue in this batch
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={selectAllOverdue}
+            >
+              Select all overdue
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() =>
+                remindRows(
+                  rows
+                    .filter((r) => selected.has(r.s.id))
+                    .map((r) => ({ s: r.s, balance: r.balance })),
+                )
+              }
+            >
+              <MessageCircle className="mr-1.5 h-4 w-4" />
+              Remind on WhatsApp
+              {selected.size > 0 ? ` (${selected.size})` : ""}
+            </Button>
+          </div>
 
           <Card>
             <CardContent className="p-0 overflow-x-auto">
@@ -332,6 +497,7 @@ function FeesPageContent() {
                 <table className="w-full text-sm">
                   <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                     <tr>
+                      <th className="px-4 py-3 w-10"></th>
                       <th className="px-4 py-3">Student</th>
                       <th className="px-4 py-3">Batch</th>
                       <th className="px-4 py-3">Due</th>
@@ -339,49 +505,89 @@ function FeesPageContent() {
                       <th className="px-4 py-3 text-right">Paid</th>
                       <th className="px-4 py-3 text-right">Balance</th>
                       <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {filtered.map(({ s, paid, balance, overdue }) => (
-                      <tr
-                        key={s.id}
-                        className="transition-colors duration-100 hover:bg-muted/30"
-                      >
-                        <td className="px-4 py-3">
-                          <Link
-                            to="/students/$id"
-                            params={{ id: s.id }}
-                            className="font-medium hover:underline"
-                          >
-                            {s.full_name}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {s.batch_id ? batchById[s.batch_id] : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {formatDate(s.fee_due_date)}
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono">
-                          {formatINR(Number(s.fee_total))}
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono">
-                          {formatINR(paid)}
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono font-semibold">
-                          {formatINR(balance)}
-                        </td>
-                        <td className="px-4 py-3">
-                          {balance === 0 ? (
-                            <Badge variant="secondary">Paid</Badge>
-                          ) : overdue ? (
-                            <Badge variant="destructive">Overdue</Badge>
-                          ) : (
-                            <Badge variant="outline">Pending</Badge>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {filtered.map(({ s, paid, balance, overdue }) => {
+                      const status = feeCollectionStatus({
+                        paid,
+                        balance,
+                        overdue,
+                      });
+                      return (
+                        <tr
+                          key={s.id}
+                          className="transition-colors duration-100 hover:bg-muted/30"
+                        >
+                          <td className="px-4 py-3">
+                            {balance > 0 ? (
+                              <Checkbox
+                                checked={selected.has(s.id)}
+                                onCheckedChange={(checked) => {
+                                  setSelected((prev) => {
+                                    const next = new Set(prev);
+                                    if (checked === true) next.add(s.id);
+                                    else next.delete(s.id);
+                                    return next;
+                                  });
+                                }}
+                                aria-label={`Select ${s.full_name}`}
+                              />
+                            ) : null}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Link
+                              to="/students/$id"
+                              params={{ id: s.id }}
+                              className="font-medium hover:underline"
+                            >
+                              {s.full_name}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {s.batch_id ? batchById[s.batch_id] : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {formatDate(s.fee_due_date)}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono">
+                            {formatINR(Number(s.fee_total))}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono">
+                            {formatINR(paid)}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono font-semibold">
+                            {formatINR(balance)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <FeeStatusBadge status={status} />
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {balance > 0 ? (
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => remindRows([{ s, balance }])}
+                                >
+                                  Remind
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => markReceived(s.id, balance)}
+                                >
+                                  Mark received
+                                </Button>
+                              </div>
+                            ) : null}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
@@ -447,7 +653,12 @@ function FeesPageContent() {
                   title="No payments yet"
                   description="Record cash, UPI, or bank transfers — receipts are generated automatically."
                 >
-                  <Button onClick={() => setOpen(true)}>
+                  <Button
+                    onClick={() => {
+                      setPaymentDefaults({});
+                      setOpen(true);
+                    }}
+                  >
                     <Plus className="mr-1.5 h-4 w-4" /> Record payment
                   </Button>
                 </EmptyState>
@@ -510,7 +721,30 @@ function FeesPageContent() {
         </TabsContent>
       </Tabs>
 
-      <PaymentDialog open={open} onOpenChange={setOpen} />
+      <PaymentDialog
+        open={open}
+        onOpenChange={setOpen}
+        defaultStudentId={paymentDefaults.studentId}
+        defaultAmount={paymentDefaults.amount}
+        defaultMethod={paymentDefaults.method}
+      />
+      <FeeReminderQueue
+        open={queueOpen}
+        onOpenChange={setQueueOpen}
+        items={queue}
+      />
     </div>
   );
+}
+
+function FeeStatusBadge({ status }: { status: FeeCollectionStatus }) {
+  const variant =
+    status === "paid"
+      ? "secondary"
+      : status === "overdue"
+        ? "destructive"
+        : status === "partial"
+          ? "default"
+          : "outline";
+  return <Badge variant={variant}>{feeStatusLabel(status)}</Badge>;
 }

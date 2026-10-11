@@ -1,6 +1,12 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Printer, GraduationCap, Receipt } from "lucide-react";
+import {
+  ArrowLeft,
+  Printer,
+  GraduationCap,
+  Receipt,
+  MessageCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +19,8 @@ import {
   useBatches,
 } from "@/hooks/use-data";
 import { formatINR, formatDate } from "@/lib/format";
+import { buildReceiptShare, openWhatsApp } from "@/lib/fee-reminder";
+import { toast } from "sonner";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 
 export const Route = createFileRoute("/_authenticated/receipts/$paymentId")({
@@ -103,9 +111,35 @@ function ReceiptPageContent() {
             <ArrowLeft className="mr-1 h-4 w-4" /> Back to student
           </Link>
         </Button>
-        <Button onClick={() => window.print()}>
-          <Printer className="mr-1.5 h-4 w-4" /> Print / Save PDF
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const share = buildReceiptShare({
+                centreName: i?.name ?? "your centre",
+                studentName: s.full_name,
+                guardianPhone: s.guardian_phone,
+                studentPhone: s.phone,
+                amount: Number(p.amount),
+                receiptNumber: p.receipt_number,
+              });
+              if (!share.href) {
+                toast.error(
+                  "Add a guardian or student phone to share this receipt.",
+                );
+                return;
+              }
+              if (!openWhatsApp(share.href)) {
+                toast.error("Allow pop-ups to open WhatsApp.");
+              }
+            }}
+          >
+            <MessageCircle className="mr-1.5 h-4 w-4" /> Share on WhatsApp
+          </Button>
+          <Button onClick={() => window.print()}>
+            <Printer className="mr-1.5 h-4 w-4" /> Print / Save PDF
+          </Button>
+        </div>
       </div>
 
       <div className="print-area mx-auto max-w-2xl rounded-2xl border border-border bg-card p-8 shadow-sm sm:p-10">

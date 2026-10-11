@@ -123,7 +123,7 @@ Owners of coaching centres, tuition centres, and small institutes who currently 
 - Export students, batches, dues and payments as Excel or CSV
 - Analytics dashboard on Starter and above
 
-The app does not message parents. Receipts and reminders are sent by the centre on WhatsApp the way they already do.
+VidyaOrbit prepares a WhatsApp fee reminder with the centre UPI link. The owner sends it, and the parent pays the centre directly. The app does not message parents by itself.
 
 ## Pricing (INR)
 

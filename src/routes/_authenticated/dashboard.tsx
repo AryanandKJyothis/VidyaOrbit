@@ -124,6 +124,17 @@ function Dashboard() {
         Math.max(0, Number(st.fee_total) - (totalPaidByStudent[st.id] ?? 0)),
       0,
     );
+    const partialCount = s.filter((st) => {
+      if (st.status === "archived") return false;
+      const paid = totalPaidByStudent[st.id] ?? 0;
+      const balance = Math.max(0, Number(st.fee_total) - paid);
+      const isOverdue = !!(
+        st.fee_due_date &&
+        new Date(st.fee_due_date) < new Date() &&
+        balance > 0
+      );
+      return paid > 0 && balance > 0 && !isOverdue;
+    }).length;
 
     const todayStr = format(new Date(), "yyyy-MM-dd");
     const weekAheadStr = format(addDays(new Date(), 7), "yyyy-MM-dd");
@@ -204,6 +215,7 @@ function Dashboard() {
       totalDues,
       overdue,
       overdueAmount,
+      partialCount,
       duesWeekAmount,
       attRate,
       totalPaidByStudent,
@@ -381,7 +393,7 @@ function Dashboard() {
                   index={3}
                   label="Dues"
                   value={formatINR(stats.totalDues)}
-                  hint={`${stats.overdue.length} overdue`}
+                  hint={`${stats.overdue.length} overdue · ${stats.partialCount} partial`}
                   icon={AlertCircle}
                   tone={stats.overdue.length ? "destructive" : "default"}
                 />
@@ -610,7 +622,9 @@ function Dashboard() {
                 </p>
               </div>
               <Button asChild variant="ghost" size="sm">
-                <Link to="/fees">Collect</Link>
+                <Link to="/fees" search={{ status: "overdue" }}>
+                  Collect
+                </Link>
               </Button>
             </CardHeader>
             <CardContent className="space-y-2">

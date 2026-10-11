@@ -265,6 +265,7 @@ export type Database = {
           receipt_prefix: string;
           timezone: string;
           updated_at: string;
+          upi_vpa: string | null;
         };
         Insert: {
           address?: string | null;
@@ -281,6 +282,7 @@ export type Database = {
           receipt_prefix?: string;
           timezone?: string;
           updated_at?: string;
+          upi_vpa?: string | null;
         };
         Update: {
           address?: string | null;
@@ -297,6 +299,7 @@ export type Database = {
           receipt_prefix?: string;
           timezone?: string;
           updated_at?: string;
+          upi_vpa?: string | null;
         };
         Relationships: [];
       };
