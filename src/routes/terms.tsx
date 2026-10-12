@@ -76,16 +76,16 @@ function TermsPage() {
 
         <Section id="refund" title="6. Paid subscriptions, billing and refunds">
           <p>
-            Paid plans are arranged directly with us by invoice (monthly or
-            annual). Online payment is coming soon. You can request to cancel or
-            change your plan at any time by contacting us; changes take effect
-            at the end of the current billing period where applicable. Because
-            the service is delivered digitally and immediately on payment, fees
-            already paid are non-refundable except where required by law. If
-            your subscription lapses or is cancelled, your account automatically
-            reverts to the Free tier and data beyond the Free-tier limits
-            remains stored and fully accessible; adding new students is paused
-            until you upgrade again.
+            Paid plans can be paid in the app on the Plan page through Razorpay
+            (monthly or annual), or arranged with us. You can request to cancel
+            or change your plan at any time by contacting us; changes take
+            effect at the end of the current billing period where applicable.
+            Because the service is delivered digitally and immediately on
+            payment, fees already paid are non-refundable except where required
+            by law. If your subscription lapses or is cancelled, your account
+            automatically reverts to the Free tier and data beyond the Free-tier
+            limits remains stored and fully accessible; adding new students is
+            paused until you upgrade again.
           </p>
         </Section>
 

@@ -127,7 +127,7 @@ VidyaOrbit prepares a WhatsApp fee reminder with the centre UPI link. The owner 
 
 ## Pricing (INR)
 
-Prices below are the public plans in the product. Paid plans are arranged by invoice; in-app online payment is coming soon.
+Prices below are the public plans in the product. Pay in the app on the Plan page through Razorpay, or contact us to arrange it.
 
 ${plans}
 

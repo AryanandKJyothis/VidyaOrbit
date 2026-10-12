@@ -74,8 +74,8 @@ function PricingPage() {
                 Simple, INR-first pricing
               </h1>
               <p className="mt-4 text-muted-foreground sm:text-lg">
-                Start free. Upgrade only when your centre grows. Paid plans are
-                arranged by invoice; online payment is coming soon.
+                Start free. Upgrade only when your centre grows. Pay in the app
+                on the Plan page through Razorpay, or contact us to arrange it.
               </p>
             </div>
           </div>
@@ -85,8 +85,8 @@ function PricingPage() {
           <PublicPricingGrid />
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Paid plans are arranged by invoice (monthly or annual). Online
-            payment is coming soon.{" "}
+            Paid plans can be paid in the app on the Plan page through Razorpay
+            (monthly or annual), or arranged with us.{" "}
             <Link
               to="/terms"
               hash="refund"
