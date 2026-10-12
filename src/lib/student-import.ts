@@ -1,5 +1,6 @@
 import type { Student } from "@/hooks/use-data";
 import writeXlsxFile, { type SheetData } from "write-excel-file/browser";
+import { calendarDateISO } from "@/lib/format";
 
 /** Match `studentSchema` / import dialog */
 export const IMPORT_PHONE_REGEX = /^[0-9+\-\s()]{6,20}$/;
@@ -272,7 +273,7 @@ function parseDateCell(v: unknown): string | null {
   if (v == null || v === "") return null;
   if (typeof v === "number" && !Number.isNaN(v)) {
     const d = new Date(Math.round((v - 25569) * 86400 * 1000));
-    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+    if (!Number.isNaN(d.getTime())) return calendarDateISO(d);
   }
   const s = String(v).trim();
   const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);

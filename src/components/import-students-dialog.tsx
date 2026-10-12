@@ -28,6 +28,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { todayISO } from "@/lib/format";
 import { formatUserError } from "@/lib/format-error";
 import { downloadStudentImportTemplate } from "@/lib/export";
 import {
@@ -352,7 +353,7 @@ export function ImportStudentsDialog({
           guardian_name: r.guardian_name,
           guardian_phone: r.guardian_phone,
           batch_id: r.batch_id ?? defaultBatch,
-          joining_date: r.joining_date ?? new Date().toISOString().slice(0, 10),
+          joining_date: r.joining_date ?? todayISO(),
           status: "active",
         };
         // Only include fee_total if user has fees:write permission
