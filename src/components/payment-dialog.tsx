@@ -22,6 +22,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatUserError } from "@/lib/format-error";
 import { useNavigate } from "@tanstack/react-router";
+import { todayISO } from "@/lib/format";
 
 export function PaymentDialog({
   open,
@@ -42,7 +43,7 @@ export function PaymentDialog({
   const [form, setForm] = useState({
     student_id: defaultStudentId ?? "",
     amount: "",
-    payment_date: new Date().toISOString().slice(0, 10),
+    payment_date: todayISO(),
     method: "cash",
     reference: "",
     notes: "",
@@ -53,7 +54,7 @@ export function PaymentDialog({
       setForm({
         student_id: defaultStudentId ?? "",
         amount: defaultAmount && defaultAmount > 0 ? String(defaultAmount) : "",
-        payment_date: new Date().toISOString().slice(0, 10),
+        payment_date: todayISO(),
         method: defaultMethod,
         reference: "",
         notes: "",

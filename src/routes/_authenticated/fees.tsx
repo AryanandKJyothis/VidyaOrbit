@@ -47,7 +47,7 @@ import {
   FeeReminderQueue,
   type ReminderQueueItem,
 } from "@/components/fee-reminder-queue";
-import { formatINR, formatDate } from "@/lib/format";
+import { formatINR, formatDate, isPastIstDate } from "@/lib/format";
 import { exportToExcel, exportToCsv } from "@/lib/export";
 import {
   buildFeeReminder,
@@ -133,7 +133,7 @@ function FeesPageContent() {
         const balance = Math.max(0, Number(s.fee_total) - paid);
         const overdue = !!(
           s.fee_due_date &&
-          new Date(s.fee_due_date) < new Date() &&
+          isPastIstDate(s.fee_due_date) &&
           balance > 0
         );
         return { s, paid, balance, overdue };
