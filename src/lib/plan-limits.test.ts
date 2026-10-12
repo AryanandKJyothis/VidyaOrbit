@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   atStudentPlanLimit,
+  canRestoreArchivedStudent,
   formatLimit,
   isUnlimited,
   PLAN_STUDENT_LIMITS,
@@ -60,6 +61,20 @@ describe("plan-limits", () => {
     expect(currentCount).toBe(90);
     expect(atStudentPlanLimit(currentCount, 100)).toBe(false);
     expect(atStudentPlanLimit(before, 100)).toBe(true);
+  });
+
+  it("restored from archive without a plan-limit check before the fix", () => {
+    const currentCount = 100;
+    const limit = 100;
+    const beforeAllowed = true;
+    expect(beforeAllowed).toBe(true);
+    expect(atStudentPlanLimit(currentCount, limit)).toBe(true);
+    expect(canRestoreArchivedStudent(currentCount, limit)).toBe(false);
+  });
+
+  it("allows restore when under the cap and on unlimited plans", () => {
+    expect(canRestoreArchivedStudent(90, 100)).toBe(true);
+    expect(canRestoreArchivedStudent(1000, null)).toBe(true);
   });
 
   it("prefers the server active student_count over the loaded array length", () => {
