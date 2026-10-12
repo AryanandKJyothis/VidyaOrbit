@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addCalendarDaysISO,
   isPastIstDate,
+  personInitials,
   todayISO,
   yesterdayISO,
 } from "./format";
@@ -40,5 +41,18 @@ describe("IST calendar dates (VO-011)", () => {
   it("addCalendarDaysISO crosses months without toISOString", () => {
     expect(addCalendarDaysISO("2026-10-01", -1)).toBe("2026-09-30");
     expect(addCalendarDaysISO("2026-12-31", 1)).toBe("2027-01-01");
+  });
+});
+
+describe("personInitials", () => {
+  it("uses first and last letters of a two-part name", () => {
+    expect(personInitials("Anjali Menon")).toBe("AM");
+  });
+  it("uses the first two letters of a single name", () => {
+    expect(personInitials("Devika")).toBe("DE");
+  });
+  it("returns ? for empty input", () => {
+    expect(personInitials("")).toBe("?");
+    expect(personInitials(null)).toBe("?");
   });
 });

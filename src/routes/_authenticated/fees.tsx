@@ -60,6 +60,9 @@ import {
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCan } from "@/hooks/use-active-workspace";
+import { FilterChips } from "@/components/app/filter-chips";
+import { InitialsAvatar } from "@/components/app/initials-avatar";
+import { format as formatFns, startOfMonth } from "date-fns";
 
 const FEE_STATUSES = ["all", "pending", "partial", "overdue", "paid"] as const;
 type FeeStatusFilter = (typeof FEE_STATUSES)[number];
@@ -158,7 +161,12 @@ function FeesPageContent() {
 
   const filtered = useMemo(() => {
     return rows.filter(({ s, paid, balance, overdue }) => {
-      if (q && !s.full_name.toLowerCase().includes(q.toLowerCase()))
+      if (
+        q &&
+        !`${s.full_name} ${s.phone ?? ""} ${s.guardian_phone ?? ""}`
+          .toLowerCase()
+          .includes(q.toLowerCase())
+      )
         return false;
       if (batchFilter !== "all" && s.batch_id !== batchFilter) return false;
       const status = feeCollectionStatus({ paid, balance, overdue });
@@ -245,6 +253,35 @@ function FeesPageContent() {
     setPaymentDefaults({ studentId, amount: balance, method: "upi" });
     setOpen(true);
   };
+
+  const monthStart = startOfMonth(new Date()).toISOString().slice(0, 10);
+  const monthCollected = (payments.data ?? [])
+    .filter((x) => x.payment_date >= monthStart)
+    .reduce((sum, x) => sum + Number(x.amount), 0);
+  const prevMonthStart = formatFns(
+    new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
+    "yyyy-MM-dd",
+  );
+  const prevMonthEnd = formatFns(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 0),
+    "yyyy-MM-dd",
+  );
+  const prevMonthCollected = (payments.data ?? [])
+    .filter(
+      (x) => x.payment_date >= prevMonthStart && x.payment_date <= prevMonthEnd,
+    )
+    .reduce((sum, x) => sum + Number(x.amount), 0);
+  const monthDelta =
+    prevMonthCollected > 0
+      ? Math.round(
+          ((monthCollected - prevMonthCollected) / prevMonthCollected) * 100,
+        )
+      : undefined;
+  const pendingDueCount = rows.filter(
+    (r) => r.balance > 0 && !r.overdue,
+  ).length;
+  const overdueCount = rows.filter((r) => r.overdue).length;
+  const paidCount = rows.filter((r) => r.balance <= 0).length;
 
   const loading = students.isLoading || batches.isLoading || payments.isLoading;
   const loadError =
@@ -361,7 +398,64 @@ function FeesPageContent() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+      <Card className="overflow-hidden bg-primary text-primary-foreground">
+        <CardContent className="p-4 sm:p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-foreground/70">
+            {formatFns(new Date(), "MMMM yyyy")} collection
+          </p>
+          <div className="mt-1 flex items-end justify-between gap-3">
+            <p className="font-display text-3xl font-bold tabular-nums">
+              {formatINR(monthCollected)}
+            </p>
+            {typeof monthDelta === "number" && (
+              <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold">
+                {monthDelta > 0 ? "+" : ""}
+                {monthDelta}%
+              </span>
+            )}
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="rounded-xl bg-white/10 p-3">
+              <p className="text-[11px] text-primary-foreground/70">
+                Pending due
+              </p>
+              <p className="font-display text-lg font-bold tabular-nums">
+                {formatINR(totals.due - totals.overdue)}
+              </p>
+              <p className="text-[11px] text-primary-foreground/60">
+                {pendingDueCount} students
+              </p>
+            </div>
+            <div className="rounded-xl bg-white/10 p-3">
+              <p className="text-[11px] text-primary-foreground/70">Overdue</p>
+              <p className="font-display text-lg font-bold tabular-nums">
+                {formatINR(totals.overdue)}
+              </p>
+              <p className="text-[11px] text-primary-foreground/60">
+                {overdueCount} students
+              </p>
+            </div>
+            <div className="col-span-2 rounded-xl bg-white/10 p-3 sm:col-span-1">
+              <p className="text-[11px] text-primary-foreground/70">Paid</p>
+              <p className="font-display text-lg font-bold tabular-nums">
+                {paidCount}
+              </p>
+              <p className="text-[11px] text-primary-foreground/60">students</p>
+            </div>
+          </div>
+          <Button
+            className="mt-4 h-11 w-full bg-card text-foreground hover:bg-card/90"
+            onClick={() => {
+              setPaymentDefaults({});
+              setOpen(true);
+            }}
+          >
+            <Plus className="mr-1.5 h-4 w-4" /> Record payment
+          </Button>
+        </CardContent>
+      </Card>
+
+      <div className="mt-4 hidden grid-cols-2 gap-4 md:grid lg:grid-cols-4">
         <StatCard
           label="Total fee"
           value={formatINR(totals.totalFee)}
@@ -394,19 +488,36 @@ function FeesPageContent() {
         </TabsList>
 
         <TabsContent value="dues" className="mt-4">
-          <Card className="mb-4">
-            <CardContent className="flex flex-col gap-2 p-4 sm:flex-row">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Search student"
-                  className="pl-9"
-                />
-              </div>
+          <div className="mb-4 space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search student name or parent phone"
+                className="h-12 rounded-2xl pl-9"
+              />
+            </div>
+            <FilterChips
+              ariaLabel="Fee status"
+              value={statusFilter}
+              onChange={(id) => setStatusFilter(id as FeeStatusFilter)}
+              chips={[
+                {
+                  id: "overdue",
+                  label: "Overdue",
+                  count: overdueCount,
+                  tone: "danger",
+                },
+                { id: "pending", label: "Pending", count: pendingDueCount },
+                { id: "paid", label: "Paid", count: paidCount },
+                { id: "all", label: "All" },
+                { id: "partial", label: "Partial" },
+              ]}
+            />
+            <div className="hidden sm:block">
               <Select value={batchFilter} onValueChange={setBatchFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectTrigger className="h-11 w-full sm:w-[220px]">
                   <SelectValue placeholder="Batch" />
                 </SelectTrigger>
                 <SelectContent>
@@ -418,23 +529,8 @@ function FeesPageContent() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select
-                value={statusFilter}
-                onValueChange={(v) => setStatusFilter(v as FeeStatusFilter)}
-              >
-                <SelectTrigger className="w-full sm:w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="partial">Partial</SelectItem>
-                  <SelectItem value="overdue">Overdue</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {!upiVpa?.trim() && (
             <div className="mb-4 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm">
@@ -503,33 +599,23 @@ function FeesPageContent() {
                   </Button>
                 </EmptyState>
               ) : (
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-                    <tr>
-                      <th className="px-4 py-3 w-10"></th>
-                      <th className="px-4 py-3">Student</th>
-                      <th className="px-4 py-3">Batch</th>
-                      <th className="px-4 py-3">Due</th>
-                      <th className="px-4 py-3 text-right">Total</th>
-                      <th className="px-4 py-3 text-right">Paid</th>
-                      <th className="px-4 py-3 text-right">Balance</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
+                <>
+                  <ul className="space-y-3 p-3 md:hidden">
                     {filtered.map(({ s, paid, balance, overdue }) => {
                       const status = feeCollectionStatus({
                         paid,
                         balance,
                         overdue,
                       });
+                      const lastPay = (payments.data ?? []).find(
+                        (p) => p.student_id === s.id,
+                      );
                       return (
-                        <tr
+                        <li
                           key={s.id}
-                          className="transition-colors duration-100 hover:bg-muted/30"
+                          className="rounded-2xl border border-border/80 bg-card p-4"
                         >
-                          <td className="px-4 py-3">
+                          <div className="flex items-start gap-3">
                             {balance > 0 ? (
                               <Checkbox
                                 checked={selected.has(s.id)}
@@ -542,65 +628,192 @@ function FeesPageContent() {
                                   });
                                 }}
                                 aria-label={`Select ${s.full_name}`}
+                                className="mt-2"
                               />
-                            ) : null}
-                          </td>
-                          <td className="px-4 py-3">
-                            <Link
-                              to="/students/$id"
-                              params={{ id: s.id }}
-                              className="font-medium hover:underline"
-                            >
-                              {s.full_name}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {s.batch_id ? batchById[s.batch_id] : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {formatDate(s.fee_due_date)}
-                          </td>
-                          <td className="px-4 py-3 text-right font-mono">
-                            {formatINR(Number(s.fee_total))}
-                          </td>
-                          <td className="px-4 py-3 text-right font-mono">
-                            {formatINR(paid)}
-                          </td>
-                          <td className="px-4 py-3 text-right font-mono font-semibold">
-                            {formatINR(balance)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <FeeStatusBadge status={status} />
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {balance > 0 ? (
-                              <div className="flex justify-end gap-1">
-                                {canRemind && (
+                            ) : (
+                              <span className="w-4" />
+                            )}
+                            <InitialsAvatar name={s.full_name} />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <Link
+                                    to="/students/$id"
+                                    params={{ id: s.id }}
+                                    className="block truncate font-semibold hover:underline"
+                                  >
+                                    {s.full_name}
+                                  </Link>
+                                  <p className="truncate text-xs text-muted-foreground">
+                                    {s.batch_id
+                                      ? batchById[s.batch_id]
+                                      : "No batch"}
+                                  </p>
+                                </div>
+                                <FeeStatusBadge status={status} />
+                              </div>
+                              <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <p className="text-muted-foreground">
+                                    Amount overdue
+                                  </p>
+                                  <p className="font-display text-base font-bold tabular-nums text-destructive">
+                                    {formatINR(overdue ? balance : 0)}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-muted-foreground">
+                                    Last payment
+                                  </p>
+                                  <p className="font-semibold tabular-nums">
+                                    {lastPay
+                                      ? formatINR(Number(lastPay.amount))
+                                      : "—"}
+                                  </p>
+                                  <p className="text-muted-foreground">
+                                    {lastPay
+                                      ? formatDate(lastPay.payment_date)
+                                      : ""}
+                                  </p>
+                                </div>
+                              </div>
+                              {s.fee_due_date && balance > 0 && (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  Due {formatDate(s.fee_due_date)}
+                                </p>
+                              )}
+                              {balance > 0 && (
+                                <div className="mt-3 grid grid-cols-2 gap-2">
                                   <Button
                                     type="button"
                                     size="sm"
-                                    variant="ghost"
-                                    onClick={() => remindRows([{ s, balance }])}
+                                    className="h-11"
+                                    onClick={() => markReceived(s.id, balance)}
                                   >
-                                    Remind
+                                    Record {formatINR(balance)}
                                   </Button>
-                                )}
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => markReceived(s.id, balance)}
-                                >
-                                  Mark received
-                                </Button>
-                              </div>
-                            ) : null}
-                          </td>
-                        </tr>
+                                  {canRemind && (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-11"
+                                      onClick={() =>
+                                        remindRows([{ s, balance }])
+                                      }
+                                    >
+                                      Send reminder
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </li>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </ul>
+                  <table className="hidden w-full text-sm md:table">
+                    <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
+                      <tr>
+                        <th className="px-4 py-3 w-10"></th>
+                        <th className="px-4 py-3">Student</th>
+                        <th className="px-4 py-3">Batch</th>
+                        <th className="px-4 py-3">Due</th>
+                        <th className="px-4 py-3 text-right">Total</th>
+                        <th className="px-4 py-3 text-right">Paid</th>
+                        <th className="px-4 py-3 text-right">Balance</th>
+                        <th className="px-4 py-3">Status</th>
+                        <th className="px-4 py-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {filtered.map(({ s, paid, balance, overdue }) => {
+                        const status = feeCollectionStatus({
+                          paid,
+                          balance,
+                          overdue,
+                        });
+                        return (
+                          <tr
+                            key={s.id}
+                            className="transition-colors duration-100 hover:bg-muted/30"
+                          >
+                            <td className="px-4 py-3">
+                              {balance > 0 ? (
+                                <Checkbox
+                                  checked={selected.has(s.id)}
+                                  onCheckedChange={(checked) => {
+                                    setSelected((prev) => {
+                                      const next = new Set(prev);
+                                      if (checked === true) next.add(s.id);
+                                      else next.delete(s.id);
+                                      return next;
+                                    });
+                                  }}
+                                  aria-label={`Select ${s.full_name}`}
+                                />
+                              ) : null}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Link
+                                to="/students/$id"
+                                params={{ id: s.id }}
+                                className="font-medium hover:underline"
+                              >
+                                {s.full_name}
+                              </Link>
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground">
+                              {s.batch_id ? batchById[s.batch_id] : "—"}
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground">
+                              {formatDate(s.fee_due_date)}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono">
+                              {formatINR(Number(s.fee_total))}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono">
+                              {formatINR(paid)}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono font-semibold">
+                              {formatINR(balance)}
+                            </td>
+                            <td className="px-4 py-3">
+                              <FeeStatusBadge status={status} />
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              {balance > 0 ? (
+                                <div className="flex justify-end gap-1">
+                                  {canRemind && (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() =>
+                                        remindRows([{ s, balance }])
+                                      }
+                                    >
+                                      Remind
+                                    </Button>
+                                  )}
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => markReceived(s.id, balance)}
+                                  >
+                                    Mark received
+                                  </Button>
+                                </div>
+                              ) : null}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </>
               )}
             </CardContent>
           </Card>

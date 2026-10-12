@@ -29,7 +29,11 @@ import {
 import { leaveWorkspace } from "@/lib/workspace.functions";
 import { cn } from "@/lib/utils";
 
-export function WorkspaceSwitcher() {
+export function WorkspaceSwitcher({
+  variant = "sidebar",
+}: {
+  variant?: "sidebar" | "header";
+} = {}) {
   const { workspaces, active, setActiveOwnerId, refresh } =
     useActiveWorkspace();
   const [toRemove, setToRemove] = useState<Workspace | null>(null);
@@ -62,22 +66,41 @@ export function WorkspaceSwitcher() {
     }
   }
 
+  const isHeader = variant === "header";
   const trigger =
     workspaces.length <= 1 ? (
-      <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground">
-        <Building2 className="h-4 w-4 text-muted-foreground" aria-hidden />
-        <span className="truncate font-medium">{active.name}</span>
+      <div
+        className={cn(
+          "flex min-h-11 items-center gap-2 px-2 py-1.5 text-sm",
+          isHeader ? "text-foreground" : "text-sidebar-foreground",
+        )}
+      >
+        {!isHeader && (
+          <Building2
+            className="h-4 w-4 text-sidebar-foreground/70"
+            aria-hidden
+          />
+        )}
+        <span className="truncate font-semibold">{active.name}</span>
       </div>
     ) : (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between px-2 h-9">
+          <Button
+            variant="ghost"
+            className={cn(
+              "h-11 justify-between px-2",
+              isHeader ? "w-auto max-w-full" : "w-full",
+            )}
+          >
             <span className="flex items-center gap-2 min-w-0">
-              <Building2
-                className="h-4 w-4 shrink-0 text-muted-foreground"
-                aria-hidden
-              />
-              <span className="truncate text-sm font-medium">
+              {!isHeader && (
+                <Building2
+                  className="h-4 w-4 shrink-0 text-sidebar-foreground/70"
+                  aria-hidden
+                />
+              )}
+              <span className="truncate text-sm font-semibold">
                 {active.name}
               </span>
             </span>

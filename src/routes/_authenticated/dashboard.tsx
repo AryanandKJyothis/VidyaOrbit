@@ -24,6 +24,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { format, subDays, startOfMonth, addDays } from "date-fns";
+import { formatINR, formatDate, todayISO } from "@/lib/format";
 import { StatCard } from "@/components/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,19 +42,26 @@ import {
   useInstitute,
 } from "@/hooks/use-data";
 import { supabase } from "@/integrations/supabase/client";
-import { formatINR, formatDate } from "@/lib/format";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { SetupPrompt } from "@/components/setup-prompt";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { DigestReminderBootstrap } from "@/components/digest-reminder";
-import { DashboardHero } from "@/components/dashboard-hero";
-import { DashboardSpotlight } from "@/components/dashboard-spotlight";
+import {
+  GreetingBanner,
+  QuickActions,
+  TodayAttendanceCard,
+  CollectionCard,
+  OverdueActionCard,
+  AttendanceTrend,
+  RecentActivity,
+} from "@/components/app/dashboard-cards";
 import { OverLimitBanner } from "@/components/over-limit-banner";
 import { ExpiryBanner } from "@/components/expiry-banner";
 import { WelcomeBackBanner } from "@/components/welcome-back-banner";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
 import { useOnboarding } from "@/hooks/use-onboarding";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -71,6 +79,8 @@ function Dashboard() {
   const qc = useQueryClient();
   const { active } = useActiveWorkspace();
   const canViewFees = useCan("fees", "read");
+  const canStudents = useCan("students");
+  const canAttendance = useCan("attendance");
   const { dismissedChecklist } = useOnboarding();
   const { reducedMotion } = usePrefers();
   const itemTransition = reducedMotion ? fadeOnly : springDefault;
@@ -274,6 +284,105 @@ function Dashboard() {
     return map;
   }, [students.data]);
 
+  const todayKey = todayISO();
+  const todayAtt = useMemo(() => {
+    const att = attendance.data ?? [];
+    const enrolled = (students.data ?? []).filter(
+      (st) =>
+        st.status !== "archived" &&
+        st.batch_id &&
+        stats.todaysBatches.some((b) => b.id === st.batch_id),
+    );
+    let present = 0;
+    let absent = 0;
+    for (const a of att) {
+      const day =
+        a.attendance_sessions?.session_date ?? a.created_at.slice(0, 10);
+      if (day !== todayKey) continue;
+      if (a.status === "present" || a.status === "late") present += 1;
+      else if (a.status === "absent") absent += 1;
+    }
+    const marked = present + absent;
+    const pending = Math.max(0, enrolled.length - marked);
+    const next = stats.todaysBatches[0];
+    const nextStudents = next
+      ? (students.data ?? []).filter(
+          (st) => st.batch_id === next.id && st.status !== "archived",
+        ).length
+      : 0;
+    return {
+      enrolled: enrolled.length,
+      present,
+      absent,
+      pending,
+      nextBatch: next
+        ? { name: next.name, timing: next.timing, students: nextStudents }
+        : null,
+    };
+  }, [attendance.data, students.data, stats.todaysBatches, todayKey]);
+
+  const weekTrend = useMemo(() => {
+    const att = attendance.data ?? [];
+    const days: { label: string; pct: number | null }[] = [];
+    for (let i = 4; i >= 0; i--) {
+      const d = subDays(new Date(), i);
+      const key = format(d, "yyyy-MM-dd");
+      let total = 0;
+      let present = 0;
+      for (const a of att) {
+        const day =
+          a.attendance_sessions?.session_date ?? a.created_at.slice(0, 10);
+        if (day !== key) continue;
+        total += 1;
+        if (a.status === "present" || a.status === "late") present += 1;
+      }
+      days.push({
+        label: format(d, "EEE"),
+        pct: total ? Math.round((present / total) * 100) : null,
+      });
+    }
+    return days;
+  }, [attendance.data]);
+
+  const activityItems = useMemo(() => {
+    const items: Array<{
+      id: string;
+      title: string;
+      subtitle: string;
+      meta: string;
+      tone?: "success" | "danger" | "default";
+      paymentId?: string;
+    }> = [];
+    for (const p of (payments.data ?? []).slice(0, 6)) {
+      items.push({
+        id: p.id,
+        title: studentById[p.student_id] ?? "Student",
+        subtitle: `${formatDate(p.payment_date)} · ${p.method.toUpperCase()}`,
+        meta: formatINR(Number(p.amount)),
+        tone: "success",
+        paymentId: p.id,
+      });
+    }
+    return items;
+  }, [payments.data, studentById]);
+
+  const { user } = useAuth();
+  const firstName =
+    ((user?.user_metadata?.full_name as string | undefined) ?? "")
+      .trim()
+      .split(/\s+/)[0] || "there";
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 5
+      ? "Working late"
+      : hour < 12
+        ? "Good morning"
+        : hour < 17
+          ? "Good afternoon"
+          : hour < 21
+            ? "Good evening"
+            : "Good night";
+
   return (
     <div>
       <DigestReminderBootstrap
@@ -293,12 +402,19 @@ function Dashboard() {
         payments={payments.data}
       />
 
-      <DashboardHero
-        instituteName={institute.data?.name ?? null}
-        classesToday={stats.todaysBatches.length}
-        studentsActive={stats.totalStudents}
-        duesWeekAmount={stats.duesWeekAmount}
-      />
+      <div className="space-y-3 sm:space-y-4">
+        <GreetingBanner
+          greeting={greeting}
+          displayName={firstName}
+          instituteName={institute.data?.name ?? null}
+          classesToday={stats.todaysBatches.length}
+        />
+        <QuickActions
+          canViewFees={canViewFees}
+          canStudents={canStudents}
+          canAttendance={canAttendance}
+        />
+      </div>
 
       {!loading &&
         dismissedChecklist &&
@@ -320,24 +436,43 @@ function Dashboard() {
           </EmptyState>
         )}
 
-      {!loading && (
-        <DashboardSpotlight
-          overdueCount={stats.overdue.length}
-          overdueAmount={stats.overdueAmount}
-          duesWeekAmount={stats.duesWeekAmount}
-          attendancePct={stats.attRate}
-          monthCollected={stats.monthCollected}
-          prevMonthCollected={stats.prevMonthCollected}
-          collectionDeltaPct={stats.collectionDelta}
-          newAdmissionsThisMonth={stats.newAdmissionsThisMonth}
-          prevAdmissions={stats.prevAdmissions}
-          classesToday={stats.todaysBatches.length}
-          totalStudents={stats.totalStudents}
-        />
+      {loading && (
+        <div className="mt-4 space-y-3">
+          <Skeleton className="h-36 rounded-2xl" />
+          <Skeleton className="h-48 rounded-2xl" />
+          <Skeleton className="h-36 rounded-2xl" />
+        </div>
       )}
 
-      {/* KPI strip */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 sm:gap-4">
+      {!loading && (
+        <div className="mt-4 space-y-3 sm:mt-5 sm:space-y-4">
+          <TodayAttendanceCard
+            enrolled={todayAtt.enrolled}
+            present={todayAtt.present}
+            absent={todayAtt.absent}
+            pending={todayAtt.pending}
+            nextBatch={todayAtt.nextBatch}
+          />
+          {canViewFees && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <CollectionCard
+                monthCollected={stats.monthCollected}
+                prevMonthCollected={stats.prevMonthCollected}
+                collectionDeltaPct={stats.collectionDelta}
+              />
+              <OverdueActionCard
+                overdueCount={stats.overdue.length}
+                overdueAmount={stats.overdueAmount}
+              />
+            </div>
+          )}
+          <AttendanceTrend days={weekTrend} />
+          {canViewFees && <RecentActivity items={activityItems} />}
+        </div>
+      )}
+
+      {/* KPI strip — desktop density */}
+      <div className="mt-6 hidden grid-cols-2 gap-4 md:grid lg:grid-cols-5">
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => (
             <Skeleton

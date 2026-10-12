@@ -24,16 +24,8 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QueryErrorState } from "@/components/query-state";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   useStudents,
   useBatches,
@@ -61,6 +53,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/empty-state";
 import { OverLimitBanner } from "@/components/over-limit-banner";
+import { FilterChips } from "@/components/app/filter-chips";
+import { InitialsAvatar } from "@/components/app/initials-avatar";
+import { isPastIstDate } from "@/lib/format";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
 import {
   getContactMessage,
@@ -100,6 +95,7 @@ function StudentsList() {
   const [editing, setEditing] = useState<Student | undefined>();
   const [open, setOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [feeFocus, setFeeFocus] = useState<"all" | "overdue">("all");
 
   const paidByStudent = useMemo(() => {
     const m: Record<string, number> = {};
@@ -124,6 +120,15 @@ function StudentsList() {
         .includes(q.toLowerCase())
     )
       return false;
+    if (feeFocus === "overdue" && canViewFees) {
+      const bal = Math.max(0, Number(s.fee_total) - (paidByStudent[s.id] ?? 0));
+      const overdue = !!(
+        s.fee_due_date &&
+        isPastIstDate(s.fee_due_date) &&
+        bal > 0
+      );
+      if (!overdue) return false;
+    }
     return true;
   });
 
@@ -315,43 +320,66 @@ function StudentsList() {
         </Card>
       )}
 
-      <Card className="mb-4">
-        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search name, phone, guardian…"
-              className="pl-9"
-            />
-          </div>
-          <Select value={batchFilter} onValueChange={setBatchFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Batch" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All batches</SelectItem>
-              {(batches.data ?? []).map((b) => (
-                <SelectItem key={b.id} value={b.id}>
-                  {b.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[160px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-              <SelectItem value="all">All</SelectItem>
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+      <div className="mb-4 space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search by student name, roll no, or phone"
+            className="h-12 rounded-2xl pl-9"
+          />
+        </div>
+        <FilterChips
+          ariaLabel="Batches"
+          value={batchFilter}
+          onChange={setBatchFilter}
+          chips={[
+            {
+              id: "all",
+              label: "All batches",
+              count: (students.data ?? []).filter((s) =>
+                statusFilter === "all" ? true : s.status === statusFilter,
+              ).length,
+            },
+            ...(batches.data ?? []).map((b) => ({
+              id: b.id,
+              label: b.name,
+              count: (students.data ?? []).filter(
+                (s) =>
+                  s.batch_id === b.id &&
+                  (statusFilter === "all" ? true : s.status === statusFilter),
+              ).length,
+            })),
+          ]}
+        />
+        <FilterChips
+          ariaLabel="Student filters"
+          value={feeFocus === "overdue" ? "overdue" : statusFilter}
+          onChange={(id) => {
+            if (id === "overdue") {
+              setFeeFocus("overdue");
+              setStatusFilter("active");
+              return;
+            }
+            setFeeFocus("all");
+            setStatusFilter(id);
+          }}
+          chips={[
+            { id: "active", label: "All students" },
+            ...(canViewFees
+              ? [
+                  {
+                    id: "overdue",
+                    label: "Fee overdue",
+                    tone: "danger" as const,
+                  },
+                ]
+              : []),
+            { id: "archived", label: "Archived" },
+          ]}
+        />
+      </div>
 
       <Card>
         <CardContent className="p-0">
@@ -406,178 +434,121 @@ function StudentsList() {
               </Button>
             </EmptyState>
           ) : (
-            <>
-              {/* Desktop table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                    <tr>
-                      <th className="px-4 py-3">Student</th>
-                      <th className="px-4 py-3">Batch</th>
-                      <th className="px-4 py-3">Joined</th>
-                      {canViewFees && (
-                        <>
-                          <th className="px-4 py-3 text-right">Fee</th>
-                          <th className="px-4 py-3 text-right">Balance</th>
-                        </>
-                      )}
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {filtered.map((s) => {
-                      const bal = Math.max(
-                        0,
-                        Number(s.fee_total) - (paidByStudent[s.id] ?? 0),
-                      );
-                      const overdue =
-                        s.fee_due_date &&
-                        new Date(s.fee_due_date) < new Date() &&
-                        bal > 0;
-                      return (
-                        <tr
-                          key={s.id}
-                          className="transition-colors duration-100 hover:bg-muted/30"
-                        >
-                          <td className="px-4 py-3">
-                            <Link
-                              to="/students/$id"
-                              params={{ id: s.id }}
-                              className="font-medium hover:underline"
-                            >
-                              {s.full_name}
-                            </Link>
-                            {s.phone && (
-                              <div className="text-xs text-muted-foreground">
-                                {s.phone}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {s.batch_id ? (batchById[s.batch_id] ?? "—") : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {formatDate(s.joining_date)}
-                          </td>
-                          {canViewFees && (
-                            <>
-                              <td className="px-4 py-3 text-right font-mono">
-                                {formatINR(Number(s.fee_total))}
-                              </td>
-                              <td
-                                className={`px-4 py-3 text-right font-mono ${bal > 0 ? "font-semibold" : "text-muted-foreground"}`}
-                              >
-                                {formatINR(bal)}
-                              </td>
-                            </>
-                          )}
-                          <td className="px-4 py-3">
-                            {canViewFees && overdue ? (
-                              <Badge variant="destructive">Overdue</Badge>
-                            ) : s.status === "active" ? (
-                              <Badge variant="secondary">Active</Badge>
-                            ) : s.status === "archived" ? (
-                              <Badge variant="outline">Archived</Badge>
-                            ) : (
-                              <Badge variant="outline">Inactive</Badge>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => {
-                                setEditing(s);
-                                setOpen(true);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => archive(s)}
-                            >
-                              <Archive className="h-4 w-4" />
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile cards */}
-              <div className="md:hidden divide-y divide-border">
-                {filtered.map((s) => {
-                  const bal = Math.max(
-                    0,
-                    Number(s.fee_total) - (paidByStudent[s.id] ?? 0),
-                  );
-                  const overdue =
-                    s.fee_due_date &&
-                    new Date(s.fee_due_date) < new Date() &&
-                    bal > 0;
-                  return (
-                    <Link
-                      key={s.id}
-                      to="/students/$id"
-                      params={{ id: s.id }}
-                      className="block px-4 py-3.5 transition-[transform,background-color] duration-100 ease-out hover:bg-muted/30 active:scale-[0.99] active:bg-muted/40 motion-reduce:active:scale-100"
-                    >
-                      <div className="flex items-start justify-between gap-3">
+            <ul className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-3">
+              {filtered.map((s) => {
+                const paid = paidByStudent[s.id] ?? 0;
+                const bal = Math.max(0, Number(s.fee_total) - paid);
+                const overdue = !!(
+                  s.fee_due_date &&
+                  isPastIstDate(s.fee_due_date) &&
+                  bal > 0
+                );
+                const dueSoon =
+                  !overdue &&
+                  bal > 0 &&
+                  paid > 0 &&
+                  s.fee_due_date &&
+                  !isPastIstDate(s.fee_due_date);
+                return (
+                  <li key={s.id}>
+                    <article className="rounded-2xl border border-border/80 bg-card p-4 shadow-[var(--shadow-xs)]">
+                      <div className="flex items-start gap-3">
+                        <InitialsAvatar name={s.full_name} />
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate font-medium">
-                              {s.full_name}
-                            </span>
-                            {canViewFees && overdue ? (
-                              <Badge
-                                variant="destructive"
-                                className="text-[10px] px-1.5 py-0"
-                              >
-                                Overdue
-                              </Badge>
-                            ) : s.status !== "active" ? (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] px-1.5 py-0"
-                              >
-                                {s.status}
-                              </Badge>
-                            ) : null}
-                          </div>
-                          <div className="mt-0.5 text-xs text-muted-foreground">
+                          <Link
+                            to="/students/$id"
+                            params={{ id: s.id }}
+                            className="block truncate font-semibold hover:underline"
+                          >
+                            {s.full_name}
+                          </Link>
+                          <p className="truncate text-xs text-muted-foreground">
                             {s.batch_id ? batchById[s.batch_id] : "No batch"}
-                          </div>
-                          {s.phone && (
-                            <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                              <Phone className="h-3 w-3" />
-                              {s.phone}
-                            </div>
+                          </p>
+                        </div>
+                        <div className="flex shrink-0">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-11 w-11"
+                            aria-label={`Edit ${s.full_name}`}
+                            onClick={() => {
+                              setEditing(s);
+                              setOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-11 w-11"
+                            aria-label={
+                              s.status === "archived"
+                                ? `Restore ${s.full_name}`
+                                : `Archive ${s.full_name}`
+                            }
+                            onClick={() => archive(s)}
+                          >
+                            <Archive className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      {canViewFees && (
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          {overdue ? (
+                            <span className="pill pill-danger">
+                              Overdue {formatINR(bal)}
+                            </span>
+                          ) : bal === 0 ? (
+                            <span className="pill pill-success">Paid</span>
+                          ) : dueSoon ? (
+                            <span className="pill pill-muted">
+                              Due {formatINR(bal)}
+                            </span>
+                          ) : (
+                            <span className="pill pill-muted">
+                              Balance {formatINR(bal)}
+                            </span>
                           )}
                         </div>
-                        {canViewFees && (
-                          <div className="text-right shrink-0">
-                            <div className="font-mono text-sm font-semibold">
-                              {formatINR(bal)}
-                            </div>
-                            <div className="text-[10px] uppercase text-muted-foreground">
-                              balance
-                            </div>
-                          </div>
+                      )}
+                      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        {s.guardian_name && (
+                          <span className="truncate">{s.guardian_name}</span>
+                        )}
+                        {(s.guardian_phone || s.phone) && (
+                          <span className="inline-flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {s.guardian_phone || s.phone}
+                          </span>
                         )}
                       </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </>
+                    </article>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </CardContent>
       </Card>
+
+      <p className="mt-4 text-center text-xs text-muted-foreground">
+        Showing {filtered.length} student{filtered.length === 1 ? "" : "s"}
+      </p>
+
+      <button
+        type="button"
+        onClick={() => {
+          setEditing(undefined);
+          setOpen(true);
+        }}
+        disabled={atLimit}
+        aria-label="Add student"
+        className="fab-shadow fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground md:hidden active:scale-[0.97] motion-reduce:active:scale-100 disabled:opacity-50"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
 
       <StudentDialog open={open} onOpenChange={setOpen} student={editing} />
       <ImportStudentsDialog open={importOpen} onOpenChange={setImportOpen} />
