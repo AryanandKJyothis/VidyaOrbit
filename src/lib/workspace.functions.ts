@@ -3,6 +3,11 @@ import { z } from "zod";
 import { randomBytes } from "crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  assertWorkspaceOwner,
+  inviteEmailMatches,
+  inviteTokenSchema,
+} from "@/lib/workspace-invite-rules";
 
 const RESOURCES = [
   "students",
@@ -74,8 +79,7 @@ export function detectPresetOrCustom(
 }
 
 async function assertOwner(ownerId: string, userId: string) {
-  if (ownerId !== userId)
-    throw new Error("Only the workspace owner can perform this action");
+  assertWorkspaceOwner(ownerId, userId);
 }
 
 // ============ Workspaces a user belongs to ============
@@ -368,7 +372,7 @@ export const revokeInvite = createServerFn({ method: "POST" })
 // to brand-new users before they sign up. Returns only non-sensitive fields.
 export const previewInvite = createServerFn({ method: "POST" })
   .validator((input: { token: string }) =>
-    z.object({ token: z.string().min(10).max(200) }).parse(input),
+    z.object({ token: inviteTokenSchema }).parse(input),
   )
   .handler(async ({ data }) => {
     const { data: invite } = await supabaseAdmin
@@ -451,7 +455,7 @@ export const listMyPendingInvites = createServerFn({ method: "GET" })
 export const acceptInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { token: string }) =>
-    z.object({ token: z.string().min(10).max(200) }).parse(input),
+    z.object({ token: inviteTokenSchema }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const userEmail = String(context.claims.email ?? "").toLowerCase();
@@ -487,7 +491,7 @@ export const acceptInvite = createServerFn({ method: "POST" })
         .eq("id", invite.id);
       throw new Error("Invite has expired");
     }
-    if (invite.email.toLowerCase() !== userEmail) {
+    if (!inviteEmailMatches(invite.email, userEmail)) {
       throw new Error("This invite was sent to a different email address");
     }
 
@@ -520,7 +524,7 @@ export const acceptInvite = createServerFn({ method: "POST" })
 export const declineInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { token: string }) =>
-    z.object({ token: z.string().min(10).max(200) }).parse(input),
+    z.object({ token: inviteTokenSchema }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const userEmail = String(context.claims.email ?? "").toLowerCase();
@@ -530,7 +534,7 @@ export const declineInvite = createServerFn({ method: "POST" })
       .eq("token", data.token)
       .maybeSingle();
     if (!invite) throw new Error("Invite not found");
-    if (invite.email.toLowerCase() !== userEmail)
+    if (!inviteEmailMatches(invite.email, userEmail))
       throw new Error("Not your invite");
     if (invite.status !== "pending")
       throw new Error("Invite is no longer pending");
