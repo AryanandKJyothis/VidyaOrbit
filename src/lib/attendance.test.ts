@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildAttendanceSaveRows,
+  resolveAttendanceDate,
   summarizeAttendanceMarks,
   type AttendanceStatus,
 } from "./attendance";
@@ -81,5 +82,24 @@ describe("summarizeAttendanceMarks", () => {
       late: 1,
       unmarked: 2,
     });
+  });
+});
+
+describe("resolveAttendanceDate (VO-026)", () => {
+  it("restored yesterday from localStorage before the same-day guard", () => {
+    const today = "2026-10-12";
+    const saved = "2026-10-11";
+    const before = saved;
+    expect(before).toBe("2026-10-11");
+    expect(resolveAttendanceDate(saved, today)).toBe(today);
+  });
+
+  it("keeps a stored date only when it is still today", () => {
+    expect(resolveAttendanceDate("2026-10-12", "2026-10-12")).toBe(
+      "2026-10-12",
+    );
+    expect(resolveAttendanceDate("not-a-date", "2026-10-12")).toBe(
+      "2026-10-12",
+    );
   });
 });

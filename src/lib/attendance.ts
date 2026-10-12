@@ -34,6 +34,17 @@ export function buildAttendanceSaveRows(
   return rows;
 }
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Keep a stored date only when it is still today (IST). */
+export function resolveAttendanceDate(
+  saved: string | null | undefined,
+  today: string,
+): string {
+  if (saved && ISO_DATE.test(saved) && saved === today) return saved;
+  return today;
+}
+
 export function summarizeAttendanceMarks(
   roster: { id: string }[],
   marks: Record<string, AttendanceStatus>,
