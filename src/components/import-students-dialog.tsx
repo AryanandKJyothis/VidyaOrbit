@@ -232,7 +232,12 @@ export function ImportStudentsDialog({
       const seenKeys = new Map<string, number>();
       for (const r of prev) {
         if (r.sourceRow === sourceRow) continue;
-        if (r.issue === "invalid_name" || r.issue === "invalid_phone") continue;
+        if (
+          r.issue === "invalid_name" ||
+          r.issue === "invalid_phone" ||
+          r.issue === "missing_phone"
+        )
+          continue;
         const name = (r.full_name ?? "").trim().toLowerCase();
         const phoneKey = r.phone ? r.phone.replace(/\D/g, "").slice(-10) : "";
         const key = phoneKey ? `p:${phoneKey}` : `n:${name}`;
@@ -268,7 +273,11 @@ export function ImportStudentsDialog({
       if (filter === "dup_db") return r.issue === "dup_db";
       if (filter === "dup_file") return r.issue === "dup_file";
       if (filter === "fix")
-        return r.issue === "invalid_name" || r.issue === "invalid_phone";
+        return (
+          r.issue === "invalid_name" ||
+          r.issue === "invalid_phone" ||
+          r.issue === "missing_phone"
+        );
       return true;
     });
   }, [prepared, filter]);
@@ -1020,6 +1029,7 @@ function PreviewRow({
   const editable =
     row.issue === "invalid_name" ||
     row.issue === "invalid_phone" ||
+    row.issue === "missing_phone" ||
     row.issue === "dup_file";
 
   const issueColor: Record<ImportRowIssue, string> = {
@@ -1027,6 +1037,7 @@ function PreviewRow({
     dup_db: "text-amber-700 dark:text-amber-400",
     invalid_name: "text-destructive",
     invalid_phone: "text-destructive",
+    missing_phone: "text-destructive",
     dup_file: "text-destructive",
   };
 
@@ -1190,6 +1201,7 @@ function StepResult({
     (r) =>
       r.issue === "invalid_name" ||
       r.issue === "invalid_phone" ||
+      r.issue === "missing_phone" ||
       r.issue === "dup_file",
   );
 

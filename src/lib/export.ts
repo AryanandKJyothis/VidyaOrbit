@@ -103,7 +103,7 @@ export async function downloadStudentImportTemplate(batchNames: string[] = []) {
     ["2.", "Name is required. Everything else is optional but recommended."],
     [
       "3.",
-      "Phone: any of 9876543210, +91 9876543210, 98765-43210 work. Leave blank if unknown.",
+      "Phone: any of 9876543210, +91 9876543210, 98765-43210 work. Student or guardian phone required (same as Add student).",
     ],
     [
       "4.",
