@@ -24,9 +24,24 @@ function normKeyFromRow(phone: string | null, name: string): string {
 export type ImportRowIssue =
   | "none"
   | "invalid_phone"
+  | "missing_phone"
   | "invalid_name"
   | "dup_file"
   | "dup_db";
+
+/** Same rule as `studentSchemaWithPhone`: student or guardian phone. */
+export function importContactIssue(
+  phone: string | null | undefined,
+  guardianPhone: string | null | undefined,
+): "invalid_phone" | "missing_phone" | null {
+  const p = (phone ?? "").trim();
+  const g = (guardianPhone ?? "").trim();
+  const pOk = Boolean(p && IMPORT_PHONE_REGEX.test(p));
+  const gOk = Boolean(g && IMPORT_PHONE_REGEX.test(g));
+  if (pOk || gOk) return null;
+  if (p || g) return "invalid_phone";
+  return "missing_phone";
+}
 
 export type PreparedImportRow = {
   sourceRow: number;
@@ -313,9 +328,12 @@ export function revalidateRow(
   let dupFileRow: number | undefined;
 
   if (!name || name.length > 120) issue = "invalid_name";
-  else if (phoneRaw && !IMPORT_PHONE_REGEX.test(phoneRaw)) {
-    issue = "invalid_phone";
-    phone = null;
+  else {
+    const contactIssue = importContactIssue(phoneRaw, row.guardian_phone);
+    if (contactIssue) {
+      issue = contactIssue;
+      if (contactIssue === "invalid_phone" && phoneRaw) phone = null;
+    }
   }
 
   if (issue === "none") {
@@ -402,8 +420,10 @@ export function prepareStudentImportRows(
 
     let issue: ImportRowIssue = "none";
     if (!nameRaw || nameRaw.length > 120) issue = "invalid_name";
-    else if (phoneRaw && !IMPORT_PHONE_REGEX.test(phoneRaw))
-      issue = "invalid_phone";
+    else {
+      const contactIssue = importContactIssue(phoneRaw, guardianPhoneRaw);
+      if (contactIssue) issue = contactIssue;
+    }
 
     const key = normKeyFromRow(phone, nameRaw);
     if (issue === "none") {
@@ -464,6 +484,8 @@ export function issueLabel(issue: ImportRowIssue): string {
       return "Missing or invalid name";
     case "invalid_phone":
       return "Invalid phone";
+    case "missing_phone":
+      return "Phone or guardian phone required";
     case "dup_file":
       return "Duplicate in file";
     case "dup_db":
@@ -479,6 +501,7 @@ export async function downloadRejectedRows(rows: PreparedImportRow[]) {
     (r) =>
       r.issue === "invalid_name" ||
       r.issue === "invalid_phone" ||
+      r.issue === "missing_phone" ||
       r.issue === "dup_file",
   );
   if (!rejected.length) return;
