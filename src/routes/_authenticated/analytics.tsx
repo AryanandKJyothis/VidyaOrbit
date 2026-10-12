@@ -43,6 +43,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatINR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
+import {
+  fetchAttendanceAnalyticsRows,
+  type AttendanceAnalyticsRow,
+} from "@/lib/fetch-all-rows";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   component: AnalyticsPage,
@@ -62,18 +66,15 @@ function AnalyticsPage() {
     queryKey: ["att-all", active?.ownerId],
     enabled: !!active?.ownerId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("attendance_records")
-        .select(
-          "status, student_id, attendance_sessions(batch_id, session_date)",
-        )
-        .eq("owner_id", active!.ownerId);
-      if (error) throw error;
-      return data as Array<{
-        status: string;
-        student_id: string;
-        attendance_sessions: { batch_id: string; session_date: string } | null;
-      }>;
+      return fetchAttendanceAnalyticsRows((from, to) =>
+        supabase
+          .from("attendance_records")
+          .select(
+            "status, student_id, attendance_sessions(batch_id, session_date)",
+          )
+          .eq("owner_id", active!.ownerId)
+          .range(from, to),
+      ) as Promise<AttendanceAnalyticsRow[]>;
     },
   });
 
