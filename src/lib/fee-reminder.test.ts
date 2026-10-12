@@ -87,6 +87,15 @@ describe("buildFeeReminder", () => {
     balance: 2500,
   };
 
+  it("omitted the calendar due date before the fix", () => {
+    const before = [
+      "Fee reminder from Orbit Coaching",
+      "Amina — March 2026 fee",
+      "Amount due: ₹2,500",
+    ].join("\n");
+    expect(before).not.toMatch(/15\s*Mar/);
+  });
+
   it("prefers the guardian phone and names the due month", () => {
     const result = buildFeeReminder(base);
     expect(result.ok).toBe(true);
@@ -97,6 +106,7 @@ describe("buildFeeReminder", () => {
     );
     expect(result.message).toContain("Fee reminder from Orbit Coaching");
     expect(result.message).toContain("Amina — March 2026 fee");
+    expect(result.message).toContain("Due: 15 Mar 2026");
     expect(result.message).toContain("Amount due:");
     expect(result.message).toContain("2,500");
     expect(result.message).toContain(result.upiUri);
