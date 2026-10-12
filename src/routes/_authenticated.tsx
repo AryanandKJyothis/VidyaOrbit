@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Home, Users, Wallet, CreditCard } from "lucide-react";
+import { Home, Users, Wallet, CalendarCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useInstitute } from "@/hooks/use-data";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -18,6 +18,7 @@ import { WorkspaceProvider } from "@/hooks/use-active-workspace";
 import { usePrefers } from "@/hooks/use-prefers";
 import { fadeOnly, springDefault } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { MOBILE_NAV_ITEMS } from "@/lib/mobile-nav";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -119,16 +120,17 @@ function PageTransition() {
 function MobileNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const items = [
-    { label: "Dashboard", to: "/dashboard", icon: Home },
-    { label: "Students", to: "/students", icon: Users },
-    { label: "Fees", to: "/fees", icon: Wallet },
-    {
-      label: "Plan",
-      to: "/plan",
-      icon: CreditCard,
-    },
-  ];
+  const icons = {
+    "/dashboard": Home,
+    "/students": Users,
+    "/fees": Wallet,
+    "/attendance": CalendarCheck,
+  } as const;
+
+  const items = MOBILE_NAV_ITEMS.map((item) => ({
+    ...item,
+    icon: icons[item.to],
+  }));
 
   return (
     <nav className="fixed bottom-0 left-0 z-40 w-full px-2 py-2 material-chrome-dark scroll-edge-top md:hidden safe-area-inset-bottom">
