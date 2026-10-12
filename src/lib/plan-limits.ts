@@ -65,6 +65,35 @@ export function remainingStudentSlots(
   return Math.max(0, (limit as number) - currentCount);
 }
 
+/** Matches enforce_student_limit / subscription_health: archived rows do not count. */
+export function countStudentsTowardPlanLimit(
+  students: { status: string }[] | null | undefined,
+): number {
+  return (students ?? []).filter((s) => s.status !== "archived").length;
+}
+
+/**
+ * Prefer the server active count. Fall back to a client filter of the
+ * loaded roster so the Add button cannot block on archived rows.
+ */
+export function planLimitHeadcount(
+  serverCount: number | null | undefined,
+  students: { status: string }[] | null | undefined,
+): number {
+  if (typeof serverCount === "number" && Number.isFinite(serverCount)) {
+    return serverCount;
+  }
+  return countStudentsTowardPlanLimit(students);
+}
+
+export function atStudentPlanLimit(
+  currentCount: number,
+  limit: number | null | undefined,
+): boolean {
+  if (isUnlimited(limit)) return false;
+  return currentCount >= (limit as number);
+}
+
 /** @deprecated Use isUnlimited */
 export const isUnlimitedLimit = isUnlimited;
 

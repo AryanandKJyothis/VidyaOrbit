@@ -41,7 +41,12 @@ import {
   type Student,
 } from "@/hooks/use-data";
 import { useSubscription } from "@/hooks/use-subscription";
-import { formatLimit, isUnlimited } from "@/lib/plan-limits";
+import {
+  atStudentPlanLimit,
+  formatLimit,
+  isUnlimited,
+  planLimitHeadcount,
+} from "@/lib/plan-limits";
 import { StudentDialog } from "@/components/student-dialog";
 import { formatINR, formatDate } from "@/lib/format";
 import { exportToExcel, exportToCsv } from "@/lib/export";
@@ -122,11 +127,14 @@ function StudentsList() {
     return true;
   });
 
-  const currentCount = students.data?.length ?? 0;
+  const currentCount = planLimitHeadcount(
+    sub.data?.student_count,
+    students.data,
+  );
   const planLimit = sub.data?.limit ?? Infinity;
   const unlimited = isUnlimited(planLimit);
   const pct = unlimited ? 0 : Math.min(100, (currentCount / planLimit) * 100);
-  const atLimit = !unlimited && currentCount >= planLimit;
+  const atLimit = atStudentPlanLimit(currentCount, planLimit);
 
   const isOwner = active?.role === "owner";
   const contactMsg = getContactMessage(isOwner);
