@@ -215,6 +215,42 @@ export function canSendFeeReminders(
   return fees === true || fees === "write";
 }
 
+export const REMINDER_OPENED_STORAGE_KEY = "vidya:fee-reminders:opened";
+
+export function reminderOpenedKey(
+  studentId: string,
+  feeDueDate: string | null | undefined,
+  today: string,
+): string {
+  return `${studentId}:${(feeDueDate ?? "").slice(0, 10)}:${today}`;
+}
+
+export function parseOpenedReminderKeys(
+  raw: string | null | undefined,
+): Set<string> {
+  if (!raw) return new Set();
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((k): k is string => typeof k === "string"));
+  } catch {
+    return new Set();
+  }
+}
+
+export function serializeOpenedReminderKeys(keys: Iterable<string>): string {
+  return JSON.stringify([...keys]);
+}
+
+export function markReminderOpened(
+  keys: Set<string>,
+  key: string,
+): Set<string> {
+  const next = new Set(keys);
+  next.add(key);
+  return next;
+}
+
 /** Receipt share stays a wa.me draft. There is no public receipt URL. */
 export function buildReceiptShare(input: {
   centreName: string;

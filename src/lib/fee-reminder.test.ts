@@ -7,6 +7,10 @@ import {
   feeCollectionStatus,
   feeMonthLabel,
   formatUpiAmount,
+  markReminderOpened,
+  parseOpenedReminderKeys,
+  reminderOpenedKey,
+  serializeOpenedReminderKeys,
   UPI_NOTE_MAX,
 } from "./fee-reminder";
 import { instituteSchema } from "./validation";
@@ -204,5 +208,21 @@ describe("buildReceiptShare", () => {
     expect(share.message).toContain("Amina paid");
     expect(share.message).not.toContain("http");
     expect(share.href).toContain("https://wa.me/919876543210?text=");
+  });
+});
+
+describe("reminder opened flag (VO-063)", () => {
+  it("had no local log of opened chats before the fix", () => {
+    const before = new Set<string>();
+    expect(before.has("student-1:2026-03-15:2026-10-12")).toBe(false);
+  });
+
+  it("records an opened reminder so the queue can show it was sent", () => {
+    const key = reminderOpenedKey("student-1", "2026-03-15", "2026-10-12");
+    const opened = markReminderOpened(new Set(), key);
+    expect(opened.has(key)).toBe(true);
+    expect(
+      parseOpenedReminderKeys(serializeOpenedReminderKeys(opened)).has(key),
+    ).toBe(true);
   });
 });
