@@ -23,7 +23,21 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import { format, subDays, startOfMonth, addDays } from "date-fns";
+import {
+  addCalendarDaysISO,
+  formatDate,
+  formatINR,
+  isPastIstDate,
+  istMonthStartISO,
+  istPrevMonthRangeISO,
+  istWeekdayKey,
+  istWeekdayLong,
+  todayISO,
+} from "@/lib/format";
+import {
+  dashboardAttendanceSinceISO,
+  fetchDashboardAttendanceRows,
+} from "@/lib/dashboard-attendance";
 import { StatCard } from "@/components/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +55,6 @@ import {
   useInstitute,
 } from "@/hooks/use-data";
 import { supabase } from "@/integrations/supabase/client";
-import { formatINR, formatDate } from "@/lib/format";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { SetupPrompt } from "@/components/setup-prompt";
@@ -59,10 +72,6 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
-// Postgres EXTRACT(dow) → 0=Sun..6=Sat. Match against batch.days_of_week
-// which is stored as 3-letter strings in this app (mon/tue/...).
-const DOW_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-
 function Dashboard() {
   const institute = useInstitute();
   const students = useStudents();
@@ -79,18 +88,15 @@ function Dashboard() {
     queryKey: ["att-summary", active?.ownerId],
     enabled: !!active?.ownerId,
     queryFn: async () => {
-      const since = subDays(new Date(), 30).toISOString().slice(0, 10);
-      const { data, error } = await supabase
-        .from("attendance_records")
-        .select("status, created_at, attendance_sessions(session_date)")
-        .eq("owner_id", active!.ownerId)
-        .gte("created_at", since);
-      if (error) throw error;
-      return data as Array<{
-        status: string;
-        created_at: string;
-        attendance_sessions: { session_date: string } | null;
-      }>;
+      const since = dashboardAttendanceSinceISO();
+      return fetchDashboardAttendanceRows((from, to) =>
+        supabase
+          .from("attendance_records")
+          .select("status, created_at, attendance_sessions!inner(session_date)")
+          .eq("owner_id", active!.ownerId)
+          .gte("attendance_sessions.session_date", since)
+          .range(from, to),
+      );
     },
   });
 
@@ -114,8 +120,7 @@ function Dashboard() {
     const overdue = s.filter(
       (st) =>
         st.status !== "archived" &&
-        st.fee_due_date &&
-        new Date(st.fee_due_date) < new Date() &&
+        isPastIstDate(st.fee_due_date) &&
         Number(st.fee_total) - (totalPaidByStudent[st.id] ?? 0) > 0,
     );
     const overdueAmount = overdue.reduce(
@@ -130,14 +135,14 @@ function Dashboard() {
       const balance = Math.max(0, Number(st.fee_total) - paid);
       const isOverdue = !!(
         st.fee_due_date &&
-        new Date(st.fee_due_date) < new Date() &&
+        isPastIstDate(st.fee_due_date) &&
         balance > 0
       );
       return paid > 0 && balance > 0 && !isOverdue;
     }).length;
 
-    const todayStr = format(new Date(), "yyyy-MM-dd");
-    const weekAheadStr = format(addDays(new Date(), 7), "yyyy-MM-dd");
+    const todayStr = todayISO();
+    const weekAheadStr = addCalendarDaysISO(todayStr, 7);
     const duesWeekAmount = s
       .filter((st) => st.status !== "archived")
       .reduce((sum, st) => {
@@ -155,20 +160,13 @@ function Dashboard() {
       (a) => a.status === "present" || a.status === "late",
     ).length;
     const attRate = att.length ? Math.round((present / att.length) * 100) : 0;
-    const monthStart = startOfMonth(new Date()).toISOString().slice(0, 10);
+    const monthStart = istMonthStartISO();
     const monthCollected = p
       .filter((x) => x.payment_date >= monthStart)
       .reduce((sum, x) => sum + Number(x.amount), 0);
 
     // Previous full month (for delta)
-    const prevMonthStart = format(
-      new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
-      "yyyy-MM-dd",
-    );
-    const prevMonthEnd = format(
-      new Date(new Date().getFullYear(), new Date().getMonth(), 0),
-      "yyyy-MM-dd",
-    );
+    const { start: prevMonthStart, end: prevMonthEnd } = istPrevMonthRangeISO();
     const prevMonthCollected = p
       .filter(
         (x) =>
@@ -182,7 +180,7 @@ function Dashboard() {
       : undefined;
 
     // Today's batches based on days_of_week
-    const dowKey = DOW_KEYS[new Date().getDay()];
+    const dowKey = istWeekdayKey();
     const todaysBatches = b.filter(
       (x) =>
         x.is_active &&
@@ -229,10 +227,14 @@ function Dashboard() {
   const collectionSeries = useMemo(() => {
     const p = payments.data ?? [];
     const days: { date: string; label: string; amount: number }[] = [];
+    const today = todayISO();
     for (let i = 13; i >= 0; i--) {
-      const d = subDays(new Date(), i);
-      const key = format(d, "yyyy-MM-dd");
-      days.push({ date: key, label: format(d, "d MMM"), amount: 0 });
+      const key = addCalendarDaysISO(today, -i);
+      days.push({
+        date: key,
+        label: formatDate(key).replace(/ \d{4}$/, ""),
+        amount: 0,
+      });
     }
     for (const pay of p) {
       const day = days.find((d) => d.date === pay.payment_date);
@@ -248,9 +250,9 @@ function Dashboard() {
   const attendanceSpark = useMemo(() => {
     const att = attendance.data ?? [];
     const days: { date: string; total: number; present: number }[] = [];
+    const today = todayISO();
     for (let i = 13; i >= 0; i--) {
-      const d = subDays(new Date(), i);
-      days.push({ date: format(d, "yyyy-MM-dd"), total: 0, present: 0 });
+      days.push({ date: addCalendarDaysISO(today, -i), total: 0, present: 0 });
     }
     for (const a of att) {
       // Use session_date (class date) instead of created_at (mark time)
@@ -536,7 +538,7 @@ function Dashboard() {
                 Today's batches
               </CardTitle>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                {format(new Date(), "EEEE")}
+                {istWeekdayLong()}
               </p>
             </div>
             <Button asChild variant="ghost" size="sm">

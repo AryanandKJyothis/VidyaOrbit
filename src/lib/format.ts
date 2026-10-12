@@ -65,6 +65,38 @@ export function yesterdayISO(now: Date = new Date()): string {
   return addCalendarDaysISO(todayISO(now), -1);
 }
 
+/** First IST calendar day of the month containing `now`. */
+export function istMonthStartISO(now: Date = new Date()): string {
+  return `${todayISO(now).slice(0, 7)}-01`;
+}
+
+export function istPrevMonthRangeISO(now: Date = new Date()): {
+  start: string;
+  end: string;
+} {
+  const end = addCalendarDaysISO(istMonthStartISO(now), -1);
+  return { start: `${end.slice(0, 7)}-01`, end };
+}
+
+/** `sun`…`sat` in IST (not the host timezone). */
+export function istWeekdayKey(now: Date = new Date()): string {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: IST_TIME_ZONE,
+    weekday: "short",
+  })
+    .format(now)
+    .toLowerCase()
+    .slice(0, 3);
+  return weekday;
+}
+
+export function istWeekdayLong(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: IST_TIME_ZONE,
+    weekday: "long",
+  }).format(now);
+}
+
 /** Date-only compare. A due date of today (IST) is not overdue. */
 export function isPastIstDate(
   iso: string | null | undefined,

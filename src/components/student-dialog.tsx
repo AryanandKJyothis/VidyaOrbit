@@ -22,6 +22,7 @@ import { useCan } from "@/hooks/use-active-workspace";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatUserError } from "@/lib/format-error";
+import { todayISO } from "@/lib/format";
 
 export function StudentDialog({
   open,
@@ -42,7 +43,7 @@ export function StudentDialog({
     guardian_name: "",
     guardian_phone: "",
     address: "",
-    joining_date: new Date().toISOString().slice(0, 10),
+    joining_date: todayISO(),
     status: "active",
     batch_id: "",
     fee_total: "",
@@ -58,8 +59,7 @@ export function StudentDialog({
         guardian_name: student?.guardian_name ?? "",
         guardian_phone: student?.guardian_phone ?? "",
         address: student?.address ?? "",
-        joining_date:
-          student?.joining_date ?? new Date().toISOString().slice(0, 10),
+        joining_date: student?.joining_date ?? todayISO(),
         status: student?.status ?? "active",
         batch_id: student?.batch_id ?? "",
         fee_total: student?.fee_total != null ? String(student.fee_total) : "",
