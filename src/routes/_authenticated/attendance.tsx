@@ -22,6 +22,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 import {
   buildAttendanceSaveRows,
+  resolveAttendanceDate,
   summarizeAttendanceMarks,
   type AttendanceStatus,
 } from "@/lib/attendance";
@@ -81,8 +82,7 @@ function AttendancePage() {
   useEffect(() => {
     try {
       const savedDate = localStorage.getItem(ATT_DATE_KEY);
-      if (savedDate && /^\d{4}-\d{2}-\d{2}$/.test(savedDate))
-        setDate(savedDate);
+      setDate(resolveAttendanceDate(savedDate, todayISO()));
     } catch {
       /* ignore */
     }
