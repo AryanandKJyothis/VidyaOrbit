@@ -8,15 +8,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  markReminderOpened,
   openWhatsApp,
+  parseOpenedReminderKeys,
+  reminderOpenedKey,
   reminderSkipReason,
+  REMINDER_OPENED_STORAGE_KEY,
+  serializeOpenedReminderKeys,
   type FeeReminderResult,
 } from "@/lib/fee-reminder";
+import { todayISO } from "@/lib/format";
 import { toast } from "sonner";
 
 export type ReminderQueueItem = {
   studentId: string;
   studentName: string;
+  feeDueDate?: string | null;
   result: FeeReminderResult;
 };
 
@@ -39,10 +46,23 @@ export function FeeReminderQueue({
   );
   const skipped = items.filter((item) => !item.result.ok);
   const [index, setIndex] = useState(0);
+  const [openedKeys, setOpenedKeys] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     if (open) setIndex(0);
   }, [open, items]);
+
+  useEffect(() => {
+    try {
+      setOpenedKeys(
+        parseOpenedReminderKeys(
+          window.localStorage.getItem(REMINDER_OPENED_STORAGE_KEY),
+        ),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [open]);
 
   const current = sendable[index];
   const finished = !current;
@@ -91,10 +111,34 @@ export function FeeReminderQueue({
               onClick={() => {
                 if (!openWhatsApp(current.result.href)) {
                   toast.error("Allow pop-ups to open WhatsApp.");
+                  return;
+                }
+                const key = reminderOpenedKey(
+                  current.studentId,
+                  current.feeDueDate ?? null,
+                  todayISO(),
+                );
+                const next = markReminderOpened(openedKeys, key);
+                setOpenedKeys(next);
+                try {
+                  window.localStorage.setItem(
+                    REMINDER_OPENED_STORAGE_KEY,
+                    serializeOpenedReminderKeys(next),
+                  );
+                } catch {
+                  /* ignore */
                 }
               }}
             >
-              Open WhatsApp
+              {openedKeys.has(
+                reminderOpenedKey(
+                  current.studentId,
+                  current.feeDueDate ?? null,
+                  todayISO(),
+                ),
+              )
+                ? "Opened again"
+                : "Open WhatsApp"}
             </Button>
           )}
           <Button

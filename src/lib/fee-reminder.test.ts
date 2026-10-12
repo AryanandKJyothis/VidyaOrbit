@@ -7,6 +7,10 @@ import {
   feeCollectionStatus,
   feeMonthLabel,
   formatUpiAmount,
+  markReminderOpened,
+  parseOpenedReminderKeys,
+  reminderOpenedKey,
+  serializeOpenedReminderKeys,
   UPI_NOTE_MAX,
 } from "./fee-reminder";
 import { instituteSchema } from "./validation";
@@ -87,6 +91,15 @@ describe("buildFeeReminder", () => {
     balance: 2500,
   };
 
+  it("omitted the calendar due date before the fix", () => {
+    const before = [
+      "Fee reminder from Orbit Coaching",
+      "Amina — March 2026 fee",
+      "Amount due: ₹2,500",
+    ].join("\n");
+    expect(before).not.toMatch(/15\s*Mar/);
+  });
+
   it("prefers the guardian phone and names the due month", () => {
     const result = buildFeeReminder(base);
     expect(result.ok).toBe(true);
@@ -97,6 +110,7 @@ describe("buildFeeReminder", () => {
     );
     expect(result.message).toContain("Fee reminder from Orbit Coaching");
     expect(result.message).toContain("Amina — March 2026 fee");
+    expect(result.message).toContain("Due: 15 Mar 2026");
     expect(result.message).toContain("Amount due:");
     expect(result.message).toContain("2,500");
     expect(result.message).toContain(result.upiUri);
@@ -194,5 +208,21 @@ describe("buildReceiptShare", () => {
     expect(share.message).toContain("Amina paid");
     expect(share.message).not.toContain("http");
     expect(share.href).toContain("https://wa.me/919876543210?text=");
+  });
+});
+
+describe("reminder opened flag (VO-063)", () => {
+  it("had no local log of opened chats before the fix", () => {
+    const before = new Set<string>();
+    expect(before.has("student-1:2026-03-15:2026-10-12")).toBe(false);
+  });
+
+  it("records an opened reminder so the queue can show it was sent", () => {
+    const key = reminderOpenedKey("student-1", "2026-03-15", "2026-10-12");
+    const opened = markReminderOpened(new Set(), key);
+    expect(opened.has(key)).toBe(true);
+    expect(
+      parseOpenedReminderKeys(serializeOpenedReminderKeys(opened)).has(key),
+    ).toBe(true);
   });
 });

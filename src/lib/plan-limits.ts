@@ -94,6 +94,14 @@ export function atStudentPlanLimit(
   return currentCount >= (limit as number);
 }
 
+/** Restore adds one active seat. Block when the institute is already at cap. */
+export function canRestoreArchivedStudent(
+  currentCount: number,
+  limit: number | null | undefined,
+): boolean {
+  return !atStudentPlanLimit(currentCount, limit);
+}
+
 /** @deprecated Use isUnlimited */
 export const isUnlimitedLimit = isUnlimited;
 

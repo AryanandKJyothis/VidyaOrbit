@@ -47,14 +47,19 @@ import {
   FeeReminderQueue,
   type ReminderQueueItem,
 } from "@/components/fee-reminder-queue";
-import { formatINR, formatDate, isPastIstDate } from "@/lib/format";
+import { formatINR, formatDate, isPastIstDate, todayISO } from "@/lib/format";
 import { exportToExcel, exportToCsv } from "@/lib/export";
 import {
   buildFeeReminder,
   canSendFeeReminders,
   feeCollectionStatus,
   feeStatusLabel,
+  markReminderOpened,
   openWhatsApp,
+  parseOpenedReminderKeys,
+  reminderOpenedKey,
+  REMINDER_OPENED_STORAGE_KEY,
+  serializeOpenedReminderKeys,
   type FeeCollectionStatus,
 } from "@/lib/fee-reminder";
 import { toast } from "sonner";
@@ -198,6 +203,7 @@ function FeesPageContent() {
     const items: ReminderQueueItem[] = targets.map(({ s, balance }) => ({
       studentId: s.id,
       studentName: s.full_name,
+      feeDueDate: s.fee_due_date,
       result: buildFeeReminder({
         centreName,
         upiVpa,
@@ -211,6 +217,26 @@ function FeesPageContent() {
     if (items.length === 1 && items[0].result.ok) {
       if (!openWhatsApp(items[0].result.href)) {
         toast.error("Allow pop-ups to open WhatsApp.");
+        return;
+      }
+      try {
+        const key = reminderOpenedKey(
+          items[0].studentId,
+          items[0].feeDueDate ?? null,
+          todayISO(),
+        );
+        const next = markReminderOpened(
+          parseOpenedReminderKeys(
+            window.localStorage.getItem(REMINDER_OPENED_STORAGE_KEY),
+          ),
+          key,
+        );
+        window.localStorage.setItem(
+          REMINDER_OPENED_STORAGE_KEY,
+          serializeOpenedReminderKeys(next),
+        );
+      } catch {
+        /* ignore */
       }
       return;
     }

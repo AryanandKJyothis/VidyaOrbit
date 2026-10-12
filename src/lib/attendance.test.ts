@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   buildAttendanceSaveRows,
+  leftoverAfterDeleteThenInsertFail,
+  leftoverAfterUpsertThenScopedDelete,
+  planAttendanceSave,
+  resolveAttendanceDate,
   summarizeAttendanceMarks,
   type AttendanceStatus,
 } from "./attendance";
@@ -81,5 +85,66 @@ describe("summarizeAttendanceMarks", () => {
       late: 1,
       unmarked: 2,
     });
+  });
+});
+
+describe("resolveAttendanceDate (VO-026)", () => {
+  it("restored yesterday from localStorage before the same-day guard", () => {
+    const today = "2026-10-12";
+    const saved = "2026-10-11";
+    const before = saved;
+    expect(before).toBe("2026-10-11");
+    expect(resolveAttendanceDate(saved, today)).toBe(today);
+  });
+
+  it("keeps a stored date only when it is still today", () => {
+    expect(resolveAttendanceDate("2026-10-12", "2026-10-12")).toBe(
+      "2026-10-12",
+    );
+    expect(resolveAttendanceDate("not-a-date", "2026-10-12")).toBe(
+      "2026-10-12",
+    );
+  });
+});
+
+describe("atomic attendance save (VO-069)", () => {
+  const existing = [
+    { student_id: "a", status: "present" as const },
+    { student_id: "b", status: "absent" as const },
+  ];
+
+  it("delete-then-insert loses the session if the insert fails", () => {
+    expect(leftoverAfterDeleteThenInsertFail(existing, false, [])).toEqual([]);
+  });
+
+  it("upsert then scoped delete keeps previous rows if upsert fails", () => {
+    const plan = planAttendanceSave(
+      roster,
+      { a: "late" },
+      ctx,
+      existing.map((row) => row.student_id),
+    );
+    expect(plan.upsertRows).toEqual([
+      {
+        owner_id: "owner-1",
+        session_id: "session-1",
+        student_id: "a",
+        status: "late",
+      },
+    ]);
+    expect(plan.deleteStudentIds).toEqual(["b"]);
+    expect(
+      leftoverAfterUpsertThenScopedDelete(
+        existing,
+        {
+          upsertRows: plan.upsertRows.map((row) => ({
+            student_id: row.student_id,
+            status: row.status,
+          })),
+          deleteStudentIds: plan.deleteStudentIds,
+        },
+        false,
+      ),
+    ).toEqual(existing);
   });
 });

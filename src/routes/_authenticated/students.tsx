@@ -43,6 +43,7 @@ import {
 import { useSubscription } from "@/hooks/use-subscription";
 import {
   atStudentPlanLimit,
+  canRestoreArchivedStudent,
   formatLimit,
   isUnlimited,
   planLimitHeadcount,
@@ -62,6 +63,7 @@ import {
 import { EmptyState } from "@/components/empty-state";
 import { OverLimitBanner } from "@/components/over-limit-banner";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
+import { RoutePermissionGate } from "@/components/route-permission-gate";
 import {
   getContactMessage,
   getContactLink,
@@ -82,7 +84,11 @@ function StudentsLayout() {
   }
 
   // Otherwise render the list
-  return <StudentsList />;
+  return (
+    <RoutePermissionGate resource="students" level="read">
+      <StudentsList />
+    </RoutePermissionGate>
+  );
 }
 
 function StudentsList() {
@@ -93,6 +99,7 @@ function StudentsList() {
   const { active } = useActiveWorkspace();
   const qc = useQueryClient();
   const canViewFees = useCan("fees", "read");
+  const canWriteStudents = useCan("students", "write");
 
   const [q, setQ] = useState("");
   const [batchFilter, setBatchFilter] = useState<string>("all");
@@ -146,6 +153,15 @@ function StudentsList() {
     const next = s.status === "archived" ? "active" : "archived";
     if (!active?.ownerId) {
       toast.error("No active workspace selected.");
+      return;
+    }
+    if (
+      next === "active" &&
+      !canRestoreArchivedStudent(currentCount, planLimit)
+    ) {
+      toast.error(
+        `You've reached your plan limit of ${formatLimit(planLimit)} students. Archive another student or upgrade before restoring.`,
+      );
       return;
     }
     const { error } = await supabase
@@ -243,27 +259,31 @@ function StudentsList() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button
-              variant="outline"
-              onClick={() => setImportOpen(true)}
-              disabled={atLimit}
-            >
-              <Upload className="mr-1.5 h-4 w-4" /> Import
-            </Button>
-            <Button
-              onClick={() => {
-                setEditing(undefined);
-                setOpen(true);
-              }}
-              disabled={atLimit}
-              title={
-                atLimit
-                  ? `You've reached the ${formatLimit(planLimit)}-student limit`
-                  : undefined
-              }
-            >
-              <Plus className="mr-1.5 h-4 w-4" /> Add student
-            </Button>
+            {canWriteStudents && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setImportOpen(true)}
+                  disabled={atLimit}
+                >
+                  <Upload className="mr-1.5 h-4 w-4" /> Import
+                </Button>
+                <Button
+                  onClick={() => {
+                    setEditing(undefined);
+                    setOpen(true);
+                  }}
+                  disabled={atLimit}
+                  title={
+                    atLimit
+                      ? `You've reached the ${formatLimit(planLimit)}-student limit`
+                      : undefined
+                  }
+                >
+                  <Plus className="mr-1.5 h-4 w-4" /> Add student
+                </Button>
+              </>
+            )}
           </div>
         }
       />
@@ -372,22 +392,26 @@ function StudentsList() {
               title="No students yet"
               description="Add learners manually or import a spreadsheet — match batches later from the Students page."
             >
-              <Button
-                onClick={() => {
-                  setEditing(undefined);
-                  setOpen(true);
-                }}
-                disabled={atLimit}
-              >
-                <Plus className="mr-1.5 h-4 w-4" /> Add student
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setImportOpen(true)}
-                disabled={atLimit}
-              >
-                <Upload className="mr-1.5 h-4 w-4" /> Import spreadsheet
-              </Button>
+              {canWriteStudents && (
+                <>
+                  <Button
+                    onClick={() => {
+                      setEditing(undefined);
+                      setOpen(true);
+                    }}
+                    disabled={atLimit}
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" /> Add student
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setImportOpen(true)}
+                    disabled={atLimit}
+                  >
+                    <Upload className="mr-1.5 h-4 w-4" /> Import spreadsheet
+                  </Button>
+                </>
+              )}
             </EmptyState>
           ) : filtered.length === 0 ? (
             <EmptyState
@@ -484,23 +508,27 @@ function StudentsList() {
                             )}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => {
-                                setEditing(s);
-                                setOpen(true);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => archive(s)}
-                            >
-                              <Archive className="h-4 w-4" />
-                            </Button>
+                            {canWriteStudents && (
+                              <>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditing(s);
+                                    setOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => archive(s)}
+                                >
+                                  <Archive className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
                           </td>
                         </tr>
                       );

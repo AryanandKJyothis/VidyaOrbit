@@ -19,9 +19,13 @@ import {
 import { useBatches, useStudents } from "@/hooks/use-data";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { useActiveWorkspace } from "@/hooks/use-active-workspace";
+import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
+import { RoutePermissionGate } from "@/components/route-permission-gate";
 import {
   buildAttendanceSaveRows,
+  isMissingAttendanceRpc,
+  planAttendanceSave,
+  resolveAttendanceDate,
   summarizeAttendanceMarks,
   type AttendanceStatus,
 } from "@/lib/attendance";
@@ -33,7 +37,11 @@ import { EmptyState } from "@/components/empty-state";
 import { QueryErrorState } from "@/components/query-state";
 
 export const Route = createFileRoute("/_authenticated/attendance")({
-  component: AttendancePage,
+  component: () => (
+    <RoutePermissionGate resource="attendance" level="read">
+      <AttendancePage />
+    </RoutePermissionGate>
+  ),
 });
 
 type Status = AttendanceStatus;
@@ -44,6 +52,7 @@ const ATT_DATE_KEY = "vidya:attendance:last-date";
 function AttendancePage() {
   const { user } = useAuth();
   const { active } = useActiveWorkspace();
+  const canWriteAttendance = useCan("attendance", "write");
   const ownerId = active?.ownerId ?? null;
   const batches = useBatches();
   const students = useStudents();
@@ -81,8 +90,7 @@ function AttendancePage() {
   useEffect(() => {
     try {
       const savedDate = localStorage.getItem(ATT_DATE_KEY);
-      if (savedDate && /^\d{4}-\d{2}-\d{2}$/.test(savedDate))
-        setDate(savedDate);
+      setDate(resolveAttendanceDate(savedDate, todayISO()));
     } catch {
       /* ignore */
     }
@@ -144,6 +152,7 @@ function AttendancePage() {
   };
 
   const save = async () => {
+    if (!canWriteAttendance) return;
     if (!batchId || !user || !ownerId) return;
     const plannedRows = buildAttendanceSaveRows(roster, marks, {
       ownerId,
@@ -165,18 +174,38 @@ function AttendancePage() {
         if (error) throw error;
         sessionId = data.id;
       }
-      const { error: deleteError } = await supabase
-        .from("attendance_records")
-        .delete()
-        .eq("session_id", sessionId)
-        .eq("owner_id", ownerId);
-      if (deleteError) throw deleteError;
-      const rows = buildAttendanceSaveRows(roster, marks, {
-        ownerId,
-        sessionId,
-      });
-      const { error } = await supabase.from("attendance_records").insert(rows);
-      if (error) throw error;
+      const existingStudentIds = Object.keys(session.data?.records ?? {});
+      const plan = planAttendanceSave(
+        roster,
+        marks,
+        { ownerId, sessionId },
+        existingStudentIds,
+      );
+      const rpc = await supabase.rpc(
+        "save_attendance_session" as never,
+        {
+          p_owner_id: ownerId,
+          p_session_id: sessionId,
+          p_rows: plan.upsertRows,
+        } as never,
+      );
+      if (rpc.error && !isMissingAttendanceRpc(rpc.error)) throw rpc.error;
+      if (rpc.error) {
+        const { error: upsertError } = await supabase
+          .from("attendance_records")
+          .upsert(plan.upsertRows, { onConflict: "session_id,student_id" });
+        if (upsertError) throw upsertError;
+        if (plan.deleteStudentIds.length > 0) {
+          const { error: scopedDeleteError } = await supabase
+            .from("attendance_records")
+            .delete()
+            .eq("session_id", sessionId)
+            .eq("owner_id", ownerId)
+            .in("student_id", plan.deleteStudentIds);
+          if (scopedDeleteError) throw scopedDeleteError;
+        }
+      }
+      const rows = plan.upsertRows;
       const unmarked = roster.length - rows.length;
       toast.success(
         unmarked > 0
@@ -299,18 +328,20 @@ function AttendancePage() {
                   </Button>
                 </div>
               </div>
-              <Button
-                onClick={save}
-                disabled={!batchId || saving || roster.length === 0}
-                className="hidden md:inline-flex shrink-0 min-h-11"
-              >
-                {saving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                Save attendance
-              </Button>
+              {canWriteAttendance && (
+                <Button
+                  onClick={save}
+                  disabled={!batchId || saving || roster.length === 0}
+                  className="hidden md:inline-flex shrink-0 min-h-11"
+                >
+                  {saving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
+                  Save attendance
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -332,26 +363,28 @@ function AttendancePage() {
                       </Badge>
                     )}
                   </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="flex-1 sm:flex-none touch-manipulation min-h-11"
-                      onClick={() => setAll("present")}
-                    >
-                      All present
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="flex-1 sm:flex-none touch-manipulation min-h-11"
-                      onClick={() => setAll("absent")}
-                    >
-                      All absent
-                    </Button>
-                  </div>
+                  {canWriteAttendance && (
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 sm:flex-none touch-manipulation min-h-11"
+                        onClick={() => setAll("present")}
+                      >
+                        All present
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 sm:flex-none touch-manipulation min-h-11"
+                        onClick={() => setAll("absent")}
+                      >
+                        All absent
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {roster.length === 0 ? (
@@ -382,38 +415,40 @@ function AttendancePage() {
                               </div>
                             )}
                           </div>
-                          <div className="flex gap-2 sm:gap-1.5 shrink-0 justify-between sm:justify-end w-full sm:w-auto">
-                            <ToggleBtn
-                              active={v === "present"}
-                              tone="success"
-                              label="Present"
-                              onClick={() =>
-                                setMarks({ ...marks, [s.id]: "present" })
-                              }
-                            >
-                              <Check className="h-5 w-5 sm:h-4 sm:w-4" />
-                            </ToggleBtn>
-                            <ToggleBtn
-                              active={v === "late"}
-                              tone="warning"
-                              label="Late"
-                              onClick={() =>
-                                setMarks({ ...marks, [s.id]: "late" })
-                              }
-                            >
-                              <Clock className="h-5 w-5 sm:h-4 sm:w-4" />
-                            </ToggleBtn>
-                            <ToggleBtn
-                              active={v === "absent"}
-                              tone="destructive"
-                              label="Absent"
-                              onClick={() =>
-                                setMarks({ ...marks, [s.id]: "absent" })
-                              }
-                            >
-                              <X className="h-5 w-5 sm:h-4 sm:w-4" />
-                            </ToggleBtn>
-                          </div>
+                          {canWriteAttendance && (
+                            <div className="flex gap-2 sm:gap-1.5 shrink-0 justify-between sm:justify-end w-full sm:w-auto">
+                              <ToggleBtn
+                                active={v === "present"}
+                                tone="success"
+                                label="Present"
+                                onClick={() =>
+                                  setMarks({ ...marks, [s.id]: "present" })
+                                }
+                              >
+                                <Check className="h-5 w-5 sm:h-4 sm:w-4" />
+                              </ToggleBtn>
+                              <ToggleBtn
+                                active={v === "late"}
+                                tone="warning"
+                                label="Late"
+                                onClick={() =>
+                                  setMarks({ ...marks, [s.id]: "late" })
+                                }
+                              >
+                                <Clock className="h-5 w-5 sm:h-4 sm:w-4" />
+                              </ToggleBtn>
+                              <ToggleBtn
+                                active={v === "absent"}
+                                tone="destructive"
+                                label="Absent"
+                                onClick={() =>
+                                  setMarks({ ...marks, [s.id]: "absent" })
+                                }
+                              >
+                                <X className="h-5 w-5 sm:h-4 sm:w-4" />
+                              </ToggleBtn>
+                            </div>
+                          )}
                         </li>
                       );
                     })}
@@ -424,7 +459,7 @@ function AttendancePage() {
           )}
 
           {/* Mobile-first sticky actions */}
-          {!noBatches && batchId && roster.length > 0 && (
+          {canWriteAttendance && !noBatches && batchId && roster.length > 0 && (
             <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 md:hidden">
               <div className="pointer-events-auto mx-auto max-w-lg border-t border-border bg-background/95 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.25)]">
                 <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground mb-2">
