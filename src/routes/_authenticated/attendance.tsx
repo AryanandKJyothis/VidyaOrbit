@@ -20,7 +20,7 @@ import { useBatches, useStudents } from "@/hooks/use-data";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
-import { formatDate, todayISO } from "@/lib/format";
+import { formatDate, todayISO, yesterdayISO } from "@/lib/format";
 import { toast } from "sonner";
 import { formatUserError } from "@/lib/format-error";
 import { cn } from "@/lib/utils";
@@ -285,11 +285,7 @@ function AttendancePage() {
                     size="sm"
                     variant="ghost"
                     className="h-7 text-xs px-2"
-                    onClick={() => {
-                      const y = new Date();
-                      y.setDate(y.getDate() - 1);
-                      setDate(y.toISOString().slice(0, 10));
-                    }}
+                    onClick={() => setDate(yesterdayISO())}
                   >
                     Yesterday
                   </Button>
