@@ -22,6 +22,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 import {
   buildAttendanceSaveRows,
+  isMissingAttendanceRpc,
+  planAttendanceSave,
   summarizeAttendanceMarks,
   type AttendanceStatus,
 } from "@/lib/attendance";
@@ -165,18 +167,38 @@ function AttendancePage() {
         if (error) throw error;
         sessionId = data.id;
       }
-      const { error: deleteError } = await supabase
-        .from("attendance_records")
-        .delete()
-        .eq("session_id", sessionId)
-        .eq("owner_id", ownerId);
-      if (deleteError) throw deleteError;
-      const rows = buildAttendanceSaveRows(roster, marks, {
-        ownerId,
-        sessionId,
-      });
-      const { error } = await supabase.from("attendance_records").insert(rows);
-      if (error) throw error;
+      const existingStudentIds = Object.keys(session.data?.records ?? {});
+      const plan = planAttendanceSave(
+        roster,
+        marks,
+        { ownerId, sessionId },
+        existingStudentIds,
+      );
+      const rpc = await supabase.rpc(
+        "save_attendance_session" as never,
+        {
+          p_owner_id: ownerId,
+          p_session_id: sessionId,
+          p_rows: plan.upsertRows,
+        } as never,
+      );
+      if (rpc.error && !isMissingAttendanceRpc(rpc.error)) throw rpc.error;
+      if (rpc.error) {
+        const { error: upsertError } = await supabase
+          .from("attendance_records")
+          .upsert(plan.upsertRows, { onConflict: "session_id,student_id" });
+        if (upsertError) throw upsertError;
+        if (plan.deleteStudentIds.length > 0) {
+          const { error: scopedDeleteError } = await supabase
+            .from("attendance_records")
+            .delete()
+            .eq("session_id", sessionId)
+            .eq("owner_id", ownerId)
+            .in("student_id", plan.deleteStudentIds);
+          if (scopedDeleteError) throw scopedDeleteError;
+        }
+      }
+      const rows = plan.upsertRows;
       const unmarked = roster.length - rows.length;
       toast.success(
         unmarked > 0
