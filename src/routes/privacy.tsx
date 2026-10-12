@@ -76,14 +76,13 @@ function PrivacyPage() {
 
         <Section title="6. Payments">
           <p>
-            Paid subscriptions are arranged by contacting us directly. In the
-            future, we plan to add online payment processing through{" "}
-            <strong>Razorpay</strong>. If and when you upgrade via an online
-            checkout, you'll enter your card / UPI / netbanking details directly
-            with Razorpay — we never see or store your card or bank credentials.
-            We store only the subscription details and billing status to grant
-            the right level of access. Razorpay's own privacy policy would apply
-            to data you submit to their checkout.
+            Paid subscriptions can be paid in the app on the Plan page through{" "}
+            <strong>Razorpay</strong> (UPI, card, or netbanking), or arranged
+            with us. You enter payment details on Razorpay's checkout — we never
+            see or store your card or bank credentials. We store only the
+            subscription details and billing status needed to grant access.
+            Razorpay's privacy policy applies to data you submit to their
+            checkout.
           </p>
         </Section>
 

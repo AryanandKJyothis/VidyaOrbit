@@ -79,9 +79,9 @@ export const LANDING_CLAIMS: LandingClaim[] = [
     source: "src/lib/export.ts used from students, batches and fees pages",
   },
   {
-    text: "Paid plans are arranged by invoice; in-app Razorpay checkout is not live.",
+    text: "Paid plans can be paid in the app through Razorpay, or arranged with us.",
     source:
-      "src/lib/feature-flags.ts BILLING_DISABLED; src/routes/terms.tsx §6",
+      "src/routes/_authenticated/plan.tsx RazorpayCheckout; src/routes/api/billing",
   },
 ];
 
@@ -97,4 +97,6 @@ export const BANNED_LANDING_PHRASES = [
   "under 30 seconds",
   "two fields. 30 seconds",
   "no training, no onboarding",
+  "coming soon",
+  "checkout is not live",
 ];

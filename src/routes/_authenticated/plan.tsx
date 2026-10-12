@@ -208,20 +208,15 @@ function PlanPage() {
           ))}
       </div>
 
-      {/* GST notice */}
-      <Alert className="max-w-2xl mx-auto">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Prices are exclusive of GST. GST invoicing is coming soon.{" "}
-          <Link
-            to="/terms"
-            hash="refund"
-            className="font-medium underline-offset-4 hover:underline"
-          >
-            Refunds &amp; cancellations
-          </Link>
-        </AlertDescription>
-      </Alert>
+      <p className="mx-auto max-w-2xl text-center text-sm text-muted-foreground">
+        <Link
+          to="/terms"
+          hash="refund"
+          className="font-medium underline-offset-4 hover:underline"
+        >
+          Refunds &amp; cancellations
+        </Link>
+      </p>
     </div>
   );
 }

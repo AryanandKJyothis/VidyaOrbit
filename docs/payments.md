@@ -102,7 +102,7 @@ Race this closes: Starter with ≤7 days left, open Large checkout (tab A), buy 
 
 ## Public `/pricing`
 
-This PR does **not** rewrite `/pricing`. Landing/pricing copy lives on master (and PR #8). In-app checkout is `/plan`, which reads `GET /api/billing/pricing` (`{billingEnabled, tiers:[…]}` always HTTP 200, including when billing is off). GST wording on `/plan`: "Prices are exclusive of GST. GST invoicing is coming soon."
+Public `/pricing` and `/plan` copy should match live checkout: pay in the app on `/plan` through Razorpay, or arrange payment with us. `/plan` reads `GET /api/billing/pricing` (`{billingEnabled, tiers:[…]}` always HTTP 200, including when billing is off). The business is not GST-registered; do not add GST wording.
 
 ## Environment
 
