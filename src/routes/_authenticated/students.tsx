@@ -43,6 +43,7 @@ import {
 import { useSubscription } from "@/hooks/use-subscription";
 import {
   atStudentPlanLimit,
+  canRestoreArchivedStudent,
   formatLimit,
   isUnlimited,
   planLimitHeadcount,
@@ -146,6 +147,15 @@ function StudentsList() {
     const next = s.status === "archived" ? "active" : "archived";
     if (!active?.ownerId) {
       toast.error("No active workspace selected.");
+      return;
+    }
+    if (
+      next === "active" &&
+      !canRestoreArchivedStudent(currentCount, planLimit)
+    ) {
+      toast.error(
+        `You've reached your plan limit of ${formatLimit(planLimit)} students. Archive another student or upgrade before restoring.`,
+      );
       return;
     }
     const { error } = await supabase
