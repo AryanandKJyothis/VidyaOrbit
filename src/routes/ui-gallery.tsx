@@ -26,13 +26,15 @@ export const Route = createFileRoute("/ui-gallery")({
 
 function PhoneFrame({
   title,
+  id,
   children,
 }: {
   title: string;
+  id: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-3">
+    <section id={id} className="space-y-3">
       <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
         {title}
       </h2>
@@ -57,7 +59,7 @@ function UiGallery() {
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        <PhoneFrame title="Dashboard">
+        <PhoneFrame id="dash" title="Dashboard">
           <div className="space-y-3">
             <GreetingBanner
               greeting="Good morning"
@@ -113,7 +115,7 @@ function UiGallery() {
           </div>
         </PhoneFrame>
 
-        <PhoneFrame title="Students">
+        <PhoneFrame id="students" title="Students">
           <div className="space-y-3">
             <Input
               defaultValue=""
@@ -166,7 +168,7 @@ function UiGallery() {
           </div>
         </PhoneFrame>
 
-        <PhoneFrame title="Attendance">
+        <PhoneFrame id="attendance" title="Attendance">
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-2xl bg-success/12 py-3 text-center">
               <p className="text-[11px] font-semibold text-success">Present</p>
@@ -212,7 +214,7 @@ function UiGallery() {
           </Button>
         </PhoneFrame>
 
-        <PhoneFrame title="Fees">
+        <PhoneFrame id="fees" title="Fees">
           <Card className="bg-primary text-primary-foreground">
             <CardContent className="p-4">
               <p className="text-[11px] uppercase tracking-wider text-primary-foreground/70">
@@ -226,7 +228,7 @@ function UiGallery() {
           </Card>
         </PhoneFrame>
 
-        <PhoneFrame title="Batches">
+        <PhoneFrame id="batches" title="Batches">
           <Card>
             <CardContent className="p-5">
               <div className="flex items-start gap-3">
@@ -253,7 +255,61 @@ function UiGallery() {
           </Card>
         </PhoneFrame>
 
-        <PhoneFrame title="Login">
+        <PhoneFrame id="staff" title="Staff">
+          <ul className="space-y-3">
+            {[
+              { name: "Centre owner", role: "Owner", status: "Active" },
+              { name: "Batch tutor", role: "Staff", status: "Invited" },
+            ].map((row) => (
+              <li
+                key={row.name}
+                className="flex items-center gap-3 rounded-2xl border border-border/80 bg-card p-4"
+              >
+                <InitialsAvatar name={row.name} />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">{row.name}</p>
+                  <p className="text-xs text-muted-foreground">{row.role}</p>
+                </div>
+                <span className="pill pill-success">{row.status}</span>
+              </li>
+            ))}
+          </ul>
+        </PhoneFrame>
+
+        <PhoneFrame id="settings" title="Settings">
+          <Card>
+            <CardContent className="space-y-3 p-5">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                Centre profile
+              </p>
+              <div className="space-y-1.5">
+                <Label>Institute name</Label>
+                <Input defaultValue="Samriddhi Centre" className="h-11" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Contact email</Label>
+                <Input defaultValue="hello@centre.example" className="h-11" />
+              </div>
+              <Button className="h-11 w-full" variant="outline">
+                Save profile
+              </Button>
+            </CardContent>
+          </Card>
+          <Card className="mt-3">
+            <CardContent className="p-5">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                Your current plan
+              </p>
+              <p className="mt-1 font-display text-lg font-semibold">Starter</p>
+              <p className="text-xs text-muted-foreground">Active</p>
+              <Button className="mt-3 h-11 w-full" variant="outline">
+                Manage plan
+              </Button>
+            </CardContent>
+          </Card>
+        </PhoneFrame>
+
+        <PhoneFrame id="login-card" title="Login">
           <div className="flex flex-col items-center text-center">
             <div className="mb-3 flex items-center gap-2">
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-soft">
