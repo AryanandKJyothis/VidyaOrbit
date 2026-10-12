@@ -183,6 +183,16 @@ export function reminderSkipReason(
   }
 }
 
+/**
+ * WhatsApp overdue reminders are a fees write. There is no server send path
+ * (client `wa.me` only); UI and this helper must both require write.
+ */
+export function canSendFeeReminders(
+  fees: "none" | "read" | "write" | boolean | undefined,
+): boolean {
+  return fees === true || fees === "write";
+}
+
 /** Receipt share stays a wa.me draft. There is no public receipt URL. */
 export function buildReceiptShare(input: {
   centreName: string;
