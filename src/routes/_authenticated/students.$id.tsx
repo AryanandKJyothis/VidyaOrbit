@@ -39,9 +39,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
+import { RoutePermissionGate } from "@/components/route-permission-gate";
 
 export const Route = createFileRoute("/_authenticated/students/$id")({
-  component: StudentDetail,
+  component: () => (
+    <RoutePermissionGate resource="students" level="read">
+      <StudentDetail />
+    </RoutePermissionGate>
+  ),
 });
 
 function StudentDetail() {
@@ -54,6 +59,7 @@ function StudentDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const canViewFees = useCan("fees", "read");
+  const canWriteStudents = useCan("students", "write");
 
   const updateStudent = useUpsertStudent();
 
@@ -155,9 +161,11 @@ function StudentDetail() {
         description={`Joined ${formatDate(s.joining_date)} · ${batchName}`}
         actions={
           <>
-            <Button variant="outline" onClick={() => setEditOpen(true)}>
-              <Pencil className="mr-1.5 h-4 w-4" /> Edit
-            </Button>
+            {canWriteStudents && (
+              <Button variant="outline" onClick={() => setEditOpen(true)}>
+                <Pencil className="mr-1.5 h-4 w-4" /> Edit
+              </Button>
+            )}
             {canViewFees && (
               <Button onClick={() => setPayOpen(true)}>
                 <Plus className="mr-1.5 h-4 w-4" /> Add payment
