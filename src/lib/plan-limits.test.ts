@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  atStudentPlanLimit,
   formatLimit,
   isUnlimited,
   PLAN_STUDENT_LIMITS,
+  planLimitHeadcount,
   remainingStudentSlots,
   studentLimitForPlan,
   toClientLimit,
@@ -41,5 +43,31 @@ describe("plan-limits", () => {
     ).toBe(Infinity);
     expect(remainingStudentSlots(1000, 1000)).toBe(0);
     expect(remainingStudentSlots(500, 12)).toBe(488);
+  });
+
+  it("does not count archived students toward the plan limit (VO-010)", () => {
+    const students = [
+      ...Array.from({ length: 90 }, (_, i) => ({
+        status: i % 2 === 0 ? "active" : "inactive",
+      })),
+      ...Array.from({ length: 20 }, () => ({ status: "archived" })),
+    ];
+    const before = students.length;
+    expect(before).toBe(110);
+    expect(before >= 100).toBe(true);
+
+    const currentCount = planLimitHeadcount(undefined, students);
+    expect(currentCount).toBe(90);
+    expect(atStudentPlanLimit(currentCount, 100)).toBe(false);
+    expect(atStudentPlanLimit(before, 100)).toBe(true);
+  });
+
+  it("prefers the server active student_count over the loaded array length", () => {
+    const students = [
+      ...Array.from({ length: 90 }, () => ({ status: "active" })),
+      ...Array.from({ length: 20 }, () => ({ status: "archived" })),
+    ];
+    expect(planLimitHeadcount(90, students)).toBe(90);
+    expect(atStudentPlanLimit(90, 100)).toBe(false);
   });
 });

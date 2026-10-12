@@ -20,7 +20,12 @@ import { useBatches, useStudents } from "@/hooks/use-data";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
-import { formatDate, todayISO } from "@/lib/format";
+import {
+  buildAttendanceSaveRows,
+  summarizeAttendanceMarks,
+  type AttendanceStatus,
+} from "@/lib/attendance";
+import { formatDate, todayISO, yesterdayISO } from "@/lib/format";
 import { toast } from "sonner";
 import { formatUserError } from "@/lib/format-error";
 import { cn } from "@/lib/utils";
@@ -31,7 +36,7 @@ export const Route = createFileRoute("/_authenticated/attendance")({
   component: AttendancePage,
 });
 
-type Status = "present" | "absent" | "late";
+type Status = AttendanceStatus;
 
 const ATT_BATCH_KEY = "vidya:attendance:last-batch";
 const ATT_DATE_KEY = "vidya:attendance:last-date";
@@ -140,6 +145,14 @@ function AttendancePage() {
 
   const save = async () => {
     if (!batchId || !user || !ownerId) return;
+    const plannedRows = buildAttendanceSaveRows(roster, marks, {
+      ownerId,
+      sessionId: session.data?.sessionId ?? "pending",
+    });
+    if (plannedRows.length === 0) {
+      toast.error("Mark at least one student before saving.");
+      return;
+    }
     setSaving(true);
     try {
       let sessionId = session.data?.sessionId;
@@ -158,19 +171,18 @@ function AttendancePage() {
         .eq("session_id", sessionId)
         .eq("owner_id", ownerId);
       if (deleteError) throw deleteError;
-      const rows = roster.map((s) => ({
-        owner_id: ownerId,
-        session_id: sessionId!,
-        student_id: s.id,
-        status: marks[s.id] ?? "present",
-      }));
-      if (rows.length) {
-        const { error } = await supabase
-          .from("attendance_records")
-          .insert(rows);
-        if (error) throw error;
-      }
-      toast.success("Attendance saved");
+      const rows = buildAttendanceSaveRows(roster, marks, {
+        ownerId,
+        sessionId,
+      });
+      const { error } = await supabase.from("attendance_records").insert(rows);
+      if (error) throw error;
+      const unmarked = roster.length - rows.length;
+      toast.success(
+        unmarked > 0
+          ? `Attendance saved. ${unmarked} unmarked student${unmarked === 1 ? " was" : "s were"} not recorded.`
+          : "Attendance saved",
+      );
       qc.invalidateQueries({ queryKey: ["att-session"] });
       qc.invalidateQueries({ queryKey: ["att-summary"] });
       qc.invalidateQueries({ queryKey: ["att-all"] });
@@ -181,14 +193,10 @@ function AttendancePage() {
     }
   };
 
-  const summary = useMemo(() => {
-    const vals = roster.map((s) => marks[s.id] ?? "present");
-    return {
-      present: vals.filter((v) => v === "present").length,
-      absent: vals.filter((v) => v === "absent").length,
-      late: vals.filter((v) => v === "late").length,
-    };
-  }, [marks, roster]);
+  const summary = useMemo(
+    () => summarizeAttendanceMarks(roster, marks),
+    [marks, roster],
+  );
 
   const noBatches = !batches.isLoading && (batches.data ?? []).length === 0;
 
@@ -285,11 +293,7 @@ function AttendancePage() {
                     size="sm"
                     variant="ghost"
                     className="h-7 text-xs px-2"
-                    onClick={() => {
-                      const y = new Date();
-                      y.setDate(y.getDate() - 1);
-                      setDate(y.toISOString().slice(0, 10));
-                    }}
+                    onClick={() => setDate(yesterdayISO())}
                   >
                     Yesterday
                   </Button>
@@ -322,6 +326,11 @@ function AttendancePage() {
                     <Badge variant="secondary">Present {summary.present}</Badge>
                     <Badge variant="outline">Late {summary.late}</Badge>
                     <Badge variant="destructive">Absent {summary.absent}</Badge>
+                    {summary.unmarked > 0 && (
+                      <Badge variant="outline">
+                        Unmarked {summary.unmarked}
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex gap-2 w-full sm:w-auto">
                     <Button
@@ -357,7 +366,7 @@ function AttendancePage() {
                 ) : (
                   <ul className="divide-y divide-border md:rounded-lg md:border md:border-border md:divide-y-0 md:p-1">
                     {roster.map((s) => {
-                      const v = marks[s.id] ?? "present";
+                      const v = marks[s.id];
                       return (
                         <li
                           key={s.id}
@@ -422,6 +431,7 @@ function AttendancePage() {
                   <span>P {summary.present}</span>
                   <span>L {summary.late}</span>
                   <span>A {summary.absent}</span>
+                  {summary.unmarked > 0 && <span>U {summary.unmarked}</span>}
                 </div>
                 <Button
                   className="w-full min-h-12 touch-manipulation text-base font-semibold"

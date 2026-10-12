@@ -20,7 +20,7 @@ function landingPricingAnswer(): string {
     growth.setupFee > 0
       ? ` ${growth.displayName} and ${large.displayName} add a ${formatIndianPrice(growth.setupFee)} setup fee on the first monthly invoice (waived on annual).`
       : "";
-  return `${free.displayName} is ${formatIndianPrice(free.monthlyPrice)} for ${free.studentLimit.toLowerCase()}. ${starter.displayName} is ${formatIndianPrice(starter.monthlyPrice)}/month (${formatIndianPrice(starter.annualPrice)}/year) for ${starter.studentLimit.toLowerCase()}. ${growth.displayName} is ${formatIndianPrice(growth.monthlyPrice)}/month; ${large.displayName} is ${formatIndianPrice(large.monthlyPrice)}/month.${growthSetup} Paid plans are arranged by invoice; online payment is coming soon.`;
+  return `${free.displayName} is ${formatIndianPrice(free.monthlyPrice)} for ${free.studentLimit.toLowerCase()}. ${starter.displayName} is ${formatIndianPrice(starter.monthlyPrice)}/month (${formatIndianPrice(starter.annualPrice)}/year) for ${starter.studentLimit.toLowerCase()}. ${growth.displayName} is ${formatIndianPrice(growth.monthlyPrice)}/month; ${large.displayName} is ${formatIndianPrice(large.monthlyPrice)}/month.${growthSetup} Pay a paid plan in the app on the Plan page through Razorpay, or contact us to arrange it.`;
 }
 
 /** Landing-page owner FAQ. Prices are read from APPROVED_PRICING. */
@@ -78,7 +78,7 @@ export const PRICING_FAQS: FaqItem[] = [
   },
   {
     q: "How do I upgrade?",
-    a: "Contact us and we'll help you upgrade to a paid plan that fits your needs. Online payment is coming soon.",
+    a: "Open Plan in the app and pay through Razorpay, or contact us and we'll help you upgrade to a paid plan that fits your needs.",
   },
   {
     q: "Can I cancel or downgrade?",

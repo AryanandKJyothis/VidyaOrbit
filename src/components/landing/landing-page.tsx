@@ -321,8 +321,8 @@ function Pricing() {
             <Link to="/pricing" className="underline underline-offset-2">
               pricing page
             </Link>
-            . Free plan, no card required. Paid plans by invoice; cancel
-            anytime.
+            . Free plan, no card required. Pay in the app when you upgrade;
+            cancel anytime.
           </p>
         </div>
         <div className="mt-12">

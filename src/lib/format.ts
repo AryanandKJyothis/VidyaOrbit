@@ -30,8 +30,46 @@ export const formatDateTime = (d: string | Date | null | undefined) => {
   }).format(date);
 };
 
-export const todayISO = () => {
-  const d = new Date();
-  const tz = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-  return tz.toISOString().slice(0, 10);
-};
+export const IST_TIME_ZONE = "Asia/Kolkata";
+
+function calendarDateParts(date: Date, timeZone = IST_TIME_ZONE) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  return { year: get("year"), month: get("month"), day: get("day") };
+}
+
+/** YYYY-MM-DD for `date` in the given zone. Never uses `toISOString()`. */
+export function calendarDateISO(
+  date: Date = new Date(),
+  timeZone = IST_TIME_ZONE,
+): string {
+  const { year, month, day } = calendarDateParts(date, timeZone);
+  return `${year}-${month}-${day}`;
+}
+
+export const todayISO = (now: Date = new Date()) => calendarDateISO(now);
+
+export function addCalendarDaysISO(iso: string, days: number): string {
+  const [year, month, day] = iso.split("-").map(Number);
+  const utcNoon = Date.UTC(year, month - 1, day + days, 12, 0, 0);
+  return calendarDateISO(new Date(utcNoon));
+}
+
+export function yesterdayISO(now: Date = new Date()): string {
+  return addCalendarDaysISO(todayISO(now), -1);
+}
+
+/** Date-only compare. A due date of today (IST) is not overdue. */
+export function isPastIstDate(
+  iso: string | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!iso) return false;
+  return iso.slice(0, 10) < todayISO(now);
+}

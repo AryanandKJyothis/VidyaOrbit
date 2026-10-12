@@ -3,6 +3,7 @@ import {
   buildFeeReminder,
   buildReceiptShare,
   buildUpiPayUri,
+  canSendFeeReminders,
   feeCollectionStatus,
   feeMonthLabel,
   formatUpiAmount,
@@ -161,6 +162,19 @@ describe("institute UPI ID", () => {
     expect(() =>
       instituteSchema.partial().parse({ upi_vpa: "not a vpa" }),
     ).toThrow();
+  });
+});
+
+describe("canSendFeeReminders (VO-064)", () => {
+  it("fees:read cannot send WhatsApp overdue reminders", () => {
+    const before = (fees: "none" | "read" | "write") =>
+      fees === "read" || fees === "write";
+    expect(before("read")).toBe(true);
+    expect(canSendFeeReminders("read")).toBe(false);
+    expect(canSendFeeReminders("none")).toBe(false);
+    expect(canSendFeeReminders(undefined)).toBe(false);
+    expect(canSendFeeReminders("write")).toBe(true);
+    expect(canSendFeeReminders(true)).toBe(true);
   });
 });
 

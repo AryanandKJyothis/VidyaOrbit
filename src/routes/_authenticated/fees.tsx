@@ -47,10 +47,11 @@ import {
   FeeReminderQueue,
   type ReminderQueueItem,
 } from "@/components/fee-reminder-queue";
-import { formatINR, formatDate } from "@/lib/format";
+import { formatINR, formatDate, isPastIstDate } from "@/lib/format";
 import { exportToExcel, exportToCsv } from "@/lib/export";
 import {
   buildFeeReminder,
+  canSendFeeReminders,
   feeCollectionStatus,
   feeStatusLabel,
   openWhatsApp,
@@ -58,6 +59,7 @@ import {
 } from "@/lib/fee-reminder";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCan } from "@/hooks/use-active-workspace";
 
 const FEE_STATUSES = ["all", "pending", "partial", "overdue", "paid"] as const;
 type FeeStatusFilter = (typeof FEE_STATUSES)[number];
@@ -91,6 +93,7 @@ function FeesPageContent() {
   const batches = useBatches();
   const payments = usePayments();
   const institute = useInstitute();
+  const canRemind = canSendFeeReminders(useCan("fees", "write"));
   const qc = useQueryClient();
   const search = useSearch({ from: "/_authenticated/fees" });
 
@@ -133,7 +136,7 @@ function FeesPageContent() {
         const balance = Math.max(0, Number(s.fee_total) - paid);
         const overdue = !!(
           s.fee_due_date &&
-          new Date(s.fee_due_date) < new Date() &&
+          isPastIstDate(s.fee_due_date) &&
           balance > 0
         );
         return { s, paid, balance, overdue };
@@ -178,6 +181,10 @@ function FeesPageContent() {
   const remindRows = (
     targets: { s: (typeof rows)[number]["s"]; balance: number }[],
   ) => {
+    if (!canRemind) {
+      toast.error("You need permission to send fee reminders.");
+      return;
+    }
     if (!upiVpa?.trim()) {
       toast.error(
         "Add your centre UPI ID in Settings before sending reminders.",
@@ -456,21 +463,23 @@ function FeesPageContent() {
             >
               Select all overdue
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={() =>
-                remindRows(
-                  rows
-                    .filter((r) => selected.has(r.s.id))
-                    .map((r) => ({ s: r.s, balance: r.balance })),
-                )
-              }
-            >
-              <MessageCircle className="mr-1.5 h-4 w-4" />
-              Remind on WhatsApp
-              {selected.size > 0 ? ` (${selected.size})` : ""}
-            </Button>
+            {canRemind && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() =>
+                  remindRows(
+                    rows
+                      .filter((r) => selected.has(r.s.id))
+                      .map((r) => ({ s: r.s, balance: r.balance })),
+                  )
+                }
+              >
+                <MessageCircle className="mr-1.5 h-4 w-4" />
+                Remind on WhatsApp
+                {selected.size > 0 ? ` (${selected.size})` : ""}
+              </Button>
+            )}
           </div>
 
           <Card>
@@ -566,14 +575,16 @@ function FeesPageContent() {
                           <td className="px-4 py-3 text-right">
                             {balance > 0 ? (
                               <div className="flex justify-end gap-1">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => remindRows([{ s, balance }])}
-                                >
-                                  Remind
-                                </Button>
+                                {canRemind && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => remindRows([{ s, balance }])}
+                                  >
+                                    Remind
+                                  </Button>
+                                )}
                                 <Button
                                   type="button"
                                   size="sm"
