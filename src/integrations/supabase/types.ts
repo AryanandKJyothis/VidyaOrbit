@@ -631,8 +631,39 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_alerts: { Args: Record<string, never>; Returns: Json };
+      admin_centres_list: {
+        Args: {
+          _search?: string;
+          _filter?: string;
+          _sort?: string;
+          _limit?: number;
+          _offset?: number;
+        };
+        Returns: Json;
+      };
       admin_institute_health_detail: {
         Args: { _owner: string };
+        Returns: Json;
+      };
+      admin_payments_list: {
+        Args: {
+          _search?: string;
+          _filter?: string;
+          _limit?: number;
+          _offset?: number;
+        };
+        Returns: Json;
+      };
+      admin_platform_overview: { Args: Record<string, never>; Returns: Json };
+      admin_user_detail: { Args: { _user: string }; Returns: Json };
+      admin_users_list: {
+        Args: {
+          _search?: string;
+          _filter?: string;
+          _limit?: number;
+          _offset?: number;
+        };
         Returns: Json;
       };
       admin_institute_health_summary: {

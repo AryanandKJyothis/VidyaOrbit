@@ -121,8 +121,8 @@ export function AppSidebar() {
     ...(isAdmin
       ? [
           {
-            title: "Admin · Subscriptions",
-            url: "/admin/subscriptions",
+            title: "Admin",
+            url: "/admin",
             icon: ShieldCheck,
           } as NavItem,
         ]
