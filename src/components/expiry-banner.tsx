@@ -5,9 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useSubscription } from "@/hooks/use-subscription";
 import { cn } from "@/lib/utils";
+import { todayISO } from "@/lib/format";
 
 function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+  return todayISO();
 }
 
 /**

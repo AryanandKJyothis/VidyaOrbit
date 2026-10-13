@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   addCalendarDaysISO,
   isPastIstDate,
+  istMonthStartISO,
+  istPrevMonthRangeISO,
+  istWeekdayKey,
   personInitials,
   todayISO,
   yesterdayISO,
@@ -41,6 +44,15 @@ describe("IST calendar dates (VO-011)", () => {
   it("addCalendarDaysISO crosses months without toISOString", () => {
     expect(addCalendarDaysISO("2026-10-01", -1)).toBe("2026-09-30");
     expect(addCalendarDaysISO("2026-12-31", 1)).toBe("2027-01-01");
+  });
+
+  it("ist month helpers use the IST calendar, not UTC midnight", () => {
+    expect(istMonthStartISO(oneAmIst)).toBe("2026-10-01");
+    expect(istPrevMonthRangeISO(oneAmIst)).toEqual({
+      start: "2026-09-01",
+      end: "2026-09-30",
+    });
+    expect(istWeekdayKey(oneAmIst)).toBe("mon");
   });
 });
 

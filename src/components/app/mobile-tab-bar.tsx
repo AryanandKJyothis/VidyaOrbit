@@ -5,8 +5,19 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCan } from "@/hooks/use-active-workspace";
 import { listMyPendingInvites } from "@/lib/workspace.functions";
+import { MOBILE_NAV_ITEMS } from "@/lib/mobile-nav";
 import { cn } from "@/lib/utils";
 import { MoreSheet } from "@/components/app/more-sheet";
+
+const TAB_ICONS = {
+  "/dashboard": Home,
+  "/students": Users,
+  "/fees": Wallet,
+  "/attendance": CalendarCheck,
+} as const;
+
+/** Stitch order: Attendance stays on the bar; Plan lives in More. */
+const TAB_ORDER = ["/dashboard", "/students", "/attendance", "/fees"] as const;
 
 type Tab = {
   id: string;
@@ -31,29 +42,24 @@ export function MobileTabBar() {
   });
   const pendingCount = invites.data?.length ?? 0;
 
+  const canShow: Record<(typeof TAB_ORDER)[number], boolean> = {
+    "/dashboard": true,
+    "/students": canStudents,
+    "/attendance": canAttendance,
+    "/fees": canFees,
+  };
+
   const tabs: Tab[] = [
-    {
-      id: "dashboard",
-      label: "Dashboard",
-      to: "/dashboard",
-      icon: Home,
-      show: true,
-    },
-    {
-      id: "students",
-      label: "Students",
-      to: "/students",
-      icon: Users,
-      show: canStudents,
-    },
-    {
-      id: "attendance",
-      label: "Attendance",
-      to: "/attendance",
-      icon: CalendarCheck,
-      show: canAttendance,
-    },
-    { id: "fees", label: "Fees", to: "/fees", icon: Wallet, show: canFees },
+    ...TAB_ORDER.map((to) => {
+      const item = MOBILE_NAV_ITEMS.find((nav) => nav.to === to)!;
+      return {
+        id: item.label.toLowerCase(),
+        label: item.label,
+        to: item.to,
+        icon: TAB_ICONS[item.to],
+        show: canShow[to],
+      };
+    }),
     { id: "more", label: "More", icon: LayoutGrid, more: true, show: true },
   ];
 

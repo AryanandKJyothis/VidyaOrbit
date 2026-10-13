@@ -50,9 +50,14 @@ import { InitialsAvatar } from "@/components/app/initials-avatar";
 import { QueryErrorState } from "@/components/query-state";
 import { formatUserError } from "@/lib/format-error";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
+import { RoutePermissionGate } from "@/components/route-permission-gate";
 
 export const Route = createFileRoute("/_authenticated/batches")({
-  component: BatchesPage,
+  component: () => (
+    <RoutePermissionGate resource="batches" level="read">
+      <BatchesPage />
+    </RoutePermissionGate>
+  ),
 });
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];

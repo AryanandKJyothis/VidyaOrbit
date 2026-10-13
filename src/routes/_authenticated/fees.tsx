@@ -47,14 +47,26 @@ import {
   FeeReminderQueue,
   type ReminderQueueItem,
 } from "@/components/fee-reminder-queue";
-import { formatINR, formatDate, isPastIstDate } from "@/lib/format";
+import {
+  formatINR,
+  formatDate,
+  isPastIstDate,
+  istMonthStartISO,
+  istPrevMonthRangeISO,
+  todayISO,
+} from "@/lib/format";
 import { exportToExcel, exportToCsv } from "@/lib/export";
 import {
   buildFeeReminder,
   canSendFeeReminders,
   feeCollectionStatus,
   feeStatusLabel,
+  markReminderOpened,
   openWhatsApp,
+  parseOpenedReminderKeys,
+  reminderOpenedKey,
+  REMINDER_OPENED_STORAGE_KEY,
+  serializeOpenedReminderKeys,
   type FeeCollectionStatus,
 } from "@/lib/fee-reminder";
 import { toast } from "sonner";
@@ -62,7 +74,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCan } from "@/hooks/use-active-workspace";
 import { FilterChips } from "@/components/app/filter-chips";
 import { InitialsAvatar } from "@/components/app/initials-avatar";
-import { format as formatFns, startOfMonth } from "date-fns";
 
 const FEE_STATUSES = ["all", "pending", "partial", "overdue", "paid"] as const;
 type FeeStatusFilter = (typeof FEE_STATUSES)[number];
@@ -206,6 +217,7 @@ function FeesPageContent() {
     const items: ReminderQueueItem[] = targets.map(({ s, balance }) => ({
       studentId: s.id,
       studentName: s.full_name,
+      feeDueDate: s.fee_due_date,
       result: buildFeeReminder({
         centreName,
         upiVpa,
@@ -219,6 +231,26 @@ function FeesPageContent() {
     if (items.length === 1 && items[0].result.ok) {
       if (!openWhatsApp(items[0].result.href)) {
         toast.error("Allow pop-ups to open WhatsApp.");
+        return;
+      }
+      try {
+        const key = reminderOpenedKey(
+          items[0].studentId,
+          items[0].feeDueDate ?? null,
+          todayISO(),
+        );
+        const next = markReminderOpened(
+          parseOpenedReminderKeys(
+            window.localStorage.getItem(REMINDER_OPENED_STORAGE_KEY),
+          ),
+          key,
+        );
+        window.localStorage.setItem(
+          REMINDER_OPENED_STORAGE_KEY,
+          serializeOpenedReminderKeys(next),
+        );
+      } catch {
+        /* ignore */
       }
       return;
     }
@@ -254,18 +286,11 @@ function FeesPageContent() {
     setOpen(true);
   };
 
-  const monthStart = startOfMonth(new Date()).toISOString().slice(0, 10);
+  const monthStart = istMonthStartISO();
   const monthCollected = (payments.data ?? [])
     .filter((x) => x.payment_date >= monthStart)
     .reduce((sum, x) => sum + Number(x.amount), 0);
-  const prevMonthStart = formatFns(
-    new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
-    "yyyy-MM-dd",
-  );
-  const prevMonthEnd = formatFns(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 0),
-    "yyyy-MM-dd",
-  );
+  const { start: prevMonthStart, end: prevMonthEnd } = istPrevMonthRangeISO();
   const prevMonthCollected = (payments.data ?? [])
     .filter(
       (x) => x.payment_date >= prevMonthStart && x.payment_date <= prevMonthEnd,

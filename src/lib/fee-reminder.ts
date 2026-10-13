@@ -72,12 +72,30 @@ export function whatsAppDigits(
   return `91${key}`;
 }
 
-export function feeMonthLabel(feeDueDate: string | null | undefined): string {
-  if (!feeDueDate) return "";
+function feeDueDateAtIst(feeDueDate: string | null | undefined): Date | null {
+  if (!feeDueDate) return null;
   const date = new Date(`${feeDueDate.slice(0, 10)}T00:00:00+05:30`);
-  if (Number.isNaN(date.getTime())) return "";
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
+export function feeMonthLabel(feeDueDate: string | null | undefined): string {
+  const date = feeDueDateAtIst(feeDueDate);
+  if (!date) return "";
   return new Intl.DateTimeFormat("en-IN", {
     month: "long",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  }).format(date);
+}
+
+/** Calendar due date for the WhatsApp body (day + month + year). */
+export function feeDueDateLabel(feeDueDate: string | null | undefined): string {
+  const date = feeDueDateAtIst(feeDueDate);
+  if (!date) return "";
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
     year: "numeric",
     timeZone: "Asia/Kolkata",
   }).format(date);
@@ -152,12 +170,16 @@ export function buildFeeReminder(input: {
   const monthLine = month
     ? `${input.studentName} — ${month} fee`
     : `${input.studentName} fee`;
+  const due = feeDueDateLabel(input.feeDueDate);
   const message = [
     `Fee reminder from ${centre}`,
     monthLine,
+    due ? `Due: ${due}` : null,
     `Amount due: ${formatINR(input.balance)}`,
     `Pay: ${upiUri}`,
-  ].join("\n");
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join("\n");
 
   return {
     ok: true,
@@ -191,6 +213,42 @@ export function canSendFeeReminders(
   fees: "none" | "read" | "write" | boolean | undefined,
 ): boolean {
   return fees === true || fees === "write";
+}
+
+export const REMINDER_OPENED_STORAGE_KEY = "vidya:fee-reminders:opened";
+
+export function reminderOpenedKey(
+  studentId: string,
+  feeDueDate: string | null | undefined,
+  today: string,
+): string {
+  return `${studentId}:${(feeDueDate ?? "").slice(0, 10)}:${today}`;
+}
+
+export function parseOpenedReminderKeys(
+  raw: string | null | undefined,
+): Set<string> {
+  if (!raw) return new Set();
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((k): k is string => typeof k === "string"));
+  } catch {
+    return new Set();
+  }
+}
+
+export function serializeOpenedReminderKeys(keys: Iterable<string>): string {
+  return JSON.stringify([...keys]);
+}
+
+export function markReminderOpened(
+  keys: Set<string>,
+  key: string,
+): Set<string> {
+  const next = new Set(keys);
+  next.add(key);
+  return next;
 }
 
 /** Receipt share stays a wa.me draft. There is no public receipt URL. */
