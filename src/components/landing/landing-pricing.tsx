@@ -131,23 +131,25 @@ function PlanColumn({ plan, annual }: { plan: PlanDisplay; annual: boolean }) {
         </p>
       )}
       <ul className="mt-6 flex-1 space-y-2 text-sm">
-        {plan.features.map((f) => (
-          <li
-            key={f}
-            className={cn(
-              "border-t py-2",
-              highlight ? "border-paper/20" : "border-ink/15",
-            )}
-          >
-            {f}
-          </li>
-        ))}
+        {plan.features
+          .filter((f) => f !== plan.studentLimit)
+          .map((f) => (
+            <li
+              key={f}
+              className={cn(
+                "border-t py-2",
+                highlight ? "border-paper/20" : "border-ink/15",
+              )}
+            >
+              {f}
+            </li>
+          ))}
       </ul>
       {wa ? (
         <a href={wa} target="_blank" rel="noreferrer" className="mt-8">
           <Button
             className={cn(
-              "h-11 w-full rounded-[4px]",
+              "h-11 w-full !rounded-[4px]",
               highlight
                 ? "bg-paper text-ink hover:bg-paper/90"
                 : "bg-orbit-blue text-paper hover:bg-orbit-blue/90",
@@ -160,7 +162,7 @@ function PlanColumn({ plan, annual }: { plan: PlanDisplay; annual: boolean }) {
         <Link to="/login" search={{ mode: "signup" }} className="mt-8">
           <Button
             className={cn(
-              "h-11 w-full rounded-[4px]",
+              "h-11 w-full !rounded-[4px]",
               highlight
                 ? "bg-paper text-ink hover:bg-paper/90"
                 : "bg-orbit-blue text-paper hover:bg-orbit-blue/90",

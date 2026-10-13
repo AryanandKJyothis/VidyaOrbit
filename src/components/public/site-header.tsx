@@ -121,7 +121,7 @@ export function SiteHeader({
               >
                 <Button
                   size="sm"
-                  className="h-9 rounded-[4px] bg-orbit-blue px-3 text-paper hover:bg-orbit-blue/90"
+                  className="h-9 !rounded-[4px] bg-orbit-blue px-3 text-paper hover:bg-orbit-blue/90"
                 >
                   {CTA_BOOK_SETUP}
                 </Button>
@@ -248,7 +248,7 @@ export function SiteHeader({
                 >
                   <Button
                     size="lg"
-                    className="w-full rounded-[4px] bg-orbit-blue text-paper"
+                    className="w-full !rounded-[4px] bg-orbit-blue text-paper"
                   >
                     {CTA_BOOK_SETUP}
                   </Button>

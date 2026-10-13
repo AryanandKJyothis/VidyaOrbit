@@ -69,8 +69,8 @@ function HeroCtas({
           size="lg"
           className={
             inverted
-              ? "h-12 w-full rounded-[4px] bg-paper px-6 text-base font-semibold text-ink hover:bg-paper/90 sm:w-auto"
-              : "h-12 w-full rounded-[4px] bg-orbit-blue px-6 text-base font-semibold text-paper hover:bg-orbit-blue/90 sm:w-auto"
+              ? "h-12 w-full !rounded-[4px] bg-paper px-6 text-base font-semibold text-ink hover:bg-paper/90 sm:w-auto"
+              : "h-12 w-full !rounded-[4px] bg-orbit-blue px-6 text-base font-semibold text-paper hover:bg-orbit-blue/90 sm:w-auto"
           }
         >
           {primaryLabel}
@@ -83,8 +83,8 @@ function HeroCtas({
             variant="outline"
             className={
               inverted
-                ? "h-12 w-full rounded-[4px] border-paper/40 bg-transparent px-6 text-base font-semibold text-paper hover:bg-paper/10 sm:w-auto"
-                : "h-12 w-full rounded-[4px] border-ink bg-transparent px-6 text-base font-semibold text-ink hover:bg-ink/5 sm:w-auto"
+                ? "h-12 w-full !rounded-[4px] border-paper/40 bg-transparent px-6 text-base font-semibold text-paper hover:bg-paper/10 sm:w-auto"
+                : "h-12 w-full !rounded-[4px] border-ink bg-transparent px-6 text-base font-semibold text-ink hover:bg-ink/5 sm:w-auto"
             }
           >
             {CTA_BOOK_SETUP}
@@ -326,7 +326,10 @@ function FinalCta() {
   const wa = getWhatsAppHref(WHATSAPP_PREFILL);
   const { phone } = getContactConfig();
   return (
-    <section className="relative overflow-hidden bg-orbit-blue text-paper">
+    <section
+      id="final"
+      className="relative overflow-hidden bg-orbit-blue text-paper"
+    >
       <OrbitMotif
         inverted
         className="absolute -right-6 top-8 h-72 w-72 sm:right-10"
@@ -348,7 +351,7 @@ function FinalCta() {
           >
             <Button
               size="lg"
-              className="h-12 rounded-[4px] bg-paper px-6 text-base font-semibold text-ink hover:bg-paper/90"
+              className="h-12 !rounded-[4px] bg-paper px-6 text-base font-semibold text-ink hover:bg-paper/90"
             >
               {CTA_BOOK_SETUP}
             </Button>
