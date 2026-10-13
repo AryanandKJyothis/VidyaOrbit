@@ -26,7 +26,8 @@ import {
 import { MarketingOptInCheckbox } from "@/components/marketing-opt-in-checkbox";
 import { fadeOnly, springDefault } from "@/lib/motion";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Loader2, Upload } from "lucide-react";
+import { BrandLoaderOverlay } from "@/components/loading-screen";
+import { ArrowLeft, ArrowRight, Upload } from "lucide-react";
 
 export function OwnerSetupWizardView({
   step,
@@ -68,7 +69,7 @@ export function OwnerSetupWizardView({
     mode === "owner" && (step === "batch" || step === "students");
 
   return (
-    <div className={cn("flex flex-col bg-card", className)}>
+    <div className={cn("relative flex flex-col bg-card", className)}>
       <div className="flex w-full flex-col px-5 pb-5 pt-5 sm:px-6">
         <div className="mb-4 flex items-center gap-2.5 pr-10">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-soft ring-1 ring-primary/15">
@@ -188,9 +189,7 @@ export function OwnerSetupWizardView({
               onClick={onContinue}
               disabled={busy}
             >
-              {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : last ? (
+              {last ? (
                 "Finish setup"
               ) : (
                 <>
@@ -213,6 +212,7 @@ export function OwnerSetupWizardView({
           )}
         </div>
       </div>
+      {busy ? <BrandLoaderOverlay label="Saving your setup…" /> : null}
     </div>
   );
 }

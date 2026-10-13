@@ -126,9 +126,7 @@ function LoginPage() {
 
   const handleGoogle = async () => {
     setOauthLoading(true);
-    const { error } = await signInWithGoogle(
-      `${redirectOrigin}${postLoginPath}`,
-    );
+    const { error } = await signInWithGoogle(postLoginPath);
     if (error) {
       setOauthLoading(false);
       toast.error(formatUserError(error, "Google sign-in failed"));

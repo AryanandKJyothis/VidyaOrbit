@@ -217,6 +217,7 @@ function ValidInvite({
 }
 
 function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
+  const { token } = useParams({ from: "/join/$token" });
   const [mode, setMode] = useState<"choose" | "password">("choose");
   const [email, setEmail] = useState(inviteEmail);
   const [password, setPassword] = useState("");
@@ -226,7 +227,7 @@ function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
 
   async function handleGoogle() {
     setOauthLoading(true);
-    const { error } = await signInWithGoogle(window.location.href);
+    const { error } = await signInWithGoogle(`/join/${token}`);
     if (error) {
       setOauthLoading(false);
       toast.error(formatUserError(error, "Google sign-in failed"));

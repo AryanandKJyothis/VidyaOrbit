@@ -32,6 +32,7 @@ import {
   ADMIN_FIXTURE_PAYMENTS,
   ADMIN_FIXTURE_USERS,
 } from "@/components/admin/admin-fixtures";
+import { BrandLoader } from "@/components/loading-screen";
 import { OwnerSetupWizardView } from "@/components/owner-setup-wizard";
 import { AppGuidedTourView } from "@/components/app-guided-tour";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
@@ -203,6 +204,26 @@ function UiGallery() {
               </div>
             </div>
           </div>
+        </SetupFrame>
+        <SetupFrame
+          id="brand-loader"
+          title="Branded loader · First load / OAuth"
+        >
+          <div className="bg-brand-grid flex min-h-[320px] items-center justify-center">
+            <BrandLoader label="Preparing your workspace…" />
+          </div>
+        </SetupFrame>
+        <SetupFrame id="wizard-saving" title="Owner setup · Saving a step">
+          <OwnerSetupWizardView
+            step="you"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            busy
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+          />
         </SetupFrame>
         <SetupFrame id="login-google" title="Login · Continue with Google">
           <div className="bg-brand-grid p-6">
