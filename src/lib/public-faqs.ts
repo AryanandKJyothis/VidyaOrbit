@@ -66,7 +66,7 @@ export const LANDING_FAQS: FaqItem[] = [
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes. Contact us and we adjust your plan. Your account reverts to Free; existing data stays accessible. Fees already paid are non-refundable except where required by law.",
+    a: "Yes. Email us to cancel. Access continues to the end of the paid period, then your account reverts to Free and existing data stays accessible. See the Refunds & cancellations page for when a refund is given.",
   },
   {
     q: "Can it send fee reminders or receipts on WhatsApp?",
@@ -93,7 +93,7 @@ export const PRICING_FAQS: FaqItem[] = [
   },
   {
     q: "What is the refund policy?",
-    a: "Because the service is delivered digitally and immediately on payment, fees already paid are non-refundable except where required by law. You can cancel anytime; your account reverts to Free and existing data stays accessible.",
+    a: "Paid plans are one-time Razorpay payments for a monthly or annual period, with no auto-renewal. Fees are non-refundable once the period starts, except duplicate or erroneous charges, a setup fee charged when one was already paid, or a plan that wasn't activated. See the Refunds & cancellations page.",
   },
   {
     q: "Is my data safe?",

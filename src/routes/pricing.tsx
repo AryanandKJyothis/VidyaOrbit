@@ -88,8 +88,7 @@ function PricingPage() {
             Paid plans can be paid in the app on the Plan page through Razorpay
             (monthly or annual), or arranged with us.{" "}
             <Link
-              to="/terms"
-              hash="refund"
+              to="/refund-policy"
               className="font-medium text-foreground underline-offset-4 hover:underline"
             >
               Refunds &amp; cancellations

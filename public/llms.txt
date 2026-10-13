@@ -49,3 +49,5 @@ Prices below are the public plans in the product. Pay in the app on the Plan pag
 - Sign in: https://www.vidyaorbit.in/login
 - Privacy: https://www.vidyaorbit.in/privacy
 - Terms: https://www.vidyaorbit.in/terms
+- Refunds: https://www.vidyaorbit.in/refund-policy
+- Contact: https://www.vidyaorbit.in/contact

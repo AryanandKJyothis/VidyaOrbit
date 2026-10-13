@@ -210,8 +210,7 @@ function PlanPage() {
 
       <p className="mx-auto max-w-2xl text-center text-sm text-muted-foreground">
         <Link
-          to="/terms"
-          hash="refund"
+          to="/refund-policy"
           className="font-medium underline-offset-4 hover:underline"
         >
           Refunds &amp; cancellations

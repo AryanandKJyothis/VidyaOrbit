@@ -73,14 +73,17 @@ export function SiteFooter() {
           <div>
             <p className="font-medium text-ink">Legal</p>
             <nav className="mt-3 flex flex-col gap-2">
-              <Link to="/terms" className="hover:text-ink">
-                Terms
-              </Link>
               <Link to="/privacy" className="hover:text-ink">
                 Privacy
               </Link>
-              <Link to="/terms" hash="refund" className="hover:text-ink">
-                Refunds and cancellations
+              <Link to="/terms" className="hover:text-ink">
+                Terms
+              </Link>
+              <Link to="/refund-policy" className="hover:text-ink">
+                Refunds &amp; cancellations
+              </Link>
+              <Link to="/contact" className="hover:text-ink">
+                Contact
               </Link>
             </nav>
           </div>

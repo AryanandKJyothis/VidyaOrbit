@@ -20,4 +20,12 @@
     <loc>https://www.vidyaorbit.in/terms</loc>
     <changefreq>weekly</changefreq>
   </url>
+  <url>
+    <loc>https://www.vidyaorbit.in/refund-policy</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://www.vidyaorbit.in/contact</loc>
+    <changefreq>weekly</changefreq>
+  </url>
 </urlset>
