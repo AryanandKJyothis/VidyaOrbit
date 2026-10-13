@@ -65,7 +65,7 @@ function PricingPage() {
             className="pointer-events-none absolute inset-0 -z-10"
             style={{
               background:
-                "radial-gradient(50% 40% at 20% 0%, color-mix(in oklab, var(--brand-teal) 18%, transparent), transparent 70%), radial-gradient(40% 35% at 90% 10%, color-mix(in oklab, var(--brand-saffron) 18%, transparent), transparent 70%)",
+                "radial-gradient(50% 40% at 20% 0%, color-mix(in srgb, var(--orbit-blue) 14%, transparent), transparent 70%), radial-gradient(40% 35% at 90% 10%, color-mix(in srgb, var(--signal) 8%, transparent), transparent 70%)",
             }}
           />
           <div className="mx-auto max-w-6xl px-4 pb-10 pt-14 sm:px-6 sm:pt-20">

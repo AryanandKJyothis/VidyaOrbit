@@ -16,54 +16,61 @@ function landingPricingAnswer(): string {
   const starter = getPlanByCode("starter")!;
   const growth = getPlanByCode("growth")!;
   const large = getPlanByCode("large")!;
-  const growthSetup =
-    growth.setupFee > 0
-      ? ` ${growth.displayName} and ${large.displayName} add a ${formatIndianPrice(growth.setupFee)} setup fee on the first monthly invoice (waived on annual).`
-      : "";
-  return `${free.displayName} is ${formatIndianPrice(free.monthlyPrice)} for ${free.studentLimit.toLowerCase()}. ${starter.displayName} is ${formatIndianPrice(starter.monthlyPrice)}/month (${formatIndianPrice(starter.annualPrice)}/year) for ${starter.studentLimit.toLowerCase()}. ${growth.displayName} is ${formatIndianPrice(growth.monthlyPrice)}/month; ${large.displayName} is ${formatIndianPrice(large.monthlyPrice)}/month.${growthSetup} Pay a paid plan in the app on the Plan page through Razorpay, or contact us to arrange it.`;
+  return `${free.displayName} is ${formatIndianPrice(free.monthlyPrice)} for ${free.studentLimit.toLowerCase()}. ${starter.displayName} is ${formatIndianPrice(starter.monthlyPrice)}/month (${formatIndianPrice(starter.annualPrice)}/year) for ${starter.studentLimit.toLowerCase()}. ${growth.displayName} is ${formatIndianPrice(growth.monthlyPrice)}/month (${formatIndianPrice(growth.annualPrice)}/year); ${large.displayName} is ${formatIndianPrice(large.monthlyPrice)}/month (${formatIndianPrice(large.annualPrice)}/year). Pay a paid plan in the app on the Plan page through Razorpay, or contact us to arrange it.`;
+}
+
+function setupFeeAnswer(): string {
+  const growth = getPlanByCode("growth")!;
+  const large = getPlanByCode("large")!;
+  const starter = getPlanByCode("starter")!;
+  return `Yes. ${growth.displayName} and ${large.displayName} add a ${formatIndianPrice(growth.setupFee)} setup fee on the first monthly invoice. It is waived on annual plans. ${starter.displayName} has no setup fee.`;
 }
 
 /** Landing-page owner FAQ. Prices are read from APPROVED_PRICING. */
 export const LANDING_FAQS: FaqItem[] = [
   {
-    q: "What is Vidya Orbit?",
-    a: "Vidya Orbit is software for coaching and tuition centres in Kerala. You use it to manage students, batches, attendance, fees, staff and numbered receipts in one place — on your phone or a computer.",
+    q: "Is this for students?",
+    a: "No. Vidya Orbit is for owners, managers and staff who run a tuition or coaching centre. Students and parents do not log in.",
   },
   {
-    q: "Does it work on my phone?",
-    a: "Yes. Attendance is built for marking a batch on your phone in a few taps. Fees, students and receipts work in the same browser on phone or desktop. There is no separate app to install.",
+    q: "What does setup include?",
+    a: "Book a free demo on WhatsApp. We import your Excel or CSV, set up batches and fees, add staff, and train your team for 30 minutes.",
   },
   {
-    q: "Can it send fee reminders or receipts on WhatsApp?",
-    a: "VidyaOrbit prepares a WhatsApp message with the student name, month, amount due, your centre name, and your centre's UPI payment link. You tap send. The parent pays your centre directly. After you mark the fee received, share the numbered receipt the same way, or print it from the browser.",
+    q: "Can I switch plans?",
+    a: "Yes. Open Plan in the app and pay through Razorpay, or contact us. You can move up or down; existing data stays. Changes take effect at the end of the current billing period where applicable.",
   },
   {
-    q: "Is my data safe?",
-    a: "Hosted on Supabase: encrypted in transit and at rest, isolated per institute. Only your authorised team can access it. You can export students, batches, dues and payments anytime. We never sell institute data.",
-  },
-  {
-    q: "Do I have to set this up myself?",
-    a: "No. WhatsApp or call Aryanand. We import your Excel or CSV, set up batches and fees, add staff, and train you for 30 minutes.",
+    q: "Is there a setup fee?",
+    a: setupFeeAnswer(),
   },
   {
     q: "How much does it cost?",
     a: landingPricingAnswer(),
   },
   {
-    q: "Can I move from Excel?",
-    a: "Yes — upload a .xlsx, .xls or .csv file. Pasting cells is not supported. The import template includes English and Malayalam instructions. We usually do this with you on the setup call.",
+    q: "Is my data safe?",
+    a: "Hosted on Supabase: encrypted in transit and at rest, isolated per institute. Only your authorised team can access it. You can export students, batches, dues and payments anytime. We never sell institute data.",
   },
   {
-    q: "Can I cancel anytime?",
-    a: "Yes. Contact us and we adjust your plan. Your account reverts to Free; existing data stays accessible. Fees already paid are non-refundable except where required by law.",
+    q: "Do you support Malayalam?",
+    a: "Product screens are in English. The student import template includes Malayalam instructions, and Aryanand helps on WhatsApp in Malayalam and English.",
+  },
+  {
+    q: "Can I move from Excel?",
+    a: "Yes — upload a .xlsx, .xls or .csv file. Pasting cells is not supported. The import template includes English and Malayalam instructions. We usually do this with you on the setup call.",
   },
   {
     q: "Do I need a credit card to start?",
     a: "No. The Free plan supports up to 25 students with no card required. Use it as long as you like.",
   },
   {
-    q: "Will my staff see fees?",
-    a: "Only if you grant fees access. Invite tutors with a join link and choose the screens they can open. Billing stays with the owner login.",
+    q: "Can I cancel anytime?",
+    a: "Yes. Contact us and we adjust your plan. Your account reverts to Free; existing data stays accessible. Fees already paid are non-refundable except where required by law.",
+  },
+  {
+    q: "Can it send fee reminders or receipts on WhatsApp?",
+    a: "VidyaOrbit prepares a WhatsApp message with the student name, month, amount due, your centre name, and your centre's UPI payment link. You tap send. The parent pays your centre directly. After you mark the fee received, share the numbered receipt the same way, or print it from the browser.",
   },
 ];
 
@@ -92,16 +99,20 @@ export const PRICING_FAQS: FaqItem[] = [
     q: "Is my data safe?",
     a: "Yes. Data is encrypted in transit and at rest, isolated per institute, and only your authorised team can access it. We never sell or share institute data.",
   },
+  {
+    q: "Is there a setup fee?",
+    a: setupFeeAnswer(),
+  },
 ];
 
 /** Used by tests to prove FAQ prices are not a second hardcoded table. */
 export function landingFaqUsesDisplayPrices(): boolean {
-  const answer = LANDING_FAQS.find((f) => f.q === "How much does it cost?")!.a;
+  const blob = LANDING_FAQS.map((f) => f.a).join(" ");
   const monthlyOk = APPROVED_PRICING.filter((p) => p.code !== "free").every(
-    (p) => answer.includes(formatIndianPrice(p.monthlyPrice)),
+    (p) => blob.includes(formatIndianPrice(p.monthlyPrice)),
   );
   const setupOk = APPROVED_PRICING.filter((p) => p.setupFee > 0).every((p) =>
-    answer.includes(formatIndianPrice(p.setupFee)),
+    blob.includes(formatIndianPrice(p.setupFee)),
   );
   return monthlyOk && setupOk;
 }

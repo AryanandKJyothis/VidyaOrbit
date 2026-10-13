@@ -32,6 +32,8 @@ import {
 } from "@/lib/seo";
 import { MessageCircle, Phone } from "lucide-react";
 import appCss from "../styles.css?url";
+import spaceGrotesk700 from "@fontsource/space-grotesk/files/space-grotesk-latin-700-normal.woff2?url";
+import dmSans400 from "@fontsource/dm-sans/files/dm-sans-latin-400-normal.woff2?url";
 
 function NotFoundComponent() {
   const { phone } = getContactConfig();
@@ -162,17 +164,42 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:image", content: OG_IMAGE_URL },
         { name: "twitter:image:alt", content: OG_IMAGE_ALT },
+        { name: "theme-color", content: "#1746E8" },
+        { name: "msapplication-TileColor", content: "#1746E8" },
         ...verificationMeta(),
       ],
       links: [
         { rel: "stylesheet", href: appCss },
         {
           rel: "preload",
-          href: "/fonts/sora-700-latin.woff2",
+          href: spaceGrotesk700,
           as: "font",
           type: "font/woff2",
           crossOrigin: "anonymous",
         },
+        {
+          rel: "preload",
+          href: dmSans400,
+          as: "font",
+          type: "font/woff2",
+          crossOrigin: "anonymous",
+        },
+        { rel: "icon", href: "/favicon.ico", sizes: "any" },
+        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+        {
+          rel: "icon",
+          type: "image/png",
+          sizes: "32x32",
+          href: "/favicon-32x32.png",
+        },
+        {
+          rel: "icon",
+          type: "image/png",
+          sizes: "16x16",
+          href: "/favicon-16x16.png",
+        },
+        { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+        { rel: "manifest", href: "/site.webmanifest" },
       ],
     }),
     shellComponent: RootShell,

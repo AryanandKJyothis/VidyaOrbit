@@ -142,16 +142,16 @@ export function AppSidebar() {
         {/* Orbital gradient accent */}
         <div className="absolute inset-0 bg-gradient-to-b from-sidebar-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <div className="relative flex items-center gap-3 px-3 py-3.5">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sidebar-primary/30 to-sidebar-primary/15 ring-1 ring-sidebar-primary/40 transition-transform duration-100 ease-out active:scale-[0.97]">
+          <div
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-100 ease-out active:scale-[0.97]"
+            style={{ backgroundColor: "#F8F7F2" }}
+          >
             <Logo size={28} />
           </div>
           {!collapsed && (
             <div className="flex flex-1 flex-col leading-tight">
-              <span className="font-display text-base font-bold tracking-tight text-sidebar-foreground">
-                Vidya
-              </span>
-              <span className="text-xs uppercase tracking-[0.16em] text-sidebar-foreground/80 font-semibold">
-                Orbit
+              <span className="font-display text-base font-bold tracking-[-0.05em] text-sidebar-foreground">
+                VIDYA ORBIT
               </span>
             </div>
           )}

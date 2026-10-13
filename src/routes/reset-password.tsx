@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { AUTH_BTN, AuthShell } from "@/components/auth/auth-shell";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { newPasswordSchema } from "@/lib/validation";
 import { formatUserError } from "@/lib/format-error";
 import { toast } from "sonner";
@@ -61,64 +63,57 @@ function ResetPassword() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        <div className="mb-8 flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <GraduationCap className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="font-display text-lg font-semibold">Vidya</div>
-            <div className="text-xs text-muted-foreground">
-              Set a new password
-            </div>
-          </div>
+    <AuthShell>
+      <p className="text-sm text-slate">Set a new password</p>
+      <h2 className="mt-2 font-display text-3xl font-bold tracking-[-0.03em] text-balance">
+        Create a new password
+      </h2>
+      <form onSubmit={submit} className="mt-8 space-y-4">
+        {!ready && (
+          <p className="text-sm leading-relaxed text-slate">
+            Open this page from the reset link in your email. The link is valid
+            for 1 hour.
+          </p>
+        )}
+        <div className="space-y-2">
+          <Label htmlFor="np">New password</Label>
+          <PasswordInput
+            id="np"
+            required
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+            className="!rounded-[4px]"
+          />
+          <p className="text-xs text-slate">
+            At least 8 characters. Checked against known data breaches.
+          </p>
         </div>
-
-        <form
-          onSubmit={submit}
-          className="space-y-4 rounded-xl border bg-card p-6"
-        >
-          <h2 className="font-display text-xl font-semibold">
-            Create a new password
-          </h2>
-          {!ready && (
-            <p className="text-sm text-muted-foreground">
-              Open this page from the reset link in your email. The link is
-              valid for 1 hour.
-            </p>
+        <div className="space-y-2">
+          <Label htmlFor="cp">Confirm password</Label>
+          <PasswordInput
+            id="cp"
+            required
+            minLength={8}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            autoComplete="new-password"
+            className="!rounded-[4px]"
+          />
+        </div>
+        <Button
+          type="submit"
+          disabled={loading || !ready}
+          className={cn(
+            AUTH_BTN,
+            "w-full bg-orbit-blue text-paper hover:bg-orbit-blue/90",
           )}
-          <div className="space-y-2">
-            <Label htmlFor="np">New password</Label>
-            <PasswordInput
-              id="np"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-            <p className="text-xs text-muted-foreground">
-              At least 8 characters. Checked against known data breaches.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="cp">Confirm password</Label>
-            <PasswordInput
-              id="cp"
-              required
-              minLength={8}
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              autoComplete="new-password"
-            />
-          </div>
-          <Button type="submit" disabled={loading || !ready} className="w-full">
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Update password
-          </Button>
-        </form>
-      </div>
-    </div>
+        >
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Update password
+        </Button>
+      </form>
+    </AuthShell>
   );
 }

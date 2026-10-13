@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Vidya Orbit mark">
+<circle cx="100" cy="100" r="58" fill="#1746E8"/>
+<ellipse cx="100" cy="100" rx="88" ry="34" fill="none" stroke="#111111" stroke-width="9" transform="rotate(-28 100 100)"/>
+<circle cx="164" cy="58" r="12" fill="#F05A28" stroke="#F8F7F2" stroke-width="5"/>
+</svg>

@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, CheckCircle2, ArrowRight } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useState, useMemo, useCallback, type ReactNode } from "react";
+import { AUTH_BTN } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -117,13 +118,6 @@ export function OnboardingForm({
     );
   }, [formData, errors, fields]);
 
-  const completedFieldsCount = useMemo(() => {
-    return fields.filter((field) => {
-      const value = formData[field.id]?.trim();
-      return value && !errors[field.id];
-    }).length;
-  }, [formData, errors, fields]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -158,55 +152,25 @@ export function OnboardingForm({
       onSubmit={handleSubmit}
       className="w-full space-y-6"
     >
-      {/* Header */}
       {(title || subtitle) && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="space-y-2 mb-6"
-        >
+        <div className="space-y-2">
           {title && (
-            <h2 className="font-display text-2xl font-semibold">{title}</h2>
+            <h2 className="font-display text-2xl font-bold tracking-[-0.03em]">
+              {title}
+            </h2>
           )}
           {subtitle && (
-            <p className="text-sm text-muted-foreground">{subtitle}</p>
+            <p className="text-sm leading-relaxed text-slate">{subtitle}</p>
           )}
-        </motion.div>
+        </div>
       )}
 
-      {/* Progress Indicator */}
-      {fields.length > 1 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          className="flex items-center gap-2"
-        >
-          <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-brand-teal to-brand-saffron rounded-full"
-              initial={{ width: 0 }}
-              animate={{
-                width: `${(completedFieldsCount / fields.length) * 100}%`,
-              }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            />
-          </div>
-          <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
-            {completedFieldsCount}/{fields.length}
-          </span>
-        </motion.div>
-      )}
-
-      {/* Form Fields */}
       <div className="space-y-4">
         <AnimatePresence mode="popLayout">
           {fields.map((field, index) => {
             const value = formData[field.id];
             const error = errors[field.id];
             const isTouched = touchedFields.has(field.id);
-            const isComplete = value?.trim() && !error;
 
             return (
               <motion.div
@@ -229,20 +193,12 @@ export function OnboardingForm({
                   />
                 ) : (
                   <>
-                    <Label
-                      htmlFor={field.id}
-                      className="flex items-center gap-2"
-                    >
-                      <span>
-                        {field.label}
-                        {field.required && (
-                          <span className="text-destructive font-semibold">
-                            *
-                          </span>
-                        )}
-                      </span>
-                      {isComplete && (
-                        <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                    <Label htmlFor={field.id}>
+                      {field.label}
+                      {field.required && (
+                        <span className="text-destructive font-semibold">
+                          *
+                        </span>
                       )}
                     </Label>
 
@@ -259,12 +215,10 @@ export function OnboardingForm({
                         placeholder={field.placeholder}
                         autoComplete={field.autoComplete}
                         className={cn(
-                          "transition-[border-color,background-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)]",
+                          "!rounded-[4px] transition-[border-color,background-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)]",
                           isTouched &&
                             error &&
                             "border-destructive/50 bg-destructive/5 focus:ring-destructive/30",
-                          isComplete &&
-                            "border-success/50 bg-success/5 focus:ring-success/30",
                         )}
                         aria-invalid={isTouched && !!error}
                         aria-describedby={
@@ -286,12 +240,10 @@ export function OnboardingForm({
                         placeholder={field.placeholder}
                         autoComplete={field.autoComplete}
                         className={cn(
-                          "transition-[border-color,background-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)]",
+                          "!rounded-[4px] transition-[border-color,background-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)]",
                           isTouched &&
                             error &&
                             "border-destructive/50 bg-destructive/5 focus:ring-destructive/30",
-                          isComplete &&
-                            "border-success/50 bg-success/5 focus:ring-success/30",
                         )}
                         aria-invalid={isTouched && !!error}
                         aria-describedby={
@@ -324,7 +276,7 @@ export function OnboardingForm({
                       <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="text-xs text-muted-foreground"
+                        className="text-xs text-slate"
                       >
                         {field.helperText}
                       </motion.p>
@@ -339,46 +291,20 @@ export function OnboardingForm({
 
       {belowFields}
 
-      {/* Submit Button */}
-      <motion.div
-        initial={{ opacity: 0, y: 4 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-        className="space-y-3 pt-4"
-      >
-        <Button
-          type="submit"
-          disabled={!isFormValid || isSubmitting || isLoading}
-          size="lg"
-          className={cn(
-            "w-full transition-[box-shadow,transform,opacity] duration-150 [transition-timing-function:var(--ease-out)] flex items-center justify-center gap-2",
-            isFormValid && "shadow-md hover:shadow-lg",
-          )}
-        >
-          {isSubmitting || isLoading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Processing...</span>
-            </>
-          ) : (
-            <>
-              <span>{submitLabel}</span>
-              {isFormValid && <ArrowRight className="h-4 w-4" />}
-            </>
-          )}
-        </Button>
-
-        {/* Completion Status Message */}
-        {!isFormValid && completedFieldsCount > 0 && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-xs text-muted-foreground text-center"
-          >
-            Complete all required fields to continue
-          </motion.p>
+      <Button
+        type="submit"
+        disabled={!isFormValid || isSubmitting || isLoading}
+        size="lg"
+        className={cn(
+          AUTH_BTN,
+          "w-full bg-orbit-blue text-paper hover:bg-orbit-blue/90",
         )}
-      </motion.div>
+      >
+        {(isSubmitting || isLoading) && (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        )}
+        {submitLabel}
+      </Button>
     </motion.form>
   );
 }

@@ -10,22 +10,39 @@ export const LANDING_TITLE =
 export const LANDING_DESCRIPTION =
   "Vidya Orbit is coaching and tuition centre software for Kerala — attendance, fees, students, staff and receipts. Built in Valanchery, Malappuram.";
 
-export const HERO_EYEBROW = "Built in Valanchery, Kerala";
-export const HERO_TITLE = "We set everything up for you, zero headache.";
+export const HERO_EYEBROW = "For owners and managers in Kerala";
+export const HERO_TITLE = "See who came. Who paid. Who still owes.";
 /** One-line Malayalam of the setup promise. Flag for a native speaker. */
 export const HERO_MALAYALAM =
   "ഞങ്ങൾ എല്ലാം ഒരുക്കിത്തരാം — ഒരു തലവേദനയും വേണ്ട.";
 export const HERO_SUB =
-  "After a call, Aryanand imports your students from your Excel or CSV file, sets up your batches and fees, adds your staff, and gives a 30-minute training. Then you can see who hasn't paid this month in one tap.";
+  "Software for tuition and coaching centre owners. Mark attendance by batch. Track fees. Send overdue reminders. We set it up. We train your staff.";
 
 export const FOUNDER_LINE =
   "I'm Aryanand, in Valanchery. I set your centre up myself and stay on WhatsApp if anything is unclear.";
 
 export const WHATSAPP_PREFILL =
-  "Hi Aryanand, I run a coaching centre and I'd like Vidya Orbit set up for us.";
+  "Hi Aryanand, I run a coaching centre and I'd like a free demo of Vidya Orbit.";
 
 export const CTA_WHATSAPP = "WhatsApp Aryanand";
 export const CTA_START_FREE = "Start free";
+export const CTA_BOOK_DEMO = "Book a free demo";
+export const CTA_FINAL = "Get your centre into one orbit.";
+
+export const AUDIENCE_LINE =
+  "Not a student app. Built for the people who run the centre.";
+
+export const WORK_STRIP = [
+  "Attendance",
+  "Fee tracking",
+  "Batches",
+  "Overdue reminders",
+] as const;
+
+export const TAGLINE_LINES = [
+  "The register, the fees, the batches.",
+  "One orbit for the team who runs them.",
+] as const;
 
 export type LandingClaim = {
   text: string;

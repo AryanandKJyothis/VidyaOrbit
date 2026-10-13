@@ -1,18 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, MessageCircle, Phone } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { LogoWordmark } from "@/components/logo";
 import { Button } from "@/components/ui/button";
+import { getWhatsAppHref } from "@/lib/contact-config";
 import {
-  FOUNDER_NAME,
-  getContactConfig,
-  getTelHref,
-  getWhatsAppHref,
-} from "@/lib/contact-config";
-import {
+  CTA_BOOK_DEMO,
   CTA_START_FREE,
-  CTA_WHATSAPP,
   WHATSAPP_PREFILL,
 } from "@/lib/landing-copy";
 import { usePrefers } from "@/hooks/use-prefers";
@@ -20,9 +14,8 @@ import { easeDrawer, fadeOnly, springSnappy } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const LANDING_LINKS = [
-  { hash: "product", label: "The app" },
-  { hash: "setup", label: "How we set you up" },
-  { hash: "benefits", label: "Benefits" },
+  { hash: "features", label: "Features" },
+  { hash: "pricing", label: "Pricing" },
   { hash: "faq", label: "FAQ" },
 ] as const;
 
@@ -33,7 +26,6 @@ function scrollToHash(hash: string, smooth: boolean) {
     behavior: smooth ? "smooth" : "auto",
     block: "start",
   });
-  // Keep the URL in sync without a router round-trip fighting scroll.
   if (window.location.hash !== `#${hash}`) {
     history.replaceState(null, "", `#${hash}`);
   }
@@ -44,8 +36,6 @@ export function SiteHeader({
 }: {
   nav?: "landing" | "pricing";
 }) {
-  const { phone } = getContactConfig();
-  const tel = getTelHref();
   const wa = getWhatsAppHref(WHATSAPP_PREFILL);
   const [open, setOpen] = useState(false);
   const { reducedMotion } = usePrefers();
@@ -66,29 +56,23 @@ export function SiteHeader({
 
   const onSectionNav = (hash: string) => {
     setOpen(false);
-    // Wait a tick so the mobile drawer unmounts before measuring scroll.
     requestAnimationFrame(() => scrollToHash(hash, !reducedMotion));
   };
 
   return (
     <>
-      <div className="pointer-events-none sticky top-0 z-40 px-4 pt-4 sm:px-6 sm:pt-6">
-        <header
-          className={cn(
-            "landing-island pointer-events-auto mx-auto flex w-max max-w-full items-center gap-2 rounded-full border border-border/60 bg-background/70 px-2 py-1.5 shadow-[var(--shadow-card)] backdrop-blur-xl backdrop-saturate-150 sm:gap-3 sm:px-3",
-            "supports-[backdrop-filter]:bg-background/55",
-          )}
-        >
+      <header className="sticky top-0 z-40 border-b border-ink/15 bg-paper">
+        <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between gap-4 px-8 sm:px-16">
           <Link
             to="/"
             aria-label="Vidya Orbit home"
-            className="flex min-h-11 shrink-0 items-center rounded-full px-1.5"
+            className="shrink-0"
             onClick={() => setOpen(false)}
           >
-            <LogoWordmark size={24} />
+            <LogoWordmark size={22} />
           </Link>
 
-          <nav className="hidden items-center gap-1 text-sm text-muted-foreground md:flex">
+          <nav className="hidden items-center gap-6 text-sm text-slate md:flex">
             {nav === "landing" ? (
               <>
                 {LANDING_LINKS.map((l) => (
@@ -100,9 +84,8 @@ export function SiteHeader({
                       behavior: reducedMotion ? "instant" : "smooth",
                       block: "start",
                     }}
-                    className="inline-flex min-h-11 items-center rounded-full px-3 text-sm transition-[color,background-color] duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/70 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
+                    className="transition-colors duration-150 [transition-timing-function:var(--ease-out)] hover:text-ink"
                     onClick={(e) => {
-                      // Same-route hash: ensure scroll even if the router no-ops.
                       e.preventDefault();
                       onSectionNav(l.hash);
                     }}
@@ -110,71 +93,61 @@ export function SiteHeader({
                     {l.label}
                   </Link>
                 ))}
+              </>
+            ) : (
+              <>
                 <Link
-                  to="/pricing"
-                  className="inline-flex min-h-11 items-center rounded-full px-3 text-sm transition-[color,background-color] duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/70 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
+                  to="/"
+                  className="transition-colors duration-150 hover:text-ink"
                 >
+                  Home
+                </Link>
+                <Link to="/pricing" className="text-ink" aria-current="page">
                   Pricing
                 </Link>
               </>
-            ) : (
-              <Link
-                to="/"
-                className="inline-flex min-h-11 items-center rounded-full px-3 text-sm transition-[color,background-color] duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/70 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
-              >
-                Home
-              </Link>
             )}
+            <Link
+              to="/login"
+              className="transition-colors duration-150 hover:text-ink"
+            >
+              Log in
+            </Link>
           </nav>
 
-          <div className="flex items-center gap-1">
-            {tel && phone && (
-              <a
-                href={tel}
-                aria-label={`Call ${FOUNDER_NAME} at ${phone}`}
-                className="hidden sm:inline-flex"
-              >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-11 w-11 rounded-full"
-                >
-                  <Phone className="h-4 w-4" />
-                </Button>
-              </a>
-            )}
-            {wa && (
-              <a
-                href={wa}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={CTA_WHATSAPP}
-                className="hidden sm:inline-flex"
-              >
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-11 rounded-full px-4"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  WhatsApp
-                </Button>
-              </a>
-            )}
+          <div className="flex items-center gap-2">
             <Link
               to="/login"
               search={{ mode: "signup" }}
               className="hidden sm:inline-flex"
             >
-              <Button size="sm" className="h-11 rounded-full px-4">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-9 !rounded-[4px] border-ink px-3 text-ink"
+              >
                 {CTA_START_FREE}
-                <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
+            {wa && (
+              <a
+                href={wa}
+                target="_blank"
+                rel="noreferrer"
+                className="hidden sm:inline-flex"
+              >
+                <Button
+                  size="sm"
+                  className="h-9 !rounded-[4px] bg-orbit-blue px-3 text-paper hover:bg-orbit-blue/90"
+                >
+                  {CTA_BOOK_DEMO}
+                </Button>
+              </a>
+            )}
 
             <button
               type="button"
-              className="relative flex h-11 w-11 items-center justify-center rounded-full text-foreground transition-[background-color] duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted md:hidden"
+              className="relative flex h-10 w-10 items-center justify-center text-ink md:hidden"
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
               onClick={() => setOpen((v) => !v)}
@@ -183,33 +156,33 @@ export function SiteHeader({
               <span className="relative block h-3.5 w-4">
                 <span
                   className={cn(
-                    "absolute left-0 top-0 block h-0.5 w-4 rounded-full bg-current transition-transform duration-300 [transition-timing-function:var(--ease-drawer)]",
+                    "absolute left-0 top-0 block h-0.5 w-4 bg-current transition-transform duration-300 [transition-timing-function:var(--ease-drawer)]",
                     open && "top-1.5 rotate-45",
                   )}
                 />
                 <span
                   className={cn(
-                    "absolute left-0 top-1.5 block h-0.5 w-4 rounded-full bg-current transition-opacity duration-200 [transition-timing-function:var(--ease-out)]",
+                    "absolute left-0 top-1.5 block h-0.5 w-4 bg-current transition-opacity duration-200 [transition-timing-function:var(--ease-out)]",
                     open && "opacity-0",
                   )}
                 />
                 <span
                   className={cn(
-                    "absolute left-0 top-3 block h-0.5 w-4 rounded-full bg-current transition-transform duration-300 [transition-timing-function:var(--ease-drawer)]",
+                    "absolute left-0 top-3 block h-0.5 w-4 bg-current transition-transform duration-300 [transition-timing-function:var(--ease-drawer)]",
                     open && "top-1.5 -rotate-45",
                   )}
                 />
               </span>
             </button>
           </div>
-        </header>
-      </div>
+        </div>
+      </header>
 
       <AnimatePresence>
         {open && (
           <motion.div
-            key="island-menu"
-            className="fixed inset-0 z-50 md:hidden"
+            key="editorial-menu"
+            className="fixed inset-0 z-50 bg-paper md:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -217,99 +190,93 @@ export function SiteHeader({
               reducedMotion ? fadeOnly : { duration: 0.28, ease: easeDrawer }
             }
           >
-            <button
-              type="button"
-              className="absolute inset-0 bg-background/80 backdrop-blur-3xl"
-              aria-label="Close menu"
-              onClick={() => setOpen(false)}
-            />
-            <nav className="relative z-10 flex h-full flex-col px-6 pb-10 pt-24">
-              <ul className="space-y-1">
+            <nav className="flex h-full flex-col px-8 pb-10 pt-24">
+              <ul className="space-y-1 border-t border-ink/20">
                 {nav === "landing" ? (
-                  <>
-                    {LANDING_LINKS.map((l, i) => (
-                      <motion.li
-                        key={l.hash}
-                        initial={
-                          reducedMotion ? { opacity: 0 } : { opacity: 0, y: 48 }
-                        }
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          ...(reducedMotion ? fadeOnly : springSnappy),
-                          delay: reducedMotion ? 0 : 0.08 + i * 0.05,
-                        }}
-                      >
-                        <a
-                          href={`#${l.hash}`}
-                          className="flex min-h-14 items-center rounded-2xl px-3 py-3 font-display text-2xl font-semibold tracking-tight"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            onSectionNav(l.hash);
-                          }}
-                        >
-                          {l.label}
-                        </a>
-                      </motion.li>
-                    ))}
+                  LANDING_LINKS.map((l, i) => (
                     <motion.li
+                      key={l.hash}
                       initial={
-                        reducedMotion ? { opacity: 0 } : { opacity: 0, y: 48 }
+                        reducedMotion ? { opacity: 0 } : { opacity: 0, y: 24 }
                       }
                       animate={{ opacity: 1, y: 0 }}
                       transition={{
                         ...(reducedMotion ? fadeOnly : springSnappy),
-                        delay: reducedMotion
-                          ? 0
-                          : 0.08 + LANDING_LINKS.length * 0.05,
+                        delay: reducedMotion ? 0 : 0.06 + i * 0.04,
                       }}
+                      className="border-b border-ink/20"
                     >
-                      <Link
-                        to="/pricing"
-                        className="flex min-h-14 items-center rounded-2xl px-3 py-3 font-display text-2xl font-semibold tracking-tight"
-                        onClick={() => setOpen(false)}
+                      <a
+                        href={`#${l.hash}`}
+                        className="block py-4 font-display text-2xl font-bold tracking-[-0.03em]"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          onSectionNav(l.hash);
+                        }}
                       >
-                        Pricing
-                      </Link>
+                        {l.label}
+                      </a>
                     </motion.li>
-                  </>
+                  ))
                 ) : (
                   <motion.li
                     initial={
-                      reducedMotion ? { opacity: 0 } : { opacity: 0, y: 48 }
+                      reducedMotion ? { opacity: 0 } : { opacity: 0, y: 24 }
                     }
                     animate={{ opacity: 1, y: 0 }}
                     transition={reducedMotion ? fadeOnly : springSnappy}
+                    className="border-b border-ink/20"
                   >
                     <Link
                       to="/"
-                      className="flex min-h-14 items-center rounded-2xl px-3 py-3 font-display text-2xl font-semibold tracking-tight"
+                      className="block py-4 font-display text-2xl font-bold tracking-[-0.03em]"
                       onClick={() => setOpen(false)}
                     >
                       Home
                     </Link>
                   </motion.li>
                 )}
+                <motion.li
+                  initial={
+                    reducedMotion ? { opacity: 0 } : { opacity: 0, y: 24 }
+                  }
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    ...(reducedMotion ? fadeOnly : springSnappy),
+                    delay: reducedMotion ? 0 : 0.2,
+                  }}
+                  className="border-b border-ink/20"
+                >
+                  <Link
+                    to="/login"
+                    className="block py-4 font-display text-2xl font-bold tracking-[-0.03em]"
+                    onClick={() => setOpen(false)}
+                  >
+                    Log in
+                  </Link>
+                </motion.li>
               </ul>
               <div className="mt-auto flex flex-col gap-2">
-                {wa && (
-                  <a href={wa} target="_blank" rel="noreferrer">
-                    <Button size="lg" className="w-full">
-                      <MessageCircle className="h-4 w-4" />
-                      {CTA_WHATSAPP}
-                    </Button>
-                  </a>
-                )}
                 <Link to="/login" search={{ mode: "signup" }}>
                   <Button
                     size="lg"
                     variant="outline"
-                    className="w-full"
+                    className="w-full !rounded-[4px] border-ink"
                     onClick={() => setOpen(false)}
                   >
                     {CTA_START_FREE}
-                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
+                {wa && (
+                  <a href={wa} target="_blank" rel="noreferrer">
+                    <Button
+                      size="lg"
+                      className="w-full !rounded-[4px] bg-orbit-blue text-paper"
+                    >
+                      {CTA_BOOK_DEMO}
+                    </Button>
+                  </a>
+                )}
               </div>
             </nav>
           </motion.div>

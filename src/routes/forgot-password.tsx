@@ -3,13 +3,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Loader2, ArrowLeft } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { AUTH_BTN, AuthShell } from "@/components/auth/auth-shell";
 import { supabase } from "@/integrations/supabase/client";
 import { emailSchema } from "@/lib/validation";
 import { toast } from "sonner";
 import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
-import { SkipToContent } from "@/components/skip-to-content";
 import { CheckYourEmail } from "@/components/check-your-email";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => pageHead(PUBLIC_PAGES.forgotPassword),
@@ -40,54 +41,36 @@ function ForgotPassword() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
-      <SkipToContent href="#reset-panel" />
-      <div id="reset-panel" className="w-full max-w-md">
-        <div className="mb-8 flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <GraduationCap className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="font-display text-lg font-semibold">Vidya</div>
-            <div className="text-xs text-muted-foreground">Reset password</div>
-          </div>
-        </div>
-
-        {sent ? (
-          <div className="rounded-xl border bg-card p-6">
-            <CheckYourEmail
-              email={email}
-              kind="recovery"
-              onResend={async () => {
-                const { error } = await supabase.auth.resetPasswordForEmail(
-                  email,
-                  {
-                    redirectTo: `${window.location.origin}/reset-password`,
-                  },
-                );
-                if (error && error.status && error.status >= 500) throw error;
-              }}
-              onUseDifferentEmail={() => setSent(false)}
-            >
-              <Link
-                to="/login"
-                className="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
-              >
-                <ArrowLeft className="h-3 w-3" /> Back to sign in
-              </Link>
-            </CheckYourEmail>
-          </div>
-        ) : (
-          <form
-            onSubmit={submit}
-            className="space-y-4 rounded-xl border bg-card p-6"
+    <AuthShell>
+      {sent ? (
+        <CheckYourEmail
+          email={email}
+          kind="recovery"
+          onResend={async () => {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+              redirectTo: `${window.location.origin}/reset-password`,
+            });
+            if (error && error.status && error.status >= 500) throw error;
+          }}
+          onUseDifferentEmail={() => setSent(false)}
+        >
+          <Link
+            to="/login"
+            className="mt-2 inline-flex min-h-11 items-center text-sm text-slate underline-offset-4 hover:text-ink hover:underline"
           >
-            <h2 className="font-display text-xl font-semibold">
-              Forgot your password?
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Enter the email on your account and we'll send a reset link.
-            </p>
+            Back to sign in
+          </Link>
+        </CheckYourEmail>
+      ) : (
+        <>
+          <p className="text-sm text-slate">Reset password</p>
+          <h2 className="mt-2 font-display text-3xl font-bold tracking-[-0.03em] text-balance">
+            Forgot your password?
+          </h2>
+          <p className="mt-3 text-pretty text-base leading-relaxed text-slate">
+            Enter the email on your account and we&apos;ll send a reset link.
+          </p>
+          <form onSubmit={submit} className="mt-8 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -97,21 +80,29 @@ function ForgotPassword() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                className="!rounded-[4px]"
               />
             </div>
-            <Button type="submit" disabled={loading} className="h-12 w-full">
+            <Button
+              type="submit"
+              disabled={loading}
+              className={cn(
+                AUTH_BTN,
+                "w-full bg-orbit-blue text-paper hover:bg-orbit-blue/90",
+              )}
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Send reset link
             </Button>
             <Link
               to="/login"
-              className="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
+              className="inline-flex min-h-11 items-center text-sm text-slate underline-offset-4 hover:text-ink hover:underline"
             >
-              <ArrowLeft className="h-3 w-3" /> Back to sign in
+              Back to sign in
             </Link>
           </form>
-        )}
-      </div>
-    </div>
+        </>
+      )}
+    </AuthShell>
   );
 }

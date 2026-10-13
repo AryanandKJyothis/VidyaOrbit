@@ -26,7 +26,7 @@ export function RouteProgress() {
         >
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
           <motion.div
-            className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-brand-teal via-brand-saffron to-brand-coral"
+            className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-primary"
             initial={{ x: "-100%" }}
             animate={reducedMotion ? { x: "120%" } : { x: ["-100%", "350%"] }}
             transition={

@@ -64,10 +64,13 @@ export function TaglineReveal({
   return (
     <section
       ref={rootRef}
-      className={cn("mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24", className)}
+      className={cn(
+        "mx-auto max-w-[1280px] px-8 py-16 sm:px-16 sm:py-24",
+        className,
+      )}
       aria-label="Setup promise"
     >
-      <p className="mx-auto max-w-[680px] text-center font-display text-4xl font-bold leading-[1.1] tracking-[-0.03em] sm:text-5xl md:text-6xl">
+      <p className="max-w-[680px] text-balance font-display text-4xl font-bold leading-[0.95] tracking-[-0.04em] sm:text-5xl md:text-6xl">
         {words.map((w, i) => (
           <span key={w.key}>
             <span

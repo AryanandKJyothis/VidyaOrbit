@@ -6,6 +6,8 @@ const SIZES = {
   md: { box: 96, logo: 52 },
 } as const;
 
+const PAPER = "#F8F7F2";
+
 /**
  * Compact Vidya Orbit mark with a CSS orbit in brand colours.
  * Use inside pages, overlays, or wrap with {@link LoadingScreen} for a full page.
@@ -39,29 +41,32 @@ export function BrandLoader({
         style={{ width: box, height: box }}
         aria-hidden="true"
       >
-        <div className="brand-loader-breathe absolute inset-0 rounded-full border border-dashed border-brand-teal/35" />
+        <div className="brand-loader-breathe absolute inset-0 rounded-full border border-dashed border-orbit-blue/35" />
         <div className="brand-loader-orbit absolute inset-0">
           <span
             className={cn(
-              "absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-teal",
+              "absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orbit-blue",
               dot,
             )}
           />
           <span
             className={cn(
-              "absolute right-0 bottom-[18%] translate-x-1/2 rounded-full bg-brand-saffron",
-              accent,
-            )}
-          />
-          <span
-            className={cn(
-              "absolute bottom-[18%] left-0 -translate-x-1/2 rounded-full bg-brand-coral",
+              "absolute right-0 bottom-[18%] translate-x-1/2 rounded-full bg-signal",
               accent,
             )}
           />
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <Logo size={logo} />
+          <span
+            className="flex items-center justify-center rounded-[4px]"
+            style={{
+              backgroundColor: PAPER,
+              width: logo + 12,
+              height: logo + 12,
+            }}
+          >
+            <Logo size={logo} />
+          </span>
         </div>
       </div>
       <p

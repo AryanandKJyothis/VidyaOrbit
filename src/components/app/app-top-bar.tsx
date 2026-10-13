@@ -19,11 +19,16 @@ export function AppTopBar() {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 px-4 material-chrome scroll-edge sm:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-2.5 md:gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-soft ring-1 ring-primary/15 md:hidden">
+        <div
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl md:hidden"
+          style={{ backgroundColor: "#F8F7F2" }}
+        >
           <Logo size={22} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="type-kicker text-primary">Vidya Orbit</p>
+          <p className="font-display text-[11px] font-bold tracking-[-0.04em] text-primary">
+            Vidya Orbit
+          </p>
           <div className="-ml-2 max-w-[220px] sm:max-w-xs">
             <WorkspaceSwitcher variant="header" />
           </div>

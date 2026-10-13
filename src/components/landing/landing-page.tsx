@@ -1,305 +1,368 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Check, MessageCircle, Phone } from "lucide-react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ProductPreviews } from "@/components/landing/product-previews";
+import { LandingPricing } from "@/components/landing/landing-pricing";
+import { OrbitMotif } from "@/components/landing/orbit-motif";
 import { Reveal } from "@/components/landing/reveal";
 import { TaglineReveal } from "@/components/landing/tagline-reveal";
-import { PublicPricingGrid } from "@/components/public/pricing-grid";
 import { SiteFooter } from "@/components/public/site-footer";
 import { SiteHeader } from "@/components/public/site-header";
 import { SkipToContent } from "@/components/skip-to-content";
+import { Logo } from "@/components/logo";
 import {
   FOUNDER_NAME,
   FOUNDER_TOWN,
   getContactConfig,
-  getTelHref,
   getWhatsAppHref,
 } from "@/lib/contact-config";
+import { usePrefers } from "@/hooks/use-prefers";
+import { fadeOnly, springDefault } from "@/lib/motion";
 import {
+  AUDIENCE_LINE,
+  CTA_BOOK_DEMO,
+  CTA_FINAL,
   CTA_START_FREE,
-  CTA_WHATSAPP,
   FOUNDER_LINE,
   HERO_EYEBROW,
   HERO_MALAYALAM,
   HERO_SUB,
+  HERO_TITLE,
+  TAGLINE_LINES,
   WHATSAPP_PREFILL,
+  WORK_STRIP,
 } from "@/lib/landing-copy";
+import { SAMPLE_CENTRE, SAMPLE_LABEL } from "@/lib/landing-sample";
 import { LANDING_FAQS } from "@/lib/public-faqs";
+import { cn } from "@/lib/utils";
+
+const SHELL = "mx-auto w-full max-w-[1280px] px-8 sm:px-16";
+const BTN =
+  "h-12 !rounded-[4px] px-6 text-base font-semibold transition-transform duration-150 [transition-timing-function:var(--ease-out)] active:scale-[0.97]";
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-paper text-ink">
       <SkipToContent />
       <SiteHeader />
       <main id="main-content">
         <Hero />
-        <ProofStrip />
-        <section
-          id="product"
-          className="mx-auto max-w-5xl scroll-mt-28 px-4 pb-10 sm:px-6 sm:pb-16"
-        >
-          <ProductPreviews />
-        </section>
-        <Benefits />
-        <Setup />
+        <WorkStrip />
+        <ProductBand />
+        <Audience />
+        <Features />
+        <OverdueBand />
+        <HowItWorks />
         <TaglineReveal
-          lines={[
-            "We set everything up for you,",
-            "zero headache.",
-            HERO_MALAYALAM,
-          ]}
+          lines={[...TAGLINE_LINES]}
+          className="border-t border-ink/20 py-24 sm:py-32"
         />
         <Pricing />
+        <KeralaNote />
         <FAQ />
-        <CTA />
+        <FinalCta />
       </main>
       <SiteFooter />
     </div>
   );
 }
 
-function HeroCtas({
-  stacked,
-  onDark,
+function LandingCtas({
+  inverted = false,
+  demoFirst = true,
 }: {
-  stacked?: boolean;
-  onDark?: boolean;
+  inverted?: boolean;
+  demoFirst?: boolean;
 }) {
-  const { phone } = getContactConfig();
-  const tel = getTelHref();
   const wa = getWhatsAppHref(WHATSAPP_PREFILL);
-  const wrap = stacked
-    ? "mt-6 flex w-full max-w-md flex-col gap-2.5"
-    : "mt-7 flex w-full max-w-md flex-col items-stretch justify-center gap-3 sm:max-w-none sm:flex-row sm:items-center";
+  const demoClass = inverted
+    ? `${BTN} w-full bg-paper text-ink hover:bg-paper/90 sm:w-auto`
+    : `${BTN} w-full bg-orbit-blue text-paper hover:bg-orbit-blue/90 sm:w-auto`;
+  const freeClass = inverted
+    ? `${BTN} w-full border border-paper/40 bg-transparent text-paper hover:bg-paper/10 sm:w-auto`
+    : `${BTN} w-full border border-ink bg-transparent text-ink hover:bg-ink/5 sm:w-auto`;
+
+  const demo = wa ? (
+    <a key="demo" href={wa} target="_blank" rel="noreferrer">
+      <Button size="lg" className={demoClass}>
+        {CTA_BOOK_DEMO}
+      </Button>
+    </a>
+  ) : null;
+  const start = (
+    <Link key="start" to="/login" search={{ mode: "signup" }}>
+      <Button size="lg" variant="outline" className={freeClass}>
+        {CTA_START_FREE}
+      </Button>
+    </Link>
+  );
 
   return (
-    <div className={wrap}>
-      {wa && (
-        <a
-          href={wa}
-          target="_blank"
-          rel="noreferrer"
-          className="w-full sm:w-auto"
-        >
-          <Button
-            size="lg"
-            variant={onDark ? "secondary" : "default"}
-            className="h-12 w-full min-h-12 text-base font-semibold sm:w-auto"
-          >
-            <MessageCircle className="h-4 w-4" />
-            {CTA_WHATSAPP}
-          </Button>
-        </a>
+    <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+      {demoFirst ? (
+        <>
+          {demo}
+          {start}
+        </>
+      ) : (
+        <>
+          {start}
+          {demo}
+        </>
       )}
-      <div
-        className={
-          stacked
-            ? "flex flex-col gap-2"
-            : "flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center"
-        }
-      >
-        {tel && phone && (
-          <a
-            href={tel}
-            className={
-              onDark
-                ? "inline-flex h-12 min-h-12 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-primary-foreground/85 underline-offset-4 hover:underline"
-                : "inline-flex h-12 min-h-12 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-            }
-          >
-            <Phone className="h-4 w-4" />
-            Call {phone}
-          </a>
-        )}
-        <Link
-          to="/login"
-          search={{ mode: "signup" }}
-          className={
-            onDark
-              ? "inline-flex h-12 min-h-12 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-primary-foreground/85 underline-offset-4 hover:underline"
-              : "inline-flex h-12 min-h-12 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-          }
-        >
-          {CTA_START_FREE}
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-      </div>
     </div>
   );
 }
 
 function Hero() {
+  const { reducedMotion } = usePrefers();
+  const lines = HERO_TITLE.replace(/\.$/, "")
+    .split(". ")
+    .map((line) => `${line}.`);
+
   return (
     <section className="relative overflow-hidden">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(60% 50% at 20% 0%, color-mix(in oklab, var(--brand-teal) 18%, transparent), transparent 70%), radial-gradient(45% 40% at 90% 10%, color-mix(in oklab, var(--brand-saffron) 16%, transparent), transparent 70%)",
-        }}
+      <OrbitMotif
+        spin
+        className="pointer-events-none absolute -right-16 top-8 hidden h-[22rem] w-[22rem] opacity-90 lg:block lg:right-4 lg:top-2 lg:h-[30rem] lg:w-[30rem]"
       />
-      <div className="mx-auto max-w-6xl px-4 pb-8 pt-6 sm:px-6 sm:pb-12 sm:pt-10">
-        <div className="mx-auto max-w-[680px] text-center">
-          <p className="text-xs font-medium tracking-[0.04em] text-muted-foreground">
-            {HERO_EYEBROW}
-          </p>
-          <h1 className="hero-heading-gradient font-display mt-4 text-4xl font-bold leading-none tracking-[-0.03em] sm:text-5xl md:text-6xl">
-            We set everything up for you,
-            <br className="hidden sm:block" /> zero headache.
+      <div
+        className={`${SHELL} relative grid grid-cols-12 gap-6 pb-12 pt-10 sm:pb-16 sm:pt-16`}
+      >
+        <div className="col-span-12 lg:col-span-8">
+          <p className="text-sm font-medium text-slate">{HERO_EYEBROW}</p>
+          <h1 className="mt-6 max-w-[16ch] font-display text-5xl font-bold leading-[0.95] tracking-[-0.04em] sm:text-7xl lg:text-8xl">
+            {lines.map((line, i) => (
+              <motion.span
+                key={line}
+                className={cn(
+                  "block text-balance",
+                  i === 1 && "text-orbit-blue",
+                )}
+                initial={reducedMotion ? { opacity: 1 } : { opacity: 0, y: 28 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  ...(reducedMotion ? fadeOnly : springDefault),
+                  delay: reducedMotion ? 0 : 0.06 + i * 0.09,
+                }}
+              >
+                {line}
+              </motion.span>
+            ))}
           </h1>
+          <p className="mt-6 max-w-[38rem] text-pretty text-lg leading-relaxed text-slate sm:text-xl">
+            {HERO_SUB}
+          </p>
           <p
             lang="ml"
-            className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base"
+            className="mt-4 max-w-[38rem] text-pretty text-base leading-relaxed text-slate"
           >
             {HERO_MALAYALAM}
           </p>
-          <p className="mx-auto mt-4 max-w-[680px] text-base leading-relaxed text-muted-foreground sm:text-lg">
-            {HERO_SUB}
-          </p>
-          <HeroCtas />
+          <LandingCtas />
         </div>
       </div>
     </section>
   );
 }
 
-function ProofStrip() {
+function WorkStrip() {
   return (
-    <section
-      aria-label="Founder proof"
-      className="mx-auto max-w-3xl px-4 pb-8 text-center sm:px-6"
-    >
-      <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-        {FOUNDER_LINE}
-      </p>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Free for up to 25 students. Cancel anytime.{" "}
-        <Link
-          to="/terms"
-          hash="refund"
-          className="inline-flex min-h-11 items-center font-medium text-foreground underline-offset-4 [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
-        >
-          Refunds &amp; cancellations
-        </Link>
-      </p>
+    <div className="border-y border-ink/20">
+      <ul className={`${SHELL} grid grid-cols-2 md:grid-cols-4`}>
+        {WORK_STRIP.map((item, i) => (
+          <li
+            key={item}
+            className={cn(
+              "py-5 font-display text-lg font-bold tracking-[-0.03em] sm:text-xl",
+              i > 0 && "md:border-l md:border-ink/20 md:pl-8",
+              i % 2 === 1 && "pl-6 md:pl-8",
+            )}
+          >
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ProductBand() {
+  return (
+    <section className="relative overflow-hidden bg-orbit-blue text-paper">
+      <OrbitMotif
+        inverted
+        spin
+        className="absolute -left-20 -top-16 h-72 w-72 opacity-30"
+      />
+      <div
+        className={`${SHELL} relative grid items-start gap-10 py-12 sm:py-16 lg:grid-cols-12`}
+      >
+        <div className="lg:col-span-5 lg:pt-4">
+          <p className="text-sm text-paper/70">
+            {SAMPLE_CENTRE} · {SAMPLE_LABEL}
+          </p>
+          <h2 className="mt-4 max-w-[14ch] font-display text-4xl font-bold leading-[0.95] tracking-[-0.04em] text-balance sm:text-5xl">
+            Today's batches. Today's dues.
+          </h2>
+          <p className="mt-4 max-w-sm text-pretty text-base leading-relaxed text-paper/80">
+            This is the owner screen. Attendance, fees and batches in one view.
+            Sample data. Not a live centre.
+          </p>
+        </div>
+        <div className="lg:col-span-7">
+          <div className="overflow-hidden border border-paper/20 bg-paper">
+            <img
+              src="/landing/preview-dashboard.webp"
+              alt="Sample owner dashboard with attendance, fees due and batches"
+              width={780}
+              height={1058}
+              className="screenshot mx-auto block h-auto w-full max-w-2xl"
+              loading="eager"
+              decoding="async"
+            />
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
 
-function Benefits() {
+function Audience() {
+  const [first, second] = AUDIENCE_LINE.split(". ");
+  return (
+    <section className="border-b border-ink/20">
+      <div className={`${SHELL} py-16 sm:py-20`}>
+        <Reveal>
+          <p className="max-w-[18ch] font-display text-4xl font-bold leading-[0.95] tracking-[-0.04em] text-balance sm:text-6xl">
+            <span className="block">{first}.</span>
+            <span className="mt-3 block text-orbit-blue">{second}</span>
+          </p>
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate">
+            Owners. Managers. The staff who mark the register and chase fees.
+          </p>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+function SectionLabel({ n, label }: { n: string; label: string }) {
+  return (
+    <p className="text-sm text-slate">
+      {n} — {label}
+    </p>
+  );
+}
+
+function Features() {
   const items = [
     {
-      title: "See who hasn't paid this month",
-      body: "Open Fees, filter overdue, record cash or UPI, then share a numbered receipt the way you already do on WhatsApp.",
+      n: "01",
+      title: "Mark attendance by batch.",
+      body: "Present, late or absent for the whole class. From your phone.",
     },
     {
-      title: "Mark a batch on your phone in a few taps",
-      body: "Present, late or absent for the whole class. A student's last 28 days sits on their profile when a parent asks.",
+      n: "02",
+      title: "Track fees as they come in.",
+      body: "Record cash or UPI. Numbered receipts with your centre name.",
     },
     {
-      title: "One roster for students, batches and staff",
-      body: "Name, parent phone, fee total and due date in one place. Invite tutors with a link and only the screens they need.",
+      n: "03",
+      title: "Keep batches in one roster.",
+      body: "Name, parent phone, fee total and due date. Staff see only what you allow.",
     },
     {
-      title: "Import from Excel without pasting cells",
-      body: "Upload .xlsx, .xls or .csv. We map names, batches and fees with you on the setup call.",
+      n: "04",
+      title: "Train the team once.",
+      body: "We set the system up. Then a 30 minute walkthrough for you and your staff.",
     },
   ];
   return (
-    <section
-      id="benefits"
-      className="mx-auto max-w-6xl scroll-mt-28 px-4 py-14 sm:px-6 sm:py-20"
-    >
-      <Reveal className="mx-auto max-w-[680px] text-center">
-        <h2 className="font-display text-3xl font-bold tracking-[-0.022em] sm:text-4xl">
-          Outcomes for the centre owner, not a tech team
-        </h2>
-        <p className="mt-3 text-muted-foreground">
-          If parents keep asking who paid and attendance lives in a notebook,
-          this is for you.
-        </p>
-      </Reveal>
-      <Reveal>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2">
-          {items.map((f) => (
-            <div key={f.title} className="flex gap-3">
-              <div
-                className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-                style={{
-                  background:
-                    "color-mix(in oklab, var(--brand-teal) 18%, transparent)",
-                }}
-              >
-                <Check className="h-4 w-4 text-[color:var(--brand-teal)]" />
-              </div>
-              <div>
-                <h3 className="font-display text-lg font-semibold">
-                  {f.title}
-                </h3>
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  {f.body}
-                </p>
-              </div>
+    <section id="features" className="scroll-mt-20">
+      <div className={`${SHELL} py-16 sm:py-24`}>
+        <SectionLabel n="01" label="The daily work" />
+        <div className="mt-10 grid border-b border-ink/20 sm:grid-cols-2">
+          {items.map((item) => (
+            <div
+              key={item.n}
+              className="border-t border-ink/20 py-10 pr-8 sm:odd:border-r sm:odd:pr-10 sm:even:pl-10"
+            >
+              <p className="font-display text-5xl font-bold leading-none tracking-[-0.05em] text-orbit-blue sm:text-6xl">
+                {item.n}
+              </p>
+              <h3 className="mt-6 font-display text-2xl font-bold tracking-[-0.03em] text-balance">
+                {item.title}
+              </h3>
+              <p className="mt-3 max-w-md text-pretty text-base leading-relaxed text-slate">
+                {item.body}
+              </p>
             </div>
           ))}
         </div>
-      </Reveal>
+      </div>
     </section>
   );
 }
 
-function Setup() {
+function OverdueBand() {
+  return (
+    <section className="relative overflow-hidden bg-ink text-paper">
+      <OrbitMotif
+        inverted
+        spin
+        className="absolute -right-10 bottom-[-4rem] h-80 w-80 opacity-50"
+      />
+      <div className={`${SHELL} relative py-16 sm:py-24`}>
+        <p className="text-sm text-paper/60">Overdue reminders</p>
+        <h2 className="mt-4 max-w-[16ch] font-display text-4xl font-bold leading-[0.95] tracking-[-0.04em] text-balance sm:text-6xl">
+          See who still owes before parents ask.
+        </h2>
+        <p className="mt-6 max-w-lg text-pretty text-lg leading-relaxed text-paper/75">
+          Filter overdue fees. We prepare the WhatsApp reminder with the amount
+          and your UPI link. You send it. The parent pays your centre.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function HowItWorks() {
   const steps = [
     {
-      n: "1",
-      t: "We import your students",
-      d: "Upload your Excel or CSV file. We map names, batches and fees for you.",
+      n: "01",
+      t: "Book a free demo.",
+      d: "WhatsApp Aryanand. Tell us how your centre runs today.",
     },
     {
-      n: "2",
-      t: "We set up batches, fees and staff",
-      d: "Timings, due dates, who still owes, and tutor logins with the right access.",
+      n: "02",
+      t: "We set it up for you.",
+      d: "We import your Excel or CSV. Batches, fees and staff logins.",
     },
     {
-      n: "3",
-      t: "30 minute training",
-      d: "Aryanand walks you through attendance, recording a payment, and sending a receipt.",
+      n: "03",
+      t: "We train your staff.",
+      d: "A 30 minute walkthrough. Then you mark attendance and fees.",
     },
   ];
   return (
-    <section
-      id="setup"
-      className="scroll-mt-28 border-y border-border/50 bg-card/40"
-    >
-      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
-        <Reveal className="mx-auto max-w-[680px] text-center">
-          <h2 className="font-display text-3xl font-bold tracking-[-0.022em] sm:text-4xl">
-            You teach. We set the software up.
-          </h2>
-          <p className="mt-3 text-muted-foreground">
-            The same setup Aryanand does after a sales call, not a self serve
-            maze.
-          </p>
-        </Reveal>
-        <Reveal>
-          <ol className="mt-10 grid gap-6 md:grid-cols-3">
-            {steps.map((s) => (
-              <li key={s.n} className="flex gap-4 md:flex-col md:gap-3">
-                <div
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-display text-lg font-bold text-primary-foreground"
-                  style={{ background: "var(--primary)" }}
-                >
-                  {s.n}
-                </div>
-                <div>
-                  <p className="font-semibold">{s.t}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{s.d}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </Reveal>
+    <section id="setup" className="scroll-mt-20 border-t border-ink/20">
+      <div className={`${SHELL} py-16 sm:py-24`}>
+        <SectionLabel n="02" label="Done for you" />
+        <ol className="mt-10 grid gap-0 md:grid-cols-3">
+          {steps.map((s) => (
+            <li key={s.n} className="border-t border-ink py-8 md:pr-10">
+              <p className="font-display text-6xl font-bold leading-none tracking-[-0.05em] text-orbit-blue">
+                {s.n}
+              </p>
+              <h3 className="mt-6 font-display text-xl font-bold tracking-[-0.03em] text-balance">
+                {s.t}
+              </h3>
+              <p className="mt-3 text-pretty text-base leading-relaxed text-slate">
+                {s.d}
+              </p>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   );
@@ -307,27 +370,36 @@ function Setup() {
 
 function Pricing() {
   return (
-    <section
-      id="pricing"
-      className="scroll-mt-28 border-t border-border/50 bg-card/40"
-    >
-      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
-        <div className="mx-auto max-w-[680px] text-center">
-          <h2 className="font-display text-3xl font-bold tracking-[-0.022em] sm:text-4xl">
-            Start free. Pay when you grow.
-          </h2>
-          <p className="mt-3 text-muted-foreground">
-            Same prices as the{" "}
-            <Link to="/pricing" className="underline underline-offset-2">
-              pricing page
-            </Link>
-            . Free plan, no card required. Pay in the app when you upgrade;
-            cancel anytime.
-          </p>
-        </div>
+    <section id="pricing" className="scroll-mt-20 border-t border-ink/20">
+      <div className={`${SHELL} py-16 sm:py-24`}>
+        <SectionLabel n="03" label="Pricing" />
+        <h2 className="mt-6 max-w-[18ch] font-display text-4xl font-bold tracking-[-0.03em] text-balance sm:text-5xl">
+          One price per plan. Monthly or annual.
+        </h2>
+        <p className="mt-4 max-w-xl text-pretty text-base leading-relaxed text-slate">
+          Starter, Growth and Large. ₹5,000 setup on monthly Growth and Large
+          only, waived on annual. Same figures as the pricing page.
+        </p>
         <div className="mt-12">
-          <PublicPricingGrid />
+          <LandingPricing />
         </div>
+      </div>
+    </section>
+  );
+}
+
+function KeralaNote() {
+  return (
+    <section className="relative overflow-hidden border-t border-ink/20">
+      <OrbitMotif className="absolute -right-16 bottom-[-4rem] hidden h-72 w-72 opacity-60 sm:block" />
+      <div className={`${SHELL} relative py-16 sm:py-24`}>
+        <SectionLabel n="04" label="Kerala" />
+        <h2 className="mt-6 max-w-[16ch] font-display text-4xl font-bold tracking-[-0.03em] text-balance sm:text-6xl">
+          Built for centres in Kerala.
+        </h2>
+        <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-slate">
+          {FOUNDER_LINE}
+        </p>
       </div>
     </section>
   );
@@ -335,52 +407,60 @@ function Pricing() {
 
 function FAQ() {
   return (
-    <section
-      id="faq"
-      className="mx-auto max-w-3xl scroll-mt-28 px-4 py-14 sm:px-6 sm:py-20"
-    >
-      <h2 className="text-center font-display text-3xl font-bold tracking-[-0.022em] sm:text-4xl">
-        Questions owners actually ask
-      </h2>
-      <div className="mt-10 divide-y divide-border/80 rounded-2xl border border-border/80 bg-card shadow-[var(--shadow-card)]">
-        {LANDING_FAQS.map((f) => (
-          <details key={f.q} className="group p-5">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-lg py-1 font-medium transition-colors duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground [-webkit-tap-highlight-color:transparent]">
-              {f.q}
-              <span className="ml-4 text-muted-foreground transition-transform duration-200 [transition-timing-function:var(--ease-out)] group-open:rotate-45 motion-reduce:transition-none motion-reduce:group-open:rotate-0">
-                +
-              </span>
-            </summary>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              {f.a}
-            </p>
-          </details>
-        ))}
+    <section id="faq" className="scroll-mt-20 border-t border-ink/20">
+      <div className={`${SHELL} grid gap-10 py-16 sm:py-24 lg:grid-cols-12`}>
+        <div className="lg:col-span-4">
+          <SectionLabel n="05" label="FAQ" />
+          <h2 className="mt-6 font-display text-4xl font-bold tracking-[-0.03em] sm:text-5xl">
+            Questions
+          </h2>
+        </div>
+        <div className="lg:col-span-8">
+          {LANDING_FAQS.map((f) => (
+            <details
+              key={f.q}
+              className="group border-t border-ink/20 py-5 last:border-b"
+            >
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-6 font-display text-lg font-bold tracking-[-0.02em] [-webkit-tap-highlight-color:transparent]">
+                {f.q}
+                <span className="mt-0.5 text-slate transition-transform duration-200 [transition-timing-function:var(--ease-out)] group-open:rotate-45 motion-reduce:transition-none">
+                  +
+                </span>
+              </summary>
+              <p className="mt-3 max-w-2xl text-pretty text-base leading-relaxed text-slate">
+                {f.a}
+              </p>
+            </details>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
-function CTA() {
+function FinalCta() {
+  const { phone } = getContactConfig();
   return (
-    <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 sm:pb-20">
-      <div
-        className="relative overflow-hidden rounded-3xl border border-white/10 p-8 text-center shadow-[var(--shadow-elevated)] transition-[transform,box-shadow] duration-300 [transition-timing-function:var(--ease-out)] sm:p-14 [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-0.5 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-[var(--shadow-lift)]"
-        style={{
-          background:
-            "linear-gradient(135deg, color-mix(in oklab, var(--primary) 95%, black), color-mix(in oklab, var(--brand-teal) 35%, var(--primary)))",
-        }}
-      >
-        <h2 className="font-display text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
-          Talk to {FOUNDER_NAME} in {FOUNDER_TOWN}.
+    <section
+      id="final"
+      className="relative overflow-hidden bg-orbit-blue text-paper"
+    >
+      <OrbitMotif
+        inverted
+        spin
+        className="absolute -right-6 top-8 h-72 w-72 sm:right-10 sm:h-96 sm:w-96"
+      />
+      <div className={`${SHELL} relative py-20 sm:py-28`}>
+        <Logo size={56} className="rounded-sm bg-paper p-1" />
+        <h2 className="mt-10 max-w-[14ch] font-display text-5xl font-bold leading-[0.95] tracking-[-0.04em] text-balance sm:text-7xl">
+          {CTA_FINAL}
         </h2>
-        <p className="mx-auto mt-3 max-w-xl text-primary-foreground/80">
-          Free for up to 25 students if you want to click around first. WhatsApp
-          is the fastest way after the call.
+        <p className="mt-6 max-w-md text-lg text-paper/75">
+          Talk to {FOUNDER_NAME} in {FOUNDER_TOWN}. Book a free demo. Or start
+          free and look around.
         </p>
-        <div className="flex justify-center">
-          <HeroCtas onDark />
-        </div>
+        <LandingCtas inverted />
+        {phone && <p className="mt-6 text-sm text-paper/60">{phone}</p>}
       </div>
     </section>
   );
