@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { usePrefers } from "@/hooks/use-prefers";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import { MarketingOptInCheckbox } from "@/components/marketing-opt-in-checkbox";
 import { fadeOnly, springDefault } from "@/lib/motion";
 import { AnimatePresence, motion } from "framer-motion";
 import { BrandLoaderOverlay } from "@/components/loading-screen";
+import { isSignOutTarget } from "@/lib/sign-out";
 import { ArrowLeft, ArrowRight, Upload } from "lucide-react";
 
 export function OwnerSetupWizardView({
@@ -40,6 +41,7 @@ export function OwnerSetupWizardView({
   onBack,
   onSkipStep,
   onImportStudents,
+  onSignOut,
   includeMarketingStep = false,
   className,
 }: {
@@ -53,6 +55,7 @@ export function OwnerSetupWizardView({
   onBack: () => void;
   onSkipStep?: () => void;
   onImportStudents?: () => void;
+  onSignOut?: () => void;
   includeMarketingStep?: boolean;
   className?: string;
 }) {
@@ -208,6 +211,18 @@ export function OwnerSetupWizardView({
               disabled={busy}
             >
               Skip this step
+            </Button>
+          )}
+          {onSignOut && (
+            <Button
+              type="button"
+              variant="link"
+              data-sign-out=""
+              className="mx-auto h-11 min-h-11 text-muted-foreground"
+              onClick={onSignOut}
+              disabled={busy}
+            >
+              Sign out
             </Button>
           )}
         </div>
@@ -529,12 +544,24 @@ export function OwnerSetupCaptureOverlay({
 }: {
   onResume: () => void;
 }) {
+  const resumeRef = useRef(onResume);
+  resumeRef.current = onResume;
+
+  useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      if (isSignOutTarget(event.target)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      resumeRef.current();
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, []);
+
   return (
-    <button
-      type="button"
-      className="fixed inset-0 z-[45] cursor-default bg-transparent"
-      aria-label="Continue setup"
-      onClick={onResume}
+    <div
+      className="pointer-events-none fixed inset-0 z-[45] cursor-default bg-transparent"
+      aria-hidden="true"
     />
   );
 }

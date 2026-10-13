@@ -12,6 +12,7 @@ import {
   useUpsertStudent,
 } from "@/hooks/use-data";
 import { useOwnerOnboarding } from "@/hooks/use-owner-onboarding";
+import { useSignOut } from "@/hooks/use-sign-out";
 import { supabase } from "@/integrations/supabase/client";
 import { formatUserError } from "@/lib/format-error";
 import { todayISO } from "@/lib/format";
@@ -64,6 +65,7 @@ export function OwnerOnboardingHost() {
   const upsertStudent = useUpsertStudent();
   const onboarding = useOwnerOnboarding(user?.id ?? null);
   const navigate = useNavigate();
+  const signOut = useSignOut();
 
   const [resumeRequested, setResumeRequested] = useState(false);
   const [userDismissed, setUserDismissed] = useState(false);
@@ -180,10 +182,10 @@ export function OwnerOnboardingHost() {
   useEffect(() => {
     const root = document.getElementById("app-shell");
     if (!root) return;
-    if (captureClicks || wizardOpen) root.setAttribute("inert", "");
+    if (wizardOpen) root.setAttribute("inert", "");
     else root.removeAttribute("inert");
     return () => root.removeAttribute("inert");
-  }, [captureClicks, wizardOpen]);
+  }, [wizardOpen]);
 
   const persistedStep = onboarding.state.currentStep;
   const step: WizardStepId = stepList.some((s) => s.id === persistedStep)
@@ -313,6 +315,7 @@ export function OwnerOnboardingHost() {
           }}
           onSkipStep={handleSkipStep}
           onImportStudents={() => setImportOpen(true)}
+          onSignOut={() => void signOut()}
           includeMarketingStep={includeMarketingStep}
         />
       </OwnerSetupWizardModal>

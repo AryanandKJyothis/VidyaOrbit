@@ -30,6 +30,7 @@ import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
 import { signInWithGoogle } from "@/lib/google-auth";
 import { GoogleContinueButton } from "@/components/google-continue-button";
 import { CheckYourEmail } from "@/components/check-your-email";
+import { useSignOut } from "@/hooks/use-sign-out";
 import { MarketingOptInCheckbox } from "@/components/marketing-opt-in-checkbox";
 import { marketingOptInMetadata } from "@/lib/marketing-opt-in";
 import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
@@ -138,7 +139,7 @@ function ValidInvite({
   accepting: boolean;
   onAccept: () => void;
 }) {
-  const qc = useQueryClient();
+  const signOut = useSignOut({ redirectTo: null });
   const userEmail = session?.user?.email?.toLowerCase() ?? null;
   const inviteEmail = preview.email.toLowerCase();
   const emailMatches = userEmail === inviteEmail;
@@ -192,14 +193,8 @@ function ValidInvite({
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={async () => {
-                  const { error } = await supabase.auth.signOut();
-                  if (error) {
-                    toast.error("Could not sign out. Please try again.");
-                  } else {
-                    qc.clear();
-                  }
-                }}
+                data-sign-out=""
+                onClick={() => void signOut()}
               >
                 Sign out
               </Button>
