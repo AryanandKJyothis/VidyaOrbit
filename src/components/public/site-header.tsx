@@ -4,7 +4,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { LogoWordmark } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { getWhatsAppHref } from "@/lib/contact-config";
-import { CTA_BOOK_SETUP, WHATSAPP_PREFILL } from "@/lib/landing-copy";
+import {
+  CTA_BOOK_DEMO,
+  CTA_START_FREE,
+  WHATSAPP_PREFILL,
+} from "@/lib/landing-copy";
 import { usePrefers } from "@/hooks/use-prefers";
 import { easeDrawer, fadeOnly, springSnappy } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -112,6 +116,19 @@ export function SiteHeader({
           </nav>
 
           <div className="flex items-center gap-2">
+            <Link
+              to="/login"
+              search={{ mode: "signup" }}
+              className="hidden sm:inline-flex"
+            >
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-9 !rounded-[4px] border-ink px-3 text-ink"
+              >
+                {CTA_START_FREE}
+              </Button>
+            </Link>
             {wa && (
               <a
                 href={wa}
@@ -123,7 +140,7 @@ export function SiteHeader({
                   size="sm"
                   className="h-9 !rounded-[4px] bg-orbit-blue px-3 text-paper hover:bg-orbit-blue/90"
                 >
-                  {CTA_BOOK_SETUP}
+                  {CTA_BOOK_DEMO}
                 </Button>
               </a>
             )}
@@ -239,21 +256,28 @@ export function SiteHeader({
                   </Link>
                 </motion.li>
               </ul>
-              {wa && (
-                <a
-                  href={wa}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-auto"
-                >
+              <div className="mt-auto flex flex-col gap-2">
+                <Link to="/login" search={{ mode: "signup" }}>
                   <Button
                     size="lg"
-                    className="w-full !rounded-[4px] bg-orbit-blue text-paper"
+                    variant="outline"
+                    className="w-full !rounded-[4px] border-ink"
+                    onClick={() => setOpen(false)}
                   >
-                    {CTA_BOOK_SETUP}
+                    {CTA_START_FREE}
                   </Button>
-                </a>
-              )}
+                </Link>
+                {wa && (
+                  <a href={wa} target="_blank" rel="noreferrer">
+                    <Button
+                      size="lg"
+                      className="w-full !rounded-[4px] bg-orbit-blue text-paper"
+                    >
+                      {CTA_BOOK_DEMO}
+                    </Button>
+                  </a>
+                )}
+              </div>
             </nav>
           </motion.div>
         )}

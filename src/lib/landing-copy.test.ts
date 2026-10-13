@@ -3,6 +3,7 @@ import { LANDING_FAQS } from "./public-faqs";
 import {
   BANNED_LANDING_PHRASES,
   FOUNDER_LINE,
+  HERO_EYEBROW,
   HERO_MALAYALAM,
   HERO_SUB,
   HERO_TITLE,
@@ -28,11 +29,14 @@ function haystack() {
 }
 
 describe("landing copy", () => {
-  it("states the orbit promise for Kerala centres", () => {
-    expect(HERO_TITLE.toLowerCase()).toContain("one clear orbit");
+  it("speaks to centre owners, not students", () => {
+    expect(HERO_TITLE.toLowerCase()).toContain("who still owes");
+    expect(HERO_SUB.toLowerCase()).toContain("owners");
     expect(HERO_SUB.toLowerCase()).toContain("attendance");
-    expect(HERO_SUB.toLowerCase()).toContain("kerala");
+    expect(HERO_SUB.toLowerCase()).toContain("staff");
     expect(HERO_SUB.toLowerCase()).not.toContain("paste");
+    expect(HERO_EYEBROW.toLowerCase()).toContain("owners");
+    expect(HERO_EYEBROW.toLowerCase()).toContain("kerala");
   });
 
   it("keeps a Malayalam line for native-speaker review", () => {

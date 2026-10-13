@@ -12,7 +12,8 @@
 
 @theme inline {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    "Space Grotesk", "DM Sans", ui-sans-serif, system-ui, sans-serif;
 
   --color-orbit-blue: var(--orbit-blue);
   --color-signal: var(--signal);
@@ -545,6 +546,21 @@
   animation: float-orbit 4s ease-in-out infinite;
 }
 
+@keyframes orbit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-orbit-spin {
+  animation: orbit-spin 48s linear infinite;
+  transform-origin: center;
+}
+
 .animate-glow-pulse {
   animation: glow-pulse 3s ease-in-out infinite;
 }
@@ -923,6 +939,7 @@ tr {
   .animate-bounce-gentle,
   .animate-spin-slow,
   .animate-orbit,
+  .animate-orbit-spin,
   .animate-float-orbit,
   .animate-glow-pulse,
   .animate-pulse-ring,

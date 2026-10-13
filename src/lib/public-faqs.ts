@@ -29,8 +29,12 @@ function setupFeeAnswer(): string {
 /** Landing-page owner FAQ. Prices are read from APPROVED_PRICING. */
 export const LANDING_FAQS: FaqItem[] = [
   {
+    q: "Is this for students?",
+    a: "No. Vidya Orbit is for owners, managers and staff who run a tuition or coaching centre. Students and parents do not log in.",
+  },
+  {
     q: "What does setup include?",
-    a: "WhatsApp or call Aryanand. We import your Excel or CSV, set up batches and fees, add staff, and train you for 30 minutes.",
+    a: "Book a free demo on WhatsApp. We import your Excel or CSV, set up batches and fees, add staff, and train your team for 30 minutes.",
   },
   {
     q: "Can I switch plans?",

@@ -36,7 +36,7 @@ export function SiteFooter() {
                 search={{ mode: "signup" }}
                 className="hover:text-ink"
               >
-                Start with Starter
+                Start free
               </Link>
               <Link to="/login" className="hover:text-ink">
                 Log in

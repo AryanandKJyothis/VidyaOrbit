@@ -7,7 +7,7 @@ import {
   type PlanDisplay,
 } from "@/lib/pricing-display";
 import { getWhatsAppHref } from "@/lib/contact-config";
-import { CTA_BOOK_SETUP, CTA_START_STARTER } from "@/lib/landing-copy";
+import { CTA_BOOK_DEMO, CTA_START_FREE } from "@/lib/landing-copy";
 import { cn } from "@/lib/utils";
 
 const PAID_PLANS = APPROVED_PRICING.filter((p) => p.code !== "free");
@@ -155,7 +155,7 @@ function PlanColumn({ plan, annual }: { plan: PlanDisplay; annual: boolean }) {
                 : "bg-orbit-blue text-paper hover:bg-orbit-blue/90",
             )}
           >
-            {CTA_BOOK_SETUP}
+            {CTA_BOOK_DEMO}
           </Button>
         </a>
       ) : (
@@ -168,7 +168,7 @@ function PlanColumn({ plan, annual }: { plan: PlanDisplay; annual: boolean }) {
                 : "bg-orbit-blue text-paper hover:bg-orbit-blue/90",
             )}
           >
-            {CTA_START_STARTER}
+            {CTA_START_FREE}
           </Button>
         </Link>
       )}
