@@ -10,13 +10,13 @@ export const LANDING_TITLE =
 export const LANDING_DESCRIPTION =
   "Vidya Orbit is coaching and tuition centre software for Kerala — attendance, fees, students, staff and receipts. Built in Valanchery, Malappuram.";
 
-export const HERO_EYEBROW = "Built in Valanchery, Kerala";
-export const HERO_TITLE = "We set everything up for you, zero headache.";
+export const HERO_EYEBROW = "One clear view of your centre";
+export const HERO_TITLE = "One clear orbit for running your centre.";
 /** One-line Malayalam of the setup promise. Flag for a native speaker. */
 export const HERO_MALAYALAM =
   "ഞങ്ങൾ എല്ലാം ഒരുക്കിത്തരാം — ഒരു തലവേദനയും വേണ്ട.";
 export const HERO_SUB =
-  "After a call, Aryanand imports your students from your Excel or CSV file, sets up your batches and fees, adds your staff, and gives a 30-minute training. Then you can see who hasn't paid this month in one tap.";
+  "Attendance, fees, student records and reminders in one place, for tuition and coaching centres in Kerala.";
 
 export const FOUNDER_LINE =
   "I'm Aryanand, in Valanchery. I set your centre up myself and stay on WhatsApp if anything is unclear.";
@@ -26,6 +26,14 @@ export const WHATSAPP_PREFILL =
 
 export const CTA_WHATSAPP = "WhatsApp Aryanand";
 export const CTA_START_FREE = "Start free";
+export const CTA_START_STARTER = "Start with Starter";
+export const CTA_BOOK_SETUP = "Book a setup call";
+export const CTA_FINAL = "Run your centre in one clear orbit.";
+
+export const TAGLINE_LINES = [
+  "A simpler way",
+  "to keep everything moving.",
+] as const;
 
 export type LandingClaim = {
   text: string;
