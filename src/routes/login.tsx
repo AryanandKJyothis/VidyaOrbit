@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Mail } from "lucide-react";
 import { SkipToContent } from "@/components/skip-to-content";
-import { Logo } from "@/components/logo";
+import { LogoWordmark } from "@/components/logo";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
@@ -235,25 +235,25 @@ function LoginPage() {
     <div className="grid min-h-screen bg-brand-grid lg:grid-cols-2">
       <SkipToContent href="#auth-panel" />
       <div className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex">
-        <div
-          className="absolute inset-0 opacity-70"
-          style={{
-            background:
-              "radial-gradient(circle at 18% 22%, oklch(0.72 0.15 175 / 0.5), transparent 50%), radial-gradient(circle at 82% 78%, oklch(0.65 0.18 25 / 0.4), transparent 55%), radial-gradient(circle at 60% 10%, oklch(0.75 0.15 55 / 0.3), transparent 50%)",
-          }}
-        />
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 backdrop-blur ring-1 ring-white/20 shadow-lg">
-            <Logo size={30} />
-          </div>
-          <div>
-            <div className="font-display text-lg font-bold tracking-tight">
-              Vidya
-            </div>
-            <div className="text-[10px] uppercase tracking-[0.16em] text-primary-foreground/70 font-semibold">
-              Orbit
-            </div>
-          </div>
+        <svg
+          aria-hidden
+          className="pointer-events-none absolute -right-16 -top-8 h-72 w-72 opacity-25"
+          viewBox="0 0 200 200"
+        >
+          <ellipse
+            cx="100"
+            cy="100"
+            rx="88"
+            ry="34"
+            fill="none"
+            stroke="#F8F7F2"
+            strokeWidth="3"
+            transform="rotate(-28 100 100)"
+          />
+          <circle cx="164" cy="58" r="8" fill="#F05A28" />
+        </svg>
+        <div className="relative z-10">
+          <LogoWordmark size={32} inverted />
         </div>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -264,13 +264,9 @@ function LoginPage() {
           <h1 className="font-display text-4xl font-bold leading-[1.15] xl:text-5xl">
             Manage your
             <br />
-            <span className="bg-gradient-to-r from-brand-teal via-brand-sun to-brand-coral bg-clip-text text-transparent">
-              institute with
-            </span>
+            institute with
             <br />
-            <span className="bg-gradient-to-r from-brand-coral via-brand-saffron to-brand-teal bg-clip-text text-transparent">
-              Vidya Orbit
-            </span>
+            Vidya Orbit
           </h1>
           <p className="max-w-md text-base leading-relaxed text-primary-foreground/75">
             An elegant admin dashboard for coaching centres — manage students,
@@ -294,13 +290,8 @@ function LoginPage() {
           className="w-full max-w-md"
         >
           <div className="mb-6 flex flex-col items-center text-center lg:hidden">
-            <div className="mb-4 flex items-center gap-2.5">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-soft shadow-sm ring-1 ring-primary/15">
-                <Logo size={26} />
-              </div>
-              <span className="font-display text-2xl font-bold tracking-tight">
-                vidya<span className="text-primary">orbit</span>
-              </span>
+            <div className="mb-4">
+              <LogoWordmark size={28} />
             </div>
             <h1 className="font-display text-2xl font-bold leading-tight">
               Manage your tuition centre with ease

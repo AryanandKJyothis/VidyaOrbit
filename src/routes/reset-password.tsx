@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { LogoWordmark } from "@/components/logo";
 import { supabase } from "@/integrations/supabase/client";
 import { newPasswordSchema } from "@/lib/validation";
 import { formatUserError } from "@/lib/format-error";
@@ -63,16 +64,11 @@ function ResetPassword() {
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-md">
-        <div className="mb-8 flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <GraduationCap className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="font-display text-lg font-semibold">Vidya</div>
-            <div className="text-xs text-muted-foreground">
-              Set a new password
-            </div>
-          </div>
+        <div className="mb-8">
+          <LogoWordmark size={28} />
+          <p className="mt-2 text-xs text-muted-foreground">
+            Set a new password
+          </p>
         </div>
 
         <form

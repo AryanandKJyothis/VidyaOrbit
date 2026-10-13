@@ -5,7 +5,12 @@ export function LoadingScreen({ label = "Loading…" }: { label?: string }) {
     <div className="bg-brand-grid flex min-h-screen flex-col items-center justify-center gap-4">
       <div className="relative">
         <div className="absolute inset-0 -m-3 rounded-full bg-primary/5 animate-pulse-soft" />
-        <Logo size={56} />
+        <span
+          className="relative flex items-center justify-center rounded-2xl"
+          style={{ backgroundColor: "#F8F7F2", width: 72, height: 72 }}
+        >
+          <Logo size={56} />
+        </span>
       </div>
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <span className="relative inline-flex h-1.5 w-1.5">

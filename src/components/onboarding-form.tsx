@@ -183,7 +183,7 @@ export function OnboardingForm({
         >
           <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-gradient-to-r from-brand-teal to-brand-saffron rounded-full"
+              className="h-full bg-primary rounded-full"
               initial={{ width: 0 }}
               animate={{
                 width: `${(completedFieldsCount / fields.length) * 100}%`,

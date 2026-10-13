@@ -136,7 +136,7 @@ function Hero() {
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(60% 50% at 20% 0%, color-mix(in oklab, var(--brand-teal) 18%, transparent), transparent 70%), radial-gradient(45% 40% at 90% 10%, color-mix(in oklab, var(--brand-saffron) 16%, transparent), transparent 70%)",
+            "radial-gradient(60% 50% at 20% 0%, color-mix(in srgb, var(--orbit-blue) 14%, transparent), transparent 70%), radial-gradient(45% 40% at 90% 10%, color-mix(in srgb, var(--signal) 8%, transparent), transparent 70%)",
         }}
       />
       <div className="mx-auto max-w-6xl px-4 pb-8 pt-6 sm:px-6 sm:pb-12 sm:pt-10">
@@ -146,7 +146,8 @@ function Hero() {
           </p>
           <h1 className="hero-heading-gradient font-display mt-4 text-4xl font-bold leading-none tracking-[-0.03em] sm:text-5xl md:text-6xl">
             We set everything up for you,
-            <br className="hidden sm:block" /> zero headache.
+            <br className="hidden sm:block" />{" "}
+            <span className="text-primary">zero headache.</span>
           </h1>
           <p
             lang="ml"
@@ -228,7 +229,7 @@ function Benefits() {
                 className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
                 style={{
                   background:
-                    "color-mix(in oklab, var(--brand-teal) 18%, transparent)",
+                    "color-mix(in srgb, var(--orbit-blue) 14%, transparent)",
                 }}
               >
                 <Check className="h-4 w-4 text-[color:var(--brand-teal)]" />
@@ -367,8 +368,7 @@ function CTA() {
       <div
         className="relative overflow-hidden rounded-3xl border border-white/10 p-8 text-center shadow-[var(--shadow-elevated)] transition-[transform,box-shadow] duration-300 [transition-timing-function:var(--ease-out)] sm:p-14 [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-0.5 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-[var(--shadow-lift)]"
         style={{
-          background:
-            "linear-gradient(135deg, color-mix(in oklab, var(--primary) 95%, black), color-mix(in oklab, var(--brand-teal) 35%, var(--primary)))",
+          background: "var(--orbit-blue)",
         }}
       >
         <h2 className="font-display text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">

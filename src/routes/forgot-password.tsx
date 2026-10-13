@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
+import { LogoWordmark } from "@/components/logo";
 import { supabase } from "@/integrations/supabase/client";
 import { emailSchema } from "@/lib/validation";
 import { toast } from "sonner";
@@ -42,14 +43,9 @@ function ForgotPassword() {
     <div className="flex min-h-screen items-center justify-center p-6">
       <SkipToContent href="#reset-panel" />
       <div id="reset-panel" className="w-full max-w-md">
-        <div className="mb-8 flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <GraduationCap className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="font-display text-lg font-semibold">Vidya</div>
-            <div className="text-xs text-muted-foreground">Reset password</div>
-          </div>
+        <div className="mb-8">
+          <LogoWordmark size={28} />
+          <p className="mt-2 text-xs text-muted-foreground">Reset password</p>
         </div>
 
         {sent ? (

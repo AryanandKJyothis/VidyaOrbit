@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import logoMark from "@/assets/logo-mark.webp";
 
 type LogoProps = {
   className?: string;
@@ -8,23 +7,47 @@ type LogoProps = {
   animated?: boolean;
 };
 
+const MARK_LABEL = "Vidya Orbit";
+
 /**
- * Vidya logo mark — uses the brand image directly.
+ * Vidya Orbit mark — blue planet, ink orbit ring, orange satellite.
+ * Keep the core colours; sit it on paper when the surface is dark.
  */
 export function Logo({ className, size = 32, animated = false }: LogoProps) {
   return (
-    <img
-      src={logoMark}
-      alt="Vidya"
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 200 200"
       width={size}
       height={size}
+      role="img"
+      aria-label={MARK_LABEL}
       className={cn(
-        "object-contain shrink-0 select-none",
+        "shrink-0 select-none",
         animated && "animate-float",
         className,
       )}
-      draggable={false}
-    />
+    >
+      <circle cx="100" cy="100" r="58" fill="#1746E8" />
+      <ellipse
+        cx="100"
+        cy="100"
+        rx="88"
+        ry="34"
+        fill="none"
+        stroke="#111111"
+        strokeWidth="9"
+        transform="rotate(-28 100 100)"
+      />
+      <circle
+        cx="164"
+        cy="58"
+        r="12"
+        fill="#F05A28"
+        stroke="#F8F7F2"
+        strokeWidth="5"
+      />
+    </svg>
   );
 }
 
@@ -38,26 +61,25 @@ export function LogoWordmark({
   inverted?: boolean;
 }) {
   return (
-    <div className={cn("flex items-center gap-2.5", className)}>
-      <Logo size={size} />
-      <div className="flex flex-col leading-tight">
-        <span
-          className={cn(
-            "font-display text-base font-bold tracking-tight",
-            inverted ? "text-sidebar-foreground" : "text-foreground",
-          )}
-        >
-          Vidya
-        </span>
-        <span
-          className={cn(
-            "text-[10.5px] uppercase tracking-[0.16em] font-semibold",
-            inverted ? "text-sidebar-foreground/65" : "text-muted-foreground",
-          )}
-        >
-          Orbit
-        </span>
-      </div>
+    <div className={cn("flex items-center gap-2", className)}>
+      <span
+        className="flex shrink-0 items-center justify-center rounded-md"
+        style={{
+          width: size + 4,
+          height: size + 4,
+          backgroundColor: "#F8F7F2",
+        }}
+      >
+        <Logo size={size} />
+      </span>
+      <span
+        className={cn(
+          "font-display text-sm font-bold tracking-[-0.04em] sm:text-base",
+          inverted ? "text-primary-foreground" : "text-foreground",
+        )}
+      >
+        Vidya Orbit
+      </span>
     </div>
   );
 }

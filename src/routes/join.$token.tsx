@@ -20,7 +20,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Logo } from "@/components/logo";
+import { LogoWordmark } from "@/components/logo";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
@@ -112,18 +112,8 @@ function JoinPage() {
         transition={{ duration: 0.4 }}
         className="w-full max-w-md"
       >
-        <div className="mb-6 flex items-center gap-3 justify-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-soft ring-1 ring-primary/20">
-            <Logo size={30} />
-          </div>
-          <div className="text-left">
-            <div className="font-display text-lg font-bold tracking-tight">
-              Vidya
-            </div>
-            <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-              Orbit
-            </div>
-          </div>
+        <div className="mb-6 flex justify-center">
+          <LogoWordmark size={30} />
         </div>
 
         {preview.isLoading || authLoading ? (

@@ -34,7 +34,7 @@ const toneBar: Record<string, string> = {
 };
 
 const toneSpark: Record<string, string> = {
-  default: "stroke-[oklch(0.55_0.14_220)]",
+  default: "stroke-[#1746E8]",
   success: "stroke-[oklch(0.62_0.15_160)]",
   warning: "stroke-[oklch(0.70_0.15_60)]",
   destructive: "stroke-[oklch(0.62_0.20_28)]",

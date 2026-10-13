@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Logo } from "@/components/logo";
+import { Logo, LogoWordmark } from "@/components/logo";
 import { BookOpen, CalendarDays, Clock, Plus, Users } from "lucide-react";
 
 export const Route = createFileRoute("/ui-gallery")({
@@ -57,6 +57,93 @@ function UiGallery() {
           Fixture layout only. Hidden in production.
         </p>
       </div>
+
+      <section id="dashboard-desktop" className="space-y-3">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Dashboard (mock)
+        </h2>
+        <div className="overflow-hidden rounded-2xl border border-border bg-background shadow-[var(--shadow-elevated)]">
+          <div className="flex min-h-[640px]">
+            <aside
+              className="hidden w-56 shrink-0 flex-col p-3 sm:flex"
+              style={{ backgroundColor: "#111111", color: "#F8F7F2" }}
+            >
+              <div className="mb-6 flex items-center gap-2.5 px-1 py-2">
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: "#F8F7F2" }}
+                >
+                  <Logo size={26} />
+                </div>
+                <span className="font-display text-sm font-bold tracking-[-0.04em]">
+                  Vidya Orbit
+                </span>
+              </div>
+              <nav className="space-y-1 text-sm">
+                {[
+                  "Dashboard",
+                  "Students",
+                  "Attendance",
+                  "Fees",
+                  "Batches",
+                  "Settings",
+                ].map((item, i) => (
+                  <div
+                    key={item}
+                    className={
+                      i === 0
+                        ? "rounded-lg bg-white/10 px-3 py-2 font-medium"
+                        : "rounded-lg px-3 py-2 text-white/70"
+                    }
+                  >
+                    {item}
+                  </div>
+                ))}
+              </nav>
+            </aside>
+            <div className="min-w-0 flex-1 space-y-3 p-4 sm:p-6">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                Vidya Orbit
+              </p>
+              <GreetingBanner
+                greeting="Good morning"
+                displayName="Anjali"
+                instituteName="Samriddhi Centre"
+                classesToday={4}
+              />
+              <QuickActions canViewFees canStudents canAttendance />
+              <div className="grid gap-3 lg:grid-cols-2">
+                <TodayAttendanceCard
+                  enrolled={24}
+                  present={18}
+                  absent={3}
+                  pending={3}
+                  nextBatch={{
+                    name: "Class 10 Mathematics",
+                    timing: "4:00 PM – 5:30 PM",
+                    students: 18,
+                  }}
+                />
+                <CollectionCard
+                  monthCollected={184500}
+                  prevMonthCollected={166000}
+                  collectionDeltaPct={11}
+                />
+                <OverdueActionCard overdueCount={4} overdueAmount={38000} />
+                <AttendanceTrend
+                  days={[
+                    { label: "Thu", pct: 92 },
+                    { label: "Fri", pct: 94 },
+                    { label: "Sat", pct: 88 },
+                    { label: "Sun", pct: 78 },
+                    { label: "Today", pct: 90 },
+                  ]}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="grid gap-8 lg:grid-cols-2">
         <PhoneFrame id="dash" title="Dashboard">
@@ -311,13 +398,8 @@ function UiGallery() {
 
         <PhoneFrame id="login-card" title="Login">
           <div className="flex flex-col items-center text-center">
-            <div className="mb-3 flex items-center gap-2">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-soft">
-                <Logo size={26} />
-              </div>
-              <span className="font-display text-2xl font-bold">
-                vidya<span className="text-primary">orbit</span>
-              </span>
+            <div className="mb-3 flex justify-center">
+              <LogoWordmark size={26} />
             </div>
             <h2 className="font-display text-xl font-bold">
               Manage your tuition centre with ease
