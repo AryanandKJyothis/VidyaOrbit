@@ -426,7 +426,12 @@ function FeesPageContent() {
       <Card className="overflow-hidden bg-primary text-primary-foreground">
         <CardContent className="p-4 sm:p-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-foreground/70">
-            {formatFns(new Date(), "MMMM yyyy")} collection
+            {new Intl.DateTimeFormat("en-IN", {
+              month: "long",
+              year: "numeric",
+              timeZone: "Asia/Kolkata",
+            }).format(new Date())}{" "}
+            collection
           </p>
           <div className="mt-1 flex items-end justify-between gap-3">
             <p className="font-display text-3xl font-bold tabular-nums">
