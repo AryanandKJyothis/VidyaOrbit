@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { LANDING_FAQS } from "./public-faqs";
 import {
   BANNED_LANDING_PHRASES,
+  CTA_BOOK_DEMO,
+  CTA_START_FREE,
   FOUNDER_LINE,
   HERO_EYEBROW,
   HERO_MALAYALAM,
@@ -37,6 +39,11 @@ describe("landing copy", () => {
     expect(HERO_SUB.toLowerCase()).not.toContain("paste");
     expect(HERO_EYEBROW.toLowerCase()).toContain("owners");
     expect(HERO_EYEBROW.toLowerCase()).toContain("kerala");
+  });
+
+  it("uses owner CTAs", () => {
+    expect(CTA_BOOK_DEMO).toBe("Book a free demo");
+    expect(CTA_START_FREE).toBe("Start free");
   });
 
   it("keeps a Malayalam line for native-speaker review", () => {

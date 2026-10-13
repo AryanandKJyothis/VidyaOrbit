@@ -16,7 +16,7 @@ import {
   getWhatsAppHref,
 } from "@/lib/contact-config";
 import { usePrefers } from "@/hooks/use-prefers";
-import { fadeOnly, springDefault, staggerMs } from "@/lib/motion";
+import { fadeOnly, springDefault } from "@/lib/motion";
 import {
   AUDIENCE_LINE,
   CTA_BOOK_DEMO,
@@ -24,6 +24,7 @@ import {
   CTA_START_FREE,
   FOUNDER_LINE,
   HERO_EYEBROW,
+  HERO_MALAYALAM,
   HERO_SUB,
   HERO_TITLE,
   TAGLINE_LINES,
@@ -116,13 +117,13 @@ function Hero() {
   const { reducedMotion } = usePrefers();
   const lines = HERO_TITLE.replace(/\.$/, "")
     .split(". ")
-    .map((line, i, arr) => (i < arr.length - 1 ? `${line}.` : `${line}.`));
+    .map((line) => `${line}.`);
 
   return (
     <section className="relative overflow-hidden">
       <OrbitMotif
         spin
-        className="absolute -right-16 top-8 h-[22rem] w-[22rem] opacity-80 sm:right-0 sm:top-4 sm:h-[28rem] sm:w-[28rem] lg:right-8"
+        className="pointer-events-none absolute -right-16 top-8 hidden h-[22rem] w-[22rem] opacity-90 lg:block lg:right-4 lg:top-2 lg:h-[30rem] lg:w-[30rem]"
       />
       <div
         className={`${SHELL} relative grid grid-cols-12 gap-6 pb-12 pt-10 sm:pb-16 sm:pt-16`}
@@ -150,6 +151,12 @@ function Hero() {
           </h1>
           <p className="mt-6 max-w-[38rem] text-pretty text-lg leading-relaxed text-slate sm:text-xl">
             {HERO_SUB}
+          </p>
+          <p
+            lang="ml"
+            className="mt-4 max-w-[38rem] text-pretty text-base leading-relaxed text-slate"
+          >
+            {HERO_MALAYALAM}
           </p>
           <LandingCtas />
         </div>
@@ -221,12 +228,14 @@ function ProductBand() {
 }
 
 function Audience() {
+  const [first, second] = AUDIENCE_LINE.split(". ");
   return (
     <section className="border-b border-ink/20">
       <div className={`${SHELL} py-16 sm:py-20`}>
         <Reveal>
-          <p className="max-w-[20ch] font-display text-4xl font-bold leading-[0.95] tracking-[-0.04em] text-balance sm:text-6xl">
-            {AUDIENCE_LINE}
+          <p className="max-w-[18ch] font-display text-4xl font-bold leading-[0.95] tracking-[-0.04em] text-balance sm:text-6xl">
+            <span className="block">{first}.</span>
+            <span className="mt-3 block text-orbit-blue">{second}</span>
           </p>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate">
             Owners. Managers. The staff who mark the register and chase fees.
@@ -272,21 +281,22 @@ function Features() {
     <section id="features" className="scroll-mt-20">
       <div className={`${SHELL} py-16 sm:py-24`}>
         <SectionLabel n="01" label="The daily work" />
-        <div className="mt-10 grid sm:grid-cols-2">
-          {items.map((item, i) => (
-            <Reveal key={item.n} delay={(i * staggerMs) / 1000}>
-              <div className="border-t border-ink/20 py-8 pr-8 sm:odd:border-r sm:odd:pr-10 sm:even:pl-10">
-                <p className="font-display text-sm font-bold text-orbit-blue">
-                  {item.n}
-                </p>
-                <h3 className="mt-3 font-display text-2xl font-bold tracking-[-0.03em] text-balance">
-                  {item.title}
-                </h3>
-                <p className="mt-3 max-w-md text-pretty text-base leading-relaxed text-slate">
-                  {item.body}
-                </p>
-              </div>
-            </Reveal>
+        <div className="mt-10 grid border-b border-ink/20 sm:grid-cols-2">
+          {items.map((item) => (
+            <div
+              key={item.n}
+              className="border-t border-ink/20 py-10 pr-8 sm:odd:border-r sm:odd:pr-10 sm:even:pl-10"
+            >
+              <p className="font-display text-5xl font-bold leading-none tracking-[-0.05em] text-orbit-blue sm:text-6xl">
+                {item.n}
+              </p>
+              <h3 className="mt-6 font-display text-2xl font-bold tracking-[-0.03em] text-balance">
+                {item.title}
+              </h3>
+              <p className="mt-3 max-w-md text-pretty text-base leading-relaxed text-slate">
+                {item.body}
+              </p>
+            </div>
           ))}
         </div>
       </div>
@@ -338,23 +348,21 @@ function HowItWorks() {
     <section id="setup" className="scroll-mt-20 border-t border-ink/20">
       <div className={`${SHELL} py-16 sm:py-24`}>
         <SectionLabel n="02" label="Done for you" />
-        <Reveal>
-          <ol className="mt-10 grid gap-0 md:grid-cols-3">
-            {steps.map((s) => (
-              <li key={s.n} className="border-t border-ink py-8 md:pr-10">
-                <p className="font-display text-6xl font-bold leading-none tracking-[-0.05em] text-orbit-blue">
-                  {s.n}
-                </p>
-                <h3 className="mt-6 font-display text-xl font-bold tracking-[-0.03em] text-balance">
-                  {s.t}
-                </h3>
-                <p className="mt-3 text-pretty text-base leading-relaxed text-slate">
-                  {s.d}
-                </p>
-              </li>
-            ))}
-          </ol>
-        </Reveal>
+        <ol className="mt-10 grid gap-0 md:grid-cols-3">
+          {steps.map((s) => (
+            <li key={s.n} className="border-t border-ink py-8 md:pr-10">
+              <p className="font-display text-6xl font-bold leading-none tracking-[-0.05em] text-orbit-blue">
+                {s.n}
+              </p>
+              <h3 className="mt-6 font-display text-xl font-bold tracking-[-0.03em] text-balance">
+                {s.t}
+              </h3>
+              <p className="mt-3 text-pretty text-base leading-relaxed text-slate">
+                {s.d}
+              </p>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   );
@@ -382,8 +390,9 @@ function Pricing() {
 
 function KeralaNote() {
   return (
-    <section className="border-t border-ink/20">
-      <div className={`${SHELL} py-16 sm:py-24`}>
+    <section className="relative overflow-hidden border-t border-ink/20">
+      <OrbitMotif className="absolute -right-16 bottom-[-4rem] hidden h-72 w-72 opacity-60 sm:block" />
+      <div className={`${SHELL} relative py-16 sm:py-24`}>
         <SectionLabel n="04" label="Kerala" />
         <h2 className="mt-6 max-w-[16ch] font-display text-4xl font-bold tracking-[-0.03em] text-balance sm:text-6xl">
           Built for centres in Kerala.
