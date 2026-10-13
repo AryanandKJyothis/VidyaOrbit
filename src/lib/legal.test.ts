@@ -56,7 +56,9 @@ describe("legal config", () => {
       expect(src).not.toContain("Valanchery");
       expect(src).not.toContain("Malappuram");
     }
-    expect(PUBLIC_PAGES.privacy.description).not.toMatch(/Valanchery|Malappuram/);
+    expect(PUBLIC_PAGES.privacy.description).not.toMatch(
+      /Valanchery|Malappuram/,
+    );
     expect(PUBLIC_PAGES.terms.description).not.toMatch(/Valanchery|Malappuram/);
     expect(PUBLIC_PAGES.refundPolicy.description).not.toMatch(
       /Valanchery|Malappuram/,
