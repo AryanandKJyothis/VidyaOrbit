@@ -384,7 +384,7 @@ function UiGallery() {
             title="Admin"
             description="Platform health — centres, people, payments, and anything that needs a look."
           />
-          <AdminNav />
+          <AdminNav pathname="/admin" />
           <AdminOverviewPanel data={ADMIN_FIXTURE_OVERVIEW} />
         </div>
       </section>
@@ -394,6 +394,11 @@ function UiGallery() {
           Admin · Centres
         </h2>
         <div className="rounded-2xl border border-border bg-background p-4 sm:p-6">
+          <PageHeader
+            title="Admin"
+            description="Platform health — centres, people, payments, and anything that needs a look."
+          />
+          <AdminNav pathname="/admin/centres" />
           <AdminCentresPanel
             rows={ADMIN_FIXTURE_CENTRES}
             total={18}
@@ -411,6 +416,11 @@ function UiGallery() {
           Admin · Users
         </h2>
         <div className="rounded-2xl border border-border bg-background p-4 sm:p-6">
+          <PageHeader
+            title="Admin"
+            description="Platform health — centres, people, payments, and anything that needs a look."
+          />
+          <AdminNav pathname="/admin/users" />
           <AdminUsersPanel
             rows={ADMIN_FIXTURE_USERS}
             total={41}
@@ -428,6 +438,11 @@ function UiGallery() {
           Admin · Payments
         </h2>
         <div className="rounded-2xl border border-border bg-background p-4 sm:p-6">
+          <PageHeader
+            title="Admin"
+            description="Platform health — centres, people, payments, and anything that needs a look."
+          />
+          <AdminNav pathname="/admin/payments" />
           <AdminPaymentsPanel
             rows={ADMIN_FIXTURE_PAYMENTS}
             total={2}
@@ -444,6 +459,11 @@ function UiGallery() {
           Admin · Alerts
         </h2>
         <div className="rounded-2xl border border-border bg-background p-4 sm:p-6">
+          <PageHeader
+            title="Admin"
+            description="Platform health — centres, people, payments, and anything that needs a look."
+          />
+          <AdminNav pathname="/admin/alerts" />
           <AdminAlertsPanel alerts={ADMIN_FIXTURE_ALERTS} />
         </div>
       </section>

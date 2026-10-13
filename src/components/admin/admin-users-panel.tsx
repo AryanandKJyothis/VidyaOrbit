@@ -84,9 +84,18 @@ export function AdminUsersPanel({
                       name={row.full_name || row.email || "User"}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">
-                        {row.full_name || row.email || "No email"}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="truncate text-sm font-semibold">
+                          {row.full_name || row.email || "No email"}
+                        </p>
+                        {row.platform_admin && (
+                          <Badge variant="default">Admin</Badge>
+                        )}
+                        {row.orphan && <Badge variant="outline">Orphan</Badge>}
+                        {!row.email_confirmed_at && (
+                          <Badge variant="destructive">Unconfirmed</Badge>
+                        )}
+                      </div>
                       <p className="truncate text-xs text-muted-foreground">
                         {row.email}
                         {row.phone ? ` · ${row.phone}` : ""}
@@ -99,17 +108,8 @@ export function AdminUsersPanel({
                               .join(" · ")}
                       </p>
                     </div>
-                    <div className="flex shrink-0 flex-col items-end gap-1">
-                      <div className="flex flex-wrap justify-end gap-1">
-                        {row.platform_admin && (
-                          <Badge variant="default">Admin</Badge>
-                        )}
-                        {row.orphan && <Badge variant="outline">Orphan</Badge>}
-                        {!row.email_confirmed_at && (
-                          <Badge variant="destructive">Unconfirmed</Badge>
-                        )}
-                      </div>
-                      <p className="hidden text-xs text-muted-foreground sm:block">
+                    <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
+                      <p className="text-xs text-muted-foreground">
                         Joined {formatDate(row.created_at)}
                       </p>
                       <p className="text-xs text-muted-foreground">

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
@@ -16,8 +17,19 @@ const ITEMS = [
   { to: "/admin/alerts", label: "Alerts", icon: Activity },
 ] as const;
 
-export function AdminNav() {
-  const pathname = useRouterState({ select: (r) => r.location.pathname });
+export function AdminNav({ pathname: pathnameProp }: { pathname?: string }) {
+  const livePath = useRouterState({ select: (r) => r.location.pathname });
+  const pathname = pathnameProp ?? livePath;
+  const activeRef = useRef<HTMLAnchorElement | null>(null);
+
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({
+      inline: "center",
+      block: "nearest",
+      behavior: "instant",
+    });
+  }, [pathname]);
+
   return (
     <nav
       aria-label="Admin sections"
@@ -32,6 +44,7 @@ export function AdminNav() {
         return (
           <Link
             key={item.to}
+            ref={active ? activeRef : undefined}
             to={item.to}
             aria-current={active ? "page" : undefined}
             className={cn(
