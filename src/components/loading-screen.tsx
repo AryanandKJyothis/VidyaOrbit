@@ -34,9 +34,13 @@ export function BrandLoader({
       aria-busy="true"
       aria-label={label}
     >
-      <div className="relative" style={{ width: box, height: box }}>
+      <div
+        className="relative"
+        style={{ width: box, height: box }}
+        aria-hidden="true"
+      >
         <div className="brand-loader-breathe absolute inset-0 rounded-full border border-dashed border-brand-teal/35" />
-        <div className="brand-loader-orbit absolute inset-0" aria-hidden="true">
+        <div className="brand-loader-orbit absolute inset-0">
           <span
             className={cn(
               "absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-teal",
@@ -60,7 +64,12 @@ export function BrandLoader({
           <Logo size={logo} />
         </div>
       </div>
-      <p className="text-center text-sm text-muted-foreground">{label}</p>
+      <p
+        className="text-center text-sm text-muted-foreground"
+        aria-hidden="true"
+      >
+        {label}
+      </p>
     </div>
   );
 }
