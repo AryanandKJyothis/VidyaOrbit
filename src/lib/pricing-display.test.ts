@@ -41,17 +41,17 @@ describe("pricing-display matches billing-pricing", () => {
     expect(rupees(TIER_CONFIGS.large.annual_price_paise)).toBe(25000);
   });
 
-  it("Setup fee ₹4,499 Growth / ₹5,499 Large first monthly only, waived on annual", () => {
+  it("Setup fee ₹5,000 on Growth/Large first monthly only, waived on annual", () => {
     const starter = getPlanByCode("starter")!;
     const growth = getPlanByCode("growth")!;
     const large = getPlanByCode("large")!;
     expect(starter.setupFee).toBe(0);
-    expect(growth.setupFee).toBe(4499);
-    expect(large.setupFee).toBe(5499);
+    expect(growth.setupFee).toBe(5000);
+    expect(large.setupFee).toBe(5000);
     expect(growth.annualSetupFee).toBe(0);
     expect(large.annualSetupFee).toBe(0);
-    expect(rupees(TIER_CONFIGS.growth.setup_fee_paise)).toBe(4499);
-    expect(rupees(TIER_CONFIGS.large.setup_fee_paise)).toBe(5499);
+    expect(rupees(TIER_CONFIGS.growth.setup_fee_paise)).toBe(5000);
+    expect(rupees(TIER_CONFIGS.large.setup_fee_paise)).toBe(5000);
     expect(TIER_CONFIGS.starter.setup_fee_paise).toBe(0);
 
     const hasSetup = (
@@ -98,12 +98,12 @@ describe("approved public prices", () => {
     expect(byCode.growth).toMatchObject({
       monthlyPrice: 999,
       annualPrice: 10000,
-      setupFee: 4499,
+      setupFee: 5000,
     });
     expect(byCode.large).toMatchObject({
       monthlyPrice: 2499,
       annualPrice: 25000,
-      setupFee: 5499,
+      setupFee: 5000,
     });
   });
 

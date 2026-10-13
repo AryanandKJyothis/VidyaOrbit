@@ -16,17 +16,9 @@ function landingPricingAnswer(): string {
   const starter = getPlanByCode("starter")!;
   const growth = getPlanByCode("growth")!;
   const large = getPlanByCode("large")!;
-  const setupBits = [
-    growth.setupFee > 0
-      ? `${growth.displayName} adds a ${formatIndianPrice(growth.setupFee)} setup fee`
-      : null,
-    large.setupFee > 0
-      ? `${large.displayName} adds a ${formatIndianPrice(large.setupFee)} setup fee`
-      : null,
-  ].filter(Boolean);
   const growthSetup =
-    setupBits.length > 0
-      ? ` ${setupBits.join(" and ")} on the first monthly invoice (waived on annual).`
+    growth.setupFee > 0
+      ? ` ${growth.displayName} and ${large.displayName} add a ${formatIndianPrice(growth.setupFee)} setup fee on the first monthly invoice (waived on annual).`
       : "";
   return `${free.displayName} is ${formatIndianPrice(free.monthlyPrice)} for ${free.studentLimit.toLowerCase()}. ${starter.displayName} is ${formatIndianPrice(starter.monthlyPrice)}/month (${formatIndianPrice(starter.annualPrice)}/year) for ${starter.studentLimit.toLowerCase()}. ${growth.displayName} is ${formatIndianPrice(growth.monthlyPrice)}/month; ${large.displayName} is ${formatIndianPrice(large.monthlyPrice)}/month.${growthSetup} Pay a paid plan in the app on the Plan page through Razorpay, or contact us to arrange it.`;
 }

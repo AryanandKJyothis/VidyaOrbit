@@ -9,6 +9,7 @@ import { emailSchema } from "@/lib/validation";
 import { toast } from "sonner";
 import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
 import { SkipToContent } from "@/components/skip-to-content";
+import { CheckYourEmail } from "@/components/check-your-email";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => pageHead(PUBLIC_PAGES.forgotPassword),
@@ -53,21 +54,28 @@ function ForgotPassword() {
         </div>
 
         {sent ? (
-          <div className="space-y-4 rounded-xl border bg-card p-6">
-            <h2 className="font-display text-xl font-semibold">
-              Check your inbox
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              If an account exists for{" "}
-              <span className="font-medium text-foreground">{email}</span>, we
-              sent a password reset link. It expires in 1 hour.
-            </p>
-            <Link
-              to="/login"
-              className="inline-flex min-h-11 items-center gap-1 text-sm text-primary [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
+          <div className="rounded-xl border bg-card p-6">
+            <CheckYourEmail
+              email={email}
+              kind="recovery"
+              onResend={async () => {
+                const { error } = await supabase.auth.resetPasswordForEmail(
+                  email,
+                  {
+                    redirectTo: `${window.location.origin}/reset-password`,
+                  },
+                );
+                if (error && error.status && error.status >= 500) throw error;
+              }}
+              onUseDifferentEmail={() => setSent(false)}
             >
-              <ArrowLeft className="h-3 w-3" /> Back to sign in
-            </Link>
+              <Link
+                to="/login"
+                className="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
+              >
+                <ArrowLeft className="h-3 w-3" /> Back to sign in
+              </Link>
+            </CheckYourEmail>
           </div>
         ) : (
           <form

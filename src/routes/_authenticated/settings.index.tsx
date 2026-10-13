@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useSignOut } from "@/hooks/use-sign-out";
 import {
   Save,
   Loader2,
@@ -22,7 +22,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useInstitute, useUpdateInstitute } from "@/hooks/use-data";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
 import { formatUserError } from "@/lib/format-error";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
@@ -56,7 +55,7 @@ function SettingsPageContent() {
   const sub = useSubscription();
   const planMeta = PLANS.find((p) => p.code === sub.data?.plan);
   const { resetChecklist } = useOnboarding();
-  const qc = useQueryClient();
+  const signOut = useSignOut();
   const [form, setForm] = useState({
     name: "",
     contact_phone: "",
@@ -357,14 +356,8 @@ function SettingsPageContent() {
               <Button
                 variant="outline"
                 className="w-full text-destructive hover:bg-destructive/5 hover:text-destructive"
-                onClick={async () => {
-                  const { error } = await supabase.auth.signOut();
-                  if (error) {
-                    toast.error("Could not sign out. Please try again.");
-                  } else {
-                    qc.clear();
-                  }
-                }}
+                data-sign-out=""
+                onClick={() => void signOut()}
               >
                 <LogOut className="mr-2 h-4 w-4" /> Sign out
               </Button>

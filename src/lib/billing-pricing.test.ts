@@ -194,11 +194,11 @@ describe("Billing Pricing (Tier + Cycle)", () => {
     it("should compute monthly with setup on first order", () => {
       const result = computePricing("growth", "monthly", false);
 
-      expect(result.total).toBe(549800); // ₹5,498 (₹999 + ₹4,499)
+      expect(result.total).toBe(599900); // ₹5,999 (₹999 + ₹5,000)
       expect(result.line_items).toHaveLength(2);
       expect(result.line_items[0]).toEqual({
         item: "setup_fee",
-        amount: 449900, // ₹4,499
+        amount: 500000, // ₹5,000
       });
       expect(result.line_items[1]).toEqual({
         item: "subscription_charge",
@@ -238,11 +238,11 @@ describe("Billing Pricing (Tier + Cycle)", () => {
     it("should compute monthly with setup on first order", () => {
       const result = computePricing("large", "monthly", false);
 
-      expect(result.total).toBe(799800); // ₹7,998 (₹2,499 + ₹5,499)
+      expect(result.total).toBe(749900); // ₹7,499 (₹2,499 + ₹5,000)
       expect(result.line_items).toHaveLength(2);
       expect(result.line_items[0]).toEqual({
         item: "setup_fee",
-        amount: 549900, // ₹5,499
+        amount: 500000, // ₹5,000
       });
       expect(result.line_items[1]).toEqual({
         item: "subscription_charge",
