@@ -23,6 +23,7 @@ import {
   type WizardFieldErrors,
   type WizardStepId,
 } from "@/lib/owner-onboarding";
+import { MarketingOptInCheckbox } from "@/components/marketing-opt-in-checkbox";
 import { fadeOnly, springDefault } from "@/lib/motion";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Loader2, Upload } from "lucide-react";
@@ -38,6 +39,7 @@ export function OwnerSetupWizardView({
   onBack,
   onSkipStep,
   onImportStudents,
+  includeMarketingStep = false,
   className,
 }: {
   step: WizardStepId;
@@ -50,13 +52,14 @@ export function OwnerSetupWizardView({
   onBack: () => void;
   onSkipStep?: () => void;
   onImportStudents?: () => void;
+  includeMarketingStep?: boolean;
   className?: string;
 }) {
   const { reducedMotion } = usePrefers();
   const transition = reducedMotion ? fadeOnly : springDefault;
-  const list = stepsFor(mode);
-  const index = wizardStepIndex(step, mode);
-  const meta = wizardStepMeta(step, mode);
+  const list = stepsFor(mode, includeMarketingStep);
+  const index = wizardStepIndex(step, mode, includeMarketingStep);
+  const meta = wizardStepMeta(step, mode, includeMarketingStep);
   const total = list.length;
   const progress = ((index + 1) / total) * 100;
   const canGoBack = index > 0;
@@ -112,6 +115,16 @@ export function OwnerSetupWizardView({
             </p>
 
             <div className="mt-5 flex-1 space-y-4">
+              {step === "updates" && (
+                <MarketingOptInCheckbox
+                  id="setup-marketing-opt-in"
+                  checked={draft.marketingOptIn}
+                  disabled={busy}
+                  onCheckedChange={(value) =>
+                    onChange({ marketingOptIn: value })
+                  }
+                />
+              )}
               {step === "you" && (
                 <YouFields
                   draft={draft}

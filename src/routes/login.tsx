@@ -22,6 +22,8 @@ import { credentialsSchema } from "@/lib/validation";
 import { formatUserError } from "@/lib/format-error";
 import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
 import { signInWithGoogle } from "@/lib/google-auth";
+import { marketingOptInMetadata } from "@/lib/marketing-opt-in";
+import { MarketingOptInCheckbox } from "@/components/marketing-opt-in-checkbox";
 import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
 import { getContactConfig, getTelHref } from "@/lib/contact-config";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,6 +46,7 @@ function LoginPage() {
   const joiningTeam = !!invite;
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginErrors, setLoginErrors] = useState<{
@@ -105,7 +108,10 @@ function LoginPage() {
       password: parsed.data.password,
       options: {
         emailRedirectTo: `${redirectOrigin}${postLoginPath}`,
-        data: joiningTeam ? { joining_team: true, invite_token: invite } : {},
+        data: {
+          ...(joiningTeam ? { joining_team: true, invite_token: invite } : {}),
+          ...marketingOptInMetadata(marketingOptIn),
+        },
       },
     });
 
@@ -421,6 +427,12 @@ function LoginPage() {
                         : "Create account"
                     }
                     isLoading={submitting}
+                    belowFields={
+                      <MarketingOptInCheckbox
+                        checked={marketingOptIn}
+                        onCheckedChange={setMarketingOptIn}
+                      />
+                    }
                   />
                 </TabsContent>
               </Tabs>

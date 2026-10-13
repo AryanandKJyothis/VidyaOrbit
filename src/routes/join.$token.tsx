@@ -29,6 +29,8 @@ import { formatUserError } from "@/lib/format-error";
 import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
 import { signInWithGoogle } from "@/lib/google-auth";
 import { GoogleContinueButton } from "@/components/google-continue-button";
+import { MarketingOptInCheckbox } from "@/components/marketing-opt-in-checkbox";
+import { marketingOptInMetadata } from "@/lib/marketing-opt-in";
 import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/join/$token")({
@@ -220,6 +222,7 @@ function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
 
   async function handleGoogle() {
     setOauthLoading(true);
@@ -249,7 +252,10 @@ function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
         password,
         options: {
           emailRedirectTo: window.location.href,
-          data: { joining_team: true },
+          data: {
+            joining_team: true,
+            ...marketingOptInMetadata(marketingOptIn),
+          },
         },
       });
       setSubmitting(false);
@@ -308,6 +314,11 @@ function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
           autoComplete="current-password"
         />
       </div>
+      <MarketingOptInCheckbox
+        id="join-marketing-opt-in"
+        checked={marketingOptIn}
+        onCheckedChange={setMarketingOptIn}
+      />
       <div className="grid grid-cols-2 gap-2">
         <Button onClick={() => handlePassword("signin")} disabled={submitting}>
           {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

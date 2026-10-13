@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, CheckCircle2, ArrowRight } from "lucide-react";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -28,6 +28,7 @@ interface OnboardingFormProps {
   isLoading?: boolean;
   subtitle?: string;
   title?: string;
+  belowFields?: ReactNode;
 }
 
 export function OnboardingForm({
@@ -37,6 +38,7 @@ export function OnboardingForm({
   isLoading = false,
   subtitle,
   title,
+  belowFields,
 }: OnboardingFormProps) {
   const [formData, setFormData] = useState<Record<string, string>>(
     fields.reduce((acc, field) => ({ ...acc, [field.id]: "" }), {}),
@@ -334,6 +336,8 @@ export function OnboardingForm({
           })}
         </AnimatePresence>
       </div>
+
+      {belowFields}
 
       {/* Submit Button */}
       <motion.div

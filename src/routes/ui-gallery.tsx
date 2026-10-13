@@ -109,6 +109,17 @@ function UiGallery() {
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
+        <SetupFrame id="wizard-updates" title="Owner setup · Email updates">
+          <OwnerSetupWizardView
+            step="updates"
+            includeMarketingStep
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+          />
+        </SetupFrame>
         <SetupFrame id="wizard-you" title="Owner setup · You and your centre">
           <OwnerSetupWizardView
             step="you"

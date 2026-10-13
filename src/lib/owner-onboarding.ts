@@ -36,7 +36,7 @@ export const WIZARD_STEPS = [
   },
 ] as const;
 
-export type WizardStepId = (typeof WIZARD_STEPS)[number]["id"];
+export type WizardStepId = (typeof WIZARD_STEPS)[number]["id"] | "updates";
 
 export type SetupMode = "owner" | "staff";
 
@@ -44,6 +44,13 @@ export const STAFF_YOU_STEP = {
   id: "you" as const,
   title: "Your details",
   blurb: "Add your name and mobile so the team knows who you are.",
+};
+
+export const UPDATES_STEP = {
+  id: "updates" as const,
+  title: "Stay in touch",
+  blurb:
+    "Optional. Unchecked unless you want product updates and tips by email.",
 };
 
 export const TOUR_STEPS = [
@@ -97,6 +104,7 @@ export type OwnerSetupDraft = {
   batchTiming: string;
   studentName: string;
   studentPhone: string;
+  marketingOptIn: boolean;
 };
 
 export const EMPTY_OWNER_SETUP_DRAFT: OwnerSetupDraft = {
@@ -110,6 +118,7 @@ export const EMPTY_OWNER_SETUP_DRAFT: OwnerSetupDraft = {
   batchTiming: "",
   studentName: "",
   studentPhone: "",
+  marketingOptIn: false,
 };
 
 export type OwnerSetupPersisted = {
@@ -248,13 +257,25 @@ export function setupModeFor(input: {
   return isInvitedStaff(input) ? "staff" : "owner";
 }
 
-export function stepsFor(mode: SetupMode) {
-  return mode === "staff" ? ([STAFF_YOU_STEP] as const) : WIZARD_STEPS;
+export function stepsFor(
+  mode: SetupMode,
+  includeMarketingStep = false,
+): readonly { id: WizardStepId; title: string; blurb: string }[] {
+  const core = mode === "staff" ? [STAFF_YOU_STEP] : WIZARD_STEPS;
+  return includeMarketingStep ? [UPDATES_STEP, ...core] : core;
 }
 
-export function wizardStepMeta(step: WizardStepId, mode: SetupMode) {
+export function wizardStepMeta(
+  step: WizardStepId,
+  mode: SetupMode,
+  includeMarketingStep = false,
+) {
+  if (step === "updates") return UPDATES_STEP;
   if (mode === "staff" && step === "you") return STAFF_YOU_STEP;
-  return WIZARD_STEPS.find((s) => s.id === step) ?? WIZARD_STEPS[0];
+  return (
+    stepsFor(mode, includeMarketingStep).find((s) => s.id === step) ??
+    WIZARD_STEPS[0]
+  );
 }
 
 export function looksLikeIncompleteIdentity(input: {
@@ -270,6 +291,10 @@ export function validateWizardStep(
   mode: SetupMode = "owner",
 ): WizardFieldErrors {
   const errors: WizardFieldErrors = {};
+
+  if (step === "updates") {
+    return errors;
+  }
 
   if (step === "you") {
     if (!draft.ownerName.trim()) {
@@ -344,16 +369,20 @@ export function validateWizardStep(
 export function wizardStepIndex(
   step: WizardStepId,
   mode: SetupMode = "owner",
+  includeMarketingStep = false,
 ): number {
-  const i = stepsFor(mode).findIndex((s) => s.id === step);
+  const i = stepsFor(mode, includeMarketingStep).findIndex(
+    (s) => s.id === step,
+  );
   return i < 0 ? 0 : i;
 }
 
 export function nextWizardStep(
   step: WizardStepId,
   mode: SetupMode = "owner",
+  includeMarketingStep = false,
 ): WizardStepId | "done" {
-  const list = stepsFor(mode);
+  const list = stepsFor(mode, includeMarketingStep);
   const i = list.findIndex((s) => s.id === step);
   if (i < 0 || i >= list.length - 1) return "done";
   return list[i + 1]!.id;
@@ -362,8 +391,9 @@ export function nextWizardStep(
 export function prevWizardStep(
   step: WizardStepId,
   mode: SetupMode = "owner",
+  includeMarketingStep = false,
 ): WizardStepId | null {
-  const list = stepsFor(mode);
+  const list = stepsFor(mode, includeMarketingStep);
   const i = list.findIndex((s) => s.id === step);
   if (i <= 0) return null;
   return list[i - 1]!.id;
@@ -413,9 +443,13 @@ export function firstIncompleteStep(input: {
   activeStudentCount: number;
   skippedSteps: WizardStepId[];
   mode?: SetupMode;
+  includeMarketingStep?: boolean;
 }): WizardStepId | "done" {
   const mode = input.mode ?? "owner";
   const skipped = new Set(input.skippedSteps);
+  if (input.includeMarketingStep && !skipped.has("updates")) {
+    return "updates";
+  }
   if (
     !skipped.has("you") &&
     Object.keys(validateWizardStep("you", input.draft, mode)).length > 0
@@ -541,14 +575,18 @@ export function parseOwnerSetupPersisted(raw: unknown): OwnerSetupPersisted {
   const mappedStep = p.currentStep
     ? (LEGACY_WIZARD_STEPS[p.currentStep] ?? p.currentStep)
     : "you";
-  const step = WIZARD_STEPS.some((s) => s.id === mappedStep)
+  const knownSteps: WizardStepId[] = [
+    "updates",
+    ...WIZARD_STEPS.map((s) => s.id),
+  ];
+  const step = knownSteps.includes(mappedStep as WizardStepId)
     ? (mappedStep as WizardStepId)
     : "you";
   const skippedSteps = Array.isArray(p.skippedSteps)
     ? p.skippedSteps
         .map((id) => LEGACY_WIZARD_STEPS[id] ?? id)
         .filter((id): id is WizardStepId =>
-          WIZARD_STEPS.some((s) => s.id === id),
+          knownSteps.includes(id as WizardStepId),
         )
     : [];
   const d: Partial<OwnerSetupDraft> = p.draft ?? {};
@@ -571,6 +609,7 @@ export function parseOwnerSetupPersisted(raw: unknown): OwnerSetupPersisted {
       batchTiming: typeof d.batchTiming === "string" ? d.batchTiming : "",
       studentName: typeof d.studentName === "string" ? d.studentName : "",
       studentPhone: typeof d.studentPhone === "string" ? d.studentPhone : "",
+      marketingOptIn: d.marketingOptIn === true,
     },
     tourReady: !!p.tourReady,
     tourDismissed: !!p.tourDismissed,

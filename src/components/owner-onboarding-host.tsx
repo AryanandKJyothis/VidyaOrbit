@@ -30,11 +30,18 @@ import {
   shouldAutoOpenTour,
   shouldAutoOpenWizard,
   shouldCaptureClicksToResume,
+  stepsFor,
   validateWizardStep,
   type WizardFieldErrors,
   type WizardStepId,
   TOUR_STEPS,
 } from "@/lib/owner-onboarding";
+import {
+  hasMarketingChoice,
+  isGoogleAuthUser,
+  marketingOptInMetadata,
+  shouldAskMarketingInSetup,
+} from "@/lib/marketing-opt-in";
 import {
   OwnerSetupCaptureOverlay,
   OwnerSetupWizardModal,
@@ -79,6 +86,11 @@ export function OwnerOnboardingHost() {
     role: active?.role ?? null,
     isOwnWorkspace: active?.isOwn ?? null,
   });
+  const includeMarketingStep = shouldAskMarketingInSetup({
+    isGoogleUser: isGoogleAuthUser(user),
+    hasChoice: hasMarketingChoice(metadata),
+  });
+  const stepList = stepsFor(mode, includeMarketingStep);
 
   const activeStudents = useMemo(
     () => (students.data ?? []).filter((s) => s.status !== "archived").length,
@@ -150,7 +162,12 @@ export function OwnerOnboardingHost() {
   useEffect(() => {
     if (autoWizard) {
       setWizardOpen(true);
-      if (!onboarding.state.started) onboarding.markStarted();
+      if (!onboarding.state.started) {
+        onboarding.markStarted();
+        if (includeMarketingStep && onboarding.state.currentStep === "you") {
+          onboarding.setStep("updates");
+        }
+      }
     }
     // markStarted is stable per user; only run when auto-open flips on.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -168,7 +185,10 @@ export function OwnerOnboardingHost() {
     return () => root.removeAttribute("inert");
   }, [captureClicks, wizardOpen]);
 
-  const step = mode === "staff" ? "you" : onboarding.state.currentStep;
+  const persistedStep = onboarding.state.currentStep;
+  const step: WizardStepId = stepList.some((s) => s.id === persistedStep)
+    ? persistedStep
+    : (stepList[0]?.id ?? "you");
   const draft = onboarding.state.draft;
 
   const changeDraft = (patch: Partial<typeof draft>) => {
@@ -205,6 +225,12 @@ export function OwnerOnboardingHost() {
     if (Object.keys(nextErrors).length > 0) return;
     setBusy(true);
     try {
+      if (step === "updates") {
+        const { error } = await supabase.auth.updateUser({
+          data: marketingOptInMetadata(draft.marketingOptIn),
+        });
+        if (error) throw error;
+      }
       if (step === "you") {
         const { error } = await supabase.auth.updateUser({
           data: {
@@ -239,7 +265,7 @@ export function OwnerOnboardingHost() {
           joining_date: todayISO(),
         });
       }
-      goTo(nextWizardStep(step, mode));
+      goTo(nextWizardStep(step, mode, includeMarketingStep));
     } catch (e) {
       toast.error(formatUserError(e, "Could not save this step."));
     } finally {
@@ -249,7 +275,7 @@ export function OwnerOnboardingHost() {
 
   const handleSkipStep = () => {
     onboarding.skipStep(step);
-    goTo(nextWizardStep(step, mode));
+    goTo(nextWizardStep(step, mode, includeMarketingStep));
   };
 
   const handleDismiss = (open: boolean) => {
@@ -282,11 +308,12 @@ export function OwnerOnboardingHost() {
           onChange={changeDraft}
           onContinue={handleContinue}
           onBack={() => {
-            const prev = prevWizardStep(step, mode);
+            const prev = prevWizardStep(step, mode, includeMarketingStep);
             if (prev) goTo(prev);
           }}
           onSkipStep={handleSkipStep}
           onImportStudents={() => setImportOpen(true)}
+          includeMarketingStep={includeMarketingStep}
         />
       </OwnerSetupWizardModal>
 

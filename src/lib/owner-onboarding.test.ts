@@ -18,6 +18,7 @@ import {
   shouldCaptureClicksToResume,
   setupModeFor,
   validateWizardStep,
+  nextWizardStep,
   type OwnerSetupDraft,
   EMPTY_OWNER_SETUP_DRAFT,
   EMPTY_OWNER_SETUP_PERSISTED,
@@ -170,6 +171,15 @@ describe("wizard step validation", () => {
     expect(
       validateWizardStep("batch", draft({ batchTiming: "4:00 PM" })).batchName,
     ).toMatch(/name/);
+  });
+
+  it("never blocks the optional marketing updates step", () => {
+    expect(validateWizardStep("updates", draft())).toEqual({});
+    expect(
+      validateWizardStep("updates", draft({ marketingOptIn: true })),
+    ).toEqual({});
+    expect(nextWizardStep("updates", "owner", true)).toBe("you");
+    expect(nextWizardStep("updates", "staff", true)).toBe("you");
   });
 
   it("lets first students stay empty, and validates a partial add", () => {
@@ -424,6 +434,15 @@ describe("resume, dismiss, and first-run gates", () => {
     ).toBe("you");
     expect(
       firstIncompleteStep({
+        draft: draft(),
+        batchCount: 0,
+        activeStudentCount: 0,
+        skippedSteps: [],
+        includeMarketingStep: true,
+      }),
+    ).toBe("updates");
+    expect(
+      firstIncompleteStep({
         draft: draft({
           ownerName: "Anjali",
           name: "Samriddhi",
@@ -485,6 +504,15 @@ describe("resume, dismiss, and first-run gates", () => {
     expect(
       parseOwnerSetupPersisted({ currentStep: "centre" }).currentStep,
     ).toBe("you");
+    expect(
+      parseOwnerSetupPersisted({
+        currentStep: "updates",
+        draft: { marketingOptIn: true },
+      }),
+    ).toMatchObject({
+      currentStep: "updates",
+      draft: { marketingOptIn: true },
+    });
     expect(
       parseOwnerSetupPersisted({
         currentStep: "batch",
