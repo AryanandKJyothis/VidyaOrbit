@@ -237,7 +237,7 @@ function LoginPage() {
       <div className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex">
         <svg
           aria-hidden
-          className="pointer-events-none absolute -right-16 -top-8 h-72 w-72 opacity-25"
+          className="pointer-events-none absolute right-10 top-28 h-64 w-64 opacity-30"
           viewBox="0 0 200 200"
         >
           <ellipse
