@@ -167,10 +167,12 @@ export function OnboardingForm({
           className="space-y-2 mb-6"
         >
           {title && (
-            <h2 className="font-display text-2xl font-semibold">{title}</h2>
+            <h2 className="font-display text-2xl font-bold tracking-[-0.03em]">
+              {title}
+            </h2>
           )}
           {subtitle && (
-            <p className="text-sm text-muted-foreground">{subtitle}</p>
+            <p className="text-sm leading-relaxed text-slate">{subtitle}</p>
           )}
         </motion.div>
       )}
@@ -351,7 +353,7 @@ export function OnboardingForm({
           disabled={!isFormValid || isSubmitting || isLoading}
           size="lg"
           className={cn(
-            "w-full transition-[box-shadow,transform,opacity] duration-150 [transition-timing-function:var(--ease-out)] flex items-center justify-center gap-2",
+            "h-12 w-full !rounded-[4px] bg-orbit-blue text-paper hover:bg-orbit-blue/90 transition-[box-shadow,transform,opacity] duration-150 [transition-timing-function:var(--ease-out)] flex items-center justify-center gap-2",
             isFormValid && "shadow-md hover:shadow-lg",
           )}
         >

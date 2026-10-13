@@ -8,19 +8,11 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
-import { Loader2, CheckCircle2, XCircle, Mail, Shield } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogoWordmark } from "@/components/logo";
+import { AUTH_BTN, AuthShell } from "@/components/auth/auth-shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { getStorageKey } from "@/hooks/use-active-workspace";
@@ -87,36 +79,23 @@ function JoinPage() {
   }, [session, inviteEmail, userEmail]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-md"
-      >
-        <div className="mb-6 flex justify-center">
-          <LogoWordmark size={30} />
+    <AuthShell>
+      {preview.isLoading || authLoading ? (
+        <div className="flex flex-col items-center gap-3 py-12 text-sm text-slate">
+          <Loader2 className="h-6 w-6 animate-spin text-orbit-blue" />
+          Loading invitation…
         </div>
-
-        {preview.isLoading || authLoading ? (
-          <Card>
-            <CardContent className="py-12 flex flex-col items-center gap-3 text-sm text-muted-foreground">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              Loading invitation…
-            </CardContent>
-          </Card>
-        ) : !preview.data?.ok ? (
-          <InvalidInvite reason={preview.data?.reason ?? "not_found"} />
-        ) : (
-          <ValidInvite
-            preview={preview.data}
-            session={session}
-            accepting={accept.isPending}
-            onAccept={() => accept.mutate()}
-          />
-        )}
-      </motion.div>
-    </div>
+      ) : !preview.data?.ok ? (
+        <InvalidInvite reason={preview.data?.reason ?? "not_found"} />
+      ) : (
+        <ValidInvite
+          preview={preview.data}
+          session={session}
+          accepting={accept.isPending}
+          onAccept={() => accept.mutate()}
+        />
+      )}
+    </AuthShell>
   );
 }
 
@@ -137,28 +116,23 @@ function ValidInvite({
   const emailMatches = userEmail === inviteEmail;
 
   return (
-    <Card>
-      <CardHeader className="text-center">
-        <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-          <Mail className="h-6 w-6 text-primary" />
-        </div>
-        <CardTitle className="text-xl">You&apos;ve been invited</CardTitle>
-        <CardDescription className="text-base">
-          Join{" "}
-          <span className="font-semibold text-foreground">
-            {preview.workspaceName}
-          </span>{" "}
-          as{" "}
-          <Badge variant="secondary" className="ml-1 align-middle">
-            <Shield className="h-3 w-3 mr-1" />
-            {preview.role}
-          </Badge>
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="rounded-md border bg-muted/30 p-3 text-sm">
-          <div className="text-xs text-muted-foreground">Invite sent to</div>
-          <div className="font-medium">{preview.email}</div>
+    <div>
+      <p className="text-sm text-slate">Workspace invite</p>
+      <h2 className="mt-2 font-display text-3xl font-bold tracking-[-0.03em] text-balance">
+        You&apos;ve been invited
+      </h2>
+      <p className="mt-3 text-base leading-relaxed text-slate">
+        Join{" "}
+        <span className="font-medium text-ink">{preview.workspaceName}</span> as{" "}
+        <Badge variant="secondary" className="ml-1 align-middle !rounded-[4px]">
+          <Shield className="h-3 w-3 mr-1" />
+          {preview.role}
+        </Badge>
+      </p>
+      <div className="mt-8 space-y-4">
+        <div className="border border-ink/20 px-4 py-3 text-sm">
+          <div className="text-xs text-slate">Invite sent to</div>
+          <div className="mt-1 font-medium text-ink">{preview.email}</div>
         </div>
 
         {session ? (
@@ -166,7 +140,7 @@ function ValidInvite({
             <Button
               onClick={onAccept}
               disabled={accepting}
-              className="w-full"
+              className={`${AUTH_BTN} w-full bg-orbit-blue text-paper hover:bg-orbit-blue/90`}
               size="lg"
             >
               {accepting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -184,7 +158,7 @@ function ValidInvite({
               </div>
               <Button
                 variant="outline"
-                className="w-full"
+                className={`${AUTH_BTN} w-full border-ink text-ink hover:bg-ink/5`}
                 data-sign-out=""
                 onClick={() => void signOut()}
               >
@@ -196,11 +170,11 @@ function ValidInvite({
           <SignInToAccept inviteEmail={preview.email} />
         )}
 
-        <p className="text-center text-xs text-muted-foreground">
+        <p className="text-sm text-slate">
           Invite expires {new Date(preview.expiresAt).toLocaleDateString()}
         </p>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -285,7 +259,7 @@ function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
         <Button
           onClick={() => setMode("password")}
           variant={GOOGLE_AUTH_ENABLED ? "ghost" : "outline"}
-          className="w-full"
+          className={`${AUTH_BTN} w-full ${GOOGLE_AUTH_ENABLED ? "" : "border-ink text-ink hover:bg-ink/5"}`}
         >
           {GOOGLE_AUTH_ENABLED
             ? "Use email & password instead"
@@ -329,7 +303,11 @@ function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
         onCheckedChange={setMarketingOptIn}
       />
       <div className="grid grid-cols-2 gap-2">
-        <Button onClick={() => handlePassword("signin")} disabled={submitting}>
+        <Button
+          onClick={() => handlePassword("signin")}
+          disabled={submitting}
+          className={`${AUTH_BTN} bg-orbit-blue text-paper hover:bg-orbit-blue/90`}
+        >
           {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Sign in
         </Button>
@@ -337,13 +315,14 @@ function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
           onClick={() => handlePassword("signup")}
           disabled={submitting}
           variant="outline"
+          className={`${AUTH_BTN} border-ink text-ink hover:bg-ink/5`}
         >
           Create account
         </Button>
       </div>
       <Button
         variant="ghost"
-        className="w-full"
+        className="w-full !rounded-[4px] text-slate hover:text-ink"
         onClick={() => setMode("choose")}
       >
         Back
@@ -377,19 +356,21 @@ function InvalidInvite({
   };
   const msg = messages[reason];
   return (
-    <Card>
-      <CardContent className="py-10 text-center space-y-4">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
-          <XCircle className="h-6 w-6 text-destructive" />
-        </div>
-        <div>
-          <h2 className="font-semibold text-lg">{msg.title}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{msg.body}</p>
-        </div>
-        <Button asChild variant="outline">
-          <Link to="/login">Go to sign in</Link>
-        </Button>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <XCircle className="h-8 w-8 text-destructive" />
+      <div>
+        <h2 className="font-display text-3xl font-bold tracking-[-0.03em]">
+          {msg.title}
+        </h2>
+        <p className="mt-3 text-base leading-relaxed text-slate">{msg.body}</p>
+      </div>
+      <Button
+        asChild
+        variant="outline"
+        className={`${AUTH_BTN} border-ink text-ink hover:bg-ink/5`}
+      >
+        <Link to="/login">Go to sign in</Link>
+      </Button>
+    </div>
   );
 }

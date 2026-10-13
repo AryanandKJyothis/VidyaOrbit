@@ -1,16 +1,13 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Mail } from "lucide-react";
-import { SkipToContent } from "@/components/skip-to-content";
-import { LogoWordmark } from "@/components/logo";
-import { OrbitMotif } from "@/components/landing/orbit-motif";
+import { Loader2 } from "lucide-react";
+import { AUTH_BTN, AuthShell } from "@/components/auth/auth-shell";
 import { OnboardingForm } from "@/components/onboarding-form";
 import {
   GoogleAuthDivider,
@@ -27,8 +24,8 @@ import { marketingOptInMetadata } from "@/lib/marketing-opt-in";
 import { MarketingOptInCheckbox } from "@/components/marketing-opt-in-checkbox";
 import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
 import { getContactConfig, getTelHref } from "@/lib/contact-config";
-import { Card, CardContent } from "@/components/ui/card";
 import { CheckYourEmail } from "@/components/check-your-email";
+import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
   invite: z.string().min(10).max(200).optional(),
@@ -40,6 +37,9 @@ export const Route = createFileRoute("/login")({
   head: () => pageHead(PUBLIC_PAGES.login),
   component: LoginPage,
 });
+
+const TAB =
+  "h-11 !rounded-none font-display text-sm font-bold data-[state=active]:bg-ink data-[state=active]:text-paper data-[state=active]:shadow-none";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -173,298 +173,229 @@ function LoginPage() {
   const telHref = getTelHref();
 
   return (
-    <div className="grid min-h-screen bg-brand-grid lg:grid-cols-2">
-      <SkipToContent href="#auth-panel" />
-      <div className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex">
-        <OrbitMotif
-          inverted
-          spin
-          className="pointer-events-none absolute right-6 top-24 h-64 w-64 opacity-50"
-        />
-        <div className="relative z-10">
-          <LogoWordmark size={32} inverted />
-        </div>
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="relative z-10 space-y-6"
-        >
-          <h1 className="font-display text-4xl font-bold leading-[1.15] xl:text-5xl">
-            Manage your
-            <br />
-            institute with
-            <br />
-            Vidya Orbit
-          </h1>
-          <p className="max-w-md text-base leading-relaxed text-primary-foreground/75">
-            An elegant admin dashboard for coaching centres — manage students,
-            batches, fees, attendance, analytics and receipts in one unified
-            platform.
+    <AuthShell>
+      {joiningTeam && !pendingEmail && (
+        <div className="mb-8 border border-ink/20 px-4 py-4">
+          <p className="font-display text-base font-bold tracking-[-0.02em]">
+            You&apos;ve been invited to a workspace
           </p>
-        </motion.div>
-        <div className="relative z-10 text-xs text-primary-foreground/60">
-          © {new Date().getFullYear()} Vidya Orbit
+          <p className="mt-1 text-sm leading-relaxed text-slate">
+            Sign in or create an account to accept the invite. No new institute
+            will be created.
+          </p>
         </div>
-      </div>
+      )}
 
-      <div
-        id="auth-panel"
-        className="flex items-center justify-center p-5 sm:p-10"
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="w-full max-w-md"
-        >
-          <div className="mb-6 flex flex-col items-center text-center lg:hidden">
-            <div className="mb-4">
-              <LogoWordmark size={28} />
-            </div>
-            <h1 className="font-display text-2xl font-bold leading-tight">
-              Manage your tuition centre with ease
-            </h1>
-            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              Designed for tutors and coaching centres
-            </p>
-          </div>
+      {pendingEmail ? (
+        <CheckYourEmail
+          email={pendingEmail}
+          kind={joiningTeam ? "invite_signup" : "signup"}
+          onResend={resendSignupEmail}
+          onUseDifferentEmail={() => {
+            setAuthTab("signup");
+            setPendingEmail(null);
+          }}
+        />
+      ) : (
+        <>
+          <p className="text-sm text-slate">Centre portal</p>
+          <h2 className="mt-2 font-display text-3xl font-bold tracking-[-0.03em] text-balance">
+            {authTab === "signup" ? "Create your account" : "Sign in"}
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate">
+            For owners and managers. Mark attendance and track fees.
+          </p>
 
-          {joiningTeam && !pendingEmail && (
-            <div className="mb-5 rounded-lg border border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
-              <Mail className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-              <div className="text-sm">
-                <p className="font-semibold">
-                  You&apos;ve been invited to a workspace
-                </p>
-                <p className="text-muted-foreground mt-0.5">
-                  Sign in or create an account to accept the invite. No new
-                  institute will be created.
-                </p>
-              </div>
-            </div>
-          )}
+          <Tabs
+            value={authTab}
+            onValueChange={(value) => setAuthTab(value as "login" | "signup")}
+            className="mt-8 w-full"
+          >
+            <TabsList className="grid h-11 w-full grid-cols-2 !rounded-[4px] border border-ink/20 bg-transparent p-0">
+              <TabsTrigger
+                value="login"
+                className={cn(TAB, "border-r border-ink/20")}
+              >
+                Sign in
+              </TabsTrigger>
+              <TabsTrigger value="signup" className={TAB}>
+                Create account
+              </TabsTrigger>
+            </TabsList>
 
-          <Card className="overflow-hidden">
-            <CardContent className="p-5 sm:p-6">
-              {pendingEmail ? (
-                <CheckYourEmail
-                  email={pendingEmail}
-                  kind={joiningTeam ? "invite_signup" : "signup"}
-                  onResend={resendSignupEmail}
-                  onUseDifferentEmail={() => {
-                    setAuthTab("signup");
-                    setPendingEmail(null);
-                  }}
-                />
-              ) : (
+            <TabsContent value="login" className="mt-8">
+              <h3 className="sr-only">Sign in</h3>
+
+              {GOOGLE_AUTH_ENABLED && (
                 <>
-                  <p className="type-kicker text-muted-foreground">
-                    Centre portal
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Log in to manage attendance &amp; fees
-                  </p>
-                  <Tabs
-                    value={authTab}
-                    onValueChange={(value) =>
-                      setAuthTab(value as "login" | "signup")
+                  <GoogleContinueButton
+                    onClick={handleGoogle}
+                    loading={oauthLoading}
+                  />
+                  <GoogleAuthDivider />
+                </>
+              )}
+
+              <form onSubmit={handleLogin} className="space-y-4" noValidate>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setLoginErrors((prev) => ({
+                        ...prev,
+                        email: undefined,
+                        form: undefined,
+                      }));
+                    }}
+                    placeholder="admin@institute.in"
+                    autoComplete="email"
+                    className={cn(
+                      "!rounded-[4px]",
+                      loginErrors.email &&
+                        "border-destructive/50 focus-visible:ring-destructive/30",
+                    )}
+                    aria-invalid={!!loginErrors.email}
+                    aria-describedby={
+                      loginErrors.email ? "login-email-error" : undefined
                     }
-                    className="mt-4 w-full"
+                  />
+                  {loginErrors.email && (
+                    <p
+                      id="login-email-error"
+                      className="text-xs text-destructive"
+                      role="alert"
+                    >
+                      {loginErrors.email}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Password</Label>
+                    <Link
+                      to="/forgot-password"
+                      className="text-sm text-orbit-blue underline-offset-4 hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                  <PasswordInput
+                    id="password"
+                    required
+                    minLength={8}
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setLoginErrors((prev) => ({
+                        ...prev,
+                        password: undefined,
+                        form: undefined,
+                      }));
+                    }}
+                    autoComplete="current-password"
+                    className={cn(
+                      "!rounded-[4px]",
+                      loginErrors.password &&
+                        "border-destructive/50 focus-visible:ring-destructive/30",
+                    )}
+                    aria-invalid={!!loginErrors.password}
+                    aria-describedby={
+                      loginErrors.password ? "login-password-error" : undefined
+                    }
+                  />
+                  {loginErrors.password && (
+                    <p
+                      id="login-password-error"
+                      className="text-xs text-destructive"
+                      role="alert"
+                    >
+                      {loginErrors.password}
+                    </p>
+                  )}
+                </div>
+                {loginErrors.form && (
+                  <p
+                    className="border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+                    role="alert"
                   >
-                    <TabsList className="grid h-11 w-full grid-cols-2 rounded-full">
-                      <TabsTrigger value="login" className="rounded-full">
-                        Sign in
-                      </TabsTrigger>
-                      <TabsTrigger value="signup" className="rounded-full">
-                        Create account
-                      </TabsTrigger>
-                    </TabsList>
+                    {loginErrors.form}
+                  </p>
+                )}
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className={cn(
+                    AUTH_BTN,
+                    "w-full bg-orbit-blue text-paper hover:bg-orbit-blue/90",
+                  )}
+                >
+                  {submitting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Sign in to Vidya Orbit
+                </Button>
+              </form>
+            </TabsContent>
 
-                    <TabsContent value="login" className="mt-5">
-                      <h2 className="sr-only">Sign in</h2>
-
-                      {GOOGLE_AUTH_ENABLED && (
-                        <>
-                          <GoogleContinueButton
-                            onClick={handleGoogle}
-                            loading={oauthLoading}
-                          />
-                          <GoogleAuthDivider />
-                        </>
-                      )}
-
-                      <form
-                        onSubmit={handleLogin}
-                        className="mt-5 space-y-4"
-                        noValidate
-                      >
-                        <div className="space-y-2">
-                          <Label htmlFor="email">Email</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => {
-                              setEmail(e.target.value);
-                              setLoginErrors((prev) => ({
-                                ...prev,
-                                email: undefined,
-                                form: undefined,
-                              }));
-                            }}
-                            placeholder="admin@institute.in"
-                            autoComplete="email"
-                            aria-invalid={!!loginErrors.email}
-                            aria-describedby={
-                              loginErrors.email
-                                ? "login-email-error"
-                                : undefined
-                            }
-                            className={
-                              loginErrors.email
-                                ? "border-destructive/50 focus-visible:ring-destructive/30"
-                                : undefined
-                            }
-                          />
-                          {loginErrors.email && (
-                            <p
-                              id="login-email-error"
-                              className="text-xs text-destructive"
-                              role="alert"
-                            >
-                              {loginErrors.email}
-                            </p>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="password">Password</Label>
-                            <Link
-                              to="/forgot-password"
-                              className="inline-flex min-h-11 items-center text-sm text-primary [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
-                            >
-                              Forgot password?
-                            </Link>
-                          </div>
-                          <PasswordInput
-                            id="password"
-                            required
-                            minLength={8}
-                            value={password}
-                            onChange={(e) => {
-                              setPassword(e.target.value);
-                              setLoginErrors((prev) => ({
-                                ...prev,
-                                password: undefined,
-                                form: undefined,
-                              }));
-                            }}
-                            autoComplete="current-password"
-                            aria-invalid={!!loginErrors.password}
-                            aria-describedby={
-                              loginErrors.password
-                                ? "login-password-error"
-                                : undefined
-                            }
-                            className={
-                              loginErrors.password
-                                ? "border-destructive/50 focus-visible:ring-destructive/30"
-                                : undefined
-                            }
-                          />
-                          {loginErrors.password && (
-                            <p
-                              id="login-password-error"
-                              className="text-xs text-destructive"
-                              role="alert"
-                            >
-                              {loginErrors.password}
-                            </p>
-                          )}
-                        </div>
-                        {loginErrors.form && (
-                          <p
-                            className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-                            role="alert"
-                          >
-                            {loginErrors.form}
-                          </p>
-                        )}
-                        <Button
-                          type="submit"
-                          disabled={submitting}
-                          className="h-12 w-full"
-                        >
-                          {submitting && (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          )}
-                          Sign in to Vidya Orbit
-                        </Button>
-                      </form>
-                    </TabsContent>
-
-                    <TabsContent value="signup" className="mt-6">
-                      {GOOGLE_AUTH_ENABLED && (
-                        <>
-                          <GoogleContinueButton
-                            onClick={handleGoogle}
-                            loading={oauthLoading}
-                          />
-                          <GoogleAuthDivider />
-                        </>
-                      )}
-
-                      <OnboardingForm
-                        title={
-                          joiningTeam
-                            ? "Join the workspace"
-                            : "Create your account"
-                        }
-                        subtitle={
-                          joiningTeam
-                            ? "Create your account to accept the invite"
-                            : "Start with email and password. We’ll ask for your centre next."
-                        }
-                        fields={signupFields}
-                        onSubmit={handleSignup}
-                        submitLabel={
-                          joiningTeam
-                            ? "Create account & continue"
-                            : "Create account"
-                        }
-                        isLoading={submitting}
-                        belowFields={
-                          <MarketingOptInCheckbox
-                            checked={marketingOptIn}
-                            onCheckedChange={setMarketingOptIn}
-                          />
-                        }
-                      />
-                    </TabsContent>
-                  </Tabs>
-                </>
-              )}
-            </CardContent>
-          </Card>
-          {contact.phone && (
-            <p className="mt-6 text-center text-xs text-muted-foreground">
-              Need assistance? Support in Malayalam &amp; English
-              {telHref ? (
+            <TabsContent value="signup" className="mt-8">
+              {GOOGLE_AUTH_ENABLED && (
                 <>
-                  :{" "}
-                  <a href={telHref} className="font-semibold text-foreground">
-                    {contact.phone}
-                  </a>
+                  <GoogleContinueButton
+                    onClick={handleGoogle}
+                    loading={oauthLoading}
+                  />
+                  <GoogleAuthDivider />
                 </>
-              ) : (
-                "."
               )}
-            </p>
+
+              <OnboardingForm
+                title={joiningTeam ? "Join the workspace" : undefined}
+                subtitle={
+                  joiningTeam
+                    ? "Create your account to accept the invite"
+                    : "Start with email and password. We’ll ask for your centre next."
+                }
+                fields={signupFields}
+                onSubmit={handleSignup}
+                submitLabel={
+                  joiningTeam ? "Create account & continue" : "Create account"
+                }
+                isLoading={submitting}
+                belowFields={
+                  <MarketingOptInCheckbox
+                    checked={marketingOptIn}
+                    onCheckedChange={setMarketingOptIn}
+                  />
+                }
+              />
+            </TabsContent>
+          </Tabs>
+        </>
+      )}
+
+      {contact.phone && (
+        <p className="mt-8 text-sm text-slate">
+          Help in Malayalam and English
+          {telHref ? (
+            <>
+              :{" "}
+              <a
+                href={telHref}
+                className="font-medium text-ink underline-offset-4 hover:underline"
+              >
+                {contact.phone}
+              </a>
+            </>
+          ) : (
+            "."
           )}
-        </motion.div>
-      </div>
-    </div>
+        </p>
+      )}
+    </AuthShell>
   );
 }

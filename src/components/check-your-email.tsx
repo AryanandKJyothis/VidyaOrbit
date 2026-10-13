@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
+import { AUTH_BTN } from "@/components/auth/auth-shell";
 import { usePrefers } from "@/hooks/use-prefers";
 import { formatUserError } from "@/lib/format-error";
 import {
@@ -14,6 +15,7 @@ import {
 } from "@/lib/check-your-email";
 import { fadeOnly, springDefault } from "@/lib/motion";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 type Props = {
   email: string;
@@ -74,35 +76,37 @@ export function CheckYourEmail({
       initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={reducedMotion ? fadeOnly : springDefault}
-      className="flex flex-col items-center text-center"
+      className="flex flex-col"
       aria-labelledby="check-email-heading"
     >
-      <span
-        className="flex h-20 w-20 items-center justify-center rounded-[4px]"
-        style={{ backgroundColor: "#F8F7F2" }}
-      >
-        <Logo size={56} />
-      </span>
+      <Logo size={48} />
       <h2
         id="check-email-heading"
         ref={headingRef}
         tabIndex={-1}
-        className="mt-6 font-display text-2xl font-semibold tracking-[-0.03em] outline-none"
+        className="mt-8 font-display text-3xl font-bold tracking-[-0.03em] outline-none"
       >
         {copy.heading}
       </h2>
-      <p className="mt-3 text-sm text-muted-foreground">We sent a link to</p>
-      <p className="mt-1 max-w-full break-all text-base font-semibold text-foreground">
+      <p className="mt-4 text-sm text-slate">We sent a link to</p>
+      <p className="mt-1 max-w-full break-all font-display text-lg font-bold tracking-[-0.02em] text-ink">
         {email}
       </p>
-      <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
+      <p className="mt-3 max-w-sm text-pretty text-base leading-relaxed text-slate">
         {copy.instruction}
       </p>
       <p className="sr-only" aria-live="polite">
         {status}
       </p>
       <div className="mt-8 flex w-full flex-col gap-3">
-        <Button asChild size="lg" className="w-full">
+        <Button
+          asChild
+          size="lg"
+          className={cn(
+            AUTH_BTN,
+            "w-full bg-orbit-blue text-paper hover:bg-orbit-blue/90",
+          )}
+        >
           <a href={GMAIL_INBOX_URL} target="_blank" rel="noopener noreferrer">
             Open Gmail
           </a>
@@ -111,7 +115,7 @@ export function CheckYourEmail({
           type="button"
           variant="outline"
           size="lg"
-          className="w-full"
+          className={cn(AUTH_BTN, "w-full border-ink text-ink hover:bg-ink/5")}
           onClick={handleResend}
           disabled={!canResend}
         >
@@ -122,7 +126,7 @@ export function CheckYourEmail({
       <Button
         type="button"
         variant="link"
-        className="mt-4 h-11 min-h-11"
+        className="mt-4 h-11 min-h-11 justify-start px-0 text-slate hover:text-ink"
         onClick={onUseDifferentEmail}
       >
         Use a different email
