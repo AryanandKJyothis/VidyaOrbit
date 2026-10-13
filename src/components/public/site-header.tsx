@@ -75,14 +75,14 @@ export function SiteHeader({
       <div className="pointer-events-none sticky top-0 z-40 px-4 pt-4 sm:px-6 sm:pt-6">
         <header
           className={cn(
-            "pointer-events-auto mx-auto flex w-max max-w-full items-center gap-2 rounded-full border border-border/60 bg-background/70 px-2 py-1.5 shadow-[var(--shadow-card)] backdrop-blur-xl backdrop-saturate-150 sm:gap-3 sm:px-3 sm:py-2",
+            "pointer-events-auto mx-auto flex w-max max-w-full items-center gap-2 rounded-full border border-border/60 bg-background/70 px-2 py-1.5 shadow-[var(--shadow-card)] backdrop-blur-xl backdrop-saturate-150 sm:gap-3 sm:px-3",
             "supports-[backdrop-filter]:bg-background/55",
           )}
         >
           <Link
             to="/"
             aria-label="Vidya Orbit home"
-            className="shrink-0 rounded-full px-1.5 py-1"
+            className="flex min-h-11 shrink-0 items-center rounded-full px-1.5"
             onClick={() => setOpen(false)}
           >
             <LogoWordmark size={24} />
@@ -100,7 +100,7 @@ export function SiteHeader({
                       behavior: reducedMotion ? "instant" : "smooth",
                       block: "start",
                     }}
-                    className="rounded-full px-2.5 py-1.5 transition-[color,background-color] duration-150 [transition-timing-function:var(--ease-out)] hover:bg-muted/70 hover:text-foreground"
+                    className="inline-flex min-h-11 items-center rounded-full px-3 text-sm transition-[color,background-color] duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/70 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
                     onClick={(e) => {
                       // Same-route hash: ensure scroll even if the router no-ops.
                       e.preventDefault();
@@ -112,7 +112,7 @@ export function SiteHeader({
                 ))}
                 <Link
                   to="/pricing"
-                  className="rounded-full px-2.5 py-1.5 transition-[color,background-color] duration-150 [transition-timing-function:var(--ease-out)] hover:bg-muted/70 hover:text-foreground"
+                  className="inline-flex min-h-11 items-center rounded-full px-3 text-sm transition-[color,background-color] duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/70 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
                 >
                   Pricing
                 </Link>
@@ -120,7 +120,7 @@ export function SiteHeader({
             ) : (
               <Link
                 to="/"
-                className="rounded-full px-2.5 py-1.5 transition-[color,background-color] duration-150 [transition-timing-function:var(--ease-out)] hover:bg-muted/70 hover:text-foreground"
+                className="inline-flex min-h-11 items-center rounded-full px-3 text-sm transition-[color,background-color] duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/70 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
               >
                 Home
               </Link>
@@ -137,7 +137,7 @@ export function SiteHeader({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-full"
+                  className="h-11 w-11 rounded-full"
                 >
                   <Phone className="h-4 w-4" />
                 </Button>
@@ -154,7 +154,7 @@ export function SiteHeader({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 rounded-full px-3"
+                  className="h-11 rounded-full px-4"
                 >
                   <MessageCircle className="h-4 w-4" />
                   WhatsApp
@@ -166,7 +166,7 @@ export function SiteHeader({
               search={{ mode: "signup" }}
               className="hidden sm:inline-flex"
             >
-              <Button size="sm" className="h-9 rounded-full px-3">
+              <Button size="sm" className="h-11 rounded-full px-4">
                 {CTA_START_FREE}
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -174,7 +174,7 @@ export function SiteHeader({
 
             <button
               type="button"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-[background-color] duration-150 [transition-timing-function:var(--ease-out)] hover:bg-muted md:hidden"
+              className="relative flex h-11 w-11 items-center justify-center rounded-full text-foreground transition-[background-color] duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted md:hidden"
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
               onClick={() => setOpen((v) => !v)}
@@ -241,7 +241,7 @@ export function SiteHeader({
                       >
                         <a
                           href={`#${l.hash}`}
-                          className="block rounded-2xl px-3 py-3 font-display text-2xl font-semibold tracking-tight"
+                          className="flex min-h-14 items-center rounded-2xl px-3 py-3 font-display text-2xl font-semibold tracking-tight"
                           onClick={(e) => {
                             e.preventDefault();
                             onSectionNav(l.hash);
@@ -265,7 +265,7 @@ export function SiteHeader({
                     >
                       <Link
                         to="/pricing"
-                        className="block rounded-2xl px-3 py-3 font-display text-2xl font-semibold tracking-tight"
+                        className="flex min-h-14 items-center rounded-2xl px-3 py-3 font-display text-2xl font-semibold tracking-tight"
                         onClick={() => setOpen(false)}
                       >
                         Pricing
@@ -282,7 +282,7 @@ export function SiteHeader({
                   >
                     <Link
                       to="/"
-                      className="block rounded-2xl px-3 py-3 font-display text-2xl font-semibold tracking-tight"
+                      className="flex min-h-14 items-center rounded-2xl px-3 py-3 font-display text-2xl font-semibold tracking-tight"
                       onClick={() => setOpen(false)}
                     >
                       Home

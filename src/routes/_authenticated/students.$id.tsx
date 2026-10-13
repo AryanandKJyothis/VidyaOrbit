@@ -504,9 +504,7 @@ function AttendanceMiniCalendar({
                   d.status ? `${d.date}: ${d.status}` : `${d.date}: no session`
                 }
               />
-              <span className="text-[10px] text-muted-foreground">
-                {d.label}
-              </span>
+              <span className="text-xs text-muted-foreground">{d.label}</span>
             </div>
           ))}
         </div>

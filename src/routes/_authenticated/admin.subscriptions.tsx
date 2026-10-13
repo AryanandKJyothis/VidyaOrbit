@@ -439,7 +439,7 @@ function InstituteRow({ row, onOpen }: { row: Row; onOpen: () => void }) {
         </p>
         {row.member_emails && row.member_emails.length > 0 && (
           <p
-            className="mt-0.5 truncate text-[11px] text-muted-foreground/80"
+            className="mt-0.5 truncate text-xs text-muted-foreground/80"
             title={row.member_emails.join(", ")}
           >
             <span className="font-medium text-muted-foreground">
@@ -1127,12 +1127,12 @@ function StatPill({
 }) {
   return (
     <div className="rounded-md border bg-background p-2">
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Icon className="h-3 w-3" />
         {label}
       </div>
       <p className="mt-0.5 text-lg font-semibold tabular-nums">{count30}</p>
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         {sub ? `${sub} · ` : ""}90d: {count90}
       </p>
     </div>

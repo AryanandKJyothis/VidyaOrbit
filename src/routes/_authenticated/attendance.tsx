@@ -330,7 +330,7 @@ function AttendancePage() {
                     className="h-11 touch-manipulation border-0 bg-transparent text-center shadow-none"
                   />
                   {date === todayISO() && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                    <span className="text-xs font-bold uppercase tracking-wider text-primary">
                       Today
                     </span>
                   )}
@@ -367,7 +367,7 @@ function AttendancePage() {
                 <div className="mb-4 space-y-3">
                   <div className="grid grid-cols-3 gap-2">
                     <div className="rounded-2xl bg-success/12 px-3 py-3 text-center">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-success">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-success">
                         Present
                       </p>
                       <p className="mt-0.5 font-display text-2xl font-bold tabular-nums text-success">
@@ -375,7 +375,7 @@ function AttendancePage() {
                       </p>
                     </div>
                     <div className="rounded-2xl bg-destructive/12 px-3 py-3 text-center">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-destructive">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-destructive">
                         Absent
                       </p>
                       <p className="mt-0.5 font-display text-2xl font-bold tabular-nums text-destructive">
@@ -383,7 +383,7 @@ function AttendancePage() {
                       </p>
                     </div>
                     <div className="rounded-2xl bg-muted px-3 py-3 text-center">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         Unmarked
                       </p>
                       <p className="mt-0.5 font-display text-2xl font-bold tabular-nums">
@@ -442,7 +442,7 @@ function AttendancePage() {
                           className="flex items-center gap-3 rounded-2xl border border-border/80 bg-card px-3 py-3"
                         >
                           <div className="min-w-[2.25rem] text-center">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                               {String(index + 1).padStart(2, "0")}
                             </span>
                           </div>

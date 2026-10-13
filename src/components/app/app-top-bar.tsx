@@ -23,9 +23,7 @@ export function AppTopBar() {
           <Logo size={22} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-            Vidya Orbit
-          </p>
+          <p className="type-kicker text-primary">Vidya Orbit</p>
           <div className="-ml-2 max-w-[220px] sm:max-w-xs">
             <WorkspaceSwitcher variant="header" />
           </div>
@@ -39,7 +37,7 @@ export function AppTopBar() {
         <Link
           to="/settings"
           aria-label="Open settings"
-          className="shrink-0 rounded-full transition-transform duration-100 [transition-timing-function:var(--ease-out)] active:scale-[0.97] motion-reduce:active:scale-100"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-transform duration-100 [transition-timing-function:var(--ease-out)] active:scale-[0.97] motion-reduce:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <InitialsAvatar name={display} size="sm" />
         </Link>

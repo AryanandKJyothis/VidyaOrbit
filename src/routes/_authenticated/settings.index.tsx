@@ -264,15 +264,11 @@ function SettingsPageContent() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg bg-muted/50 p-3">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Email
-                </div>
+                <div className="type-kicker text-muted-foreground">Email</div>
                 <div className="mt-0.5 font-medium">{user?.email}</div>
               </div>
               <div className="rounded-lg bg-muted/50 p-3">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  User ID
-                </div>
+                <div className="type-kicker text-muted-foreground">User ID</div>
                 <div className="mt-0.5 font-mono text-xs break-all text-muted-foreground">
                   {user?.id}
                 </div>

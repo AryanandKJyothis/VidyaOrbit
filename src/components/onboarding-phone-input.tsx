@@ -59,7 +59,7 @@ export function OnboardingPhoneInput({
   );
 
   const borderColorClass = cn(
-    "border-input transition-all duration-200",
+    "border-input transition-[border-color,background-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)]",
     isFocused && "border-primary/40",
     isValid && "border-success/50 bg-success/5",
     isInvalid && "border-destructive/50 bg-destructive/5",

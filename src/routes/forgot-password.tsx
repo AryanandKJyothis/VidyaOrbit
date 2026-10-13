@@ -64,7 +64,7 @@ function ForgotPassword() {
             </p>
             <Link
               to="/login"
-              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+              className="inline-flex min-h-11 items-center gap-1 text-sm text-primary [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
             >
               <ArrowLeft className="h-3 w-3" /> Back to sign in
             </Link>
@@ -91,13 +91,13 @@ function ForgotPassword() {
                 autoComplete="email"
               />
             </div>
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="submit" disabled={loading} className="h-12 w-full">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Send reset link
             </Button>
             <Link
               to="/login"
-              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+              className="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
             >
               <ArrowLeft className="h-3 w-3" /> Back to sign in
             </Link>

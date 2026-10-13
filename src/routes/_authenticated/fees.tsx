@@ -425,7 +425,7 @@ function FeesPageContent() {
 
       <Card className="overflow-hidden bg-primary text-primary-foreground">
         <CardContent className="p-4 sm:p-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-foreground/70">
+          <p className="type-kicker text-primary-foreground/80">
             {new Intl.DateTimeFormat("en-IN", {
               month: "long",
               year: "numeric",
@@ -446,31 +446,29 @@ function FeesPageContent() {
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
             <div className="rounded-xl bg-white/10 p-3">
-              <p className="text-[11px] text-primary-foreground/70">
-                Pending due
-              </p>
+              <p className="text-xs text-primary-foreground/80">Pending due</p>
               <p className="font-display text-lg font-bold tabular-nums">
                 {formatINR(totals.due - totals.overdue)}
               </p>
-              <p className="text-[11px] text-primary-foreground/60">
+              <p className="text-xs text-primary-foreground/75">
                 {pendingDueCount} students
               </p>
             </div>
             <div className="rounded-xl bg-white/10 p-3">
-              <p className="text-[11px] text-primary-foreground/70">Overdue</p>
+              <p className="text-xs text-primary-foreground/80">Overdue</p>
               <p className="font-display text-lg font-bold tabular-nums">
                 {formatINR(totals.overdue)}
               </p>
-              <p className="text-[11px] text-primary-foreground/60">
+              <p className="text-xs text-primary-foreground/75">
                 {overdueCount} students
               </p>
             </div>
             <div className="col-span-2 rounded-xl bg-white/10 p-3 sm:col-span-1">
-              <p className="text-[11px] text-primary-foreground/70">Paid</p>
+              <p className="text-xs text-primary-foreground/80">Paid</p>
               <p className="font-display text-lg font-bold tabular-nums">
                 {paidCount}
               </p>
-              <p className="text-[11px] text-primary-foreground/60">students</p>
+              <p className="text-xs text-primary-foreground/75">students</p>
             </div>
           </div>
           <Button

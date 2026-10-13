@@ -84,7 +84,7 @@ export function MobileTabBar() {
               : pathname === item.to ||
                 (item.to ? pathname.startsWith(item.to + "/") : false);
             const className = cn(
-              "flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[10px] font-semibold tracking-[0.01em]",
+              "flex h-14 min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-xs font-semibold tracking-[0.01em]",
               "transition-[transform,background-color,color] duration-100 [transition-timing-function:var(--ease-out)]",
               "active:scale-[0.97] motion-reduce:active:scale-100",
               active

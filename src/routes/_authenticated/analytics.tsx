@@ -536,7 +536,7 @@ function AnalyticsPage() {
                             {d.daysOverdue > 0 && (
                               <Badge
                                 variant="destructive"
-                                className="mt-0.5 text-[10px]"
+                                className="mt-0.5 text-xs"
                               >
                                 Overdue
                               </Badge>

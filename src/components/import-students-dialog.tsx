@@ -996,7 +996,7 @@ function StepReview({
         </div>
       </div>
 
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         Will import:{" "}
         <span className="font-medium text-foreground">
           {willInsertCapped} new
@@ -1137,7 +1137,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-full px-2.5 py-1 text-[11px] border transition",
+        "rounded-full px-2.5 py-1 text-xs border transition-[background-color,border-color,color] duration-150 [transition-timing-function:var(--ease-out)]",
         active &&
           tone === "success" &&
           "border-success bg-success/10 text-success",

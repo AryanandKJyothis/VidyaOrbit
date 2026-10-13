@@ -28,7 +28,7 @@ export function InitialsAvatar({
   const label = (name ?? "").trim() || "Student";
   const dim =
     size === "sm"
-      ? "h-8 w-8 text-[10px]"
+      ? "h-8 w-8 text-xs"
       : size === "lg"
         ? "h-12 w-12 text-sm"
         : "h-10 w-10 text-xs";

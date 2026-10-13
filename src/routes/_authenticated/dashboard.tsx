@@ -714,7 +714,7 @@ function Dashboard() {
                       <div className="truncate text-sm font-semibold">
                         {b.name}
                       </div>
-                      <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
                         {b.timing && (
                           <span className="inline-flex items-center gap-1">
                             <Clock className="h-3 w-3" />
@@ -799,13 +799,13 @@ function Dashboard() {
                         >
                           {s.full_name}
                         </Link>
-                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                        <div className="text-xs text-muted-foreground mt-0.5">
                           Due {formatDate(s.fee_due_date)}
                         </div>
                       </div>
                       <Badge
                         variant="destructive"
-                        className="font-mono text-[11px] ml-2 shrink-0"
+                        className="font-mono text-xs ml-2 shrink-0"
                       >
                         {formatINR(balance)}
                       </Badge>
@@ -849,7 +849,7 @@ function Dashboard() {
                         <div className="truncate font-medium text-sm">
                           {studentById[p.student_id] ?? "Student"}
                         </div>
-                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                        <div className="text-xs text-muted-foreground mt-0.5">
                           {formatDate(p.payment_date)} ·{" "}
                           {p.method.toUpperCase()}
                         </div>

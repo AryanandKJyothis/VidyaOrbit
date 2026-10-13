@@ -44,7 +44,7 @@ export function ProductPreviews() {
 
   return (
     <div className="mx-auto w-full max-w-4xl">
-      <p className="mb-4 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      <p className="type-kicker mb-4 text-center text-muted-foreground">
         {SAMPLE_CENTRE} · {SAMPLE_LABEL}
       </p>
       <ul className="mx-auto grid list-none gap-5 p-0 sm:grid-cols-3 sm:gap-4 lg:gap-5">

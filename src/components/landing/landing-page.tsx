@@ -287,7 +287,7 @@ function Setup() {
             {steps.map((s) => (
               <li key={s.n} className="flex gap-4 md:flex-col md:gap-3">
                 <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-lg font-bold text-primary-foreground"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-display text-lg font-bold text-primary-foreground"
                   style={{ background: "var(--primary)" }}
                 >
                   {s.n}
@@ -345,7 +345,7 @@ function FAQ() {
       <div className="mt-10 divide-y divide-border/80 rounded-2xl border border-border/80 bg-card shadow-[var(--shadow-card)]">
         {LANDING_FAQS.map((f) => (
           <details key={f.q} className="group p-5">
-            <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg font-medium transition-colors duration-150 [transition-timing-function:var(--ease-out)] hover:text-foreground [-webkit-tap-highlight-color:transparent]">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-lg py-1 font-medium transition-colors duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground [-webkit-tap-highlight-color:transparent]">
               {f.q}
               <span className="ml-4 text-muted-foreground transition-transform duration-200 [transition-timing-function:var(--ease-out)] group-open:rotate-45 motion-reduce:transition-none motion-reduce:group-open:rotate-0">
                 +
