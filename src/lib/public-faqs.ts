@@ -108,7 +108,11 @@ export const PRICING_FAQS: FaqItem[] = [
 /** Used by tests to prove FAQ prices are not a second hardcoded table. */
 export function landingFaqUsesDisplayPrices(): boolean {
   const blob = LANDING_FAQS.map((f) => f.a).join(" ");
-  return APPROVED_PRICING.filter((p) => p.code !== "free").every((p) =>
-    blob.includes(formatIndianPrice(p.monthlyPrice)),
+  const monthlyOk = APPROVED_PRICING.filter((p) => p.code !== "free").every(
+    (p) => blob.includes(formatIndianPrice(p.monthlyPrice)),
   );
+  const setupOk = APPROVED_PRICING.filter((p) => p.setupFee > 0).every((p) =>
+    blob.includes(formatIndianPrice(p.setupFee)),
+  );
+  return monthlyOk && setupOk;
 }

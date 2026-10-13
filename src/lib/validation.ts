@@ -184,14 +184,8 @@ export function requiredPhone() {
   }, z.string().min(1, "Phone number is required").regex(phoneRegex, "Enter a valid phone number (6–20 digits)").max(20));
 }
 
-export const signupSchema = credentialsSchema.extend({
-  institute_name: z
-    .string()
-    .trim()
-    .min(2, "Institute name is required")
-    .max(160),
-  phone: requiredPhone(),
-});
+/** Signup asks only for email + password. Name, phone, and centre are collected after. */
+export const signupSchema = credentialsSchema;
 
 export const emailSchema = z.object({
   email: z.string().trim().email("Enter a valid email address").max(255),

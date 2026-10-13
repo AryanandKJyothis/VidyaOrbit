@@ -87,6 +87,13 @@ export const PUBLIC_PAGES = {
     path: "/join",
     noindex: true,
   },
+  authCallback: {
+    title: "Signing in — Vidya Orbit",
+    description:
+      "Finishing Google sign-in to Vidya Orbit. You will be redirected to your coaching centre workspace in a moment.",
+    path: "/auth/callback",
+    noindex: true,
+  },
 } as const satisfies Record<string, PublicPageSeo>;
 
 /** Indexable marketing URLs for sitemap.xml. */

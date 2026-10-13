@@ -161,9 +161,7 @@ export function StatCard({
         <CardContent className="relative p-4 sm:p-5 flex flex-col justify-between h-full gap-3">
           <div className="flex items-start justify-between gap-3 min-w-0">
             <div className="min-w-0 flex-1">
-              <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.13em] text-muted-foreground/80">
-                {label}
-              </div>
+              <div className="type-kicker text-muted-foreground">{label}</div>
               <div className="mt-2 sm:mt-3 font-display text-2xl sm:text-[1.75rem] font-bold leading-none tracking-tight tabular-nums break-words">
                 {displayValue}
               </div>

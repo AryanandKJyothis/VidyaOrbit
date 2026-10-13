@@ -14,7 +14,11 @@ import { AppTopBar } from "@/components/app/app-top-bar";
 import { MobileTabBar } from "@/components/app/mobile-tab-bar";
 import { LoadingScreen } from "@/components/loading-screen";
 import { SkipToContent } from "@/components/skip-to-content";
-import { WorkspaceProvider } from "@/hooks/use-active-workspace";
+import {
+  WorkspaceProvider,
+  useActiveWorkspace,
+} from "@/hooks/use-active-workspace";
+import { OwnerOnboardingHost } from "@/components/owner-onboarding-host";
 import { usePrefers } from "@/hooks/use-prefers";
 import { fadeOnly, springDefault } from "@/lib/motion";
 
@@ -35,43 +39,57 @@ function AuthenticatedLayout() {
 
   return (
     <WorkspaceProvider>
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-background">
-          <SkipToContent />
-          <AppSidebar />
-          <div className="flex flex-1 flex-col">
-            <AppTopBar />
-            <main
-              id="main-content"
-              className="relative flex flex-1 flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8"
-            >
-              <div className="flex-1 min-h-0 max-w-7xl mx-auto w-full">
-                <PageTransition />
-              </div>
-              <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-border text-center text-[10px] sm:text-[11px] text-muted-foreground shrink-0">
-                <span>Vidya Orbit · Data privacy and security built-in</span>
-                <span className="mx-2 opacity-40">·</span>
-                <Link
-                  to="/terms"
-                  className="text-muted-foreground hover:text-foreground transition-colors hover:underline"
-                >
-                  Terms
-                </Link>
-                <span className="mx-2 opacity-40">·</span>
-                <Link
-                  to="/privacy"
-                  className="text-muted-foreground hover:text-foreground transition-colors hover:underline"
-                >
-                  Privacy
-                </Link>
-              </footer>
-            </main>
-            <MobileTabBar />
+      <WorkspaceBootGate>
+        <SidebarProvider>
+          <div
+            id="app-shell"
+            className="flex min-h-screen w-full bg-background"
+          >
+            <SkipToContent />
+            <AppSidebar />
+            <div className="flex flex-1 flex-col">
+              <AppTopBar />
+              <main
+                id="main-content"
+                className="relative flex flex-1 flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8"
+              >
+                <div className="flex-1 min-h-0 max-w-7xl mx-auto w-full">
+                  <PageTransition />
+                </div>
+                <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-border text-center text-xs text-muted-foreground shrink-0">
+                  <span>Vidya Orbit · Data privacy and security built-in</span>
+                  <span className="mx-2 opacity-40">·</span>
+                  <Link
+                    to="/terms"
+                    className="inline-flex min-h-11 items-center text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground transition-colors [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
+                  >
+                    Terms
+                  </Link>
+                  <span className="mx-2 opacity-40">·</span>
+                  <Link
+                    to="/privacy"
+                    className="inline-flex min-h-11 items-center text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground transition-colors [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
+                  >
+                    Privacy
+                  </Link>
+                </footer>
+              </main>
+              <MobileTabBar />
+            </div>
           </div>
-        </div>
-      </SidebarProvider>
+          <OwnerOnboardingHost />
+        </SidebarProvider>
+      </WorkspaceBootGate>
     </WorkspaceProvider>
   );
+}
+
+function WorkspaceBootGate({ children }: { children: React.ReactNode }) {
+  const { loading } = useActiveWorkspace();
+  if (loading) {
+    return <LoadingScreen label="Preparing your workspace…" />;
+  }
+  return <>{children}</>;
 }
 
 function PageTransition() {

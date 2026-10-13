@@ -77,7 +77,7 @@ export function TaglineReveal({
               data-tagline-word={i}
               className={cn(
                 "inline-block transition-colors duration-700 [transition-timing-function:var(--ease-drawer)]",
-                i < active ? "text-foreground" : "text-foreground/30",
+                i < active ? "text-foreground" : "text-foreground/50",
               )}
             >
               {w.word}

@@ -22,41 +22,23 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { LogoWordmark } from "@/components/logo";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
 import { getStorageKey } from "@/hooks/use-active-workspace";
 import { previewInvite, acceptInvite } from "@/lib/workspace.functions";
 import { formatUserError } from "@/lib/format-error";
 import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
+import { signInWithGoogle } from "@/lib/google-auth";
+import { GoogleContinueButton } from "@/components/google-continue-button";
+import { CheckYourEmail } from "@/components/check-your-email";
+import { useSignOut } from "@/hooks/use-sign-out";
+import { MarketingOptInCheckbox } from "@/components/marketing-opt-in-checkbox";
+import { marketingOptInMetadata } from "@/lib/marketing-opt-in";
 import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/join/$token")({
   component: JoinPage,
   head: () => pageHead(PUBLIC_PAGES.join),
 });
-
-function GoogleIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 48 48" aria-hidden="true">
-      <path
-        fill="#FFC107"
-        d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.4 0-11.5-5.1-11.5-11.5S17.6 12.5 24 12.5c2.9 0 5.6 1.1 7.7 2.9l5.7-5.7C33.9 6.5 29.2 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5c10.8 0 19.5-8.7 19.5-19.5 0-1.2-.1-2.3-.4-3.5z"
-      />
-      <path
-        fill="#FF3D00"
-        d="M6.3 14.7l6.6 4.8C14.5 16 18.9 12.5 24 12.5c2.9 0 5.6 1.1 7.7 2.9l5.7-5.7C33.9 6.5 29.2 4.5 24 4.5 16.3 4.5 9.7 8.7 6.3 14.7z"
-      />
-      <path
-        fill="#4CAF50"
-        d="M24 43.5c5.1 0 9.7-1.9 13.2-5.1l-6.1-5c-2 1.4-4.4 2.1-7.1 2.1-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.5 39.2 16.2 43.5 24 43.5z"
-      />
-      <path
-        fill="#1976D2"
-        d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.2 5.4l6.1 5c-.4.4 6.8-4.9 6.8-14.4 0-1.2-.1-2.3-.4-3.5z"
-      />
-    </svg>
-  );
-}
 
 function JoinPage() {
   const { token } = useParams({ from: "/join/$token" });
@@ -149,7 +131,7 @@ function ValidInvite({
   accepting: boolean;
   onAccept: () => void;
 }) {
-  const qc = useQueryClient();
+  const signOut = useSignOut({ redirectTo: null });
   const userEmail = session?.user?.email?.toLowerCase() ?? null;
   const inviteEmail = preview.email.toLowerCase();
   const emailMatches = userEmail === inviteEmail;
@@ -203,14 +185,8 @@ function ValidInvite({
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={async () => {
-                  const { error } = await supabase.auth.signOut();
-                  if (error) {
-                    toast.error("Could not sign out. Please try again.");
-                  } else {
-                    qc.clear();
-                  }
-                }}
+                data-sign-out=""
+                onClick={() => void signOut()}
               >
                 Sign out
               </Button>
@@ -229,20 +205,22 @@ function ValidInvite({
 }
 
 function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
-  const [mode, setMode] = useState<"choose" | "password">("choose");
+  const { token } = useParams({ from: "/join/$token" });
+  const [mode, setMode] = useState<"choose" | "password" | "check-email">(
+    "choose",
+  );
   const [email, setEmail] = useState(inviteEmail);
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
 
   async function handleGoogle() {
     setOauthLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.href, // come back to this exact /join/$token page
-    });
-    if (result.error) {
+    const { error } = await signInWithGoogle(`/join/${token}`);
+    if (error) {
       setOauthLoading(false);
-      toast.error(formatUserError(result.error, "Google sign-in failed"));
+      toast.error(formatUserError(error, "Google sign-in failed"));
     }
   }
 
@@ -265,36 +243,44 @@ function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
         password,
         options: {
           emailRedirectTo: window.location.href,
-          data: { joining_team: true },
+          data: {
+            joining_team: true,
+            ...marketingOptInMetadata(marketingOptIn),
+          },
         },
       });
       setSubmitting(false);
       if (error)
         return toast.error(formatUserError(error, "Could not create account"));
-      toast.success(
-        "Account created — check your email to verify, then come back to this link.",
-      );
+      setMode("check-email");
     }
+  }
+
+  async function resendSignupEmail() {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim(),
+      options: { emailRedirectTo: window.location.href },
+    });
+    if (error) throw error;
+  }
+
+  if (mode === "check-email") {
+    return (
+      <CheckYourEmail
+        email={email.trim()}
+        kind="invite_signup"
+        onResend={resendSignupEmail}
+        onUseDifferentEmail={() => setMode("password")}
+      />
+    );
   }
 
   if (mode === "choose") {
     return (
       <div className="space-y-3">
         {GOOGLE_AUTH_ENABLED && (
-          <Button
-            onClick={handleGoogle}
-            disabled={oauthLoading}
-            className="w-full"
-            variant="outline"
-            size="lg"
-          >
-            {oauthLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <GoogleIcon />
-            )}
-            <span className="ml-2">Continue with Google</span>
-          </Button>
+          <GoogleContinueButton onClick={handleGoogle} loading={oauthLoading} />
         )}
         <Button
           onClick={() => setMode("password")}
@@ -337,6 +323,11 @@ function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
           autoComplete="current-password"
         />
       </div>
+      <MarketingOptInCheckbox
+        id="join-marketing-opt-in"
+        checked={marketingOptIn}
+        onCheckedChange={setMarketingOptIn}
+      />
       <div className="grid grid-cols-2 gap-2">
         <Button onClick={() => handlePassword("signin")} disabled={submitting}>
           {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

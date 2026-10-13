@@ -18,6 +18,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UiGalleryRouteImport } from './routes/ui-gallery'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated/attendance'
 import { Route as AuthenticatedBatchesRouteImport } from './routes/_authenticated/batches'
@@ -28,8 +29,14 @@ import { Route as AuthenticatedInvitesRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/plan'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminAlertsRouteImport } from './routes/_authenticated/admin.alerts'
+import { Route as AuthenticatedAdminCentresRouteImport } from './routes/_authenticated/admin.centres'
+import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated/admin.payments'
 import { Route as AuthenticatedAdminSubscriptionsRouteImport } from './routes/_authenticated/admin.subscriptions'
+import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedReceiptsPaymentIdRouteImport } from './routes/_authenticated/receipts.$paymentId'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedSettingsTeamRouteImport } from './routes/_authenticated/settings.team'
@@ -83,6 +90,11 @@ const UiGalleryRoute = UiGalleryRouteImport.update({
   path: '/ui-gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -133,17 +145,50 @@ const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
   path: '/students',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JoinTokenRoute = JoinTokenRouteImport.update({
   id: '/join/$token',
   path: '/join/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedAdminAlertsRoute =
+  AuthenticatedAdminAlertsRouteImport.update({
+    id: '/alerts',
+    path: '/alerts',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminCentresRoute =
+  AuthenticatedAdminCentresRouteImport.update({
+    id: '/centres',
+    path: '/centres',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminPaymentsRoute =
+  AuthenticatedAdminPaymentsRouteImport.update({
+    id: '/payments',
+    path: '/payments',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminSubscriptionsRoute =
   AuthenticatedAdminSubscriptionsRouteImport.update({
-    id: '/admin/subscriptions',
-    path: '/admin/subscriptions',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/subscriptions',
+    path: '/subscriptions',
+    getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const AuthenticatedReceiptsPaymentIdRoute =
   AuthenticatedReceiptsPaymentIdRouteImport.update({
     id: '/receipts/$paymentId',
@@ -197,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/ui-gallery': typeof UiGalleryRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/batches': typeof AuthenticatedBatchesRoute
@@ -207,8 +253,13 @@ export interface FileRoutesByFullPath {
   '/plan': typeof AuthenticatedPlanRoute
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
+  '/admin/alerts': typeof AuthenticatedAdminAlertsRoute
+  '/admin/centres': typeof AuthenticatedAdminCentresRoute
+  '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/receipts/$paymentId': typeof AuthenticatedReceiptsPaymentIdRoute
   '/settings/team': typeof AuthenticatedSettingsTeamRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
@@ -216,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/api/billing/pricing': typeof ApiBillingPricingRoute
   '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -236,8 +288,13 @@ export interface FileRoutesByTo {
   '/invites': typeof AuthenticatedInvitesRoute
   '/plan': typeof AuthenticatedPlanRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
+  '/admin/alerts': typeof AuthenticatedAdminAlertsRoute
+  '/admin/centres': typeof AuthenticatedAdminCentresRoute
+  '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/receipts/$paymentId': typeof AuthenticatedReceiptsPaymentIdRoute
   '/settings/team': typeof AuthenticatedSettingsTeamRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
@@ -245,6 +302,7 @@ export interface FileRoutesByTo {
   '/api/billing/pricing': typeof ApiBillingPricingRoute
   '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRoutesById {
@@ -258,6 +316,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/ui-gallery': typeof UiGalleryRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
   '/_authenticated/batches': typeof AuthenticatedBatchesRoute
@@ -268,8 +327,13 @@ export interface FileRoutesById {
   '/_authenticated/plan': typeof AuthenticatedPlanRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
+  '/_authenticated/admin/alerts': typeof AuthenticatedAdminAlertsRoute
+  '/_authenticated/admin/centres': typeof AuthenticatedAdminCentresRoute
+  '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/_authenticated/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
+  '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/receipts/$paymentId': typeof AuthenticatedReceiptsPaymentIdRoute
   '/_authenticated/settings/team': typeof AuthenticatedSettingsTeamRoute
   '/_authenticated/students/$id': typeof AuthenticatedStudentsIdRoute
@@ -277,6 +341,7 @@ export interface FileRoutesById {
   '/api/billing/pricing': typeof ApiBillingPricingRoute
   '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -290,6 +355,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/terms'
     | '/ui-gallery'
+    | '/admin'
     | '/analytics'
     | '/attendance'
     | '/batches'
@@ -300,8 +366,13 @@ export interface FileRouteTypes {
     | '/plan'
     | '/settings'
     | '/students'
+    | '/auth/callback'
     | '/join/$token'
+    | '/admin/alerts'
+    | '/admin/centres'
+    | '/admin/payments'
     | '/admin/subscriptions'
+    | '/admin/users'
     | '/receipts/$paymentId'
     | '/settings/team'
     | '/students/$id'
@@ -309,6 +380,7 @@ export interface FileRouteTypes {
     | '/api/billing/pricing'
     | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
+    | '/admin/'
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -329,8 +401,13 @@ export interface FileRouteTypes {
     | '/invites'
     | '/plan'
     | '/students'
+    | '/auth/callback'
     | '/join/$token'
+    | '/admin/alerts'
+    | '/admin/centres'
+    | '/admin/payments'
     | '/admin/subscriptions'
+    | '/admin/users'
     | '/receipts/$paymentId'
     | '/settings/team'
     | '/students/$id'
@@ -338,6 +415,7 @@ export interface FileRouteTypes {
     | '/api/billing/pricing'
     | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
+    | '/admin'
     | '/settings'
   id:
     | '__root__'
@@ -350,6 +428,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/terms'
     | '/ui-gallery'
+    | '/_authenticated/admin'
     | '/_authenticated/analytics'
     | '/_authenticated/attendance'
     | '/_authenticated/batches'
@@ -360,8 +439,13 @@ export interface FileRouteTypes {
     | '/_authenticated/plan'
     | '/_authenticated/settings'
     | '/_authenticated/students'
+    | '/auth/callback'
     | '/join/$token'
+    | '/_authenticated/admin/alerts'
+    | '/_authenticated/admin/centres'
+    | '/_authenticated/admin/payments'
     | '/_authenticated/admin/subscriptions'
+    | '/_authenticated/admin/users'
     | '/_authenticated/receipts/$paymentId'
     | '/_authenticated/settings/team'
     | '/_authenticated/students/$id'
@@ -369,6 +453,7 @@ export interface FileRouteTypes {
     | '/api/billing/pricing'
     | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
+    | '/_authenticated/admin/'
     | '/_authenticated/settings/'
   fileRoutesById: FileRoutesById
 }
@@ -382,6 +467,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
   UiGalleryRoute: typeof UiGalleryRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   JoinTokenRoute: typeof JoinTokenRoute
   ApiBillingCreateOrderRoute: typeof ApiBillingCreateOrderRoute
   ApiBillingPricingRoute: typeof ApiBillingPricingRoute
@@ -454,6 +540,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UiGalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/analytics': {
       id: '/_authenticated/analytics'
       path: '/analytics'
@@ -524,6 +617,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudentsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/join/$token': {
       id: '/join/$token'
       path: '/join/$token'
@@ -531,12 +631,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JoinTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/alerts': {
+      id: '/_authenticated/admin/alerts'
+      path: '/alerts'
+      fullPath: '/admin/alerts'
+      preLoaderRoute: typeof AuthenticatedAdminAlertsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/centres': {
+      id: '/_authenticated/admin/centres'
+      path: '/centres'
+      fullPath: '/admin/centres'
+      preLoaderRoute: typeof AuthenticatedAdminCentresRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/payments': {
+      id: '/_authenticated/admin/payments'
+      path: '/payments'
+      fullPath: '/admin/payments'
+      preLoaderRoute: typeof AuthenticatedAdminPaymentsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/subscriptions': {
       id: '/_authenticated/admin/subscriptions'
-      path: '/admin/subscriptions'
+      path: '/subscriptions'
       fullPath: '/admin/subscriptions'
       preLoaderRoute: typeof AuthenticatedAdminSubscriptionsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/users': {
+      id: '/_authenticated/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/receipts/$paymentId': {
       id: '/_authenticated/receipts/$paymentId'
@@ -597,6 +732,27 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAlertsRoute: typeof AuthenticatedAdminAlertsRoute
+  AuthenticatedAdminCentresRoute: typeof AuthenticatedAdminCentresRoute
+  AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
+  AuthenticatedAdminSubscriptionsRoute: typeof AuthenticatedAdminSubscriptionsRoute
+  AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAlertsRoute: AuthenticatedAdminAlertsRoute,
+  AuthenticatedAdminCentresRoute: AuthenticatedAdminCentresRoute,
+  AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
+  AuthenticatedAdminSubscriptionsRoute: AuthenticatedAdminSubscriptionsRoute,
+  AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
 interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsTeamRoute: typeof AuthenticatedSettingsTeamRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
@@ -626,6 +782,7 @@ const AuthenticatedStudentsRouteWithChildren =
   )
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
   AuthenticatedBatchesRoute: typeof AuthenticatedBatchesRoute
@@ -636,11 +793,11 @@ interface AuthenticatedRouteChildren {
   AuthenticatedPlanRoute: typeof AuthenticatedPlanRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
-  AuthenticatedAdminSubscriptionsRoute: typeof AuthenticatedAdminSubscriptionsRoute
   AuthenticatedReceiptsPaymentIdRoute: typeof AuthenticatedReceiptsPaymentIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
   AuthenticatedBatchesRoute: AuthenticatedBatchesRoute,
@@ -651,7 +808,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedPlanRoute: AuthenticatedPlanRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
-  AuthenticatedAdminSubscriptionsRoute: AuthenticatedAdminSubscriptionsRoute,
   AuthenticatedReceiptsPaymentIdRoute: AuthenticatedReceiptsPaymentIdRoute,
 }
 
@@ -669,6 +825,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
   UiGalleryRoute: UiGalleryRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   JoinTokenRoute: JoinTokenRoute,
   ApiBillingCreateOrderRoute: ApiBillingCreateOrderRoute,
   ApiBillingPricingRoute: ApiBillingPricingRoute,

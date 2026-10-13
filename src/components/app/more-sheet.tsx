@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useSignOut } from "@/hooks/use-sign-out";
 import {
   BarChart3,
   CreditCard,
@@ -17,10 +17,8 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { supabase } from "@/integrations/supabase/client";
 import { useCan, useActiveWorkspace } from "@/hooks/use-active-workspace";
 import { useIsAdmin } from "@/hooks/use-is-admin";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 type MoreItem = {
@@ -39,7 +37,7 @@ export function MoreSheet({
   onOpenChange: (open: boolean) => void;
   pendingInvites?: number;
 }) {
-  const qc = useQueryClient();
+  const signOut = useSignOut();
   const { active } = useActiveWorkspace();
   const isAdmin = useIsAdmin();
   const canBatches = useCan("batches");
@@ -64,8 +62,8 @@ export function MoreSheet({
       show: pendingInvites > 0,
     },
     {
-      label: "Admin · Subscriptions",
-      to: "/admin/subscriptions",
+      label: "Admin",
+      to: "/admin",
       icon: ShieldCheck,
       show: isAdmin,
     },
@@ -109,15 +107,11 @@ export function MoreSheet({
           })}
           <button
             type="button"
+            data-sign-out=""
             className="mt-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-destructive transition-[transform,background-color] duration-150 [transition-timing-function:var(--ease-out)] hover:bg-destructive/8 active:scale-[0.98] motion-reduce:active:scale-100"
             onClick={async () => {
-              const { error } = await supabase.auth.signOut();
-              if (error) {
-                toast.error("Could not sign out. Please try again.");
-                return;
-              }
-              qc.clear();
-              onOpenChange(false);
+              const ok = await signOut();
+              if (ok) onOpenChange(false);
             }}
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">

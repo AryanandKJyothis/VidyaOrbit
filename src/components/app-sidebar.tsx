@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   LayoutDashboard,
@@ -28,7 +28,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { supabase } from "@/integrations/supabase/client";
+import { useSignOut } from "@/hooks/use-sign-out";
 import { Logo } from "@/components/logo";
 import { useSubscription, PLANS } from "@/hooks/use-subscription";
 import { useIsAdmin } from "@/hooks/use-is-admin";
@@ -37,7 +37,6 @@ import { WorkspaceSwitcher } from "@/components/workspace-switcher";
 import { listMyPendingInvites } from "@/lib/workspace.functions";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 
 type NavItem = {
   title: string;
@@ -79,7 +78,7 @@ const manageItems: NavItem[] = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const qc = useQueryClient();
+  const signOut = useSignOut();
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   // "Best-prefix" match: only the most specific item lights up. Avoids
   // `/settings/team` highlighting both Team and Settings simultaneously.
@@ -121,8 +120,8 @@ export function AppSidebar() {
     ...(isAdmin
       ? [
           {
-            title: "Admin · Subscriptions",
-            url: "/admin/subscriptions",
+            title: "Admin",
+            url: "/admin",
             icon: ShieldCheck,
           } as NavItem,
         ]
@@ -197,14 +196,8 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Sign out"
-              onClick={async () => {
-                const { error } = await supabase.auth.signOut();
-                if (error) {
-                  toast.error("Could not sign out. Please try again.");
-                } else {
-                  qc.clear();
-                }
-              }}
+              data-sign-out=""
+              onClick={() => void signOut()}
               className="group text-sidebar-foreground/80 hover:text-sidebar-foreground"
             >
               <LogOut className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
@@ -284,7 +277,7 @@ function PlanBadge() {
   return (
     <Link
       to="/plan"
-      className="mx-1 mb-1 flex items-center justify-between rounded-lg border border-sidebar-border/60 bg-sidebar-accent/30 px-2.5 py-1.5 text-[11px] text-sidebar-foreground/80 transition-[transform,background-color] duration-150 [transition-timing-function:var(--ease-out)] hover:bg-sidebar-accent/60 active:scale-[0.98] motion-reduce:active:scale-100"
+      className="mx-1 mb-1 flex min-h-11 items-center justify-between rounded-lg border border-sidebar-border/60 bg-sidebar-accent/30 px-2.5 py-2 text-xs text-sidebar-foreground/90 transition-[transform,background-color] duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-sidebar-accent/60 active:scale-[0.98] motion-reduce:active:scale-100"
     >
       <span className="uppercase tracking-wider opacity-70">Plan</span>
       <span className="font-semibold">{meta?.name ?? sub.data.plan}</span>

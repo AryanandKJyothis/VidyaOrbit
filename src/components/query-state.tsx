@@ -67,7 +67,7 @@ export function QueryLoadingSkeleton({
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="h-12 rounded-md bg-muted/55"
+          className="skeleton-shimmer h-14 rounded-xl bg-muted/55"
           aria-hidden="true"
         />
       ))}
@@ -99,13 +99,14 @@ export function QueryErrorState({
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
         <AlertCircle className="h-6 w-6 text-destructive" aria-hidden="true" />
       </div>
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      <p className="mt-1 max-w-sm text-xs text-muted-foreground">{message}</p>
+      <h3 className="font-display text-base font-semibold text-foreground">
+        {title}
+      </h3>
+      <p className="mt-1 max-w-sm text-sm text-muted-foreground">{message}</p>
       {onRetry && (
         <Button
-          size="sm"
           onClick={onRetry}
-          className="mt-4"
+          className="mt-5 min-h-11"
           variant="outline"
           aria-label="Retry loading data"
         >
@@ -138,8 +139,10 @@ export function QueryEmptyState({
           <Icon className="h-6 w-6" strokeWidth={1.5} />
         </div>
       )}
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      <p className="mt-1 max-w-sm text-xs text-muted-foreground leading-relaxed">
+      <h3 className="font-display text-base font-semibold text-foreground">
+        {title}
+      </h3>
+      <p className="mt-1 max-w-sm text-sm text-muted-foreground leading-relaxed">
         {description}
       </p>
       {children && (

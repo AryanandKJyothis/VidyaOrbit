@@ -47,6 +47,7 @@ export const ROBOTS_DISALLOW = [
   "/receipts",
   "/api",
   "/join",
+  "/auth",
 ] as const;
 
 function robotsGroup(userAgents: readonly string[]): string {

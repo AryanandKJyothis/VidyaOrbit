@@ -14,8 +14,38 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/empty-state";
 import { Logo, LogoWordmark } from "@/components/logo";
 import { BookOpen, CalendarDays, Clock, Plus, Users } from "lucide-react";
+import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminOverviewPanel } from "@/components/admin/admin-overview-panel";
+import { AdminCentresPanel } from "@/components/admin/admin-centres-panel";
+import { AdminUsersPanel } from "@/components/admin/admin-users-panel";
+import { AdminPaymentsPanel } from "@/components/admin/admin-payments-panel";
+import { AdminAlertsPanel } from "@/components/admin/admin-alerts-panel";
+import { PageHeader } from "@/components/page-header";
+import {
+  ADMIN_FIXTURE_ALERTS,
+  ADMIN_FIXTURE_CENTRES,
+  ADMIN_FIXTURE_OVERVIEW,
+  ADMIN_FIXTURE_PAYMENTS,
+  ADMIN_FIXTURE_USERS,
+} from "@/components/admin/admin-fixtures";
+import { BrandLoader } from "@/components/loading-screen";
+import { OwnerSetupWizardView } from "@/components/owner-setup-wizard";
+import { AppGuidedTourView } from "@/components/app-guided-tour";
+import { OnboardingChecklist } from "@/components/onboarding-checklist";
+import {
+  GoogleAuthDivider,
+  GoogleContinueButton,
+} from "@/components/google-continue-button";
+import {
+  FIXTURE_CHECKLIST_PARTIAL,
+  FIXTURE_STAFF_DRAFT,
+  FIXTURE_WIZARD_DRAFT,
+} from "@/components/onboarding-fixtures";
+import { TOUR_STEPS } from "@/lib/owner-onboarding";
 
 export const Route = createFileRoute("/ui-gallery")({
   beforeLoad: () => {
@@ -23,6 +53,27 @@ export const Route = createFileRoute("/ui-gallery")({
   },
   component: UiGallery,
 });
+
+function SetupFrame({
+  title,
+  id,
+  children,
+}: {
+  title: string;
+  id: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="space-y-3">
+      <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        {title}
+      </h2>
+      <div className="overflow-hidden rounded-[28px] border border-border bg-background shadow-[var(--shadow-elevated)]">
+        {children}
+      </div>
+    </section>
+  );
+}
 
 function PhoneFrame({
   title,
@@ -146,6 +197,172 @@ function UiGallery() {
       </section>
 
       <div className="grid gap-8 lg:grid-cols-2">
+        <SetupFrame id="wizard-updates" title="Owner setup · Email updates">
+          <OwnerSetupWizardView
+            step="updates"
+            includeMarketingStep
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="wizard-you" title="Owner setup · You and your centre">
+          <OwnerSetupWizardView
+            step="you"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="wizard-staff" title="Staff setup · Name and phone">
+          <OwnerSetupWizardView
+            step="you"
+            mode="staff"
+            draft={FIXTURE_STAFF_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="wizard-profile" title="Owner setup · Centre type">
+          <OwnerSetupWizardView
+            step="profile"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="wizard-batch" title="Owner setup · First batch">
+          <OwnerSetupWizardView
+            step="batch"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="wizard-students" title="Owner setup · First students">
+          <OwnerSetupWizardView
+            step="students"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+            onImportStudents={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame
+          id="wizard-modal"
+          title="Owner setup · Modal over blurred dashboard"
+        >
+          <div className="relative min-h-[640px] overflow-hidden bg-muted">
+            <div className="pointer-events-none p-4 blur-sm">
+              <GreetingBanner
+                greeting="Good morning"
+                displayName="Anjali"
+                instituteName="My Institute"
+                classesToday={0}
+              />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/45 p-4 backdrop-blur-md contrast-more:bg-black/70 contrast-more:backdrop-blur-none">
+              <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/50 bg-card shadow-[var(--shadow-elevated)]">
+                <OwnerSetupWizardView
+                  step="you"
+                  draft={FIXTURE_WIZARD_DRAFT}
+                  errors={{}}
+                  onChange={() => {}}
+                  onContinue={() => {}}
+                  onBack={() => {}}
+                  onSkipStep={() => {}}
+                />
+              </div>
+            </div>
+          </div>
+        </SetupFrame>
+        <SetupFrame
+          id="brand-loader"
+          title="Branded loader · First load / OAuth"
+        >
+          <div className="bg-brand-grid flex min-h-[320px] items-center justify-center">
+            <BrandLoader label="Preparing your workspace…" />
+          </div>
+        </SetupFrame>
+        <SetupFrame id="wizard-saving" title="Owner setup · Saving a step">
+          <OwnerSetupWizardView
+            step="you"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            busy
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="login-google" title="Login · Continue with Google">
+          <div className="bg-brand-grid p-6">
+            <Card className="mx-auto max-w-md">
+              <CardContent className="space-y-4 p-6">
+                <p className="type-kicker text-muted-foreground">
+                  Centre portal
+                </p>
+                <GoogleContinueButton onClick={() => {}} />
+                <GoogleAuthDivider />
+                <div className="space-y-2">
+                  <Label htmlFor="gallery-login-email">Email</Label>
+                  <Input
+                    id="gallery-login-email"
+                    type="email"
+                    defaultValue="admin@institute.in"
+                    readOnly
+                  />
+                </div>
+                <Button className="h-12 w-full" type="button">
+                  Sign in to Vidya Orbit
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </SetupFrame>
+        {TOUR_STEPS.map((step, index) => (
+          <PhoneFrame
+            key={step.id}
+            id={`tour-${step.id}`}
+            title={`Guided tour · ${step.title}`}
+          >
+            <AppGuidedTourView
+              stepIndex={index}
+              onNext={() => {}}
+              onBack={() => {}}
+              onSkip={() => {}}
+              onGoToPage={() => {}}
+            />
+          </PhoneFrame>
+        ))}
+        <PhoneFrame id="checklist" title="Getting started checklist">
+          <OnboardingChecklist
+            items={FIXTURE_CHECKLIST_PARTIAL.items}
+            doneCount={FIXTURE_CHECKLIST_PARTIAL.doneCount}
+            allDone={FIXTURE_CHECKLIST_PARTIAL.allDone}
+            onDismiss={() => {}}
+          />
+        </PhoneFrame>
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-2">
         <PhoneFrame id="dash" title="Dashboard">
           <div className="space-y-3">
             <GreetingBanner
@@ -258,17 +475,15 @@ function UiGallery() {
         <PhoneFrame id="attendance" title="Attendance">
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-2xl bg-success/12 py-3 text-center">
-              <p className="text-[11px] font-semibold text-success">Present</p>
+              <p className="text-xs font-semibold text-success">Present</p>
               <p className="font-display text-2xl font-bold">18</p>
             </div>
             <div className="rounded-2xl bg-destructive/12 py-3 text-center">
-              <p className="text-[11px] font-semibold text-destructive">
-                Absent
-              </p>
+              <p className="text-xs font-semibold text-destructive">Absent</p>
               <p className="font-display text-2xl font-bold">3</p>
             </div>
             <div className="rounded-2xl bg-muted py-3 text-center">
-              <p className="text-[11px] font-semibold text-muted-foreground">
+              <p className="text-xs font-semibold text-muted-foreground">
                 Unmarked
               </p>
               <p className="font-display text-2xl font-bold">3</p>
@@ -281,7 +496,7 @@ function UiGallery() {
                   key={name}
                   className="flex items-center gap-3 rounded-2xl border border-border/80 bg-card px-3 py-3"
                 >
-                  <span className="w-6 text-[10px] font-semibold text-muted-foreground">
+                  <span className="w-6 text-xs font-semibold text-muted-foreground">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <InitialsAvatar name={name} />
@@ -304,7 +519,7 @@ function UiGallery() {
         <PhoneFrame id="fees" title="Fees">
           <Card className="bg-primary text-primary-foreground">
             <CardContent className="p-4">
-              <p className="text-[11px] uppercase tracking-wider text-primary-foreground/70">
+              <p className="type-kicker text-primary-foreground/80">
                 This month
               </p>
               <p className="font-display text-3xl font-bold">₹1,84,500</p>
@@ -366,7 +581,7 @@ function UiGallery() {
         <PhoneFrame id="settings" title="Settings">
           <Card>
             <CardContent className="space-y-3 p-5">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              <p className="type-kicker text-muted-foreground">
                 Centre profile
               </p>
               <div className="space-y-1.5">
@@ -384,7 +599,7 @@ function UiGallery() {
           </Card>
           <Card className="mt-3">
             <CardContent className="p-5">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              <p className="type-kicker text-muted-foreground">
                 Your current plan
               </p>
               <p className="mt-1 font-display text-lg font-semibold">Starter</p>
@@ -406,7 +621,7 @@ function UiGallery() {
             </h2>
             <div className="mt-4 w-full space-y-3 text-left">
               <div className="space-y-1.5">
-                <Label>Centre phone or email</Label>
+                <Label>Email</Label>
                 <Input defaultValue="hello@centre.example" className="h-11" />
               </div>
               <div className="space-y-1.5">
@@ -421,7 +636,120 @@ function UiGallery() {
             </div>
           </div>
         </PhoneFrame>
+
+        <PhoneFrame id="states" title="Empty, loading, disabled">
+          <div className="space-y-4">
+            <EmptyState
+              icon={Users}
+              title="No students yet"
+              description="Add learners manually or import a spreadsheet."
+            >
+              <Button>Add student</Button>
+              <Button variant="outline">Import spreadsheet</Button>
+            </EmptyState>
+            <div className="space-y-2">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </div>
+            <Button className="h-12 w-full" disabled>
+              Save attendance
+            </Button>
+          </div>
+        </PhoneFrame>
       </div>
+
+      <section id="admin-overview" className="space-y-3">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Admin · Overview
+        </h2>
+        <div className="rounded-2xl border border-border bg-background p-4 sm:p-6">
+          <PageHeader
+            title="Admin"
+            description="Platform health — centres, people, payments, and anything that needs a look."
+          />
+          <AdminNav pathname="/admin" />
+          <AdminOverviewPanel data={ADMIN_FIXTURE_OVERVIEW} />
+        </div>
+      </section>
+
+      <section id="admin-centres" className="space-y-3">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Admin · Centres
+        </h2>
+        <div className="rounded-2xl border border-border bg-background p-4 sm:p-6">
+          <PageHeader
+            title="Admin"
+            description="Platform health — centres, people, payments, and anything that needs a look."
+          />
+          <AdminNav pathname="/admin/centres" />
+          <AdminCentresPanel
+            rows={ADMIN_FIXTURE_CENTRES}
+            total={18}
+            search=""
+            filter="all"
+            onSearch={() => {}}
+            onFilter={() => {}}
+            onOpen={() => {}}
+          />
+        </div>
+      </section>
+
+      <section id="admin-users" className="space-y-3">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Admin · Users
+        </h2>
+        <div className="rounded-2xl border border-border bg-background p-4 sm:p-6">
+          <PageHeader
+            title="Admin"
+            description="Platform health — centres, people, payments, and anything that needs a look."
+          />
+          <AdminNav pathname="/admin/users" />
+          <AdminUsersPanel
+            rows={ADMIN_FIXTURE_USERS}
+            total={41}
+            search=""
+            filter="all"
+            onSearch={() => {}}
+            onFilter={() => {}}
+            onOpen={() => {}}
+          />
+        </div>
+      </section>
+
+      <section id="admin-payments" className="space-y-3">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Admin · Payments
+        </h2>
+        <div className="rounded-2xl border border-border bg-background p-4 sm:p-6">
+          <PageHeader
+            title="Admin"
+            description="Platform health — centres, people, payments, and anything that needs a look."
+          />
+          <AdminNav pathname="/admin/payments" />
+          <AdminPaymentsPanel
+            rows={ADMIN_FIXTURE_PAYMENTS}
+            total={2}
+            search=""
+            filter="all"
+            onSearch={() => {}}
+            onFilter={() => {}}
+          />
+        </div>
+      </section>
+
+      <section id="admin-alerts" className="space-y-3">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Admin · Alerts
+        </h2>
+        <div className="rounded-2xl border border-border bg-background p-4 sm:p-6">
+          <PageHeader
+            title="Admin"
+            description="Platform health — centres, people, payments, and anything that needs a look."
+          />
+          <AdminNav pathname="/admin/alerts" />
+          <AdminAlertsPanel alerts={ADMIN_FIXTURE_ALERTS} />
+        </div>
+      </section>
     </main>
   );
 }

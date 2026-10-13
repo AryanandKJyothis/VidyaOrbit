@@ -41,14 +41,14 @@ export function FilterChips({
                   : chip.tone === "warning"
                     ? "border-warning/30 bg-warning text-warning-foreground"
                     : "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-card text-foreground hover:bg-muted/60",
+                : "border-border bg-card text-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/60",
             )}
           >
             {chip.label}
             {typeof chip.count === "number" && (
               <span
                 className={cn(
-                  "rounded-full px-1.5 py-px text-[11px] tabular-nums",
+                  "rounded-full px-1.5 py-px text-xs tabular-nums",
                   active ? "bg-white/20" : "bg-muted text-muted-foreground",
                 )}
               >

@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, CheckCircle2, ArrowRight } from "lucide-react";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -28,6 +28,7 @@ interface OnboardingFormProps {
   isLoading?: boolean;
   subtitle?: string;
   title?: string;
+  belowFields?: ReactNode;
 }
 
 export function OnboardingForm({
@@ -37,6 +38,7 @@ export function OnboardingForm({
   isLoading = false,
   subtitle,
   title,
+  belowFields,
 }: OnboardingFormProps) {
   const [formData, setFormData] = useState<Record<string, string>>(
     fields.reduce((acc, field) => ({ ...acc, [field.id]: "" }), {}),
@@ -257,7 +259,7 @@ export function OnboardingForm({
                         placeholder={field.placeholder}
                         autoComplete={field.autoComplete}
                         className={cn(
-                          "transition-all duration-200",
+                          "transition-[border-color,background-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)]",
                           isTouched &&
                             error &&
                             "border-destructive/50 bg-destructive/5 focus:ring-destructive/30",
@@ -284,7 +286,7 @@ export function OnboardingForm({
                         placeholder={field.placeholder}
                         autoComplete={field.autoComplete}
                         className={cn(
-                          "transition-all duration-200",
+                          "transition-[border-color,background-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)]",
                           isTouched &&
                             error &&
                             "border-destructive/50 bg-destructive/5 focus:ring-destructive/30",
@@ -309,7 +311,7 @@ export function OnboardingForm({
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -4 }}
                           transition={{ duration: 0.2 }}
-                          className="text-xs text-destructive/80 flex items-center gap-1.5"
+                          className="text-xs text-destructive flex items-center gap-1.5"
                         >
                           <span className="block h-1 w-1 rounded-full bg-destructive/60" />
                           {error}
@@ -335,6 +337,8 @@ export function OnboardingForm({
         </AnimatePresence>
       </div>
 
+      {belowFields}
+
       {/* Submit Button */}
       <motion.div
         initial={{ opacity: 0, y: 4 }}
@@ -347,7 +351,7 @@ export function OnboardingForm({
           disabled={!isFormValid || isSubmitting || isLoading}
           size="lg"
           className={cn(
-            "w-full transition-all duration-200 flex items-center justify-center gap-2",
+            "w-full transition-[box-shadow,transform,opacity] duration-150 [transition-timing-function:var(--ease-out)] flex items-center justify-center gap-2",
             isFormValid && "shadow-md hover:shadow-lg",
           )}
         >

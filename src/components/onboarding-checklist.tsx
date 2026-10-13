@@ -1,137 +1,44 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useOnboarding } from "@/hooks/use-onboarding";
-import type { Batch, Institute, Payment, Student } from "@/hooks/use-data";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
+import { useBatches, usePayments, useStudents } from "@/hooks/use-data";
+import { useOnboarding } from "@/hooks/use-onboarding";
+import { useOwnerOnboarding } from "@/hooks/use-owner-onboarding";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  deriveGettingStarted,
+  isInvitedStaff,
+  readJoiningTeamFlag,
+  type GettingStartedItem,
+} from "@/lib/owner-onboarding";
 
 type Props = {
-  institute: Institute | null | undefined;
-  batches: Batch[] | undefined;
-  students: Student[] | undefined;
-  payments: Payment[] | undefined;
+  items: GettingStartedItem[];
+  doneCount: number;
+  allDone: boolean;
+  onDismiss?: () => void;
+  onResumeSetup?: () => void;
+  showResumeSetup?: boolean;
 };
 
 export function OnboardingChecklist({
-  institute,
-  batches,
-  students,
-  payments,
+  items,
+  doneCount,
+  allDone,
+  onDismiss,
+  onResumeSetup,
+  showResumeSetup = false,
 }: Props) {
-  const { user } = useAuth();
-  const { active } = useActiveWorkspace();
-  const { dismissedChecklist, dismissChecklist } = useOnboarding();
   const [open, setOpen] = useState(true);
 
-  const attendanceStarted = useQuery({
-    queryKey: ["onboarding-attendance", active?.ownerId],
-    enabled: !!user && !!active?.ownerId,
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("attendance_sessions")
-        .select("id", { count: "exact", head: true })
-        .eq("owner_id", active!.ownerId);
-      if (error) throw error;
-      return (count ?? 0) > 0;
-    },
-  });
-
-  const steps = useMemo(() => {
-    const named = !!(
-      institute &&
-      institute.name &&
-      institute.name !== "My Institute"
-    );
-    const hasBatch = !!(batches && batches.length > 0);
-    const hasStudent = !!(
-      students && students.some((s) => s.status !== "archived")
-    );
-    const hasPayment = !!(payments && payments.length > 0);
-    const markedAttendance = attendanceStarted.data === true;
-
-    return [
-      {
-        id: "institute",
-        done: named,
-        title: "Name your institute",
-        hint: "Shown on receipts and dashboards.",
-        to: "/settings" as const,
-        label: "Open settings",
-      },
-      {
-        id: "batch",
-        done: hasBatch,
-        title: "Create your first batch",
-        hint: "Group students by class or timing.",
-        to: "/batches" as const,
-        label: "Go to batches",
-      },
-      {
-        id: "student",
-        done: hasStudent,
-        title: "Add students",
-        hint: "Manually or import from Excel.",
-        to: "/students" as const,
-        label: "Add students",
-      },
-      {
-        id: "fee",
-        done: hasPayment,
-        title: "Record a fee payment",
-        hint: "Try recording cash or UPI once.",
-        to: "/fees" as const,
-        label: "Open fees",
-      },
-      {
-        id: "attendance",
-        done: markedAttendance,
-        title: "Mark attendance",
-        hint: "Pick a batch and save today’s attendance.",
-        to: "/attendance" as const,
-        label: "Mark attendance",
-      },
-    ];
-  }, [institute, batches, students, payments, attendanceStarted.data]);
-
-  const doneCount = steps.filter((s) => s.done).length;
-  const allDone = doneCount === steps.length;
-
-  if (dismissedChecklist) return null;
-
-  if (allDone) {
-    return (
-      <Card className="mb-6 border-success/30 bg-success/5">
-        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-2">
-            <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-            <div>
-              <p className="text-sm font-semibold text-foreground">
-                Setup complete
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Your institute basics are in place — students, batches,
-                attendance and fees are ready to run.
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="shrink-0 self-start sm:self-center"
-            onClick={dismissChecklist}
-          >
-            Got it
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+  if (allDone) return null;
+  if (items.length === 0) return null;
 
   return (
     <Card className="mb-6 border-primary/25 bg-gradient-to-br from-primary/5 via-transparent to-transparent">
@@ -143,30 +50,43 @@ export function OnboardingChecklist({
               Getting started
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {doneCount}/{steps.length} complete — finish these to run your
-              institute smoothly.
+              {doneCount}/{items.length} complete — finish these to run your
+              centre smoothly.
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2"
-            onClick={() => setOpen(!open)}
-          >
-            {open ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-11 min-h-11 px-2"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          aria-controls="getting-started-list"
+        >
+          {open ? (
+            <ChevronUp className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
+          <span className="sr-only">
+            {open ? "Collapse checklist" : "Expand checklist"}
+          </span>
+        </Button>
       </CardHeader>
       {open && (
-        <CardContent className="space-y-2 pt-0">
+        <CardContent className="space-y-2 pt-0" id="getting-started-list">
+          {showResumeSetup && onResumeSetup && (
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full sm:w-auto"
+              onClick={onResumeSetup}
+            >
+              Resume centre setup
+            </Button>
+          )}
           <ul className="space-y-2">
-            {steps.map((step, idx) => (
+            {items.map((step, idx) => (
               <li
                 key={step.id}
                 className={cn(
@@ -177,7 +97,7 @@ export function OnboardingChecklist({
                 <div className="flex items-start gap-3 min-w-0">
                   <span
                     className={cn(
-                      "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold",
+                      "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
                       step.done
                         ? "border-success bg-success/15 text-success"
                         : "border-muted-foreground/30 text-muted-foreground",
@@ -207,18 +127,77 @@ export function OnboardingChecklist({
               </li>
             ))}
           </ul>
-          <div className="flex justify-end pt-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground h-8"
-              onClick={dismissChecklist}
-            >
-              Dismiss checklist
-            </Button>
-          </div>
+          {onDismiss && (
+            <div className="flex justify-end pt-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground h-11 min-h-11"
+                onClick={onDismiss}
+              >
+                Dismiss checklist
+              </Button>
+            </div>
+          )}
         </CardContent>
       )}
     </Card>
+  );
+}
+
+/** Dashboard-only Getting started card. Hidden until setup is complete. */
+export function OwnerGettingStartedCard() {
+  const { user } = useAuth();
+  const { active } = useActiveWorkspace();
+  const batches = useBatches();
+  const students = useStudents();
+  const payments = usePayments();
+  const { dismissedChecklist, dismissChecklist } = useOnboarding();
+  const onboarding = useOwnerOnboarding(user?.id ?? null);
+  const metadata = user?.user_metadata as Record<string, unknown> | undefined;
+  const staff = isInvitedStaff({
+    joiningTeam: readJoiningTeamFlag(metadata),
+    role: active?.role ?? null,
+    isOwnWorkspace: active?.isOwn ?? null,
+  });
+
+  const activeStudents = useMemo(
+    () => (students.data ?? []).filter((s) => s.status !== "archived").length,
+    [students.data],
+  );
+
+  const attendanceStarted = useQuery({
+    queryKey: ["onboarding-attendance", active?.ownerId],
+    enabled:
+      !!user && !!active?.ownerId && !staff && onboarding.state.completed,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("attendance_sessions")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", active!.ownerId);
+      if (error) throw error;
+      return (count ?? 0) > 0;
+    },
+  });
+
+  const checklist = deriveGettingStarted({
+    batchCount: batches.data?.length ?? 0,
+    activeStudentCount: activeStudents,
+    paymentCount: payments.data?.length ?? 0,
+    attendanceStarted: attendanceStarted.data === true,
+  });
+
+  if (staff) return null;
+  if (!onboarding.state.completed) return null;
+  if (dismissedChecklist) return null;
+  if (!active) return null;
+
+  return (
+    <OnboardingChecklist
+      items={checklist.items}
+      doneCount={checklist.doneCount}
+      allDone={checklist.allDone}
+      onDismiss={dismissChecklist}
+    />
   );
 }

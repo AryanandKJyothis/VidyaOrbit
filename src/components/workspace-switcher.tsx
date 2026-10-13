@@ -132,7 +132,7 @@ export function WorkspaceSwitcher({
                 />
                 <div className="flex flex-col min-w-0">
                   <span className="truncate text-sm">{w.name}</span>
-                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">
                     {w.isOwn ? "Owner" : w.role}
                   </span>
                 </div>
@@ -146,7 +146,7 @@ export function WorkspaceSwitcher({
                     e.stopPropagation();
                     setToRemove(w);
                   }}
-                  className="rounded p-1 text-muted-foreground opacity-70 transition hover:bg-destructive/10 hover:text-destructive hover:opacity-100"
+                  className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-[background-color,color,opacity] duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-destructive/10 [@media(hover:hover)_and_(pointer:fine)]:hover:text-destructive [@media(hover:hover)_and_(pointer:fine)]:hover:opacity-100"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

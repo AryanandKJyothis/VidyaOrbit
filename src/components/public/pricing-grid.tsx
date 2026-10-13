@@ -30,7 +30,7 @@ function PaidPlanCtas({
           <Button
             className="w-full gap-1.5"
             variant={isRecommended ? "default" : "outline"}
-            size="sm"
+            size="default"
           >
             <MessageCircle className="h-3.5 w-3.5" />
             WhatsApp us
@@ -44,7 +44,7 @@ function PaidPlanCtas({
           <Button
             className="w-full gap-1.5"
             variant={wa ? "ghost" : isRecommended ? "default" : "outline"}
-            size="sm"
+            size="default"
           >
             <Mail className="h-3.5 w-3.5" />
             Email us

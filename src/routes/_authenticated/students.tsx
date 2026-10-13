@@ -475,7 +475,7 @@ function StudentsList() {
                   !isPastIstDate(s.fee_due_date);
                 return (
                   <li key={s.id}>
-                    <article className="rounded-2xl border border-border/80 bg-card p-4 shadow-[var(--shadow-xs)]">
+                    <article className="rounded-2xl border border-border/80 bg-card p-4 shadow-[var(--shadow-xs)] transition-[box-shadow,border-color] duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-[var(--shadow-card)]">
                       <div className="flex items-start gap-3">
                         <InitialsAvatar name={s.full_name} />
                         <div className="min-w-0 flex-1">
@@ -572,7 +572,7 @@ function StudentsList() {
           }}
           disabled={atLimit}
           aria-label="Add student"
-          className="fab-shadow fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground md:hidden active:scale-[0.97] motion-reduce:active:scale-100 disabled:opacity-50"
+          className="fab-shadow fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground md:hidden active:scale-[0.97] motion-reduce:active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <Plus className="h-6 w-6" />
         </button>

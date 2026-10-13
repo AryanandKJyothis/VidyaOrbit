@@ -98,10 +98,10 @@ export function RolePermissionPicker({
               aria-checked={active}
               onClick={() => pick(p.key)}
               className={cn(
-                "flex items-start gap-3 rounded-lg border p-3 text-left transition-all",
+                "flex min-h-11 items-start gap-3 rounded-lg border p-3 text-left transition-[border-color,background-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)]",
                 active
                   ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                  : "border-border hover:border-primary/40 hover:bg-muted/40",
+                  : "border-border [@media(hover:hover)_and_(pointer:fine)]:hover:border-primary/40 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/40",
               )}
             >
               <div

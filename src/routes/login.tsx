@@ -10,18 +10,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Mail } from "lucide-react";
 import { SkipToContent } from "@/components/skip-to-content";
 import { LogoWordmark } from "@/components/logo";
-import { CheckEmailPanel } from "@/components/auth/check-email";
+import { OrbitMotif } from "@/components/landing/orbit-motif";
 import { OnboardingForm } from "@/components/onboarding-form";
+import {
+  GoogleAuthDivider,
+  GoogleContinueButton,
+} from "@/components/google-continue-button";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { credentialsSchema, signupSchema } from "@/lib/validation";
+import { credentialsSchema } from "@/lib/validation";
 import { formatUserError } from "@/lib/format-error";
 import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
+import { signInWithGoogle } from "@/lib/google-auth";
+import { marketingOptInMetadata } from "@/lib/marketing-opt-in";
+import { MarketingOptInCheckbox } from "@/components/marketing-opt-in-checkbox";
 import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
 import { getContactConfig, getTelHref } from "@/lib/contact-config";
 import { Card, CardContent } from "@/components/ui/card";
+import { CheckYourEmail } from "@/components/check-your-email";
 
 const searchSchema = z.object({
   invite: z.string().min(10).max(200).optional(),
@@ -34,29 +41,6 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-function GoogleIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 48 48" aria-hidden="true">
-      <path
-        fill="#FFC107"
-        d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.4 0-11.5-5.1-11.5-11.5S17.6 12.5 24 12.5c2.9 0 5.6 1.1 7.7 2.9l5.7-5.7C33.9 6.5 29.2 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5c10.8 0 19.5-8.7 19.5-19.5 0-1.2-.1-2.3-.4-3.5z"
-      />
-      <path
-        fill="#FF3D00"
-        d="M6.3 14.7l6.6 4.8C14.5 16 18.9 12.5 24 12.5c2.9 0 5.6 1.1 7.7 2.9l5.7-5.7C33.9 6.5 29.2 4.5 24 4.5 16.3 4.5 9.7 8.7 6.3 14.7z"
-      />
-      <path
-        fill="#4CAF50"
-        d="M24 43.5c5.1 0 9.7-1.9 13.2-5.1l-6.1-5c-2 1.4-4.4 2.1-7.1 2.1-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.5 39.2 16.2 43.5 24 43.5z"
-      />
-      <path
-        fill="#1976D2"
-        d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.2 5.4l6.1 5c-.4.4 6.8-4.9 6.8-14.4 0-1.2-.1-2.3-.4-3.5z"
-      />
-    </svg>
-  );
-}
-
 function LoginPage() {
   const navigate = useNavigate();
   const { session, loading } = useAuth();
@@ -64,6 +48,7 @@ function LoginPage() {
   const joiningTeam = !!invite;
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginErrors, setLoginErrors] = useState<{
@@ -71,7 +56,10 @@ function LoginPage() {
     password?: string;
     form?: string;
   }>({});
-  const [checkEmailTo, setCheckEmailTo] = useState<string | null>(null);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [authTab, setAuthTab] = useState<"login" | "signup">(
+    mode === "signup" || joiningTeam ? "signup" : "login",
+  );
 
   const postLoginPath = joiningTeam
     ? `/invites?token=${encodeURIComponent(invite!)}`
@@ -114,87 +102,50 @@ function LoginPage() {
   };
 
   const handleSignup = async (formData: Record<string, string>) => {
-    let validated: {
-      email: string;
-      password: string;
-      phone: string;
-      institute_name?: string;
-    };
-    if (joiningTeam) {
-      const schema = credentialsSchema.extend({
-        phone: z
-          .string()
-          .trim()
-          .min(6)
-          .max(20)
-          .regex(/^[0-9+\-\s()]{6,20}$/, "Enter a valid phone"),
-      });
-      const parsed = schema.safeParse({
-        email: formData.email,
-        password: formData.password,
-        phone: formData.phone,
-      });
-      if (!parsed.success)
-        throw new Error(parsed.error.issues[0]?.message || "Validation failed");
-      validated = parsed.data;
-    } else {
-      const parsed = signupSchema.safeParse({
-        email: formData.email,
-        password: formData.password,
-        institute_name: formData.institute_name,
-        phone: formData.phone,
-      });
-      if (!parsed.success)
-        throw new Error(parsed.error.issues[0]?.message || "Validation failed");
-      validated = parsed.data;
-    }
+    const parsed = credentialsSchema.safeParse({
+      email: formData.email,
+      password: formData.password,
+    });
+    if (!parsed.success)
+      throw new Error(parsed.error.issues[0]?.message || "Validation failed");
 
     const { error } = await supabase.auth.signUp({
-      email: validated.email,
-      password: validated.password,
+      email: parsed.data.email,
+      password: parsed.data.password,
       options: {
         emailRedirectTo: `${redirectOrigin}${postLoginPath}`,
         data: {
-          phone: validated.phone,
-          ...(joiningTeam
-            ? { joining_team: true, invite_token: invite }
-            : { institute_name: validated.institute_name }),
+          ...(joiningTeam ? { joining_team: true, invite_token: invite } : {}),
+          ...marketingOptInMetadata(marketingOptIn),
         },
       },
     });
 
     if (error)
       throw new Error(formatUserError(error, "Could not create account"));
-    setCheckEmailTo(validated.email);
+    setPendingEmail(parsed.data.email);
+  };
+
+  const resendSignupEmail = async () => {
+    if (!pendingEmail) return;
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: pendingEmail,
+      options: { emailRedirectTo: `${redirectOrigin}${postLoginPath}` },
+    });
+    if (error) throw error;
   };
 
   const handleGoogle = async () => {
     setOauthLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: redirectOrigin + postLoginPath,
-    });
-    if (result.error) {
+    const { error } = await signInWithGoogle(postLoginPath);
+    if (error) {
       setOauthLoading(false);
-      toast.error(formatUserError(result.error, "Google sign-in failed"));
-      return;
+      toast.error(formatUserError(error, "Google sign-in failed"));
     }
-    if (result.redirected) return;
-    navigate({ to: postLoginPath });
   };
 
   const signupFields = [
-    ...(joiningTeam
-      ? []
-      : [
-          {
-            id: "institute_name",
-            label: "Institute name",
-            type: "text" as const,
-            placeholder: "Bright Future Academy",
-            helperText: "This will appear on receipts and dashboards",
-            required: true,
-          },
-        ]),
     {
       id: "email",
       label: "Email address",
@@ -205,14 +156,6 @@ function LoginPage() {
         : "We'll send a verification link here",
       required: true,
       autoComplete: "email",
-    },
-    {
-      id: "phone",
-      label: "Phone number",
-      type: "tel" as const,
-      placeholder: "+91 98765 43210",
-      helperText: "We'll use this to contact you about your account",
-      required: true,
     },
     {
       id: "password",
@@ -233,23 +176,11 @@ function LoginPage() {
     <div className="grid min-h-screen bg-brand-grid lg:grid-cols-2">
       <SkipToContent href="#auth-panel" />
       <div className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex">
-        <svg
-          aria-hidden
-          className="pointer-events-none absolute right-10 top-28 h-64 w-64 opacity-30"
-          viewBox="0 0 200 200"
-        >
-          <ellipse
-            cx="100"
-            cy="100"
-            rx="88"
-            ry="34"
-            fill="none"
-            stroke="#F8F7F2"
-            strokeWidth="3"
-            transform="rotate(-28 100 100)"
-          />
-          <circle cx="164" cy="58" r="8" fill="#F05A28" />
-        </svg>
+        <OrbitMotif
+          inverted
+          spin
+          className="pointer-events-none absolute right-6 top-24 h-64 w-64 opacity-50"
+        />
         <div className="relative z-10">
           <LogoWordmark size={32} inverted />
         </div>
@@ -281,280 +212,258 @@ function LoginPage() {
         id="auth-panel"
         className="flex items-center justify-center p-5 sm:p-10"
       >
-        {checkEmailTo ? (
-          <CheckEmailPanel
-            email={checkEmailTo}
-            onBack={() => setCheckEmailTo(null)}
-          />
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="w-full max-w-md"
-          >
-            <div className="mb-6 flex flex-col items-center text-center lg:hidden">
-              <div className="mb-4">
-                <LogoWordmark size={28} />
-              </div>
-              <h1 className="font-display text-2xl font-bold leading-tight">
-                Manage your tuition centre with ease
-              </h1>
-              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                Designed for tutors and coaching centres
-              </p>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="w-full max-w-md"
+        >
+          <div className="mb-6 flex flex-col items-center text-center lg:hidden">
+            <div className="mb-4">
+              <LogoWordmark size={28} />
             </div>
+            <h1 className="font-display text-2xl font-bold leading-tight">
+              Manage your tuition centre with ease
+            </h1>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              Designed for tutors and coaching centres
+            </p>
+          </div>
 
-            {joiningTeam && (
-              <div className="mb-5 rounded-lg border border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
-                <Mail className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                <div className="text-sm">
-                  <p className="font-semibold">
-                    You&apos;ve been invited to a workspace
-                  </p>
-                  <p className="text-muted-foreground mt-0.5">
-                    Sign in or create an account to accept the invite. No new
-                    institute will be created.
-                  </p>
-                </div>
+          {joiningTeam && !pendingEmail && (
+            <div className="mb-5 rounded-lg border border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
+              <Mail className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <p className="font-semibold">
+                  You&apos;ve been invited to a workspace
+                </p>
+                <p className="text-muted-foreground mt-0.5">
+                  Sign in or create an account to accept the invite. No new
+                  institute will be created.
+                </p>
               </div>
-            )}
+            </div>
+          )}
 
-            <Card className="overflow-hidden">
-              <CardContent className="p-5 sm:p-6">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                  Centre portal
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Log in to manage attendance &amp; fees
-                </p>
-                <Tabs
-                  defaultValue={
-                    mode === "signup" || joiningTeam ? "signup" : "login"
-                  }
-                  className="mt-4 w-full"
-                >
-                  <TabsList className="grid h-11 w-full grid-cols-2 rounded-full">
-                    <TabsTrigger value="login" className="rounded-full">
-                      Sign in
-                    </TabsTrigger>
-                    <TabsTrigger value="signup" className="rounded-full">
-                      Create account
-                    </TabsTrigger>
-                  </TabsList>
+          <Card className="overflow-hidden">
+            <CardContent className="p-5 sm:p-6">
+              {pendingEmail ? (
+                <CheckYourEmail
+                  email={pendingEmail}
+                  kind={joiningTeam ? "invite_signup" : "signup"}
+                  onResend={resendSignupEmail}
+                  onUseDifferentEmail={() => {
+                    setAuthTab("signup");
+                    setPendingEmail(null);
+                  }}
+                />
+              ) : (
+                <>
+                  <p className="type-kicker text-muted-foreground">
+                    Centre portal
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Log in to manage attendance &amp; fees
+                  </p>
+                  <Tabs
+                    value={authTab}
+                    onValueChange={(value) =>
+                      setAuthTab(value as "login" | "signup")
+                    }
+                    className="mt-4 w-full"
+                  >
+                    <TabsList className="grid h-11 w-full grid-cols-2 rounded-full">
+                      <TabsTrigger value="login" className="rounded-full">
+                        Sign in
+                      </TabsTrigger>
+                      <TabsTrigger value="signup" className="rounded-full">
+                        Create account
+                      </TabsTrigger>
+                    </TabsList>
 
-                  <TabsContent value="login" className="mt-5">
-                    <h2 className="sr-only">Sign in</h2>
+                    <TabsContent value="login" className="mt-5">
+                      <h2 className="sr-only">Sign in</h2>
 
-                    {GOOGLE_AUTH_ENABLED && (
-                      <>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="mt-6 w-full"
-                          onClick={handleGoogle}
-                          disabled={oauthLoading}
-                        >
-                          {oauthLoading ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <GoogleIcon />
-                          )}
-                          <span className="ml-2">Continue with Google</span>
-                        </Button>
-                        <div className="relative my-5">
-                          <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
-                          </div>
-                          <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground">
-                              Or with email
-                            </span>
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    <form
-                      onSubmit={handleLogin}
-                      className="mt-6 space-y-4"
-                      noValidate
-                    >
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          required
-                          value={email}
-                          onChange={(e) => {
-                            setEmail(e.target.value);
-                            setLoginErrors((prev) => ({
-                              ...prev,
-                              email: undefined,
-                              form: undefined,
-                            }));
-                          }}
-                          placeholder="admin@institute.in"
-                          autoComplete="email"
-                          aria-invalid={!!loginErrors.email}
-                          aria-describedby={
-                            loginErrors.email ? "login-email-error" : undefined
-                          }
-                          className={
-                            loginErrors.email
-                              ? "border-destructive/50 focus-visible:ring-destructive/30"
-                              : undefined
-                          }
-                        />
-                        {loginErrors.email && (
-                          <p
-                            id="login-email-error"
-                            className="text-xs text-destructive"
-                            role="alert"
-                          >
-                            {loginErrors.email}
-                          </p>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="password">Password</Label>
-                          <Link
-                            to="/forgot-password"
-                            className="text-xs text-primary hover:underline"
-                          >
-                            Forgot password?
-                          </Link>
-                        </div>
-                        <PasswordInput
-                          id="password"
-                          required
-                          minLength={8}
-                          value={password}
-                          onChange={(e) => {
-                            setPassword(e.target.value);
-                            setLoginErrors((prev) => ({
-                              ...prev,
-                              password: undefined,
-                              form: undefined,
-                            }));
-                          }}
-                          autoComplete="current-password"
-                          aria-invalid={!!loginErrors.password}
-                          aria-describedby={
-                            loginErrors.password
-                              ? "login-password-error"
-                              : undefined
-                          }
-                          className={
-                            loginErrors.password
-                              ? "border-destructive/50 focus-visible:ring-destructive/30"
-                              : undefined
-                          }
-                        />
-                        {loginErrors.password && (
-                          <p
-                            id="login-password-error"
-                            className="text-xs text-destructive"
-                            role="alert"
-                          >
-                            {loginErrors.password}
-                          </p>
-                        )}
-                      </div>
-                      {loginErrors.form && (
-                        <p
-                          className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-                          role="alert"
-                        >
-                          {loginErrors.form}
-                        </p>
+                      {GOOGLE_AUTH_ENABLED && (
+                        <>
+                          <GoogleContinueButton
+                            onClick={handleGoogle}
+                            loading={oauthLoading}
+                          />
+                          <GoogleAuthDivider />
+                        </>
                       )}
-                      <Button
-                        type="submit"
-                        disabled={submitting}
-                        className="h-12 w-full"
+
+                      <form
+                        onSubmit={handleLogin}
+                        className="mt-5 space-y-4"
+                        noValidate
                       >
-                        {submitting && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
-                        Sign in to Vidya Orbit
-                      </Button>
-                    </form>
-                  </TabsContent>
-
-                  <TabsContent value="signup" className="mt-6">
-                    {GOOGLE_AUTH_ENABLED && (
-                      <>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="mb-6 w-full"
-                          onClick={handleGoogle}
-                          disabled={oauthLoading}
-                        >
-                          {oauthLoading ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <GoogleIcon />
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            required
+                            value={email}
+                            onChange={(e) => {
+                              setEmail(e.target.value);
+                              setLoginErrors((prev) => ({
+                                ...prev,
+                                email: undefined,
+                                form: undefined,
+                              }));
+                            }}
+                            placeholder="admin@institute.in"
+                            autoComplete="email"
+                            aria-invalid={!!loginErrors.email}
+                            aria-describedby={
+                              loginErrors.email
+                                ? "login-email-error"
+                                : undefined
+                            }
+                            className={
+                              loginErrors.email
+                                ? "border-destructive/50 focus-visible:ring-destructive/30"
+                                : undefined
+                            }
+                          />
+                          {loginErrors.email && (
+                            <p
+                              id="login-email-error"
+                              className="text-xs text-destructive"
+                              role="alert"
+                            >
+                              {loginErrors.email}
+                            </p>
                           )}
-                          <span className="ml-2">Sign up with Google</span>
-                        </Button>
-                        <div className="relative my-5">
-                          <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
-                          </div>
-                          <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground">
-                              Or with email
-                            </span>
-                          </div>
                         </div>
-                      </>
-                    )}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="password">Password</Label>
+                            <Link
+                              to="/forgot-password"
+                              className="inline-flex min-h-11 items-center text-sm text-primary [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
+                            >
+                              Forgot password?
+                            </Link>
+                          </div>
+                          <PasswordInput
+                            id="password"
+                            required
+                            minLength={8}
+                            value={password}
+                            onChange={(e) => {
+                              setPassword(e.target.value);
+                              setLoginErrors((prev) => ({
+                                ...prev,
+                                password: undefined,
+                                form: undefined,
+                              }));
+                            }}
+                            autoComplete="current-password"
+                            aria-invalid={!!loginErrors.password}
+                            aria-describedby={
+                              loginErrors.password
+                                ? "login-password-error"
+                                : undefined
+                            }
+                            className={
+                              loginErrors.password
+                                ? "border-destructive/50 focus-visible:ring-destructive/30"
+                                : undefined
+                            }
+                          />
+                          {loginErrors.password && (
+                            <p
+                              id="login-password-error"
+                              className="text-xs text-destructive"
+                              role="alert"
+                            >
+                              {loginErrors.password}
+                            </p>
+                          )}
+                        </div>
+                        {loginErrors.form && (
+                          <p
+                            className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+                            role="alert"
+                          >
+                            {loginErrors.form}
+                          </p>
+                        )}
+                        <Button
+                          type="submit"
+                          disabled={submitting}
+                          className="h-12 w-full"
+                        >
+                          {submitting && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                          Sign in to Vidya Orbit
+                        </Button>
+                      </form>
+                    </TabsContent>
 
-                    <OnboardingForm
-                      title={
-                        joiningTeam
-                          ? "Join the workspace"
-                          : "Create your institute"
-                      }
-                      subtitle={
-                        joiningTeam
-                          ? "Create your account to accept the invite"
-                          : "Start managing your students in minutes"
-                      }
-                      fields={signupFields}
-                      onSubmit={handleSignup}
-                      submitLabel={
-                        joiningTeam
-                          ? "Create account & continue"
-                          : "Create account"
-                      }
-                      isLoading={submitting}
-                    />
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-            {contact.phone && (
-              <p className="mt-6 text-center text-xs text-muted-foreground">
-                Need assistance? Support in Malayalam &amp; English
-                {telHref ? (
-                  <>
-                    :{" "}
-                    <a href={telHref} className="font-semibold text-foreground">
-                      {contact.phone}
-                    </a>
-                  </>
-                ) : (
-                  "."
-                )}
-              </p>
-            )}
-          </motion.div>
-        )}
+                    <TabsContent value="signup" className="mt-6">
+                      {GOOGLE_AUTH_ENABLED && (
+                        <>
+                          <GoogleContinueButton
+                            onClick={handleGoogle}
+                            loading={oauthLoading}
+                          />
+                          <GoogleAuthDivider />
+                        </>
+                      )}
+
+                      <OnboardingForm
+                        title={
+                          joiningTeam
+                            ? "Join the workspace"
+                            : "Create your account"
+                        }
+                        subtitle={
+                          joiningTeam
+                            ? "Create your account to accept the invite"
+                            : "Start with email and password. We’ll ask for your centre next."
+                        }
+                        fields={signupFields}
+                        onSubmit={handleSignup}
+                        submitLabel={
+                          joiningTeam
+                            ? "Create account & continue"
+                            : "Create account"
+                        }
+                        isLoading={submitting}
+                        belowFields={
+                          <MarketingOptInCheckbox
+                            checked={marketingOptIn}
+                            onCheckedChange={setMarketingOptIn}
+                          />
+                        }
+                      />
+                    </TabsContent>
+                  </Tabs>
+                </>
+              )}
+            </CardContent>
+          </Card>
+          {contact.phone && (
+            <p className="mt-6 text-center text-xs text-muted-foreground">
+              Need assistance? Support in Malayalam &amp; English
+              {telHref ? (
+                <>
+                  :{" "}
+                  <a href={telHref} className="font-semibold text-foreground">
+                    {contact.phone}
+                  </a>
+                </>
+              ) : (
+                "."
+              )}
+            </p>
+          )}
+        </motion.div>
       </div>
     </div>
   );

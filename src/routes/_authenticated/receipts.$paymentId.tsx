@@ -174,7 +174,7 @@ function ReceiptPageContent() {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <div className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
               Fee Receipt
             </div>
             <div className="mt-1 font-mono text-sm">{p.receipt_number}</div>
@@ -246,7 +246,7 @@ function Field({
 }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+      <div className="text-xs uppercase tracking-wider text-muted-foreground">
         {label}
       </div>
       <div className="mt-0.5 font-medium">{children}</div>
