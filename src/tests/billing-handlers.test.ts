@@ -230,18 +230,18 @@ describe("POST /api/billing/create-order", () => {
     const res = await postCreate({ tier: "growth", cycle: "monthly" });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.amount).toBe(599900);
+    expect(body.amount).toBe(549800);
     const saved = inserted as {
       amount_paise?: number;
       tier?: string;
       cycle?: string;
     } | null;
-    expect(saved?.amount_paise).toBe(599900);
+    expect(saved?.amount_paise).toBe(549800);
     expect(saved?.tier).toBe("growth");
     expect(saved?.cycle).toBe("monthly");
     expect((saved as { key_mode?: string } | null)?.key_mode).toBe("test");
     expect(ordersCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 599900, currency: "INR" }),
+      expect.objectContaining({ amount: 549800, currency: "INR" }),
     );
   });
 
@@ -431,11 +431,11 @@ describe("POST /api/billing/create-order", () => {
       amount: 1,
     });
     expect(res.status).toBe(200);
-    expect((await res.json()).amount).toBe(599900);
+    expect((await res.json()).amount).toBe(549800);
     const savedAmt = inserted as { amount_paise?: number } | null;
-    expect(savedAmt?.amount_paise).toBe(599900);
+    expect(savedAmt?.amount_paise).toBe(549800);
     expect(ordersCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 599900 }),
+      expect.objectContaining({ amount: 549800 }),
     );
   });
 
@@ -497,7 +497,7 @@ describe("POST /api/billing/create-order", () => {
     });
     const res = await postCreate({ tier: "growth", cycle: "monthly" });
     expect(res.status).toBe(200);
-    expect((await res.json()).amount).toBe(599900);
+    expect((await res.json()).amount).toBe(549800);
   });
 
   it("does not charge setup on Growth monthly after a captured Starter monthly", async () => {
@@ -717,7 +717,7 @@ describe("POST /api/billing/verify-payment", () => {
     const body = await res.json();
     expect(body.ok).toBe(true);
     expect(body.setupRefund).toBe(true);
-    expect(body.message).toMatch(/refund the extra ₹5,000 setup fee/i);
+    expect(body.message).toMatch(/refund the extra setup fee/i);
     expect(body.message).not.toMatch(/switch your plan/i);
   });
 

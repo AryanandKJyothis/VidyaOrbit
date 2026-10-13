@@ -16,9 +16,17 @@ function landingPricingAnswer(): string {
   const starter = getPlanByCode("starter")!;
   const growth = getPlanByCode("growth")!;
   const large = getPlanByCode("large")!;
-  const growthSetup =
+  const setupBits = [
     growth.setupFee > 0
-      ? ` ${growth.displayName} and ${large.displayName} add a ${formatIndianPrice(growth.setupFee)} setup fee on the first monthly invoice (waived on annual).`
+      ? `${growth.displayName} adds a ${formatIndianPrice(growth.setupFee)} setup fee`
+      : null,
+    large.setupFee > 0
+      ? `${large.displayName} adds a ${formatIndianPrice(large.setupFee)} setup fee`
+      : null,
+  ].filter(Boolean);
+  const growthSetup =
+    setupBits.length > 0
+      ? ` ${setupBits.join(" and ")} on the first monthly invoice (waived on annual).`
       : "";
   return `${free.displayName} is ${formatIndianPrice(free.monthlyPrice)} for ${free.studentLimit.toLowerCase()}. ${starter.displayName} is ${formatIndianPrice(starter.monthlyPrice)}/month (${formatIndianPrice(starter.annualPrice)}/year) for ${starter.studentLimit.toLowerCase()}. ${growth.displayName} is ${formatIndianPrice(growth.monthlyPrice)}/month; ${large.displayName} is ${formatIndianPrice(large.monthlyPrice)}/month.${growthSetup} Pay a paid plan in the app on the Plan page through Razorpay, or contact us to arrange it.`;
 }
@@ -97,7 +105,11 @@ export const PRICING_FAQS: FaqItem[] = [
 /** Used by tests to prove FAQ prices are not a second hardcoded table. */
 export function landingFaqUsesDisplayPrices(): boolean {
   const answer = LANDING_FAQS.find((f) => f.q === "How much does it cost?")!.a;
-  return APPROVED_PRICING.filter((p) => p.code !== "free").every((p) =>
-    answer.includes(formatIndianPrice(p.monthlyPrice)),
+  const monthlyOk = APPROVED_PRICING.filter((p) => p.code !== "free").every(
+    (p) => answer.includes(formatIndianPrice(p.monthlyPrice)),
   );
+  const setupOk = APPROVED_PRICING.filter((p) => p.setupFee > 0).every((p) =>
+    answer.includes(formatIndianPrice(p.setupFee)),
+  );
+  return monthlyOk && setupOk;
 }

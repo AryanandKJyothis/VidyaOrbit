@@ -36,7 +36,7 @@ Apply the billing migrations **before** enabling billing (Preview shares the pro
 
 `billing_orders` rows are created at **order time**. `key_mode` is set server-side from the `RAZORPAY_KEY_ID` prefix (`rzp_test_` → `test`, `rzp_live_` → `live`), never from the client.
 
-Setup is a **one-time onboarding fee**. Any captured **live** billing order (monthly or annual, any plan, with or without a setup line, including a `needs_review` hold) sets `setup_fee_paid`. Test-mode captures still activate (so Preview can be tested) but never set the flag and never count as already paid. An invoice the admin marks paid also sets it. Trials and comps do not. After a live payment, checkout never charges the ₹5,000 setup again (so annual-then-monthly, or Starter-then-Growth, is not charged setup).
+Setup is a **one-time onboarding fee**. Any captured **live** billing order (monthly or annual, any plan, with or without a setup line, including a `needs_review` hold) sets `setup_fee_paid`. Test-mode captures still activate (so Preview can be tested) but never set the flag and never count as already paid. An invoice the admin marks paid also sets it. Trials and comps do not. After a live payment, checkout never charges setup again (so annual-then-monthly, or Starter-then-Growth, is not charged setup).
 
 The webhook returns **503** while `BILLING_ENABLED` is off. Razorpay will retry and eventually disable the webhook, so enable billing before registering it, or expect retries.
 
