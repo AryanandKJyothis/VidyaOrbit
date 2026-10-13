@@ -195,9 +195,9 @@ function ProductBand() {
         className="absolute -left-20 -top-16 h-72 w-72 opacity-30"
       />
       <div
-        className={`${SHELL} relative grid items-end gap-10 py-12 sm:py-16 lg:grid-cols-12`}
+        className={`${SHELL} relative grid items-start gap-10 py-12 sm:py-16 lg:grid-cols-12`}
       >
-        <div className="lg:col-span-5 lg:pb-6">
+        <div className="lg:col-span-5 lg:pt-4">
           <p className="text-sm text-paper/70">
             {SAMPLE_CENTRE} · {SAMPLE_LABEL}
           </p>
