@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   LegalOperatorIntro,
   LegalPageLayout,
-  LegalPostalAddress,
   LegalSection,
 } from "@/components/public/legal-page";
 import {
@@ -251,7 +250,7 @@ function PrivacyPage() {
           >
             {GRIEVANCE_OFFICER_EMAIL}
           </a>
-          . Phone: {GRIEVANCE_OFFICER_PHONE}. <LegalPostalAddress labeled />
+          . Phone: {GRIEVANCE_OFFICER_PHONE}.
         </p>
         <p className="mt-2">
           We acknowledge grievances within 24 hours and resolve them within 30
@@ -273,8 +272,7 @@ function PrivacyPage() {
           <Link to="/contact" className="text-primary hover:underline">
             contact page
           </Link>{" "}
-          for operator, email, phone, postal address and grievance officer
-          details.
+          for operator, email, phone and grievance officer details.
         </p>
       </LegalSection>
     </LegalPageLayout>

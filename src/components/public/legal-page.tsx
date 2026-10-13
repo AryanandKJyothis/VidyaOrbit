@@ -4,7 +4,6 @@ import { SiteHeader } from "@/components/public/site-header";
 import { SkipToContent } from "@/components/skip-to-content";
 import {
   GST_STATUS,
-  LEGAL_ADDRESS,
   LEGAL_LAST_UPDATED,
   OPERATOR_CAPACITY,
   OPERATOR_NAME,
@@ -60,12 +59,6 @@ export function LegalSection({
   );
 }
 
-export function LegalPostalAddress({ labeled = false }: { labeled?: boolean }) {
-  const address = <span className="text-ink">{LEGAL_ADDRESS}</span>;
-  if (!labeled) return address;
-  return <span>Postal address: {address}</span>;
-}
-
 export function LegalOperatorIntro() {
   return (
     <>
@@ -74,9 +67,6 @@ export function LegalOperatorIntro() {
         The product is built by {PRODUCT_BUILDER_NAME}.
       </p>
       <p className="mt-2">{GST_STATUS}</p>
-      <p className="mt-2">
-        <LegalPostalAddress labeled />
-      </p>
     </>
   );
 }

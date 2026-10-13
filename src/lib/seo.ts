@@ -76,7 +76,7 @@ export const PUBLIC_PAGES = {
   contact: {
     title: "Contact — Vidya Orbit",
     description:
-      "Contact Vidya Orbit — operator, email, phone, postal address and grievance officer for coaching centre software in Kerala.",
+      "Contact Vidya Orbit — operator, email, phone and grievance officer for coaching centre software in Kerala.",
     path: "/contact",
   },
   forgotPassword: {

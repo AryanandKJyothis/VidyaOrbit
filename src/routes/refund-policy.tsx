@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   LegalOperatorIntro,
   LegalPageLayout,
-  LegalPostalAddress,
   LegalSection,
 } from "@/components/public/legal-page";
 import {
@@ -88,8 +87,7 @@ function RefundPolicyPage() {
           >
             {GRIEVANCE_OFFICER_EMAIL}
           </a>
-          . Phone: {GRIEVANCE_OFFICER_PHONE}. <LegalPostalAddress labeled />{" "}
-          These terms sit alongside the{" "}
+          . Phone: {GRIEVANCE_OFFICER_PHONE}. These terms sit alongside the{" "}
           <Link to="/terms" className="text-primary hover:underline">
             Terms of Service
           </Link>

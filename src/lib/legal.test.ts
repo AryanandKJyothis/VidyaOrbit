@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   GST_STATUS,
-  LEGAL_ADDRESS,
   LEGAL_LAST_UPDATED,
   OPERATOR_NAME,
   PRODUCT_BUILDER_NAME,
@@ -40,16 +39,20 @@ const legalRouteFiles = [
   },
 ] as const;
 
+const legalCopyFiles = [
+  "src/lib/legal.ts",
+  "src/components/public/legal-page.tsx",
+  ...legalRouteFiles.map((p) => p.file),
+];
+
 describe("legal config", () => {
-  it("keeps LEGAL_ADDRESS as the single postal-address placeholder", () => {
-    expect(LEGAL_ADDRESS).toBe("[ADDRESS PENDING]");
-    const legalTs = readFileSync("src/lib/legal.ts", "utf8");
-    expect(legalTs).toMatch(
-      /export const LEGAL_ADDRESS = "\[ADDRESS PENDING\]"/,
-    );
-    expect(
-      readFileSync("src/components/public/legal-page.tsx", "utf8"),
-    ).toContain("LEGAL_ADDRESS");
+  it("does not keep a postal address or placeholder", () => {
+    for (const file of legalCopyFiles) {
+      const src = readFileSync(file, "utf8");
+      expect(src).not.toContain("LEGAL_ADDRESS");
+      expect(src).not.toContain("ADDRESS PENDING");
+      expect(src.toLowerCase()).not.toContain("postal address");
+    }
   });
 
   it("sets the operator, builder, GST line and last-updated date", () => {
@@ -73,11 +76,10 @@ describe("legal routes render", () => {
     }
   });
 
-  it("shows the postal address, GST status and last-updated date on every legal page", () => {
+  it("shows GST status and last-updated date on every legal page", () => {
     const layout = readFileSync("src/components/public/legal-page.tsx", "utf8");
     expect(layout).toContain("LEGAL_LAST_UPDATED");
     expect(layout).toContain("GST_STATUS");
-    expect(layout).toContain("LEGAL_ADDRESS");
     for (const page of legalRouteFiles) {
       const src = readFileSync(page.file, "utf8");
       expect(src).toContain("LegalOperatorIntro");

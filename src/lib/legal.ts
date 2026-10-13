@@ -1,10 +1,6 @@
 /**
- * Legal-entity copy for public pages. Address lives in one place so it can
- * be filled in later without hunting through privacy, terms, refund and contact.
+ * Legal-entity copy for public pages (privacy, terms, refund-policy, contact).
  */
-
-/** Postal address shown on privacy, terms, refund-policy and contact. */
-export const LEGAL_ADDRESS = "[ADDRESS PENDING]";
 
 export const LEGAL_LAST_UPDATED = "13 October 2026";
 

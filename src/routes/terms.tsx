@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   LegalOperatorIntro,
   LegalPageLayout,
-  LegalPostalAddress,
   LegalSection,
 } from "@/components/public/legal-page";
 import {
@@ -162,9 +161,6 @@ function TermsPage() {
             </a>
           </li>
           <li>Phone: {GRIEVANCE_OFFICER_PHONE}</li>
-          <li>
-            <LegalPostalAddress labeled />
-          </li>
         </ul>
       </LegalSection>
     </LegalPageLayout>
