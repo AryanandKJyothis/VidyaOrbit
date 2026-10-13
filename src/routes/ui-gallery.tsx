@@ -18,6 +18,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/empty-state";
 import { Logo } from "@/components/logo";
 import { BookOpen, CalendarDays, Clock, Plus, Users } from "lucide-react";
+import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminOverviewPanel } from "@/components/admin/admin-overview-panel";
+import { AdminCentresPanel } from "@/components/admin/admin-centres-panel";
+import { AdminUsersPanel } from "@/components/admin/admin-users-panel";
+import { AdminPaymentsPanel } from "@/components/admin/admin-payments-panel";
+import { AdminAlertsPanel } from "@/components/admin/admin-alerts-panel";
+import { PageHeader } from "@/components/page-header";
+import {
+  ADMIN_FIXTURE_ALERTS,
+  ADMIN_FIXTURE_CENTRES,
+  ADMIN_FIXTURE_OVERVIEW,
+  ADMIN_FIXTURE_PAYMENTS,
+  ADMIN_FIXTURE_USERS,
+} from "@/components/admin/admin-fixtures";
 
 export const Route = createFileRoute("/ui-gallery")({
   beforeLoad: () => {
@@ -360,6 +374,79 @@ function UiGallery() {
           </div>
         </PhoneFrame>
       </div>
+
+      <section id="admin-overview" className="space-y-3">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Admin · Overview
+        </h2>
+        <div className="rounded-2xl border border-border bg-background p-4 sm:p-6">
+          <PageHeader
+            title="Admin"
+            description="Platform health — centres, people, payments, and anything that needs a look."
+          />
+          <AdminNav />
+          <AdminOverviewPanel data={ADMIN_FIXTURE_OVERVIEW} />
+        </div>
+      </section>
+
+      <section id="admin-centres" className="space-y-3">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Admin · Centres
+        </h2>
+        <div className="rounded-2xl border border-border bg-background p-4 sm:p-6">
+          <AdminCentresPanel
+            rows={ADMIN_FIXTURE_CENTRES}
+            total={18}
+            search=""
+            filter="all"
+            onSearch={() => {}}
+            onFilter={() => {}}
+            onOpen={() => {}}
+          />
+        </div>
+      </section>
+
+      <section id="admin-users" className="space-y-3">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Admin · Users
+        </h2>
+        <div className="rounded-2xl border border-border bg-background p-4 sm:p-6">
+          <AdminUsersPanel
+            rows={ADMIN_FIXTURE_USERS}
+            total={41}
+            search=""
+            filter="all"
+            onSearch={() => {}}
+            onFilter={() => {}}
+            onOpen={() => {}}
+          />
+        </div>
+      </section>
+
+      <section id="admin-payments" className="space-y-3">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Admin · Payments
+        </h2>
+        <div className="rounded-2xl border border-border bg-background p-4 sm:p-6">
+          <AdminPaymentsPanel
+            rows={ADMIN_FIXTURE_PAYMENTS}
+            total={2}
+            search=""
+            filter="all"
+            onSearch={() => {}}
+            onFilter={() => {}}
+          />
+        </div>
+      </section>
+
+      <section id="admin-alerts" className="space-y-3">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Admin · Alerts
+        </h2>
+        <div className="rounded-2xl border border-border bg-background p-4 sm:p-6">
+          <AdminAlertsPanel alerts={ADMIN_FIXTURE_ALERTS} />
+        </div>
+      </section>
     </main>
   );
 }

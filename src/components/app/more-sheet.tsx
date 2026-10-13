@@ -64,8 +64,8 @@ export function MoreSheet({
       show: pendingInvites > 0,
     },
     {
-      label: "Admin · Subscriptions",
-      to: "/admin/subscriptions",
+      label: "Admin",
+      to: "/admin",
       icon: ShieldCheck,
       show: isAdmin,
     },
