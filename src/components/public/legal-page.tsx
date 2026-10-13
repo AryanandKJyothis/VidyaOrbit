@@ -52,7 +52,9 @@ export function LegalSection({
 }) {
   return (
     <section id={id} className={id ? "scroll-mt-24" : undefined}>
-      <h2 className="font-display text-lg font-bold tracking-[-0.02em]">{title}</h2>
+      <h2 className="font-display text-lg font-bold tracking-[-0.02em]">
+        {title}
+      </h2>
       <div className="mt-2 text-sm leading-relaxed text-slate">{children}</div>
     </section>
   );
