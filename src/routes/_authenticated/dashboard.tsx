@@ -57,8 +57,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { SetupPrompt } from "@/components/setup-prompt";
-import { OnboardingChecklist } from "@/components/onboarding-checklist";
+import { OwnerOnboardingHost } from "@/components/owner-onboarding-host";
 import { DigestReminderBootstrap } from "@/components/digest-reminder";
 import {
   GreetingBanner,
@@ -399,13 +398,7 @@ function Dashboard() {
       <WelcomeBackBanner />
       <ExpiryBanner />
       <OverLimitBanner />
-      <SetupPrompt />
-      <OnboardingChecklist
-        institute={institute.data}
-        batches={batches.data}
-        students={students.data}
-        payments={payments.data}
-      />
+      <OwnerOnboardingHost />
 
       <div className="space-y-3 sm:space-y-4">
         <GreetingBanner

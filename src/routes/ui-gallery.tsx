@@ -32,6 +32,14 @@ import {
   ADMIN_FIXTURE_PAYMENTS,
   ADMIN_FIXTURE_USERS,
 } from "@/components/admin/admin-fixtures";
+import { OwnerSetupWizardView } from "@/components/owner-setup-wizard";
+import { AppGuidedTourView } from "@/components/app-guided-tour";
+import { OnboardingChecklist } from "@/components/onboarding-checklist";
+import {
+  FIXTURE_CHECKLIST_PARTIAL,
+  FIXTURE_WIZARD_DRAFT,
+} from "@/components/onboarding-fixtures";
+import { TOUR_STEPS } from "@/lib/owner-onboarding";
 
 export const Route = createFileRoute("/ui-gallery")({
   beforeLoad: () => {
@@ -39,6 +47,27 @@ export const Route = createFileRoute("/ui-gallery")({
   },
   component: UiGallery,
 });
+
+function SetupFrame({
+  title,
+  id,
+  children,
+}: {
+  title: string;
+  id: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="space-y-3">
+      <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        {title}
+      </h2>
+      <div className="overflow-hidden rounded-[28px] border border-border bg-background shadow-[var(--shadow-elevated)]">
+        {children}
+      </div>
+    </section>
+  );
+}
 
 function PhoneFrame({
   title,
@@ -72,6 +101,83 @@ function UiGallery() {
         <p className="mt-1 text-sm text-muted-foreground">
           Fixture layout only. Hidden in production.
         </p>
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        <SetupFrame id="wizard-centre" title="Owner setup · Centre">
+          <OwnerSetupWizardView
+            step="centre"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+            onSkipSetup={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="wizard-profile" title="Owner setup · Centre type">
+          <OwnerSetupWizardView
+            step="profile"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+            onSkipSetup={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="wizard-batch" title="Owner setup · First batch">
+          <OwnerSetupWizardView
+            step="batch"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+            onSkipSetup={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="wizard-students" title="Owner setup · First students">
+          <OwnerSetupWizardView
+            step="students"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+            onSkipSetup={() => {}}
+            onImportStudents={() => {}}
+          />
+        </SetupFrame>
+        {TOUR_STEPS.map((step, index) => (
+          <PhoneFrame
+            key={step.id}
+            id={`tour-${step.id}`}
+            title={`Guided tour · ${step.title}`}
+          >
+            <AppGuidedTourView
+              stepIndex={index}
+              onNext={() => {}}
+              onBack={() => {}}
+              onSkip={() => {}}
+              onGoToPage={() => {}}
+            />
+          </PhoneFrame>
+        ))}
+        <PhoneFrame id="checklist" title="Getting started checklist">
+          <OnboardingChecklist
+            items={FIXTURE_CHECKLIST_PARTIAL.items}
+            doneCount={FIXTURE_CHECKLIST_PARTIAL.doneCount}
+            allDone={FIXTURE_CHECKLIST_PARTIAL.allDone}
+            showResumeSetup
+            onResumeSetup={() => {}}
+            onDismiss={() => {}}
+          />
+        </PhoneFrame>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
