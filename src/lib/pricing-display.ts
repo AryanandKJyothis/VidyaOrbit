@@ -63,7 +63,7 @@ export const APPROVED_PRICING: PlanDisplay[] = [
     studentLimit: "Up to 500 students",
     monthlyPrice: 999,
     annualPrice: 10000,
-    setupFee: 5000,
+    setupFee: 4499,
     annualSetupFee: 0,
     features: [
       "Up to 500 students",
@@ -79,7 +79,7 @@ export const APPROVED_PRICING: PlanDisplay[] = [
     studentLimit: "Unlimited students",
     monthlyPrice: 2499,
     annualPrice: 25000,
-    setupFee: 5000,
+    setupFee: 5499,
     annualSetupFee: 0,
     features: [
       "Unlimited students",

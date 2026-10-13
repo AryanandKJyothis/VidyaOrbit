@@ -52,7 +52,7 @@ export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
   growth: {
     tier: "growth",
     student_limit: PLAN_STUDENT_LIMITS.growth ?? 500,
-    setup_fee_paise: 500000, // ₹5,000 first monthly only
+    setup_fee_paise: 449900, // ₹4,499 first monthly only
     monthly_price_paise: 99900, // ₹999
     annual_price_paise: 1000000, // ₹10,000
     display_name: "Growth",
@@ -61,7 +61,7 @@ export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
   large: {
     tier: "large",
     student_limit: UNLIMITED_STUDENT_SENTINEL,
-    setup_fee_paise: 500000, // ₹5,000 first monthly only
+    setup_fee_paise: 549900, // ₹5,499 first monthly only
     monthly_price_paise: 249900, // ₹2,499
     annual_price_paise: 2500000, // ₹25,000
     display_name: "Large",
