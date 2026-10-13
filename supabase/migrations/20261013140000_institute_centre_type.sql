@@ -12,6 +12,7 @@ ALTER TABLE public.institutes
 COMMENT ON COLUMN public.institutes.centre_type IS
   'Owner-declared centre kind (tuition, PSC, CBSE, state syllabus, other). Nullable.';
 
--- Column-level grant, matching institutes.upi_vpa (admin_notes stays revoked).
+-- Column-level grant only, matching institutes.upi_vpa
+-- (20261011121500). Do not GRANT table-wide SELECT/INSERT/UPDATE — that
+-- restores admin_notes after 20260529050947 revoked it from authenticated.
 GRANT SELECT, UPDATE (centre_type) ON public.institutes TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON public.institutes TO authenticated;
