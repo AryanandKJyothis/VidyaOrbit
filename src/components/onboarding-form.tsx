@@ -261,7 +261,7 @@ export function OnboardingForm({
                         placeholder={field.placeholder}
                         autoComplete={field.autoComplete}
                         className={cn(
-                          "transition-[border-color,background-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)]",
+                          "!rounded-[4px] transition-[border-color,background-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)]",
                           isTouched &&
                             error &&
                             "border-destructive/50 bg-destructive/5 focus:ring-destructive/30",
@@ -288,7 +288,7 @@ export function OnboardingForm({
                         placeholder={field.placeholder}
                         autoComplete={field.autoComplete}
                         className={cn(
-                          "transition-[border-color,background-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)]",
+                          "!rounded-[4px] transition-[border-color,background-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)]",
                           isTouched &&
                             error &&
                             "border-destructive/50 bg-destructive/5 focus:ring-destructive/30",
