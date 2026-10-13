@@ -152,7 +152,7 @@ export function OnboardingChecklist({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 px-2"
+            className="h-11 min-h-11 px-2"
             onClick={() => setOpen(!open)}
           >
             {open ? (
@@ -211,7 +211,7 @@ export function OnboardingChecklist({
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground h-8"
+              className="text-muted-foreground h-11 min-h-11"
               onClick={dismissChecklist}
             >
               Dismiss checklist

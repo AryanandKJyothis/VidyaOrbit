@@ -178,7 +178,7 @@ function ProofStrip() {
         <Link
           to="/terms"
           hash="refund"
-          className="font-medium text-foreground underline-offset-4 hover:underline"
+          className="inline-flex min-h-11 items-center font-medium text-foreground underline-offset-4 [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
         >
           Refunds &amp; cancellations
         </Link>

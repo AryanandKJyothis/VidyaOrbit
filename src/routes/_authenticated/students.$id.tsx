@@ -222,7 +222,7 @@ function StudentDetail() {
                   onValueChange={handleBatchChange}
                   disabled={updateStudent.isPending}
                 >
-                  <SelectTrigger className="h-9 text-sm">
+                  <SelectTrigger className="h-11 min-h-11 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

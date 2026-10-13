@@ -89,7 +89,7 @@ export function MobileTabBar() {
               "active:scale-[0.97] motion-reduce:active:scale-100",
               active
                 ? "bg-muted/80 text-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                : "text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/40",
             );
             if (item.more) {
               return (

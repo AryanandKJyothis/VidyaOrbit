@@ -30,9 +30,9 @@ export function DotsLoader({ className = "" }: { className?: string }) {
       className={`inline-flex items-center gap-1 ${className}`}
       aria-label="Loading"
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse-soft [animation-delay:-0.3s]" />
-      <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse-soft [animation-delay:-0.15s]" />
-      <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse-soft" />
+      <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse-soft motion-reduce:animate-none [animation-delay:-0.3s]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse-soft motion-reduce:animate-none [animation-delay:-0.15s]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse-soft motion-reduce:animate-none" />
     </span>
   );
 }

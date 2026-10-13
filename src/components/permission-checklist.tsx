@@ -44,7 +44,7 @@ export function PermissionChecklist({
               onChange({ ...value, [r.key]: v as "none" | "read" | "write" })
             }
           >
-            <SelectTrigger className="w-32 h-9">
+            <SelectTrigger className="h-11 min-h-11 w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

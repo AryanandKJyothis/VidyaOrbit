@@ -75,7 +75,7 @@ export function SiteHeader({
       <div className="pointer-events-none sticky top-0 z-40 px-4 pt-4 sm:px-6 sm:pt-6">
         <header
           className={cn(
-            "pointer-events-auto mx-auto flex w-max max-w-full items-center gap-2 rounded-full border border-border/60 bg-background/70 px-2 py-1.5 shadow-[var(--shadow-card)] backdrop-blur-xl backdrop-saturate-150 sm:gap-3 sm:px-3",
+            "landing-island pointer-events-auto mx-auto flex w-max max-w-full items-center gap-2 rounded-full border border-border/60 bg-background/70 px-2 py-1.5 shadow-[var(--shadow-card)] backdrop-blur-xl backdrop-saturate-150 sm:gap-3 sm:px-3",
             "supports-[backdrop-filter]:bg-background/55",
           )}
         >

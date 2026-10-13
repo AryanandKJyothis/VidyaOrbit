@@ -774,7 +774,7 @@ function StepMap({
                       setForHeader(h, v as ImportField | "ignore")
                     }
                   >
-                    <SelectTrigger className="h-8 text-xs">
+                    <SelectTrigger className="h-11 min-h-11 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -800,7 +800,7 @@ function StepMap({
         <div>
           <Label className="text-xs">Default batch (when row has none)</Label>
           <Select value={batchId} onValueChange={setBatchId}>
-            <SelectTrigger className="mt-1.5 h-9">
+            <SelectTrigger className="mt-1.5 h-11 min-h-11">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -819,7 +819,7 @@ function StepMap({
             <Input
               type="number"
               min={0}
-              className="mt-1.5 h-9"
+              className="mt-1.5 h-11 min-h-11"
               value={feeTotal}
               onChange={(e) => setFeeTotal(e.target.value)}
             />
@@ -904,7 +904,7 @@ function StepReview({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 ml-auto text-xs"
+            className="ml-auto h-11 min-h-11 text-sm"
             onClick={() => void downloadRejectedRows(prepared)}
           >
             <FileDown className="mr-1 h-3 w-3" /> Download rejected rows
@@ -1052,7 +1052,7 @@ function PreviewRow({
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="h-7 text-xs"
+            className="h-11 min-h-11 text-sm"
             placeholder="Full name"
             autoFocus
           />
@@ -1061,7 +1061,7 @@ function PreviewRow({
           <Input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="h-7 text-xs"
+            className="h-11 min-h-11 text-sm"
             placeholder="Phone"
           />
         </td>
@@ -1070,14 +1070,14 @@ function PreviewRow({
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 px-2 text-xs"
+              className="h-11 min-h-11 px-2 text-sm"
               onClick={onCancelEdit}
             >
               Cancel
             </Button>
             <Button
               size="sm"
-              className="h-7 px-2 text-xs"
+              className="h-11 min-h-11 px-2 text-sm"
               onClick={() => onSave({ full_name: name, phone: phone || null })}
             >
               Save

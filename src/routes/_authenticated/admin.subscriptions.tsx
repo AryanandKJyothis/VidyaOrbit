@@ -281,7 +281,7 @@ function AdminSubscriptionsManager() {
               ))}
             </div>
             <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
-              <SelectTrigger className="h-8 w-[200px] text-xs">
+              <SelectTrigger className="h-11 min-h-11 w-[200px] text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

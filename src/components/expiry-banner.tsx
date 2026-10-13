@@ -87,7 +87,7 @@ export function ExpiryBanner() {
               setDismissed(dayKey);
             }}
             aria-label="Dismiss for today"
-            className="h-9 w-9"
+            className="h-11 w-11 min-h-11 min-w-11"
           >
             <X className="h-4 w-4" />
           </Button>
