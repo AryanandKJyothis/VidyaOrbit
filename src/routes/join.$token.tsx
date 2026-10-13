@@ -29,6 +29,7 @@ import { formatUserError } from "@/lib/format-error";
 import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
 import { signInWithGoogle } from "@/lib/google-auth";
 import { GoogleContinueButton } from "@/components/google-continue-button";
+import { CheckYourEmail } from "@/components/check-your-email";
 import { MarketingOptInCheckbox } from "@/components/marketing-opt-in-checkbox";
 import { marketingOptInMetadata } from "@/lib/marketing-opt-in";
 import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
@@ -218,7 +219,9 @@ function ValidInvite({
 
 function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
   const { token } = useParams({ from: "/join/$token" });
-  const [mode, setMode] = useState<"choose" | "password">("choose");
+  const [mode, setMode] = useState<"choose" | "password" | "check-email">(
+    "choose",
+  );
   const [email, setEmail] = useState(inviteEmail);
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -262,10 +265,28 @@ function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
       setSubmitting(false);
       if (error)
         return toast.error(formatUserError(error, "Could not create account"));
-      toast.success(
-        "Account created — check your email to verify, then come back to this link.",
-      );
+      setMode("check-email");
     }
+  }
+
+  async function resendSignupEmail() {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim(),
+      options: { emailRedirectTo: window.location.href },
+    });
+    if (error) throw error;
+  }
+
+  if (mode === "check-email") {
+    return (
+      <CheckYourEmail
+        email={email.trim()}
+        kind="invite_signup"
+        onResend={resendSignupEmail}
+        onUseDifferentEmail={() => setMode("password")}
+      />
+    );
   }
 
   if (mode === "choose") {
