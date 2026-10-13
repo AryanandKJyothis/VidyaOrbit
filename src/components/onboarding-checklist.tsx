@@ -1,10 +1,22 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { GettingStartedItem } from "@/lib/owner-onboarding";
+import { useAuth } from "@/hooks/use-auth";
+import { useActiveWorkspace } from "@/hooks/use-active-workspace";
+import { useBatches, usePayments, useStudents } from "@/hooks/use-data";
+import { useOnboarding } from "@/hooks/use-onboarding";
+import { useOwnerOnboarding } from "@/hooks/use-owner-onboarding";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  deriveGettingStarted,
+  isInvitedStaff,
+  readJoiningTeamFlag,
+  type GettingStartedItem,
+} from "@/lib/owner-onboarding";
 
 type Props = {
   items: GettingStartedItem[];
@@ -130,5 +142,62 @@ export function OnboardingChecklist({
         </CardContent>
       )}
     </Card>
+  );
+}
+
+/** Dashboard-only Getting started card. Hidden until setup is complete. */
+export function OwnerGettingStartedCard() {
+  const { user } = useAuth();
+  const { active } = useActiveWorkspace();
+  const batches = useBatches();
+  const students = useStudents();
+  const payments = usePayments();
+  const { dismissedChecklist, dismissChecklist } = useOnboarding();
+  const onboarding = useOwnerOnboarding(user?.id ?? null);
+  const metadata = user?.user_metadata as Record<string, unknown> | undefined;
+  const staff = isInvitedStaff({
+    joiningTeam: readJoiningTeamFlag(metadata),
+    role: active?.role ?? null,
+    isOwnWorkspace: active?.isOwn ?? null,
+  });
+
+  const activeStudents = useMemo(
+    () => (students.data ?? []).filter((s) => s.status !== "archived").length,
+    [students.data],
+  );
+
+  const attendanceStarted = useQuery({
+    queryKey: ["onboarding-attendance", active?.ownerId],
+    enabled:
+      !!user && !!active?.ownerId && !staff && onboarding.state.completed,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("attendance_sessions")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", active!.ownerId);
+      if (error) throw error;
+      return (count ?? 0) > 0;
+    },
+  });
+
+  const checklist = deriveGettingStarted({
+    batchCount: batches.data?.length ?? 0,
+    activeStudentCount: activeStudents,
+    paymentCount: payments.data?.length ?? 0,
+    attendanceStarted: attendanceStarted.data === true,
+  });
+
+  if (staff) return null;
+  if (!onboarding.state.completed) return null;
+  if (dismissedChecklist) return null;
+  if (!active) return null;
+
+  return (
+    <OnboardingChecklist
+      items={checklist.items}
+      doneCount={checklist.doneCount}
+      allDone={checklist.allDone}
+      onDismiss={dismissChecklist}
+    />
   );
 }

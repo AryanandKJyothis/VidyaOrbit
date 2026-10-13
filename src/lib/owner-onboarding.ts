@@ -15,9 +15,9 @@ export type CentreTypeId = (typeof CENTRE_TYPES)[number]["id"];
 
 export const WIZARD_STEPS = [
   {
-    id: "centre",
-    title: "Your centre",
-    blurb: "This name and phone go on receipts and the dashboard.",
+    id: "you",
+    title: "You and your centre",
+    blurb: "Your name and phone, plus the name parents will see on receipts.",
   },
   {
     id: "profile",
@@ -37,6 +37,14 @@ export const WIZARD_STEPS = [
 ] as const;
 
 export type WizardStepId = (typeof WIZARD_STEPS)[number]["id"];
+
+export type SetupMode = "owner" | "staff";
+
+export const STAFF_YOU_STEP = {
+  id: "you" as const,
+  title: "Your details",
+  blurb: "Add your name and mobile so the team knows who you are.",
+};
 
 export const TOUR_STEPS = [
   {
@@ -79,6 +87,7 @@ export const TOUR_STEPS = [
 export type TourStepId = (typeof TOUR_STEPS)[number]["id"];
 
 export type OwnerSetupDraft = {
+  ownerName: string;
   name: string;
   contactPhone: string;
   address: string;
@@ -91,6 +100,7 @@ export type OwnerSetupDraft = {
 };
 
 export const EMPTY_OWNER_SETUP_DRAFT: OwnerSetupDraft = {
+  ownerName: "",
   name: "",
   contactPhone: "",
   address: "",
@@ -106,6 +116,7 @@ export type OwnerSetupPersisted = {
   currentStep: WizardStepId;
   skipped: boolean;
   completed: boolean;
+  started: boolean;
   skippedSteps: WizardStepId[];
   draft: OwnerSetupDraft;
   tourReady: boolean;
@@ -116,9 +127,10 @@ export type OwnerSetupPersisted = {
 };
 
 export const EMPTY_OWNER_SETUP_PERSISTED: OwnerSetupPersisted = {
-  currentStep: "centre",
+  currentStep: "you",
   skipped: false,
   completed: false,
+  started: false,
   skippedSteps: [],
   draft: EMPTY_OWNER_SETUP_DRAFT,
   tourReady: false,
@@ -128,6 +140,7 @@ export const EMPTY_OWNER_SETUP_PERSISTED: OwnerSetupPersisted = {
 
 export type WizardFieldErrors = Partial<
   Record<
+    | "ownerName"
     | "name"
     | "contactPhone"
     | "address"
@@ -148,6 +161,10 @@ export type GettingStartedItem = {
   to: "/batches" | "/students" | "/attendance" | "/fees";
   label: string;
   done: boolean;
+};
+
+const LEGACY_WIZARD_STEPS: Record<string, WizardStepId> = {
+  centre: "you",
 };
 
 /** 10-digit Indian mobile, optional +91 / 91 / 0 prefix. */
@@ -186,12 +203,33 @@ export function readJoiningTeamFlag(
   return v === true || v === "true";
 }
 
+export function readUserIdentity(
+  metadata: Record<string, unknown> | null | undefined,
+): { fullName: string; phone: string } {
+  if (!metadata) return { fullName: "", phone: "" };
+  const nameCandidate = [
+    metadata.full_name,
+    metadata.name,
+    metadata.given_name,
+  ].find((v) => typeof v === "string" && v.trim().length > 0);
+  const phone =
+    typeof metadata.phone === "string"
+      ? metadata.phone
+      : typeof metadata.contact_phone === "string"
+        ? metadata.contact_phone
+        : "";
+  return {
+    fullName: typeof nameCandidate === "string" ? nameCandidate.trim() : "",
+    phone,
+  };
+}
+
 /**
  * Invited staff (joining_team metadata, non-owner role, or a workspace that
- * is not their own) must never see owner setup, tour, or the getting-started
- * checklist.
+ * is not their own). They get a name + phone modal only — no centre wizard,
+ * tour, or getting-started checklist.
  */
-export function shouldSkipOwnerOnboarding(input: {
+export function isInvitedStaff(input: {
   joiningTeam?: boolean | null;
   role?: string | null;
   isOwnWorkspace?: boolean | null;
@@ -202,28 +240,62 @@ export function shouldSkipOwnerOnboarding(input: {
   return false;
 }
 
+export function setupModeFor(input: {
+  joiningTeam?: boolean | null;
+  role?: string | null;
+  isOwnWorkspace?: boolean | null;
+}): SetupMode {
+  return isInvitedStaff(input) ? "staff" : "owner";
+}
+
+export function stepsFor(mode: SetupMode) {
+  return mode === "staff" ? ([STAFF_YOU_STEP] as const) : WIZARD_STEPS;
+}
+
+export function wizardStepMeta(step: WizardStepId, mode: SetupMode) {
+  if (mode === "staff" && step === "you") return STAFF_YOU_STEP;
+  return WIZARD_STEPS.find((s) => s.id === step) ?? WIZARD_STEPS[0];
+}
+
+export function looksLikeIncompleteIdentity(input: {
+  fullName?: string | null;
+  phone?: string | null;
+}): boolean {
+  return !(input.fullName ?? "").trim() || !isIndianMobile(input.phone ?? "");
+}
+
 export function validateWizardStep(
   step: WizardStepId,
   draft: OwnerSetupDraft,
+  mode: SetupMode = "owner",
 ): WizardFieldErrors {
   const errors: WizardFieldErrors = {};
 
-  if (step === "centre") {
-    if (!isRealInstituteName(draft.name)) {
-      errors.name =
-        draft.name.trim() === PLACEHOLDER_INSTITUTE_NAME
-          ? "Pick the name parents will see on receipts"
-          : "Enter your centre name";
-    } else if (draft.name.trim().length > 160) {
-      errors.name = "Keep the name under 160 characters";
+  if (step === "you") {
+    if (!draft.ownerName.trim()) {
+      errors.ownerName = "Enter your name";
+    } else if (draft.ownerName.trim().length < 2) {
+      errors.ownerName = "Enter your full name";
+    } else if (draft.ownerName.trim().length > 120) {
+      errors.ownerName = "Keep the name under 120 characters";
     }
     if (!draft.contactPhone.trim()) {
       errors.contactPhone = "Contact phone is required";
     } else if (!isIndianMobile(draft.contactPhone)) {
       errors.contactPhone = "Enter a 10-digit Indian mobile starting with 6–9";
     }
-    if (draft.address.trim().length > 500) {
-      errors.address = "Keep the address under 500 characters";
+    if (mode === "owner") {
+      if (!isRealInstituteName(draft.name)) {
+        errors.name =
+          draft.name.trim() === PLACEHOLDER_INSTITUTE_NAME
+            ? "Pick the name parents will see on receipts"
+            : "Enter your centre name";
+      } else if (draft.name.trim().length > 160) {
+        errors.name = "Keep the name under 160 characters";
+      }
+      if (draft.address.trim().length > 500) {
+        errors.address = "Keep the address under 500 characters";
+      }
     }
   }
 
@@ -269,20 +341,32 @@ export function validateWizardStep(
   return errors;
 }
 
-export function wizardStepIndex(step: WizardStepId): number {
-  return WIZARD_STEPS.findIndex((s) => s.id === step);
+export function wizardStepIndex(
+  step: WizardStepId,
+  mode: SetupMode = "owner",
+): number {
+  const i = stepsFor(mode).findIndex((s) => s.id === step);
+  return i < 0 ? 0 : i;
 }
 
-export function nextWizardStep(step: WizardStepId): WizardStepId | "done" {
-  const i = wizardStepIndex(step);
-  if (i < 0 || i >= WIZARD_STEPS.length - 1) return "done";
-  return WIZARD_STEPS[i + 1]!.id;
+export function nextWizardStep(
+  step: WizardStepId,
+  mode: SetupMode = "owner",
+): WizardStepId | "done" {
+  const list = stepsFor(mode);
+  const i = list.findIndex((s) => s.id === step);
+  if (i < 0 || i >= list.length - 1) return "done";
+  return list[i + 1]!.id;
 }
 
-export function prevWizardStep(step: WizardStepId): WizardStepId | null {
-  const i = wizardStepIndex(step);
+export function prevWizardStep(
+  step: WizardStepId,
+  mode: SetupMode = "owner",
+): WizardStepId | null {
+  const list = stepsFor(mode);
+  const i = list.findIndex((s) => s.id === step);
   if (i <= 0) return null;
-  return WIZARD_STEPS[i - 1]!.id;
+  return list[i - 1]!.id;
 }
 
 export function mergeDraftWithInstitute(
@@ -293,18 +377,20 @@ export function mergeDraftWithInstitute(
     address?: string | null;
     upi_vpa?: string | null;
   } | null,
+  identity?: { fullName?: string | null; phone?: string | null },
 ): OwnerSetupDraft {
-  if (!institute) return draft;
   return {
     ...draft,
+    ownerName:
+      draft.ownerName.trim() || (identity?.fullName ?? "").trim() || "",
     name:
       draft.name.trim() ||
-      (isRealInstituteName(institute.name) ? institute.name!.trim() : ""),
+      (isRealInstituteName(institute?.name) ? institute!.name!.trim() : ""),
     contactPhone: draft.contactPhone.trim()
       ? draft.contactPhone
-      : (institute.contact_phone ?? ""),
-    address: draft.address.trim() ? draft.address : (institute.address ?? ""),
-    upiVpa: draft.upiVpa.trim() ? draft.upiVpa : (institute.upi_vpa ?? ""),
+      : ((institute?.contact_phone || identity?.phone) ?? ""),
+    address: draft.address.trim() ? draft.address : (institute?.address ?? ""),
+    upiVpa: draft.upiVpa.trim() ? draft.upiVpa : (institute?.upi_vpa ?? ""),
   };
 }
 
@@ -326,17 +412,20 @@ export function firstIncompleteStep(input: {
   batchCount: number;
   activeStudentCount: number;
   skippedSteps: WizardStepId[];
+  mode?: SetupMode;
 }): WizardStepId | "done" {
+  const mode = input.mode ?? "owner";
   const skipped = new Set(input.skippedSteps);
   if (
-    !skipped.has("centre") &&
-    Object.keys(validateWizardStep("centre", input.draft)).length > 0
+    !skipped.has("you") &&
+    Object.keys(validateWizardStep("you", input.draft, mode)).length > 0
   ) {
-    return "centre";
+    return "you";
   }
+  if (mode === "staff") return "done";
   if (
     !skipped.has("profile") &&
-    Object.keys(validateWizardStep("profile", input.draft)).length > 0
+    Object.keys(validateWizardStep("profile", input.draft, mode)).length > 0
   ) {
     return "profile";
   }
@@ -353,26 +442,42 @@ export function firstIncompleteStep(input: {
   return "done";
 }
 
-export function shouldAutoOpenWizard(input: {
-  skipOwnerOnboarding: boolean;
-  persisted: Pick<OwnerSetupPersisted, "completed" | "skipped">;
-  resumeRequested: boolean;
-  looksLikeNewCentre: boolean;
+export function setupIsIncomplete(input: {
+  completed: boolean;
+  looksIncomplete: boolean;
+  started?: boolean;
 }): boolean {
-  if (input.skipOwnerOnboarding) return false;
+  if (input.completed) return false;
+  return input.looksIncomplete || !!input.started;
+}
+
+export function shouldAutoOpenWizard(input: {
+  setupComplete: boolean;
+  resumeRequested: boolean;
+  looksIncomplete: boolean;
+  dismissedUntilInteraction?: boolean;
+}): boolean {
   if (input.resumeRequested) return true;
-  if (input.persisted.completed || input.persisted.skipped) return false;
-  return input.looksLikeNewCentre;
+  if (input.setupComplete) return false;
+  if (input.dismissedUntilInteraction) return false;
+  return input.looksIncomplete;
+}
+
+export function shouldCaptureClicksToResume(input: {
+  setupIncomplete: boolean;
+  modalOpen: boolean;
+}): boolean {
+  return input.setupIncomplete && !input.modalOpen;
 }
 
 export function shouldAutoOpenTour(input: {
-  skipOwnerOnboarding: boolean;
+  isInvitedStaff: boolean;
   persisted: Pick<
     OwnerSetupPersisted,
     "tourReady" | "tourDismissed" | "tourCompleted"
   >;
 }): boolean {
-  if (input.skipOwnerOnboarding) return false;
+  if (input.isInvitedStaff) return false;
   if (input.persisted.tourDismissed || input.persisted.tourCompleted) {
     return false;
   }
@@ -431,22 +536,30 @@ export function parseOwnerSetupPersisted(raw: unknown): OwnerSetupPersisted {
   if (!raw || typeof raw !== "object") return EMPTY_OWNER_SETUP_PERSISTED;
   const p = raw as Partial<OwnerSetupPersisted> & {
     draft?: Partial<OwnerSetupDraft>;
+    currentStep?: string;
   };
-  const step = WIZARD_STEPS.some((s) => s.id === p.currentStep)
-    ? (p.currentStep as WizardStepId)
-    : "centre";
+  const mappedStep = p.currentStep
+    ? (LEGACY_WIZARD_STEPS[p.currentStep] ?? p.currentStep)
+    : "you";
+  const step = WIZARD_STEPS.some((s) => s.id === mappedStep)
+    ? (mappedStep as WizardStepId)
+    : "you";
   const skippedSteps = Array.isArray(p.skippedSteps)
-    ? p.skippedSteps.filter((id): id is WizardStepId =>
-        WIZARD_STEPS.some((s) => s.id === id),
-      )
+    ? p.skippedSteps
+        .map((id) => LEGACY_WIZARD_STEPS[id] ?? id)
+        .filter((id): id is WizardStepId =>
+          WIZARD_STEPS.some((s) => s.id === id),
+        )
     : [];
   const d: Partial<OwnerSetupDraft> = p.draft ?? {};
   return {
     currentStep: step,
     skipped: !!p.skipped,
     completed: !!p.completed,
+    started: !!p.started || !!p.completed,
     skippedSteps,
     draft: {
+      ownerName: typeof d.ownerName === "string" ? d.ownerName : "",
       name: typeof d.name === "string" ? d.name : "",
       contactPhone: typeof d.contactPhone === "string" ? d.contactPhone : "",
       address: typeof d.address === "string" ? d.address : "",

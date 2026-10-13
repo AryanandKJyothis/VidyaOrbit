@@ -6,12 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
   CENTRE_TYPES,
-  WIZARD_STEPS,
+  stepsFor,
   wizardStepIndex,
+  wizardStepMeta,
   type OwnerSetupDraft,
+  type SetupMode,
   type WizardFieldErrors,
   type WizardStepId,
 } from "@/lib/owner-onboarding";
@@ -24,11 +32,11 @@ export function OwnerSetupWizardView({
   draft,
   errors,
   busy = false,
+  mode = "owner",
   onChange,
   onContinue,
   onBack,
   onSkipStep,
-  onSkipSetup,
   onImportStudents,
   className,
 }: {
@@ -36,40 +44,37 @@ export function OwnerSetupWizardView({
   draft: OwnerSetupDraft;
   errors: WizardFieldErrors;
   busy?: boolean;
+  mode?: SetupMode;
   onChange: (patch: Partial<OwnerSetupDraft>) => void;
   onContinue: () => void;
   onBack: () => void;
-  onSkipStep: () => void;
-  onSkipSetup: () => void;
+  onSkipStep?: () => void;
   onImportStudents?: () => void;
   className?: string;
 }) {
   const { reducedMotion } = usePrefers();
   const transition = reducedMotion ? fadeOnly : springDefault;
-  const index = wizardStepIndex(step);
-  const meta = WIZARD_STEPS[index]!;
-  const total = WIZARD_STEPS.length;
+  const list = stepsFor(mode);
+  const index = wizardStepIndex(step, mode);
+  const meta = wizardStepMeta(step, mode);
+  const total = list.length;
   const progress = ((index + 1) / total) * 100;
   const canGoBack = index > 0;
-  const last = step === "students";
-  const skippable = step === "batch" || step === "students";
+  const last = index === total - 1;
+  const skippable =
+    mode === "owner" && (step === "batch" || step === "students");
 
   return (
-    <div
-      className={cn(
-        "flex min-h-[min(720px,100dvh)] flex-col bg-brand-grid",
-        className,
-      )}
-    >
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 py-6 sm:px-6">
-        <div className="mb-5 flex items-center gap-2.5">
+    <div className={cn("flex flex-col bg-card", className)}>
+      <div className="flex w-full flex-col px-5 pb-5 pt-5 sm:px-6">
+        <div className="mb-4 flex items-center gap-2.5 pr-10">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-soft ring-1 ring-primary/15">
             <Logo size={26} />
           </div>
           <div>
             <p className="type-kicker text-muted-foreground">Set up</p>
             <p className="font-display text-base font-semibold leading-tight">
-              Your centre
+              {mode === "staff" ? "Your profile" : "Your centre"}
             </p>
           </div>
         </div>
@@ -89,7 +94,7 @@ export function OwnerSetupWizardView({
 
         <AnimatePresence mode="wait">
           <motion.div
-            key={step}
+            key={`${mode}-${step}`}
             initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
@@ -98,7 +103,7 @@ export function OwnerSetupWizardView({
           >
             <h2
               id="owner-setup-title"
-              className="font-display text-2xl font-bold leading-[1.15] tracking-[-0.022em] text-balance"
+              className="font-display text-xl font-bold leading-[1.15] tracking-[-0.022em] text-balance sm:text-2xl"
             >
               {meta.title}
             </h2>
@@ -107,15 +112,16 @@ export function OwnerSetupWizardView({
             </p>
 
             <div className="mt-5 flex-1 space-y-4">
-              {step === "centre" && (
-                <CentreFields
+              {step === "you" && (
+                <YouFields
                   draft={draft}
                   errors={errors}
                   busy={busy}
+                  mode={mode}
                   onChange={onChange}
                 />
               )}
-              {step === "profile" && (
+              {step === "profile" && mode === "owner" && (
                 <ProfileFields
                   draft={draft}
                   errors={errors}
@@ -123,7 +129,7 @@ export function OwnerSetupWizardView({
                   onChange={onChange}
                 />
               )}
-              {step === "batch" && (
+              {step === "batch" && mode === "owner" && (
                 <BatchFields
                   draft={draft}
                   errors={errors}
@@ -131,7 +137,7 @@ export function OwnerSetupWizardView({
                   onChange={onChange}
                 />
               )}
-              {step === "students" && (
+              {step === "students" && mode === "owner" && (
                 <StudentFields
                   draft={draft}
                   errors={errors}
@@ -181,7 +187,7 @@ export function OwnerSetupWizardView({
               )}
             </Button>
           </div>
-          {skippable && (
+          {skippable && onSkipStep && (
             <Button
               type="button"
               variant="ghost"
@@ -192,14 +198,6 @@ export function OwnerSetupWizardView({
               Skip this step
             </Button>
           )}
-          <button
-            type="button"
-            className="mx-auto block min-h-11 text-xs text-muted-foreground underline-offset-4 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
-            onClick={onSkipSetup}
-            disabled={busy}
-          >
-            Skip setup — I’ll look around
-          </button>
         </div>
       </div>
     </div>
@@ -215,38 +213,42 @@ function FieldError({ id, message }: { id: string; message?: string }) {
   );
 }
 
-function CentreFields({
+function YouFields({
   draft,
   errors,
   busy,
+  mode,
   onChange,
 }: {
   draft: OwnerSetupDraft;
   errors: WizardFieldErrors;
   busy: boolean;
+  mode: SetupMode;
   onChange: (patch: Partial<OwnerSetupDraft>) => void;
 }) {
   return (
     <>
       <div className="space-y-1.5">
-        <Label htmlFor="setup-name">
-          Centre name <span className="text-destructive">*</span>
+        <Label htmlFor="setup-owner-name">
+          Your name <span className="text-destructive">*</span>
         </Label>
         <Input
-          id="setup-name"
-          value={draft.name}
-          onChange={(e) => onChange({ name: e.target.value })}
-          placeholder="Samriddhi Centre"
-          autoComplete="organization"
+          id="setup-owner-name"
+          value={draft.ownerName}
+          onChange={(e) => onChange({ ownerName: e.target.value })}
+          placeholder="Anjali Krishnan"
+          autoComplete="name"
           disabled={busy}
-          aria-invalid={!!errors.name}
-          aria-describedby={errors.name ? "setup-name-error" : undefined}
+          aria-invalid={!!errors.ownerName}
+          aria-describedby={
+            errors.ownerName ? "setup-owner-name-error" : undefined
+          }
         />
-        <FieldError id="setup-name-error" message={errors.name} />
+        <FieldError id="setup-owner-name-error" message={errors.ownerName} />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="setup-phone">
-          Contact phone <span className="text-destructive">*</span>
+          Phone <span className="text-destructive">*</span>
         </Label>
         <Input
           id="setup-phone"
@@ -265,23 +267,44 @@ function CentreFields({
         <FieldError id="setup-phone-error" message={errors.contactPhone} />
         {!errors.contactPhone && (
           <p id="setup-phone-help" className="text-xs text-muted-foreground">
-            10-digit Indian mobile. Shown on receipts.
+            10-digit Indian mobile
+            {mode === "owner" ? ". Shown on receipts." : "."}
           </p>
         )}
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="setup-address">Area / address</Label>
-        <Textarea
-          id="setup-address"
-          rows={2}
-          value={draft.address}
-          onChange={(e) => onChange({ address: e.target.value })}
-          placeholder="Near Civil Station, Kottayam"
-          disabled={busy}
-          aria-invalid={!!errors.address}
-        />
-        <FieldError id="setup-address-error" message={errors.address} />
-      </div>
+      {mode === "owner" && (
+        <>
+          <div className="space-y-1.5">
+            <Label htmlFor="setup-name">
+              Centre name <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="setup-name"
+              value={draft.name}
+              onChange={(e) => onChange({ name: e.target.value })}
+              placeholder="Samriddhi Centre"
+              autoComplete="organization"
+              disabled={busy}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "setup-name-error" : undefined}
+            />
+            <FieldError id="setup-name-error" message={errors.name} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="setup-address">Area / address</Label>
+            <Textarea
+              id="setup-address"
+              rows={2}
+              value={draft.address}
+              onChange={(e) => onChange({ address: e.target.value })}
+              placeholder="Near Civil Station, Kottayam"
+              disabled={busy}
+              aria-invalid={!!errors.address}
+            />
+            <FieldError id="setup-address-error" message={errors.address} />
+          </div>
+        </>
+      )}
     </>
   );
 }
@@ -462,15 +485,43 @@ function StudentFields({
   );
 }
 
-export function OwnerSetupOverlay({ children }: { children: ReactNode }) {
+export function OwnerSetupWizardModal({
+  open,
+  onOpenChange,
+  children,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: ReactNode;
+}) {
   return (
-    <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-background"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="owner-setup-title"
-    >
-      {children}
-    </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="max-h-[min(88dvh,720px)] overflow-y-auto p-0 sm:max-w-[28rem]"
+        aria-labelledby="owner-setup-title"
+      >
+        <DialogTitle className="sr-only">Centre setup</DialogTitle>
+        <DialogDescription className="sr-only">
+          Finish setup, or tap the blurred backdrop to look around and continue
+          later.
+        </DialogDescription>
+        {children}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function OwnerSetupCaptureOverlay({
+  onResume,
+}: {
+  onResume: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="fixed inset-0 z-[45] cursor-default bg-transparent"
+      aria-label="Continue setup"
+      onClick={onResume}
+    />
   );
 }

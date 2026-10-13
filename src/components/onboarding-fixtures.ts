@@ -7,6 +7,7 @@ import {
 
 export const FIXTURE_WIZARD_DRAFT: OwnerSetupDraft = {
   ...EMPTY_OWNER_SETUP_DRAFT,
+  ownerName: "Anjali Krishnan",
   name: "Samriddhi Centre",
   contactPhone: "9876543210",
   address: "Near Civil Station, Kottayam",
@@ -19,11 +20,17 @@ export const FIXTURE_WIZARD_DRAFT: OwnerSetupDraft = {
 };
 
 export const FIXTURE_WIZARD_STEPS: WizardStepId[] = [
-  "centre",
+  "you",
   "profile",
   "batch",
   "students",
 ];
+
+export const FIXTURE_STAFF_DRAFT: OwnerSetupDraft = {
+  ...EMPTY_OWNER_SETUP_DRAFT,
+  ownerName: "Ravi Menon",
+  contactPhone: "9876501234",
+};
 
 export const FIXTURE_CHECKLIST_PARTIAL = deriveGettingStarted({
   batchCount: 1,

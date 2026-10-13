@@ -1,43 +1,43 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 import {
   useBatches,
   useInstitute,
-  usePayments,
   useStudents,
   useUpdateInstitute,
   useUpsertBatch,
   useUpsertStudent,
 } from "@/hooks/use-data";
-import { useOnboarding } from "@/hooks/use-onboarding";
 import { useOwnerOnboarding } from "@/hooks/use-owner-onboarding";
 import { supabase } from "@/integrations/supabase/client";
 import { formatUserError } from "@/lib/format-error";
 import { todayISO } from "@/lib/format";
 import {
-  deriveGettingStarted,
-  firstIncompleteStep,
+  isInvitedStaff,
+  looksLikeIncompleteIdentity,
   looksLikeNewCentre,
   mergeDraftWithInstitute,
   nextWizardStep,
   normalizeIndianMobile,
   prevWizardStep,
   readJoiningTeamFlag,
+  readUserIdentity,
+  setupIsIncomplete,
+  setupModeFor,
   shouldAutoOpenTour,
   shouldAutoOpenWizard,
-  shouldSkipOwnerOnboarding,
+  shouldCaptureClicksToResume,
   validateWizardStep,
   type WizardFieldErrors,
   type WizardStepId,
   TOUR_STEPS,
 } from "@/lib/owner-onboarding";
-import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import {
-  OwnerSetupOverlay,
+  OwnerSetupCaptureOverlay,
+  OwnerSetupWizardModal,
   OwnerSetupWizardView,
 } from "@/components/owner-setup-wizard";
 import {
@@ -52,15 +52,14 @@ export function OwnerOnboardingHost() {
   const institute = useInstitute();
   const batches = useBatches();
   const students = useStudents();
-  const payments = usePayments();
   const updateInstitute = useUpdateInstitute();
   const upsertBatch = useUpsertBatch();
   const upsertStudent = useUpsertStudent();
-  const { dismissedChecklist, dismissChecklist } = useOnboarding();
   const onboarding = useOwnerOnboarding(user?.id ?? null);
   const navigate = useNavigate();
 
   const [resumeRequested, setResumeRequested] = useState(false);
+  const [userDismissed, setUserDismissed] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [tourIndex, setTourIndex] = useState(0);
@@ -68,10 +67,15 @@ export function OwnerOnboardingHost() {
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<WizardFieldErrors>({});
 
-  const skipOwner = shouldSkipOwnerOnboarding({
-    joiningTeam: readJoiningTeamFlag(
-      user?.user_metadata as Record<string, unknown> | undefined,
-    ),
+  const metadata = user?.user_metadata as Record<string, unknown> | undefined;
+  const identity = readUserIdentity(metadata);
+  const staff = isInvitedStaff({
+    joiningTeam: readJoiningTeamFlag(metadata),
+    role: active?.role ?? null,
+    isOwnWorkspace: active?.isOwn ?? null,
+  });
+  const mode = setupModeFor({
+    joiningTeam: readJoiningTeamFlag(metadata),
     role: active?.role ?? null,
     isOwnWorkspace: active?.isOwn ?? null,
   });
@@ -82,31 +86,22 @@ export function OwnerOnboardingHost() {
   );
   const batchCount = batches.data?.length ?? 0;
 
-  const attendanceStarted = useQuery({
-    queryKey: ["onboarding-attendance", active?.ownerId],
-    enabled: !!user && !!active?.ownerId && !skipOwner,
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("attendance_sessions")
-        .select("id", { count: "exact", head: true })
-        .eq("owner_id", active!.ownerId);
-      if (error) throw error;
-      return (count ?? 0) > 0;
-    },
-  });
+  const looksIncomplete = staff
+    ? looksLikeIncompleteIdentity({
+        fullName: onboarding.state.draft.ownerName.trim() || identity.fullName,
+        phone: onboarding.state.draft.contactPhone.trim() || identity.phone,
+      })
+    : looksLikeNewCentre({
+        instituteName: institute.data?.name,
+        contactPhone: institute.data?.contact_phone,
+        batchCount,
+        activeStudentCount: activeStudents,
+      });
 
-  const checklist = deriveGettingStarted({
-    batchCount,
-    activeStudentCount: activeStudents,
-    paymentCount: payments.data?.length ?? 0,
-    attendanceStarted: attendanceStarted.data === true,
-  });
-
-  const newCentre = looksLikeNewCentre({
-    instituteName: institute.data?.name,
-    contactPhone: institute.data?.contact_phone,
-    batchCount,
-    activeStudentCount: activeStudents,
+  const incomplete = setupIsIncomplete({
+    completed: onboarding.state.completed,
+    looksIncomplete,
+    started: onboarding.state.started,
   });
 
   const autoWizard =
@@ -114,26 +109,33 @@ export function OwnerOnboardingHost() {
     !!active &&
     !institute.isLoading &&
     shouldAutoOpenWizard({
-      skipOwnerOnboarding: skipOwner,
-      persisted: onboarding.state,
+      setupComplete: onboarding.state.completed,
       resumeRequested,
-      looksLikeNewCentre: newCentre,
+      looksIncomplete,
+      dismissedUntilInteraction: userDismissed,
     });
 
   const autoTour =
     !wizardOpen &&
     shouldAutoOpenTour({
-      skipOwnerOnboarding: skipOwner,
+      isInvitedStaff: staff,
       persisted: onboarding.state,
     });
 
+  const captureClicks = shouldCaptureClicksToResume({
+    setupIncomplete: incomplete && !!active && !workspacesLoading,
+    modalOpen: wizardOpen,
+  });
+
   useEffect(() => {
-    if (skipOwner || !institute.data) return;
+    if (!user) return;
     const merged = mergeDraftWithInstitute(
       onboarding.state.draft,
-      institute.data,
+      staff ? null : (institute.data ?? null),
+      identity,
     );
     if (
+      merged.ownerName !== onboarding.state.draft.ownerName ||
       merged.name !== onboarding.state.draft.name ||
       merged.contactPhone !== onboarding.state.draft.contactPhone ||
       merged.address !== onboarding.state.draft.address ||
@@ -141,12 +143,17 @@ export function OwnerOnboardingHost() {
     ) {
       onboarding.setDraft(merged);
     }
-    // Hydrate once from institute columns; draft is the source of truth after.
+    // Hydrate once from institute / auth metadata; draft is the source of truth after.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [skipOwner, institute.data?.id]);
+  }, [user?.id, staff, institute.data?.id]);
 
   useEffect(() => {
-    if (autoWizard) setWizardOpen(true);
+    if (autoWizard) {
+      setWizardOpen(true);
+      if (!onboarding.state.started) onboarding.markStarted();
+    }
+    // markStarted is stable per user; only run when auto-open flips on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoWizard]);
 
   useEffect(() => {
@@ -154,21 +161,14 @@ export function OwnerOnboardingHost() {
   }, [autoTour]);
 
   useEffect(() => {
-    if (!wizardOpen) return;
-    const next = firstIncompleteStep({
-      draft: onboarding.state.draft,
-      batchCount,
-      activeStudentCount: activeStudents,
-      skippedSteps: onboarding.state.skippedSteps,
-    });
-    if (next !== "done" && next !== onboarding.state.currentStep) {
-      onboarding.setStep(next);
-    }
-    // Only snap to the first incomplete step when the overlay opens.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizardOpen]);
+    const root = document.getElementById("app-shell");
+    if (!root) return;
+    if (captureClicks || wizardOpen) root.setAttribute("inert", "");
+    else root.removeAttribute("inert");
+    return () => root.removeAttribute("inert");
+  }, [captureClicks, wizardOpen]);
 
-  const step = onboarding.state.currentStep;
+  const step = mode === "staff" ? "you" : onboarding.state.currentStep;
   const draft = onboarding.state.draft;
 
   const changeDraft = (patch: Partial<typeof draft>) => {
@@ -188,26 +188,38 @@ export function OwnerOnboardingHost() {
       onboarding.completeSetup();
       setWizardOpen(false);
       setResumeRequested(false);
-      setTourIndex(0);
-      setTourOpen(true);
+      setUserDismissed(false);
+      if (!staff) {
+        setTourIndex(0);
+        setTourOpen(true);
+      }
       return;
     }
     onboarding.setStep(next);
-    setErrors(validateWizardStep(next, onboarding.state.draft));
+    setErrors(validateWizardStep(next, onboarding.state.draft, mode));
   };
 
   const handleContinue = async () => {
-    const nextErrors = validateWizardStep(step, draft);
+    const nextErrors = validateWizardStep(step, draft, mode);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
     setBusy(true);
     try {
-      if (step === "centre") {
-        await updateInstitute.mutateAsync({
-          name: draft.name.trim(),
-          contact_phone: normalizeIndianMobile(draft.contactPhone),
-          address: draft.address.trim() || null,
+      if (step === "you") {
+        const { error } = await supabase.auth.updateUser({
+          data: {
+            full_name: draft.ownerName.trim(),
+            phone: normalizeIndianMobile(draft.contactPhone),
+          },
         });
+        if (error) throw error;
+        if (mode === "owner") {
+          await updateInstitute.mutateAsync({
+            name: draft.name.trim(),
+            contact_phone: normalizeIndianMobile(draft.contactPhone),
+            address: draft.address.trim() || null,
+          });
+        }
       }
       if (step === "profile") {
         await updateInstitute.mutateAsync({
@@ -227,7 +239,7 @@ export function OwnerOnboardingHost() {
           joining_date: todayISO(),
         });
       }
-      goTo(nextWizardStep(step));
+      goTo(nextWizardStep(step, mode));
     } catch (e) {
       toast.error(formatUserError(e, "Could not save this step."));
     } finally {
@@ -237,62 +249,46 @@ export function OwnerOnboardingHost() {
 
   const handleSkipStep = () => {
     onboarding.skipStep(step);
-    goTo(nextWizardStep(step));
+    goTo(nextWizardStep(step, mode));
   };
 
-  const handleSkipSetup = () => {
-    onboarding.skipSetup();
+  const handleDismiss = (open: boolean) => {
+    if (open) {
+      setWizardOpen(true);
+      return;
+    }
     setWizardOpen(false);
+    setUserDismissed(true);
     setResumeRequested(false);
-    setTourIndex(0);
-    setTourOpen(true);
   };
 
   const handleResume = () => {
-    onboarding.resumeSetup();
     setResumeRequested(true);
     setWizardOpen(true);
+    if (!onboarding.state.started) onboarding.markStarted();
   };
-
-  if (skipOwner) return null;
-
-  const showChecklist =
-    !dismissedChecklist && !checklist.allDone && !wizardOpen && !!active;
 
   return (
     <>
-      {showChecklist && (
-        <OnboardingChecklist
-          items={checklist.items}
-          doneCount={checklist.doneCount}
-          allDone={checklist.allDone}
-          onDismiss={dismissChecklist}
-          showResumeSetup={
-            onboarding.state.skipped && !onboarding.state.completed
-          }
-          onResumeSetup={handleResume}
-        />
-      )}
+      {captureClicks && <OwnerSetupCaptureOverlay onResume={handleResume} />}
 
-      {wizardOpen && (
-        <OwnerSetupOverlay>
-          <OwnerSetupWizardView
-            step={step}
-            draft={draft}
-            errors={errors}
-            busy={busy}
-            onChange={changeDraft}
-            onContinue={handleContinue}
-            onBack={() => {
-              const prev = prevWizardStep(step);
-              if (prev) goTo(prev);
-            }}
-            onSkipStep={handleSkipStep}
-            onSkipSetup={handleSkipSetup}
-            onImportStudents={() => setImportOpen(true)}
-          />
-        </OwnerSetupOverlay>
-      )}
+      <OwnerSetupWizardModal open={wizardOpen} onOpenChange={handleDismiss}>
+        <OwnerSetupWizardView
+          step={step}
+          draft={draft}
+          errors={errors}
+          busy={busy}
+          mode={mode}
+          onChange={changeDraft}
+          onContinue={handleContinue}
+          onBack={() => {
+            const prev = prevWizardStep(step, mode);
+            if (prev) goTo(prev);
+          }}
+          onSkipStep={handleSkipStep}
+          onImportStudents={() => setImportOpen(true)}
+        />
+      </OwnerSetupWizardModal>
 
       {tourOpen && (
         <AppGuidedTourOverlay>

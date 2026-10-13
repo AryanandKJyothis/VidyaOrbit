@@ -103,9 +103,14 @@ export function useOwnerOnboarding(userId: string | null) {
     });
   }, [patch]);
 
+  const markStarted = useCallback(() => {
+    patch({ started: true });
+  }, [patch]);
+
   const completeSetup = useCallback(() => {
     patch({
       completed: true,
+      started: true,
       skipped: false,
       tourReady: true,
       completedAt: new Date().toISOString(),
@@ -131,6 +136,7 @@ export function useOwnerOnboarding(userId: string | null) {
       setStep,
       skipStep,
       skipSetup,
+      markStarted,
       completeSetup,
       resumeSetup,
       dismissTour,
@@ -142,6 +148,7 @@ export function useOwnerOnboarding(userId: string | null) {
       setStep,
       skipStep,
       skipSetup,
+      markStarted,
       completeSetup,
       resumeSetup,
       dismissTour,

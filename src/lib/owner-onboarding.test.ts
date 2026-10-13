@@ -3,20 +3,27 @@ import {
   deriveGettingStarted,
   firstIncompleteStep,
   isIndianMobile,
+  isInvitedStaff,
   isRealInstituteName,
+  looksLikeIncompleteIdentity,
   looksLikeNewCentre,
   mergeDraftWithInstitute,
   normalizeIndianMobile,
   parseOwnerSetupPersisted,
   readJoiningTeamFlag,
+  readUserIdentity,
+  setupIsIncomplete,
   shouldAutoOpenTour,
   shouldAutoOpenWizard,
-  shouldSkipOwnerOnboarding,
+  shouldCaptureClicksToResume,
+  setupModeFor,
   validateWizardStep,
   type OwnerSetupDraft,
   EMPTY_OWNER_SETUP_DRAFT,
   EMPTY_OWNER_SETUP_PERSISTED,
 } from "./owner-onboarding";
+import { isGoogleAuthEnabled } from "./feature-flags";
+import { signupSchema } from "./validation";
 
 function draft(patch: Partial<OwnerSetupDraft> = {}): OwnerSetupDraft {
   return { ...EMPTY_OWNER_SETUP_DRAFT, ...patch };
@@ -42,32 +49,87 @@ describe("Indian mobile validation", () => {
   });
 });
 
+describe("signup is email and password only", () => {
+  it("accepts credentials without institute name or phone", () => {
+    const parsed = signupSchema.safeParse({
+      email: "owner@centre.in",
+      password: "password1",
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("still requires a valid email and 8-character password", () => {
+    expect(
+      signupSchema.safeParse({ email: "nope", password: "password1" }).success,
+    ).toBe(false);
+    expect(
+      signupSchema.safeParse({ email: "owner@centre.in", password: "short" })
+        .success,
+    ).toBe(false);
+  });
+});
+
+describe("Google auth flag", () => {
+  it("stays off unless VITE_GOOGLE_AUTH_ENABLED is the exact string true", () => {
+    expect(isGoogleAuthEnabled(undefined)).toBe(false);
+    expect(isGoogleAuthEnabled("")).toBe(false);
+    expect(isGoogleAuthEnabled("TRUE")).toBe(false);
+    expect(isGoogleAuthEnabled("1")).toBe(false);
+    expect(isGoogleAuthEnabled("true")).toBe(true);
+  });
+});
+
 describe("wizard step validation", () => {
-  it("requires a real centre name and Indian mobile on step 1", () => {
-    expect(validateWizardStep("centre", draft())).toMatchObject({
+  it("requires name, Indian mobile, and centre name on the owner you-step", () => {
+    expect(validateWizardStep("you", draft())).toMatchObject({
+      ownerName: "Enter your name",
       name: "Enter your centre name",
       contactPhone: "Contact phone is required",
     });
     expect(
       validateWizardStep(
-        "centre",
-        draft({ name: "My Institute", contactPhone: "9876543210" }),
+        "you",
+        draft({
+          ownerName: "Anjali",
+          name: "My Institute",
+          contactPhone: "9876543210",
+        }),
       ).name,
     ).toMatch(/receipts/);
     expect(
       validateWizardStep(
-        "centre",
-        draft({ name: "Samriddhi", contactPhone: "555" }),
+        "you",
+        draft({
+          ownerName: "Anjali",
+          name: "Samriddhi",
+          contactPhone: "555",
+        }),
       ).contactPhone,
     ).toMatch(/Indian mobile/);
     expect(
       validateWizardStep(
-        "centre",
+        "you",
         draft({
+          ownerName: "Anjali Krishnan",
           name: "Samriddhi Centre",
           contactPhone: "+91 9876543210",
           address: "Kottayam",
         }),
+      ),
+    ).toEqual({});
+  });
+
+  it("asks invited staff only for name and phone", () => {
+    expect(validateWizardStep("you", draft(), "staff")).toMatchObject({
+      ownerName: "Enter your name",
+      contactPhone: "Contact phone is required",
+    });
+    expect(validateWizardStep("you", draft(), "staff").name).toBeUndefined();
+    expect(
+      validateWizardStep(
+        "you",
+        draft({ ownerName: "Ravi", contactPhone: "9876543210" }),
+        "staff",
       ),
     ).toEqual({});
   });
@@ -125,44 +187,51 @@ describe("wizard step validation", () => {
   });
 });
 
-describe("invited staff skip owner onboarding", () => {
-  it("skips when joining_team is set on the user", () => {
+describe("invited staff get name and phone only", () => {
+  it("detects joining_team and non-owner workspaces", () => {
     expect(readJoiningTeamFlag({ joining_team: true })).toBe(true);
     expect(readJoiningTeamFlag({ joining_team: "true" })).toBe(true);
     expect(readJoiningTeamFlag({ institute_name: "X" })).toBe(false);
     expect(
-      shouldSkipOwnerOnboarding({
+      isInvitedStaff({
         joiningTeam: true,
         role: "owner",
         isOwnWorkspace: true,
       }),
     ).toBe(true);
+    expect(
+      setupModeFor({
+        joiningTeam: true,
+        role: "owner",
+        isOwnWorkspace: true,
+      }),
+    ).toBe("staff");
   });
 
-  it("skips non-owner roles and workspaces that are not their own", () => {
+  it("treats non-owner roles and other workspaces as staff", () => {
     expect(
-      shouldSkipOwnerOnboarding({
+      isInvitedStaff({
         joiningTeam: false,
         role: "staff",
         isOwnWorkspace: false,
       }),
     ).toBe(true);
     expect(
-      shouldSkipOwnerOnboarding({
+      isInvitedStaff({
         joiningTeam: false,
         role: "manager",
         isOwnWorkspace: false,
       }),
     ).toBe(true);
     expect(
-      shouldSkipOwnerOnboarding({
+      isInvitedStaff({
         joiningTeam: false,
         role: "owner",
         isOwnWorkspace: false,
       }),
     ).toBe(true);
     expect(
-      shouldSkipOwnerOnboarding({
+      isInvitedStaff({
         joiningTeam: false,
         role: "owner",
         isOwnWorkspace: true,
@@ -170,33 +239,33 @@ describe("invited staff skip owner onboarding", () => {
     ).toBe(false);
   });
 
-  it("never auto-opens the wizard or tour for invited staff", () => {
+  it("opens the identity modal for staff, never the owner tour", () => {
     const persisted = {
       ...EMPTY_OWNER_SETUP_PERSISTED,
       tourReady: true,
     };
     expect(
       shouldAutoOpenWizard({
-        skipOwnerOnboarding: true,
-        persisted,
+        setupComplete: false,
         resumeRequested: false,
-        looksLikeNewCentre: true,
+        looksIncomplete: true,
       }),
-    ).toBe(false);
-    expect(
-      shouldAutoOpenWizard({
-        skipOwnerOnboarding: true,
-        persisted,
-        resumeRequested: true,
-        looksLikeNewCentre: true,
-      }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       shouldAutoOpenTour({
-        skipOwnerOnboarding: true,
+        isInvitedStaff: true,
         persisted,
       }),
     ).toBe(false);
+    expect(
+      firstIncompleteStep({
+        draft: draft({ ownerName: "Ravi", contactPhone: "9876543210" }),
+        batchCount: 0,
+        activeStudentCount: 0,
+        skippedSteps: [],
+        mode: "staff",
+      }),
+    ).toBe("done");
   });
 });
 
@@ -251,7 +320,7 @@ describe("getting started checklist derivation", () => {
   });
 });
 
-describe("resume and first-run gates", () => {
+describe("resume, dismiss, and first-run gates", () => {
   it("opens the wizard for a new centre, not for a settled one", () => {
     expect(
       looksLikeNewCentre({
@@ -269,29 +338,77 @@ describe("resume and first-run gates", () => {
         activeStudentCount: 40,
       }),
     ).toBe(false);
+    expect(
+      looksLikeIncompleteIdentity({ fullName: "", phone: "9876543210" }),
+    ).toBe(true);
+    expect(
+      looksLikeIncompleteIdentity({
+        fullName: "Ravi",
+        phone: "9876543210",
+      }),
+    ).toBe(false);
 
     expect(
       shouldAutoOpenWizard({
-        skipOwnerOnboarding: false,
-        persisted: EMPTY_OWNER_SETUP_PERSISTED,
+        setupComplete: false,
         resumeRequested: false,
-        looksLikeNewCentre: true,
+        looksIncomplete: true,
       }),
     ).toBe(true);
     expect(
       shouldAutoOpenWizard({
-        skipOwnerOnboarding: false,
-        persisted: { ...EMPTY_OWNER_SETUP_PERSISTED, skipped: true },
+        setupComplete: false,
         resumeRequested: false,
-        looksLikeNewCentre: true,
+        looksIncomplete: true,
+        dismissedUntilInteraction: true,
       }),
     ).toBe(false);
     expect(
       shouldAutoOpenWizard({
-        skipOwnerOnboarding: false,
-        persisted: { ...EMPTY_OWNER_SETUP_PERSISTED, skipped: true },
+        setupComplete: true,
+        resumeRequested: false,
+        looksIncomplete: true,
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoOpenWizard({
+        setupComplete: true,
         resumeRequested: true,
-        looksLikeNewCentre: true,
+        looksIncomplete: true,
+      }),
+    ).toBe(true);
+  });
+
+  it("reopens from a dashboard click after the backdrop dismisses", () => {
+    expect(
+      shouldCaptureClicksToResume({
+        setupIncomplete: true,
+        modalOpen: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldCaptureClicksToResume({
+        setupIncomplete: true,
+        modalOpen: true,
+      }),
+    ).toBe(false);
+    expect(
+      shouldCaptureClicksToResume({
+        setupIncomplete: false,
+        modalOpen: false,
+      }),
+    ).toBe(false);
+    expect(setupIsIncomplete({ completed: false, looksIncomplete: true })).toBe(
+      true,
+    );
+    expect(setupIsIncomplete({ completed: true, looksIncomplete: true })).toBe(
+      false,
+    );
+    expect(
+      setupIsIncomplete({
+        completed: false,
+        looksIncomplete: false,
+        started: true,
       }),
     ).toBe(true);
   });
@@ -304,10 +421,11 @@ describe("resume and first-run gates", () => {
         activeStudentCount: 0,
         skippedSteps: [],
       }),
-    ).toBe("centre");
+    ).toBe("you");
     expect(
       firstIncompleteStep({
         draft: draft({
+          ownerName: "Anjali",
           name: "Samriddhi",
           contactPhone: "9876543210",
           centreType: "tuition",
@@ -320,6 +438,7 @@ describe("resume and first-run gates", () => {
     expect(
       firstIncompleteStep({
         draft: draft({
+          ownerName: "Anjali",
           name: "Samriddhi",
           contactPhone: "9876543210",
           centreType: "cbse",
@@ -332,48 +451,65 @@ describe("resume and first-run gates", () => {
   });
 
   it("hydrates the draft from existing institute columns without clobbering", () => {
-    const merged = mergeDraftWithInstitute(draft({ name: "Kept" }), {
-      name: "From DB",
-      contact_phone: "9876543210",
-      address: "Kottayam",
-      upi_vpa: "centre@oksbi",
-    });
+    const merged = mergeDraftWithInstitute(
+      draft({ name: "Kept", ownerName: "Anjali" }),
+      {
+        name: "From DB",
+        contact_phone: "9876543210",
+        address: "Kottayam",
+        upi_vpa: "centre@oksbi",
+      },
+      { fullName: "Ignored", phone: "9000000000" },
+    );
     expect(merged.name).toBe("Kept");
+    expect(merged.ownerName).toBe("Anjali");
     expect(merged.contactPhone).toBe("9876543210");
     expect(merged.address).toBe("Kottayam");
     expect(isRealInstituteName("My Institute")).toBe(false);
   });
 
-  it("parses persisted JSON per user without throwing on junk", () => {
-    expect(parseOwnerSetupPersisted(null).currentStep).toBe("centre");
-    expect(parseOwnerSetupPersisted({ currentStep: "nope" }).currentStep).toBe(
-      "centre",
+  it("reads Google / signup identity from user metadata", () => {
+    expect(
+      readUserIdentity({ full_name: "Anjali Krishnan", phone: "9876543210" }),
+    ).toEqual({ fullName: "Anjali Krishnan", phone: "9876543210" });
+    expect(readUserIdentity({ name: "Google User" }).fullName).toBe(
+      "Google User",
     );
+  });
+
+  it("parses persisted JSON per user and maps the old centre step to you", () => {
+    expect(parseOwnerSetupPersisted(null).currentStep).toBe("you");
+    expect(parseOwnerSetupPersisted({ currentStep: "nope" }).currentStep).toBe(
+      "you",
+    );
+    expect(
+      parseOwnerSetupPersisted({ currentStep: "centre" }).currentStep,
+    ).toBe("you");
     expect(
       parseOwnerSetupPersisted({
         currentStep: "batch",
-        draft: { centreType: "psc", name: "X" },
+        draft: { centreType: "psc", name: "X", ownerName: "Anjali" },
         tourReady: true,
-      }).draft.centreType,
-    ).toBe("psc");
+      }).draft,
+    ).toMatchObject({ centreType: "psc", ownerName: "Anjali" });
   });
 
-  it("opens the tour only after the wizard has finished or been skipped", () => {
+  it("opens the tour only after the modal has been completed, never for staff", () => {
     expect(
       shouldAutoOpenTour({
-        skipOwnerOnboarding: false,
+        isInvitedStaff: false,
         persisted: EMPTY_OWNER_SETUP_PERSISTED,
       }),
     ).toBe(false);
     expect(
       shouldAutoOpenTour({
-        skipOwnerOnboarding: false,
+        isInvitedStaff: false,
         persisted: { ...EMPTY_OWNER_SETUP_PERSISTED, tourReady: true },
       }),
     ).toBe(true);
     expect(
       shouldAutoOpenTour({
-        skipOwnerOnboarding: false,
+        isInvitedStaff: false,
         persisted: {
           ...EMPTY_OWNER_SETUP_PERSISTED,
           tourReady: true,

@@ -36,7 +36,12 @@ import { OwnerSetupWizardView } from "@/components/owner-setup-wizard";
 import { AppGuidedTourView } from "@/components/app-guided-tour";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import {
+  GoogleAuthDivider,
+  GoogleContinueButton,
+} from "@/components/google-continue-button";
+import {
   FIXTURE_CHECKLIST_PARTIAL,
+  FIXTURE_STAFF_DRAFT,
   FIXTURE_WIZARD_DRAFT,
 } from "@/components/onboarding-fixtures";
 import { TOUR_STEPS } from "@/lib/owner-onboarding";
@@ -104,16 +109,26 @@ function UiGallery() {
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        <SetupFrame id="wizard-centre" title="Owner setup · Centre">
+        <SetupFrame id="wizard-you" title="Owner setup · You and your centre">
           <OwnerSetupWizardView
-            step="centre"
+            step="you"
             draft={FIXTURE_WIZARD_DRAFT}
             errors={{}}
             onChange={() => {}}
             onContinue={() => {}}
             onBack={() => {}}
             onSkipStep={() => {}}
-            onSkipSetup={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="wizard-staff" title="Staff setup · Name and phone">
+          <OwnerSetupWizardView
+            step="you"
+            mode="staff"
+            draft={FIXTURE_STAFF_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
           />
         </SetupFrame>
         <SetupFrame id="wizard-profile" title="Owner setup · Centre type">
@@ -125,7 +140,6 @@ function UiGallery() {
             onContinue={() => {}}
             onBack={() => {}}
             onSkipStep={() => {}}
-            onSkipSetup={() => {}}
           />
         </SetupFrame>
         <SetupFrame id="wizard-batch" title="Owner setup · First batch">
@@ -137,7 +151,6 @@ function UiGallery() {
             onContinue={() => {}}
             onBack={() => {}}
             onSkipStep={() => {}}
-            onSkipSetup={() => {}}
           />
         </SetupFrame>
         <SetupFrame id="wizard-students" title="Owner setup · First students">
@@ -149,9 +162,61 @@ function UiGallery() {
             onContinue={() => {}}
             onBack={() => {}}
             onSkipStep={() => {}}
-            onSkipSetup={() => {}}
             onImportStudents={() => {}}
           />
+        </SetupFrame>
+        <SetupFrame
+          id="wizard-modal"
+          title="Owner setup · Modal over blurred dashboard"
+        >
+          <div className="relative min-h-[640px] overflow-hidden bg-muted">
+            <div className="pointer-events-none p-4 blur-sm">
+              <GreetingBanner
+                greeting="Good morning"
+                displayName="Anjali"
+                instituteName="My Institute"
+                classesToday={0}
+              />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/45 p-4 backdrop-blur-md contrast-more:bg-black/70 contrast-more:backdrop-blur-none">
+              <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/50 bg-card shadow-[var(--shadow-elevated)]">
+                <OwnerSetupWizardView
+                  step="you"
+                  draft={FIXTURE_WIZARD_DRAFT}
+                  errors={{}}
+                  onChange={() => {}}
+                  onContinue={() => {}}
+                  onBack={() => {}}
+                  onSkipStep={() => {}}
+                />
+              </div>
+            </div>
+          </div>
+        </SetupFrame>
+        <SetupFrame id="login-google" title="Login · Continue with Google">
+          <div className="bg-brand-grid p-6">
+            <Card className="mx-auto max-w-md">
+              <CardContent className="space-y-4 p-6">
+                <p className="type-kicker text-muted-foreground">
+                  Centre portal
+                </p>
+                <GoogleContinueButton onClick={() => {}} />
+                <GoogleAuthDivider />
+                <div className="space-y-2">
+                  <Label htmlFor="gallery-login-email">Email</Label>
+                  <Input
+                    id="gallery-login-email"
+                    type="email"
+                    defaultValue="admin@institute.in"
+                    readOnly
+                  />
+                </div>
+                <Button className="h-12 w-full" type="button">
+                  Sign in to Vidya Orbit
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </SetupFrame>
         {TOUR_STEPS.map((step, index) => (
           <PhoneFrame
@@ -173,8 +238,6 @@ function UiGallery() {
             items={FIXTURE_CHECKLIST_PARTIAL.items}
             doneCount={FIXTURE_CHECKLIST_PARTIAL.doneCount}
             allDone={FIXTURE_CHECKLIST_PARTIAL.allDone}
-            showResumeSetup
-            onResumeSetup={() => {}}
             onDismiss={() => {}}
           />
         </PhoneFrame>

@@ -15,6 +15,7 @@ import { MobileTabBar } from "@/components/app/mobile-tab-bar";
 import { LoadingScreen } from "@/components/loading-screen";
 import { SkipToContent } from "@/components/skip-to-content";
 import { WorkspaceProvider } from "@/hooks/use-active-workspace";
+import { OwnerOnboardingHost } from "@/components/owner-onboarding-host";
 import { usePrefers } from "@/hooks/use-prefers";
 import { fadeOnly, springDefault } from "@/lib/motion";
 
@@ -36,7 +37,7 @@ function AuthenticatedLayout() {
   return (
     <WorkspaceProvider>
       <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-background">
+        <div id="app-shell" className="flex min-h-screen w-full bg-background">
           <SkipToContent />
           <AppSidebar />
           <div className="flex flex-1 flex-col">
@@ -69,6 +70,7 @@ function AuthenticatedLayout() {
             <MobileTabBar />
           </div>
         </div>
+        <OwnerOnboardingHost />
       </SidebarProvider>
     </WorkspaceProvider>
   );
