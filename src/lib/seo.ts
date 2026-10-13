@@ -64,7 +64,7 @@ export const PUBLIC_PAGES = {
   terms: {
     title: "Terms of Service — Vidya Orbit",
     description:
-      "Terms of service for Vidya Orbit, coaching and tuition centre management software operated from Valanchery, Malappuram, Kerala.",
+      "Terms of service for Vidya Orbit coaching and tuition centre management software.",
     path: "/terms",
   },
   refundPolicy: {

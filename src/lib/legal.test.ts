@@ -7,6 +7,7 @@ import {
   PRODUCT_BUILDER_NAME,
   SUPABASE_REGION,
 } from "./legal";
+import { PUBLIC_PAGES } from "./seo";
 import { Route as ContactRoute } from "@/routes/contact";
 import { Route as PrivacyRoute } from "@/routes/privacy";
 import { Route as RefundPolicyRoute } from "@/routes/refund-policy";
@@ -46,13 +47,23 @@ const legalCopyFiles = [
 ];
 
 describe("legal config", () => {
-  it("does not keep a postal address or placeholder", () => {
+  it("does not keep a postal address, placeholder, or location", () => {
     for (const file of legalCopyFiles) {
       const src = readFileSync(file, "utf8");
       expect(src).not.toContain("LEGAL_ADDRESS");
       expect(src).not.toContain("ADDRESS PENDING");
       expect(src.toLowerCase()).not.toContain("postal address");
+      expect(src).not.toContain("Valanchery");
+      expect(src).not.toContain("Malappuram");
     }
+    expect(PUBLIC_PAGES.privacy.description).not.toMatch(/Valanchery|Malappuram/);
+    expect(PUBLIC_PAGES.terms.description).not.toMatch(/Valanchery|Malappuram/);
+    expect(PUBLIC_PAGES.refundPolicy.description).not.toMatch(
+      /Valanchery|Malappuram/,
+    );
+    expect(PUBLIC_PAGES.contact.description).not.toMatch(
+      /Valanchery|Malappuram/,
+    );
   });
 
   it("sets the operator, builder, GST line and last-updated date", () => {
