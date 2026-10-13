@@ -133,7 +133,7 @@ export const ADMIN_FIXTURE_USERS: AdminUserRow[] = [
     last_sign_in_at: "2026-10-13T06:10:00.000Z",
     email_confirmed_at: "2026-03-12T04:05:00.000Z",
     joining_team: false,
-    platform_admin: true,
+    platform_admin: false,
     owns_centre: true,
     orphan: false,
     centres: [

@@ -243,6 +243,17 @@ export function mapUserRow(raw: unknown): AdminUserRow | null {
   };
 }
 
+/** Platform admins (`user_roles.role = 'admin'`) are omitted from founder metrics. */
+export function isPlatformAdminRow(row: { platform_admin?: boolean }): boolean {
+  return row.platform_admin === true;
+}
+
+export function excludePlatformAdminRows<
+  T extends { platform_admin?: boolean },
+>(rows: T[]): T[] {
+  return rows.filter((row) => !isPlatformAdminRow(row));
+}
+
 export type AdminPaymentRow = {
   id: string;
   owner_id: string;
@@ -435,4 +446,12 @@ export function mapPaged<T>(
     ? r.rows.map(mapRow).filter((row): row is T => row != null)
     : [];
   return { total: asNumber(r.total), rows };
+}
+
+export function excludePlatformAdminsFromPage<
+  T extends { platform_admin?: boolean },
+>(page: AdminPaged<T>): AdminPaged<T> {
+  const rows = excludePlatformAdminRows(page.rows);
+  const dropped = page.rows.length - rows.length;
+  return { total: Math.max(0, page.total - dropped), rows };
 }

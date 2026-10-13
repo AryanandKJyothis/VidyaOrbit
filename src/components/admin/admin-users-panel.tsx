@@ -15,7 +15,6 @@ export const USER_FILTERS = [
   { id: "owners", label: "Owners" },
   { id: "staff", label: "Staff" },
   { id: "orphan", label: "No centre" },
-  { id: "admin", label: "Platform admin" },
   { id: "unconfirmed", label: "Unconfirmed" },
 ] as const;
 
