@@ -52,23 +52,26 @@ type NavItem = {
     | "billing";
 };
 
-const baseItems: NavItem[] = [
+const workspaceItems: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Students", url: "/students", icon: Users, resource: "students" },
-  { title: "Batches", url: "/batches", icon: Layers, resource: "batches" },
-  { title: "Fees", url: "/fees", icon: Wallet, resource: "fees" },
   {
     title: "Attendance",
     url: "/attendance",
     icon: CalendarCheck,
     resource: "attendance",
   },
+  { title: "Fees", url: "/fees", icon: Wallet, resource: "fees" },
+];
+
+const manageItems: NavItem[] = [
+  { title: "Batches", url: "/batches", icon: Layers, resource: "batches" },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   {
     title: "Plan",
     url: "/plan",
     icon: CreditCard,
-    resource: "billing" as const,
+    resource: "billing",
   },
   { title: "Settings", url: "/settings", icon: Settings, resource: "settings" },
 ];
@@ -105,11 +108,11 @@ export function AppSidebar() {
   });
   const pendingCount = invites.data?.length ?? 0;
 
-  const visibleBase = baseItems.filter(
+  const visibleWorkspace = workspaceItems.filter(
     (it) => !it.resource || permsMap[it.resource],
   );
-  const items: NavItem[] = [
-    ...visibleBase,
+  const visibleManage: NavItem[] = [
+    ...manageItems.filter((it) => !it.resource || permsMap[it.resource]),
     // Team is visible only to members with settings:read (to see teammates).
     // Non-owners get a read-only view; the page itself enforces permissions.
     ...(active && canSettings
@@ -125,6 +128,7 @@ export function AppSidebar() {
         ]
       : []),
   ];
+  const items = [...visibleWorkspace, ...visibleManage];
 
   const activeUrl = [...items]
     .sort((a, b) => b.url.length - a.url.length)
@@ -173,50 +177,18 @@ export function AppSidebar() {
             </Link>
           </div>
         )}
-        <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => {
-                const active = isActive(item.url);
-                return (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={active}
-                      tooltip={item.title}
-                    >
-                      <Link
-                        to={item.url}
-                        className="group relative flex items-center gap-2.5 transition-[transform,color,background-color] duration-100 [transition-timing-function:var(--ease-out)] active:scale-[0.97] motion-reduce:active:scale-100"
-                      >
-                        <span
-                          className={cn(
-                            "absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-sidebar-primary transition-[opacity,transform] duration-200 [transition-timing-function:var(--ease-out)] motion-reduce:transition-none",
-                            active
-                              ? "opacity-100 scale-y-100"
-                              : "opacity-0 scale-y-50",
-                          )}
-                        />
-                        <item.icon
-                          className={cn(
-                            "h-4 w-4 shrink-0",
-                            active
-                              ? "text-sidebar-primary"
-                              : "text-sidebar-foreground/70 group-hover:text-sidebar-foreground",
-                          )}
-                        />
-                        {!collapsed && (
-                          <span className="truncate">{item.title}</span>
-                        )}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <NavGroup
+          label="Workspace"
+          items={visibleWorkspace}
+          collapsed={collapsed}
+          isActive={isActive}
+        />
+        <NavGroup
+          label="Manage"
+          items={visibleManage}
+          collapsed={collapsed}
+          isActive={isActive}
+        />
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
@@ -242,6 +214,66 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function NavGroup({
+  label,
+  items,
+  collapsed,
+  isActive,
+}: {
+  label: string;
+  items: NavItem[];
+  collapsed: boolean;
+  isActive: (url: string) => boolean;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map((item) => {
+            const active = isActive(item.url);
+            return (
+              <SidebarMenuItem key={item.url}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={active}
+                  tooltip={item.title}
+                >
+                  <Link
+                    to={item.url}
+                    className="group relative flex min-h-11 items-center gap-2.5 transition-[transform,color,background-color] duration-100 [transition-timing-function:var(--ease-out)] active:scale-[0.97] motion-reduce:active:scale-100"
+                  >
+                    <span
+                      className={cn(
+                        "absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-sidebar-primary transition-[opacity,transform] duration-200 [transition-timing-function:var(--ease-out)] motion-reduce:transition-none",
+                        active
+                          ? "opacity-100 scale-y-100"
+                          : "opacity-0 scale-y-50",
+                      )}
+                    />
+                    <item.icon
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        active
+                          ? "text-sidebar-primary"
+                          : "text-sidebar-foreground/70 group-hover:text-sidebar-foreground",
+                      )}
+                    />
+                    {!collapsed && (
+                      <span className="truncate">{item.title}</span>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 }
 

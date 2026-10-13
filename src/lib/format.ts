@@ -105,3 +105,13 @@ export function isPastIstDate(
   if (!iso) return false;
   return iso.slice(0, 10) < todayISO(now);
 }
+
+/** Two-letter initials from a person's name, for avatars. */
+export function personInitials(name: string | null | undefined): string {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  const first = parts[0][0] ?? "";
+  const last = parts[parts.length - 1][0] ?? "";
+  return (first + last).toUpperCase();
+}

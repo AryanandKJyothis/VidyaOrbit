@@ -8,6 +8,9 @@ import {
   Download,
   ChevronDown,
   Layers,
+  BookOpen,
+  Clock,
+  CalendarDays,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageHeader } from "@/components/page-header";
@@ -43,6 +46,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/empty-state";
+import { InitialsAvatar } from "@/components/app/initials-avatar";
 import { QueryErrorState } from "@/components/query-state";
 import { formatUserError } from "@/lib/format-error";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
@@ -182,7 +186,7 @@ function BatchesPage() {
           </Button>
         </EmptyState>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           {batches.data!.map((b, i) => {
             const count = countByBatch[b.id] ?? 0;
             const pct = Math.min(
@@ -196,16 +200,21 @@ function BatchesPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
               >
-                <Card className="card-elevated overflow-hidden transition-shadow hover:shadow-[var(--shadow-lift)]">
+                <Card className="overflow-hidden">
                   <CardContent className="p-5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h3 className="font-display text-lg font-semibold leading-tight">
-                          {b.name}
-                        </h3>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {b.subject ?? "—"} · {b.teacher_name ?? "No teacher"}
-                        </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
+                          <BookOpen className="h-5 w-5" aria-hidden />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-muted-foreground">
+                            {b.subject ?? "Batch"}
+                          </p>
+                          <h3 className="font-display text-base font-semibold leading-tight">
+                            {b.name}
+                          </h3>
+                        </div>
                       </div>
                       <Badge
                         variant={b.is_active ? "secondary" : "outline"}
@@ -214,37 +223,35 @@ function BatchesPage() {
                         {b.is_active ? "Active" : "Paused"}
                       </Badge>
                     </div>
-                    {b.timing && (
-                      <div className="mt-3 text-sm text-muted-foreground">
-                        {b.timing}
-                      </div>
-                    )}
-                    {(b.days_of_week ?? []).length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {b.days_of_week!.map((d) => (
-                          <Badge
-                            key={d}
-                            variant="outline"
-                            className="text-[10px] px-1.5"
-                          >
-                            {d}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" /> {count}/{b.capacity}
+                    <div className="mt-4 space-y-1.5 text-sm text-muted-foreground">
+                      {(b.days_of_week ?? []).length > 0 && (
+                        <p className="flex items-center gap-2">
+                          <CalendarDays className="h-4 w-4" aria-hidden />
+                          {(b.days_of_week ?? []).join(", ")}
+                        </p>
+                      )}
+                      {b.timing && (
+                        <p className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" aria-hidden />
+                          {b.timing}
+                        </p>
+                      )}
+                    </div>
+                    <div className="mt-4 flex items-center justify-between border-t border-border/70 pt-3">
+                      <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Users className="h-4 w-4" /> {count} learners
+                        <span className="text-xs">· {pct}% full</span>
+                      </span>
+                      {b.teacher_name ? (
+                        <span className="flex items-center gap-2 text-xs font-semibold">
+                          <InitialsAvatar name={b.teacher_name} size="sm" />
+                          {b.teacher_name}
                         </span>
-                        <span className="font-medium">{pct}%</span>
-                      </div>
-                      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className={`h-full rounded-full transition-[width,background-color] duration-200 [transition-timing-function:var(--ease-out)] ${pct >= 90 ? "bg-destructive" : pct >= 70 ? "bg-warning" : "bg-accent"}`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          No teacher
+                        </span>
+                      )}
                     </div>
                     <div className="mt-4 flex gap-2">
                       {canWriteBatches && (
@@ -252,7 +259,7 @@ function BatchesPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex-1"
+                            className="h-11 flex-1"
                             onClick={() => {
                               setEditing(b);
                               setOpen(true);
@@ -263,6 +270,7 @@ function BatchesPage() {
                           <Button
                             size="sm"
                             variant="ghost"
+                            className="h-11"
                             onClick={() => toggle(b)}
                             title={
                               b.is_active ? "Pause batch" : "Activate batch"

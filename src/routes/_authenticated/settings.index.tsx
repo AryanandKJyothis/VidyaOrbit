@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Save, Loader2, LogOut, Bell } from "lucide-react";
+import {
+  Save,
+  Loader2,
+  LogOut,
+  Bell,
+  CreditCard,
+  ArrowRight,
+} from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { useSubscription, PLANS } from "@/hooks/use-subscription";
+import { Badge } from "@/components/ui/badge";
 import { RoutePermissionGate } from "@/components/route-permission-gate";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +53,8 @@ function SettingsPageContent() {
   const inst = useInstitute();
   const mut = useUpdateInstitute();
   const reminderPrefs = useReminderPrefs();
+  const sub = useSubscription();
+  const planMeta = PLANS.find((p) => p.code === sub.data?.plan);
   const { resetChecklist } = useOnboarding();
   const qc = useQueryClient();
   const [form, setForm] = useState({
@@ -95,14 +107,24 @@ function SettingsPageContent() {
   return (
     <div>
       <PageHeader
-        title="Settings"
-        description="Institute branding, receipt details and your account."
+        title="Settings & billing"
+        description="Your centre details and plan, kept simple."
       />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Institute</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-base">Centre profile</CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground">
+                How your centre shows up in Vidya Orbit.
+              </p>
+            </div>
+            {form.name.trim() ? (
+              <Badge variant="secondary">Set up</Badge>
+            ) : (
+              <Badge variant="outline">Incomplete</Badge>
+            )}
           </CardHeader>
           <CardContent>
             <form onSubmit={save} className="grid gap-3 sm:grid-cols-2">
@@ -208,6 +230,34 @@ function SettingsPageContent() {
         </Card>
 
         <div className="space-y-6">
+          {sub.data && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Your current plan</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-display text-lg font-semibold">
+                      {planMeta?.name ?? sub.data.plan}
+                    </p>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {sub.data.status}
+                      {sub.data.expiry_date
+                        ? ` · renews ${sub.data.expiry_date}`
+                        : ""}
+                    </p>
+                  </div>
+                  <CreditCard className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <Button asChild variant="outline" className="h-11 w-full">
+                  <Link to="/plan">
+                    Manage plan <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Account</CardTitle>

@@ -20,21 +20,14 @@ export function PageHeader({
       initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={transition}
-      className="mb-8 sm:mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+      className="mb-5 sm:mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
     >
       <div className="relative min-w-0">
-        <h1 className="font-display text-3xl font-bold leading-[1.08] tracking-[-0.028em] text-balance sm:text-4xl lg:text-5xl">
+        <h1 className="font-display text-2xl font-bold leading-[1.15] tracking-[-0.022em] text-balance sm:text-3xl">
           {title}
         </h1>
-        <motion.span
-          aria-hidden
-          initial={reducedMotion ? { opacity: 0 } : { scaleX: 0 }}
-          animate={reducedMotion ? { opacity: 1 } : { scaleX: 1 }}
-          transition={transition}
-          className="mt-3 sm:mt-4 block h-1 w-14 origin-left rounded-full bg-gradient-to-r from-brand-teal via-brand-saffron to-brand-coral"
-        />
         {description && (
-          <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground sm:mt-4 sm:text-base">
+          <p className="mt-1 max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
             {description}
           </p>
         )}

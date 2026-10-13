@@ -5,6 +5,7 @@ import {
   istMonthStartISO,
   istPrevMonthRangeISO,
   istWeekdayKey,
+  personInitials,
   todayISO,
   yesterdayISO,
 } from "./format";
@@ -52,5 +53,18 @@ describe("IST calendar dates (VO-011)", () => {
       end: "2026-09-30",
     });
     expect(istWeekdayKey(oneAmIst)).toBe("mon");
+  });
+});
+
+describe("personInitials", () => {
+  it("uses first and last letters of a two-part name", () => {
+    expect(personInitials("Anjali Menon")).toBe("AM");
+  });
+  it("uses the first two letters of a single name", () => {
+    expect(personInitials("Devika")).toBe("DE");
+  });
+  it("returns ? for empty input", () => {
+    expect(personInitials("")).toBe("?");
+    expect(personInitials(null)).toBe("?");
   });
 });

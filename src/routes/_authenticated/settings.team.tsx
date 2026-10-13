@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { RoutePermissionGate } from "@/components/route-permission-gate";
 import { PageHeader } from "@/components/page-header";
+import { InitialsAvatar } from "@/components/app/initials-avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -162,10 +163,10 @@ function TeamPageContent() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Team"
+        title="Staff"
         description={
           isOwner
-            ? "Invite people into your workspace and control what they can do."
+            ? "Workspace members who can take attendance, collect fees, or manage the centre."
             : "People who can access this workspace alongside you."
         }
         actions={
@@ -204,13 +205,18 @@ function TeamPageContent() {
                 {(team.data?.rows ?? []).map((row) => (
                   <TableRow key={`${row.kind}:${row.id}`}>
                     <TableCell>
-                      <div className="font-medium">
-                        {row.email || "(unknown)"}
-                        {row.kind === "member" && row.isYou && (
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            (you)
-                          </span>
-                        )}
+                      <div className="flex items-center gap-3">
+                        <InitialsAvatar name={row.email || "Member"} />
+                        <div className="min-w-0">
+                          <div className="truncate font-medium">
+                            {row.email || "(unknown)"}
+                            {row.kind === "member" && row.isYou && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                (you)
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>

@@ -17,6 +17,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as UiGalleryRouteImport } from './routes/ui-gallery'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated/attendance'
 import { Route as AuthenticatedBatchesRouteImport } from './routes/_authenticated/batches'
@@ -75,6 +76,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UiGalleryRoute = UiGalleryRouteImport.update({
+  id: '/ui-gallery',
+  path: '/ui-gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/ui-gallery': typeof UiGalleryRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/batches': typeof AuthenticatedBatchesRoute
@@ -219,6 +226,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/ui-gallery': typeof UiGalleryRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/batches': typeof AuthenticatedBatchesRoute
@@ -249,6 +257,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/ui-gallery': typeof UiGalleryRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
   '/_authenticated/batches': typeof AuthenticatedBatchesRoute
@@ -280,6 +289,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/ui-gallery'
     | '/analytics'
     | '/attendance'
     | '/batches'
@@ -309,6 +319,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/ui-gallery'
     | '/analytics'
     | '/attendance'
     | '/batches'
@@ -338,6 +349,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/ui-gallery'
     | '/_authenticated/analytics'
     | '/_authenticated/attendance'
     | '/_authenticated/batches'
@@ -369,6 +381,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
+  UiGalleryRoute: typeof UiGalleryRoute
   JoinTokenRoute: typeof JoinTokenRoute
   ApiBillingCreateOrderRoute: typeof ApiBillingCreateOrderRoute
   ApiBillingPricingRoute: typeof ApiBillingPricingRoute
@@ -432,6 +445,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ui-gallery': {
+      id: '/ui-gallery'
+      path: '/ui-gallery'
+      fullPath: '/ui-gallery'
+      preLoaderRoute: typeof UiGalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/analytics': {
@@ -648,6 +668,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
+  UiGalleryRoute: UiGalleryRoute,
   JoinTokenRoute: JoinTokenRoute,
   ApiBillingCreateOrderRoute: ApiBillingCreateOrderRoute,
   ApiBillingPricingRoute: ApiBillingPricingRoute,

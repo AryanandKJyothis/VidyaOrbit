@@ -7,18 +7,16 @@ import {
 } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Home, Users, Wallet, CalendarCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useInstitute } from "@/hooks/use-data";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { AppTopBar } from "@/components/app/app-top-bar";
+import { MobileTabBar } from "@/components/app/mobile-tab-bar";
 import { LoadingScreen } from "@/components/loading-screen";
 import { SkipToContent } from "@/components/skip-to-content";
 import { WorkspaceProvider } from "@/hooks/use-active-workspace";
 import { usePrefers } from "@/hooks/use-prefers";
 import { fadeOnly, springDefault } from "@/lib/motion";
-import { cn } from "@/lib/utils";
-import { MOBILE_NAV_ITEMS } from "@/lib/mobile-nav";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -42,10 +40,10 @@ function AuthenticatedLayout() {
           <SkipToContent />
           <AppSidebar />
           <div className="flex flex-1 flex-col">
-            <TopBar />
+            <AppTopBar />
             <main
               id="main-content"
-              className="relative flex flex-1 flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 pb-24 sm:pb-8"
+              className="relative flex flex-1 flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8"
             >
               <div className="flex-1 min-h-0 max-w-7xl mx-auto w-full">
                 <PageTransition />
@@ -68,33 +66,11 @@ function AuthenticatedLayout() {
                 </Link>
               </footer>
             </main>
-            <MobileNav />
+            <MobileTabBar />
           </div>
         </div>
       </SidebarProvider>
     </WorkspaceProvider>
-  );
-}
-
-function TopBar() {
-  const inst = useInstitute();
-  const name = inst.data?.name;
-  return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 px-4 material-chrome scroll-edge sm:px-6">
-      <SidebarTrigger className="h-10 w-10 rounded-lg transition-colors duration-100 hover:bg-muted md:hidden" />
-      <div className="hidden md:block h-5 w-px bg-border" />
-      {name && name !== "My Institute" && (
-        <span className="hidden text-sm font-medium text-foreground/80 md:block truncate max-w-xs lg:max-w-md">
-          {name}
-        </span>
-      )}
-      <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <span className="hidden h-2 w-2 rounded-full bg-brand-teal sm:inline-block animate-pulse-soft" />
-          <span className="hidden sm:inline">Asia/Kolkata · INR</span>
-        </div>
-      </div>
-    </header>
   );
 }
 
@@ -114,55 +90,5 @@ function PageTransition() {
         <Outlet />
       </motion.div>
     </AnimatePresence>
-  );
-}
-
-function MobileNav() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-
-  const icons = {
-    "/dashboard": Home,
-    "/students": Users,
-    "/fees": Wallet,
-    "/attendance": CalendarCheck,
-  } as const;
-
-  const items = MOBILE_NAV_ITEMS.map((item) => ({
-    ...item,
-    icon: icons[item.to],
-  }));
-
-  return (
-    <nav className="fixed bottom-0 left-0 z-40 w-full px-2 py-2 material-chrome-dark scroll-edge-top md:hidden safe-area-inset-bottom">
-      <div className="mx-auto flex max-w-5xl items-stretch justify-between gap-1.5">
-        {items.map((item) => {
-          const Icon = item.icon;
-          const active =
-            pathname === item.to || pathname.startsWith(item.to + "/");
-          return (
-            <div key={item.to} className="flex-1">
-              <Link
-                to={item.to}
-                className={cn(
-                  "flex h-14 flex-col items-center justify-center gap-1 rounded-2xl px-2 text-[10px] font-semibold tracking-[0.01em] transition-[transform,background-color,color] duration-100 ease-out active:scale-[0.97] motion-reduce:active:scale-100",
-                  active
-                    ? "bg-muted/80 text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "h-5 w-5 transition-colors duration-150 [transition-timing-function:var(--ease-out)]",
-                    active ? "text-brand-teal" : "text-muted-foreground",
-                  )}
-                  aria-hidden
-                />
-                <span className="line-clamp-1 leading-tight">{item.label}</span>
-              </Link>
-            </div>
-          );
-        })}
-      </div>
-    </nav>
   );
 }
