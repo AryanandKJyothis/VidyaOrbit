@@ -69,6 +69,144 @@ export function paiseToRupees(paise: number | null | undefined): number {
   return Math.round(n / 100);
 }
 
+/** Platform-admin owners (`user_roles.role = 'admin'`) and their rows. */
+export type FounderCentreFact = {
+  ownerId: string;
+  platformAdmin: boolean;
+  plan: string | null;
+  status: string | null;
+  expiryDate: string | null;
+  cycle: string | null;
+  createdAt: string;
+  lastActiveAt?: string | null;
+  studentCount?: number;
+};
+
+export type FounderUserFact = {
+  id: string;
+  platformAdmin: boolean;
+  createdAt: string;
+  lastSignInAt: string | null;
+};
+
+export type FounderPaymentFact = {
+  ownerId: string;
+  platformAdminOwner: boolean;
+  amountPaise: number;
+  status: string;
+  keyMode: string;
+  paidAt: string | null;
+  needsReview?: boolean;
+};
+
+export type FounderAlertFact = {
+  ownerId: string;
+  platformAdminOwner: boolean;
+  kind: string;
+};
+
+export function withoutPlatformAdmins<T extends { platformAdmin: boolean }>(
+  rows: T[],
+): T[] {
+  return rows.filter((row) => !row.platformAdmin);
+}
+
+export function withoutAdminOwned<
+  T extends { ownerId: string; platformAdminOwner?: boolean },
+>(rows: T[], adminOwnerIds?: Iterable<string>): T[] {
+  if (adminOwnerIds) {
+    const admins = new Set(adminOwnerIds);
+    return rows.filter((row) => !admins.has(row.ownerId));
+  }
+  return rows.filter((row) => !row.platformAdminOwner);
+}
+
+function inUtcDay(iso: string, day: string): boolean {
+  const t = new Date(iso).getTime();
+  const start = Date.parse(`${day}T00:00:00.000Z`);
+  return Number.isFinite(t) && t >= start && t < start + 86_400_000;
+}
+
+function withinPastDays(iso: string | null, days: number, now: Date): boolean {
+  if (!iso) return false;
+  const t = new Date(iso).getTime();
+  return Number.isFinite(t) && t > now.getTime() - days * 86_400_000;
+}
+
+/**
+ * Founder-admin overview after dropping platform-admin accounts and the
+ * centres / payments they own. Must match admin_platform_overview SQL.
+ */
+export function founderOverviewFromFacts(
+  args: {
+    centres: FounderCentreFact[];
+    users: FounderUserFact[];
+    payments: FounderPaymentFact[];
+    alerts?: FounderAlertFact[];
+    trendDays?: string[];
+  },
+  now: Date = new Date(),
+): Pick<
+  AdminOverview,
+  | "centres"
+  | "users"
+  | "active_users_7d"
+  | "active_users_30d"
+  | "signups_7d"
+  | "signups_30d"
+  | "centre_signups_7d"
+  | "centre_signups_30d"
+  | "signup_trend"
+  | "mrr_paise"
+  | "revenue_30d_paise"
+  | "trials"
+  | "paying"
+> & { alerts: number; recent_activity: number } {
+  const centres = withoutPlatformAdmins(args.centres);
+  const users = withoutPlatformAdmins(args.users);
+  const payments = withoutAdminOwned(args.payments);
+  const alerts = withoutAdminOwned(args.alerts ?? []);
+  const trendDays = args.trendDays ?? [];
+  return {
+    centres: centres.length,
+    users: users.length,
+    active_users_7d: users.filter((u) => withinPastDays(u.lastSignInAt, 7, now))
+      .length,
+    active_users_30d: users.filter((u) =>
+      withinPastDays(u.lastSignInAt, 30, now),
+    ).length,
+    signups_7d: users.filter((u) => withinPastDays(u.createdAt, 7, now)).length,
+    signups_30d: users.filter((u) => withinPastDays(u.createdAt, 30, now))
+      .length,
+    centre_signups_7d: centres.filter((c) =>
+      withinPastDays(c.createdAt, 7, now),
+    ).length,
+    centre_signups_30d: centres.filter((c) =>
+      withinPastDays(c.createdAt, 30, now),
+    ).length,
+    signup_trend: trendDays.map((day) => ({
+      day,
+      users: users.filter((u) => inUtcDay(u.createdAt, day)).length,
+      centres: centres.filter((c) => inUtcDay(c.createdAt, day)).length,
+    })),
+    mrr_paise: sumMrrPaise(centres, now),
+    revenue_30d_paise: payments
+      .filter(
+        (p) =>
+          p.status === "paid" &&
+          p.keyMode === "live" &&
+          withinPastDays(p.paidAt, 30, now),
+      )
+      .reduce((sum, p) => sum + p.amountPaise, 0),
+    trials: centres.filter((c) => c.status === "trialing").length,
+    paying: centres.filter((c) => isPayingCentre({ ...c, now })).length,
+    alerts: alerts.length,
+    recent_activity: centres.filter((c) =>
+      withinPastDays(c.lastActiveAt ?? null, 7, now),
+    ).length,
+  };
+}
+
 const FORBIDDEN_ADMIN_KEYS = [
   "token",
   "raw_body",
@@ -241,6 +379,17 @@ export function mapUserRow(raw: unknown): AdminUserRow | null {
     orphan: Boolean(r.orphan),
     centres,
   };
+}
+
+/** Platform admins (`user_roles.role = 'admin'`) are omitted from founder metrics. */
+export function isPlatformAdminRow(row: { platform_admin?: boolean }): boolean {
+  return row.platform_admin === true;
+}
+
+export function excludePlatformAdminRows<
+  T extends { platform_admin?: boolean },
+>(rows: T[]): T[] {
+  return rows.filter((row) => !isPlatformAdminRow(row));
 }
 
 export type AdminPaymentRow = {
@@ -435,4 +584,12 @@ export function mapPaged<T>(
     ? r.rows.map(mapRow).filter((row): row is T => row != null)
     : [];
   return { total: asNumber(r.total), rows };
+}
+
+export function excludePlatformAdminsFromPage<
+  T extends { platform_admin?: boolean },
+>(page: AdminPaged<T>): AdminPaged<T> {
+  const rows = excludePlatformAdminRows(page.rows);
+  const dropped = page.rows.length - rows.length;
+  return { total: Math.max(0, page.total - dropped), rows };
 }

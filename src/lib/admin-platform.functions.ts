@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertAdmin } from "@/lib/admin-assert";
 import {
+  excludePlatformAdminsFromPage,
   mapAlert,
   mapCentreRow,
   mapOverview,
@@ -70,7 +71,7 @@ export const listAdminUsers = createServerFn({ method: "POST" })
       _limit: data.limit ?? 50,
       _offset: data.offset ?? 0,
     });
-    return mapPaged(rows, mapUserRow);
+    return excludePlatformAdminsFromPage(mapPaged(rows, mapUserRow));
   });
 
 export const getAdminUserDetail = createServerFn({ method: "POST" })
@@ -81,11 +82,15 @@ export const getAdminUserDetail = createServerFn({ method: "POST" })
     const raw = await rpcJson("admin_user_detail", { _user: data.user_id });
     if (!raw || typeof raw !== "object") return { user: null };
     const body = raw as Record<string, unknown>;
+    const user = mapUserRow({
+      ...((body.user as Record<string, unknown> | null) ?? {}),
+      centres: body.centres,
+    });
+    if (user?.platform_admin) {
+      return { user: null };
+    }
     return {
-      user: mapUserRow({
-        ...((body.user as Record<string, unknown> | null) ?? {}),
-        centres: body.centres,
-      }),
+      user,
       centres: Array.isArray(body.centres) ? body.centres : [],
       subscription: body.subscription ?? null,
       institute: body.institute ?? null,
