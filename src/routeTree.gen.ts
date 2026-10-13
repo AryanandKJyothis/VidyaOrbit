@@ -29,6 +29,7 @@ import { Route as AuthenticatedInvitesRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/plan'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminAlertsRouteImport } from './routes/_authenticated/admin.alerts'
@@ -144,6 +145,11 @@ const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
   path: '/students',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JoinTokenRoute = JoinTokenRouteImport.update({
   id: '/join/$token',
   path: '/join/$token',
@@ -247,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/plan': typeof AuthenticatedPlanRoute
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
   '/admin/alerts': typeof AuthenticatedAdminAlertsRoute
   '/admin/centres': typeof AuthenticatedAdminCentresRoute
@@ -281,6 +288,7 @@ export interface FileRoutesByTo {
   '/invites': typeof AuthenticatedInvitesRoute
   '/plan': typeof AuthenticatedPlanRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
   '/admin/alerts': typeof AuthenticatedAdminAlertsRoute
   '/admin/centres': typeof AuthenticatedAdminCentresRoute
@@ -319,6 +327,7 @@ export interface FileRoutesById {
   '/_authenticated/plan': typeof AuthenticatedPlanRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
   '/_authenticated/admin/alerts': typeof AuthenticatedAdminAlertsRoute
   '/_authenticated/admin/centres': typeof AuthenticatedAdminCentresRoute
@@ -357,6 +366,7 @@ export interface FileRouteTypes {
     | '/plan'
     | '/settings'
     | '/students'
+    | '/auth/callback'
     | '/join/$token'
     | '/admin/alerts'
     | '/admin/centres'
@@ -391,6 +401,7 @@ export interface FileRouteTypes {
     | '/invites'
     | '/plan'
     | '/students'
+    | '/auth/callback'
     | '/join/$token'
     | '/admin/alerts'
     | '/admin/centres'
@@ -428,6 +439,7 @@ export interface FileRouteTypes {
     | '/_authenticated/plan'
     | '/_authenticated/settings'
     | '/_authenticated/students'
+    | '/auth/callback'
     | '/join/$token'
     | '/_authenticated/admin/alerts'
     | '/_authenticated/admin/centres'
@@ -455,6 +467,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
   UiGalleryRoute: typeof UiGalleryRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   JoinTokenRoute: typeof JoinTokenRoute
   ApiBillingCreateOrderRoute: typeof ApiBillingCreateOrderRoute
   ApiBillingPricingRoute: typeof ApiBillingPricingRoute
@@ -603,6 +616,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/students'
       preLoaderRoute: typeof AuthenticatedStudentsRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/join/$token': {
       id: '/join/$token'
@@ -805,6 +825,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
   UiGalleryRoute: UiGalleryRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   JoinTokenRoute: JoinTokenRoute,
   ApiBillingCreateOrderRoute: ApiBillingCreateOrderRoute,
   ApiBillingPricingRoute: ApiBillingPricingRoute,

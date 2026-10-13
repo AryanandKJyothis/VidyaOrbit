@@ -32,6 +32,20 @@ import {
   ADMIN_FIXTURE_PAYMENTS,
   ADMIN_FIXTURE_USERS,
 } from "@/components/admin/admin-fixtures";
+import { BrandLoader } from "@/components/loading-screen";
+import { OwnerSetupWizardView } from "@/components/owner-setup-wizard";
+import { AppGuidedTourView } from "@/components/app-guided-tour";
+import { OnboardingChecklist } from "@/components/onboarding-checklist";
+import {
+  GoogleAuthDivider,
+  GoogleContinueButton,
+} from "@/components/google-continue-button";
+import {
+  FIXTURE_CHECKLIST_PARTIAL,
+  FIXTURE_STAFF_DRAFT,
+  FIXTURE_WIZARD_DRAFT,
+} from "@/components/onboarding-fixtures";
+import { TOUR_STEPS } from "@/lib/owner-onboarding";
 
 export const Route = createFileRoute("/ui-gallery")({
   beforeLoad: () => {
@@ -39,6 +53,27 @@ export const Route = createFileRoute("/ui-gallery")({
   },
   component: UiGallery,
 });
+
+function SetupFrame({
+  title,
+  id,
+  children,
+}: {
+  title: string;
+  id: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="space-y-3">
+      <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        {title}
+      </h2>
+      <div className="overflow-hidden rounded-[28px] border border-border bg-background shadow-[var(--shadow-elevated)]">
+        {children}
+      </div>
+    </section>
+  );
+}
 
 function PhoneFrame({
   title,
@@ -72,6 +107,172 @@ function UiGallery() {
         <p className="mt-1 text-sm text-muted-foreground">
           Fixture layout only. Hidden in production.
         </p>
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        <SetupFrame id="wizard-updates" title="Owner setup · Email updates">
+          <OwnerSetupWizardView
+            step="updates"
+            includeMarketingStep
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="wizard-you" title="Owner setup · You and your centre">
+          <OwnerSetupWizardView
+            step="you"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="wizard-staff" title="Staff setup · Name and phone">
+          <OwnerSetupWizardView
+            step="you"
+            mode="staff"
+            draft={FIXTURE_STAFF_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="wizard-profile" title="Owner setup · Centre type">
+          <OwnerSetupWizardView
+            step="profile"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="wizard-batch" title="Owner setup · First batch">
+          <OwnerSetupWizardView
+            step="batch"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="wizard-students" title="Owner setup · First students">
+          <OwnerSetupWizardView
+            step="students"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+            onImportStudents={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame
+          id="wizard-modal"
+          title="Owner setup · Modal over blurred dashboard"
+        >
+          <div className="relative min-h-[640px] overflow-hidden bg-muted">
+            <div className="pointer-events-none p-4 blur-sm">
+              <GreetingBanner
+                greeting="Good morning"
+                displayName="Anjali"
+                instituteName="My Institute"
+                classesToday={0}
+              />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/45 p-4 backdrop-blur-md contrast-more:bg-black/70 contrast-more:backdrop-blur-none">
+              <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/50 bg-card shadow-[var(--shadow-elevated)]">
+                <OwnerSetupWizardView
+                  step="you"
+                  draft={FIXTURE_WIZARD_DRAFT}
+                  errors={{}}
+                  onChange={() => {}}
+                  onContinue={() => {}}
+                  onBack={() => {}}
+                  onSkipStep={() => {}}
+                />
+              </div>
+            </div>
+          </div>
+        </SetupFrame>
+        <SetupFrame
+          id="brand-loader"
+          title="Branded loader · First load / OAuth"
+        >
+          <div className="bg-brand-grid flex min-h-[320px] items-center justify-center">
+            <BrandLoader label="Preparing your workspace…" />
+          </div>
+        </SetupFrame>
+        <SetupFrame id="wizard-saving" title="Owner setup · Saving a step">
+          <OwnerSetupWizardView
+            step="you"
+            draft={FIXTURE_WIZARD_DRAFT}
+            errors={{}}
+            busy
+            onChange={() => {}}
+            onContinue={() => {}}
+            onBack={() => {}}
+            onSkipStep={() => {}}
+          />
+        </SetupFrame>
+        <SetupFrame id="login-google" title="Login · Continue with Google">
+          <div className="bg-brand-grid p-6">
+            <Card className="mx-auto max-w-md">
+              <CardContent className="space-y-4 p-6">
+                <p className="type-kicker text-muted-foreground">
+                  Centre portal
+                </p>
+                <GoogleContinueButton onClick={() => {}} />
+                <GoogleAuthDivider />
+                <div className="space-y-2">
+                  <Label htmlFor="gallery-login-email">Email</Label>
+                  <Input
+                    id="gallery-login-email"
+                    type="email"
+                    defaultValue="admin@institute.in"
+                    readOnly
+                  />
+                </div>
+                <Button className="h-12 w-full" type="button">
+                  Sign in to Vidya Orbit
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </SetupFrame>
+        {TOUR_STEPS.map((step, index) => (
+          <PhoneFrame
+            key={step.id}
+            id={`tour-${step.id}`}
+            title={`Guided tour · ${step.title}`}
+          >
+            <AppGuidedTourView
+              stepIndex={index}
+              onNext={() => {}}
+              onBack={() => {}}
+              onSkip={() => {}}
+              onGoToPage={() => {}}
+            />
+          </PhoneFrame>
+        ))}
+        <PhoneFrame id="checklist" title="Getting started checklist">
+          <OnboardingChecklist
+            items={FIXTURE_CHECKLIST_PARTIAL.items}
+            doneCount={FIXTURE_CHECKLIST_PARTIAL.doneCount}
+            allDone={FIXTURE_CHECKLIST_PARTIAL.allDone}
+            onDismiss={() => {}}
+          />
+        </PhoneFrame>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">

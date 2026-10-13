@@ -465,6 +465,27 @@
   }
 }
 
+@keyframes brand-orbit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes brand-orbit-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
 @keyframes float-orbit {
   0%,
   100% {
@@ -563,6 +584,14 @@
 
 .animate-orbit {
   animation: orbit 4s linear infinite;
+}
+
+.brand-loader-orbit {
+  animation: brand-orbit-spin 2.6s linear infinite;
+}
+
+.brand-loader-breathe {
+  animation: none;
 }
 
 .animate-float-orbit {
@@ -958,6 +987,7 @@ tr {
   .animate-bounce-gentle,
   .animate-spin-slow,
   .animate-orbit,
+  .brand-loader-orbit,
   .animate-float-orbit,
   .animate-glow-pulse,
   .animate-pulse-ring,
@@ -971,6 +1001,11 @@ tr {
   .pressable:active {
     transition: none;
     transform: none;
+  }
+
+  /* Opacity-only pulse so the branded loader still reads as "working". */
+  .brand-loader-breathe {
+    animation: brand-orbit-breathe 1.6s ease-in-out infinite;
   }
 }
 

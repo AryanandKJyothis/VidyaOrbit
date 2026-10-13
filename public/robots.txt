@@ -25,6 +25,7 @@ Disallow: /admin
 Disallow: /receipts
 Disallow: /api
 Disallow: /join
+Disallow: /auth
 
 User-agent: *
 Allow: /
@@ -42,5 +43,6 @@ Disallow: /admin
 Disallow: /receipts
 Disallow: /api
 Disallow: /join
+Disallow: /auth
 
 Sitemap: https://www.vidyaorbit.in/sitemap.xml
