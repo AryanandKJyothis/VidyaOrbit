@@ -14,6 +14,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/empty-state";
 import { Logo } from "@/components/logo";
 import { BookOpen, CalendarDays, Clock, Plus, Users } from "lucide-react";
 
@@ -171,17 +173,15 @@ function UiGallery() {
         <PhoneFrame id="attendance" title="Attendance">
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-2xl bg-success/12 py-3 text-center">
-              <p className="text-[11px] font-semibold text-success">Present</p>
+              <p className="text-xs font-semibold text-success">Present</p>
               <p className="font-display text-2xl font-bold">18</p>
             </div>
             <div className="rounded-2xl bg-destructive/12 py-3 text-center">
-              <p className="text-[11px] font-semibold text-destructive">
-                Absent
-              </p>
+              <p className="text-xs font-semibold text-destructive">Absent</p>
               <p className="font-display text-2xl font-bold">3</p>
             </div>
             <div className="rounded-2xl bg-muted py-3 text-center">
-              <p className="text-[11px] font-semibold text-muted-foreground">
+              <p className="text-xs font-semibold text-muted-foreground">
                 Unmarked
               </p>
               <p className="font-display text-2xl font-bold">3</p>
@@ -194,7 +194,7 @@ function UiGallery() {
                   key={name}
                   className="flex items-center gap-3 rounded-2xl border border-border/80 bg-card px-3 py-3"
                 >
-                  <span className="w-6 text-[10px] font-semibold text-muted-foreground">
+                  <span className="w-6 text-xs font-semibold text-muted-foreground">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <InitialsAvatar name={name} />
@@ -217,7 +217,7 @@ function UiGallery() {
         <PhoneFrame id="fees" title="Fees">
           <Card className="bg-primary text-primary-foreground">
             <CardContent className="p-4">
-              <p className="text-[11px] uppercase tracking-wider text-primary-foreground/70">
+              <p className="type-kicker text-primary-foreground/80">
                 This month
               </p>
               <p className="font-display text-3xl font-bold">₹1,84,500</p>
@@ -279,7 +279,7 @@ function UiGallery() {
         <PhoneFrame id="settings" title="Settings">
           <Card>
             <CardContent className="space-y-3 p-5">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              <p className="type-kicker text-muted-foreground">
                 Centre profile
               </p>
               <div className="space-y-1.5">
@@ -297,7 +297,7 @@ function UiGallery() {
           </Card>
           <Card className="mt-3">
             <CardContent className="p-5">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              <p className="type-kicker text-muted-foreground">
                 Your current plan
               </p>
               <p className="mt-1 font-display text-lg font-semibold">Starter</p>
@@ -324,7 +324,7 @@ function UiGallery() {
             </h2>
             <div className="mt-4 w-full space-y-3 text-left">
               <div className="space-y-1.5">
-                <Label>Centre phone or email</Label>
+                <Label>Email</Label>
                 <Input defaultValue="hello@centre.example" className="h-11" />
               </div>
               <div className="space-y-1.5">
@@ -337,6 +337,26 @@ function UiGallery() {
               </div>
               <Button className="h-12 w-full">Sign in to Vidya Orbit</Button>
             </div>
+          </div>
+        </PhoneFrame>
+
+        <PhoneFrame id="states" title="Empty, loading, disabled">
+          <div className="space-y-4">
+            <EmptyState
+              icon={Users}
+              title="No students yet"
+              description="Add learners manually or import a spreadsheet."
+            >
+              <Button>Add student</Button>
+              <Button variant="outline">Import spreadsheet</Button>
+            </EmptyState>
+            <div className="space-y-2">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </div>
+            <Button className="h-12 w-full" disabled>
+              Save attendance
+            </Button>
           </div>
         </PhoneFrame>
       </div>

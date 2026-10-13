@@ -48,19 +48,19 @@ function AuthenticatedLayout() {
               <div className="flex-1 min-h-0 max-w-7xl mx-auto w-full">
                 <PageTransition />
               </div>
-              <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-border text-center text-[10px] sm:text-[11px] text-muted-foreground shrink-0">
+              <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-border text-center text-xs text-muted-foreground shrink-0">
                 <span>Vidya Orbit · Data privacy and security built-in</span>
                 <span className="mx-2 opacity-40">·</span>
                 <Link
                   to="/terms"
-                  className="text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                  className="inline-flex min-h-11 items-center text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground transition-colors [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
                 >
                   Terms
                 </Link>
                 <span className="mx-2 opacity-40">·</span>
                 <Link
                   to="/privacy"
-                  className="text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                  className="inline-flex min-h-11 items-center text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground transition-colors [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
                 >
                   Privacy
                 </Link>

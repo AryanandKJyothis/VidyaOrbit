@@ -297,7 +297,7 @@ export function DashboardSpotlight(props: SpotlightInput) {
             <div className="flex items-center gap-2">
               <span
                 className={cn(
-                  "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.13em]",
+                  "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-[0.13em]",
                   styles.chip,
                 )}
               >
@@ -325,7 +325,7 @@ export function DashboardSpotlight(props: SpotlightInput) {
                   )}
                 />
               </div>
-              <span className="shrink-0 text-[11px] font-medium text-muted-foreground tabular-nums">
+              <span className="shrink-0 text-xs font-medium text-muted-foreground tabular-nums">
                 {s.progressHint}
               </span>
             </div>
@@ -336,7 +336,7 @@ export function DashboardSpotlight(props: SpotlightInput) {
               <div className="font-display text-2xl sm:text-3xl font-bold leading-none tracking-tight tabular-nums">
                 {s.metric}
               </div>
-              <div className="mt-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <div className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 {s.metricLabel}
               </div>
             </div>

@@ -30,7 +30,7 @@ function PaidPlanCtas({
           <Button
             className="w-full gap-1.5"
             variant={isRecommended ? "default" : "outline"}
-            size="sm"
+            size="default"
           >
             <MessageCircle className="h-3.5 w-3.5" />
             WhatsApp us
@@ -44,7 +44,7 @@ function PaidPlanCtas({
           <Button
             className="w-full gap-1.5"
             variant={wa ? "ghost" : isRecommended ? "default" : "outline"}
-            size="sm"
+            size="default"
           >
             <Mail className="h-3.5 w-3.5" />
             Email us
@@ -72,7 +72,7 @@ export function PublicPricingGrid() {
             }
           >
             {isRecommended && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[color:var(--brand-teal)] px-3 py-1 text-[11px] font-semibold text-white">
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[color:var(--brand-teal)] px-3 py-1 text-xs font-semibold text-white">
                 Recommended
               </span>
             )}

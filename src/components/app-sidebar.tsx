@@ -151,7 +151,7 @@ export function AppSidebar() {
               <span className="font-display text-base font-bold tracking-tight text-sidebar-foreground">
                 Vidya
               </span>
-              <span className="text-[8.5px] uppercase tracking-[0.18em] text-sidebar-foreground/60 font-semibold">
+              <span className="text-xs uppercase tracking-[0.16em] text-sidebar-foreground/80 font-semibold">
                 Orbit
               </span>
             </div>
@@ -284,7 +284,7 @@ function PlanBadge() {
   return (
     <Link
       to="/plan"
-      className="mx-1 mb-1 flex items-center justify-between rounded-lg border border-sidebar-border/60 bg-sidebar-accent/30 px-2.5 py-1.5 text-[11px] text-sidebar-foreground/80 transition-[transform,background-color] duration-150 [transition-timing-function:var(--ease-out)] hover:bg-sidebar-accent/60 active:scale-[0.98] motion-reduce:active:scale-100"
+      className="mx-1 mb-1 flex min-h-11 items-center justify-between rounded-lg border border-sidebar-border/60 bg-sidebar-accent/30 px-2.5 py-2 text-xs text-sidebar-foreground/90 transition-[transform,background-color] duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-sidebar-accent/60 active:scale-[0.98] motion-reduce:active:scale-100"
     >
       <span className="uppercase tracking-wider opacity-70">Plan</span>
       <span className="font-semibold">{meta?.name ?? sub.data.plan}</span>

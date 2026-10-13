@@ -36,20 +36,20 @@ export function SiteFooter() {
             <nav className="mt-3 flex flex-col gap-2">
               <Link
                 to="/pricing"
-                className="transition-colors duration-100 hover:text-foreground"
+                className="inline-flex min-h-11 items-center transition-colors duration-100 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
               >
                 Pricing
               </Link>
               <Link
                 to="/login"
                 search={{ mode: "signup" }}
-                className="transition-colors duration-100 hover:text-foreground"
+                className="inline-flex min-h-11 items-center transition-colors duration-100 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
               >
                 Start free
               </Link>
               <Link
                 to="/login"
-                className="transition-colors duration-100 hover:text-foreground"
+                className="inline-flex min-h-11 items-center transition-colors duration-100 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
               >
                 Sign in
               </Link>
@@ -66,7 +66,7 @@ export function SiteFooter() {
                   href={wa}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 transition-colors duration-100 hover:text-foreground"
+                  className="inline-flex min-h-11 items-center gap-1.5 transition-colors duration-100 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
                 >
                   <MessageCircle className="h-3.5 w-3.5" />
                   WhatsApp {FOUNDER_NAME}
@@ -75,7 +75,7 @@ export function SiteFooter() {
               {tel && phone && (
                 <a
                   href={tel}
-                  className="inline-flex items-center gap-1.5 transition-colors duration-100 hover:text-foreground"
+                  className="inline-flex min-h-11 items-center gap-1.5 transition-colors duration-100 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
                 >
                   <Phone className="h-3.5 w-3.5" />
                   {phone}
@@ -84,7 +84,7 @@ export function SiteFooter() {
               {email && (
                 <a
                   href={`mailto:${email}`}
-                  className="inline-flex items-center gap-1.5 transition-colors duration-100 hover:text-foreground"
+                  className="inline-flex min-h-11 items-center gap-1.5 transition-colors duration-100 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
                 >
                   <Mail className="h-3.5 w-3.5" />
                   {email}
@@ -100,20 +100,20 @@ export function SiteFooter() {
             <nav className="mt-3 flex flex-col gap-2">
               <Link
                 to="/terms"
-                className="transition-colors duration-100 hover:text-foreground"
+                className="inline-flex min-h-11 items-center transition-colors duration-100 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
               >
                 Terms
               </Link>
               <Link
                 to="/privacy"
-                className="transition-colors duration-100 hover:text-foreground"
+                className="inline-flex min-h-11 items-center transition-colors duration-100 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
               >
                 Privacy
               </Link>
               <Link
                 to="/terms"
                 hash="refund"
-                className="transition-colors duration-100 hover:text-foreground"
+                className="inline-flex min-h-11 items-center transition-colors duration-100 [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
               >
                 Refunds &amp; cancellations
               </Link>

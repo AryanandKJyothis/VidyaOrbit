@@ -120,9 +120,7 @@ function JoinPage() {
             <div className="font-display text-lg font-bold tracking-tight">
               Vidya
             </div>
-            <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-              Orbit
-            </div>
+            <div className="type-kicker text-muted-foreground">Orbit</div>
           </div>
         </div>
 

@@ -36,7 +36,7 @@ export function GreetingBanner({
           <p className="text-xs font-medium text-muted-foreground">
             {format(new Date(), "d MMM yyyy")} · {format(new Date(), "EEEE")}
           </p>
-          <h1 className="mt-1 font-display text-2xl font-bold leading-tight tracking-tight sm:text-[1.75rem]">
+          <h1 className="mt-1 font-display text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
             {greeting}, {displayName}
           </h1>
           <p className="mt-0.5 truncate text-sm text-muted-foreground">
@@ -113,8 +113,8 @@ export function QuickActions({
               "transition-[transform,background-color] duration-150 [transition-timing-function:var(--ease-out)]",
               "active:scale-[0.97] motion-reduce:active:scale-100",
               tile.primary
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-card text-foreground shadow-[var(--shadow-card)] ring-1 ring-border/80",
+                ? "bg-primary text-primary-foreground shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:bg-primary/90"
+                : "bg-card text-foreground shadow-[var(--shadow-card)] ring-1 ring-border/80 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/50",
             )}
           >
             <span
@@ -220,7 +220,7 @@ export function TodayAttendanceCard({
                   key={s.label}
                   className="rounded-xl bg-muted/40 px-2 py-2 text-center"
                 >
-                  <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground">
+                  <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
                     <span className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />
                     {s.label}
                   </div>
@@ -273,10 +273,10 @@ export function CollectionCard({
       <CardContent className="flex flex-col justify-between gap-4 p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <p className="type-kicker text-muted-foreground">
               Collected this month
             </p>
-            <p className="mt-1 font-display text-[1.65rem] font-bold leading-none tracking-tight tabular-nums">
+            <p className="mt-1 font-display text-3xl font-bold leading-none tracking-tight tabular-nums">
               {formatINR(monthCollected)}
             </p>
           </div>
@@ -321,9 +321,7 @@ export function OverdueActionCard({
     return (
       <Card>
         <CardContent className="p-4 sm:p-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-success">
-            All clear
-          </p>
+          <p className="type-kicker text-success">All clear</p>
           <p className="mt-1 font-display text-xl font-bold">No overdue dues</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Nothing waiting on collections right now.
@@ -337,11 +335,11 @@ export function OverdueActionCard({
       <CardContent className="flex flex-col justify-between gap-4 p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-destructive">
+            <p className="flex items-center gap-1.5 type-kicker text-destructive">
               <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
               Action required
             </p>
-            <p className="mt-1 font-display text-[1.65rem] font-bold leading-none tracking-tight tabular-nums text-destructive">
+            <p className="mt-1 font-display text-3xl font-bold leading-none tracking-tight tabular-nums text-destructive">
               {formatINR(overdueAmount)}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -388,7 +386,7 @@ export function AttendanceTrend({
                 key={d.label}
                 className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
               >
-                <span className="text-[10px] font-medium tabular-nums text-muted-foreground">
+                <span className="text-xs font-medium tabular-nums text-muted-foreground">
                   {d.pct == null ? "—" : `${d.pct}%`}
                 </span>
                 <div
@@ -398,7 +396,7 @@ export function AttendanceTrend({
                   )}
                   style={{ height: `${height}%` }}
                 />
-                <span className="text-[10px] font-medium text-muted-foreground">
+                <span className="text-xs font-medium text-muted-foreground">
                   {d.label}
                 </span>
               </div>
@@ -465,7 +463,7 @@ export function RecentActivity({
                   <Link
                     to="/receipts/$paymentId"
                     params={{ paymentId: item.paymentId }}
-                    className="block rounded-lg px-1 hover:bg-muted/40"
+                    className="block rounded-lg px-1 min-h-11 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {inner}
                   </Link>

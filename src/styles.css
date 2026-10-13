@@ -978,7 +978,8 @@ tr {
   .material-chrome,
   .material-chrome-dark,
   .material-sheet,
-  .material-thick {
+  .material-thick,
+  .landing-island {
     background: var(--background);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -989,7 +990,8 @@ tr {
   .material-chrome,
   .material-chrome-dark,
   .material-sheet,
-  .material-thick {
+  .material-thick,
+  .landing-island {
     background: var(--background);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -1000,5 +1002,106 @@ tr {
   .scroll-edge-top {
     box-shadow: none;
     border-color: var(--foreground);
+  }
+}
+
+/* ============================================================
+   Apple HIG polish — type floor, 44px taps, states.
+   Brand colour tokens above stay unchanged.
+   ============================================================ */
+
+:root {
+  --tap: 2.75rem; /* 44px */
+}
+
+.type-kicker {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.tap-target {
+  min-height: var(--tap);
+  min-width: var(--tap);
+}
+
+.pill {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  min-height: 1.5rem;
+  padding: 0.125rem 0.5rem;
+}
+
+.skeleton-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--muted) 0%,
+    color-mix(in oklab, var(--muted) 40%, white) 50%,
+    var(--muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    animation: none;
+  }
+}
+
+/* Hero heading uses brand navy, not generic black/grey */
+.hero-heading-gradient {
+  background: linear-gradient(
+    90deg,
+    var(--foreground) 0%,
+    color-mix(in oklab, var(--foreground) 72%, var(--brand-teal)) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.dark .hero-heading-gradient {
+  background: linear-gradient(
+    90deg,
+    var(--foreground) 0%,
+    color-mix(in oklab, var(--foreground) 70%, var(--brand-teal)) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-contrast: more) {
+  .hero-heading-gradient,
+  .dark .hero-heading-gradient {
+    background: none;
+    color: var(--foreground);
+    -webkit-background-clip: unset;
+    background-clip: unset;
+  }
+}
+
+:is(button, input, select, textarea)[disabled],
+:is(button, a, [role="button"])[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a:hover {
+    text-decoration-color: currentColor;
   }
 }

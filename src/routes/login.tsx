@@ -250,7 +250,7 @@ function LoginPage() {
             <div className="font-display text-lg font-bold tracking-tight">
               Vidya
             </div>
-            <div className="text-[10px] uppercase tracking-[0.16em] text-primary-foreground/70 font-semibold">
+            <div className="text-xs uppercase tracking-[0.16em] text-primary-foreground/80 font-semibold">
               Orbit
             </div>
           </div>
@@ -327,9 +327,7 @@ function LoginPage() {
 
           <Card className="overflow-hidden">
             <CardContent className="p-5 sm:p-6">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                Centre portal
-              </p>
+              <p className="type-kicker text-muted-foreground">Centre portal</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Log in to manage attendance &amp; fees
               </p>
@@ -382,7 +380,7 @@ function LoginPage() {
 
                   <form
                     onSubmit={handleLogin}
-                    className="mt-6 space-y-4"
+                    className="mt-5 space-y-4"
                     noValidate
                   >
                     <div className="space-y-2">
@@ -427,7 +425,7 @@ function LoginPage() {
                         <Label htmlFor="password">Password</Label>
                         <Link
                           to="/forgot-password"
-                          className="text-xs text-primary hover:underline"
+                          className="inline-flex min-h-11 items-center text-sm text-primary [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
                         >
                           Forgot password?
                         </Link>

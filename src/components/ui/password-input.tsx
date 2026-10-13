@@ -25,7 +25,7 @@ export const PasswordInput = React.forwardRef<
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
-        className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-[transform,color,background-color] duration-150 [transition-timing-function:var(--ease-out)] hover:bg-muted hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:active:scale-100"
+        className="absolute right-0.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-[transform,color,background-color] duration-150 [transition-timing-function:var(--ease-out)] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:active:scale-100"
         aria-label={visible ? "Hide password" : "Show password"}
         aria-pressed={visible}
       >

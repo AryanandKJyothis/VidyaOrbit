@@ -222,7 +222,7 @@ function StudentDetail() {
                   onValueChange={handleBatchChange}
                   disabled={updateStudent.isPending}
                 >
-                  <SelectTrigger className="h-9 text-sm">
+                  <SelectTrigger className="h-11 min-h-11 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -504,9 +504,7 @@ function AttendanceMiniCalendar({
                   d.status ? `${d.date}: ${d.status}` : `${d.date}: no session`
                 }
               />
-              <span className="text-[10px] text-muted-foreground">
-                {d.label}
-              </span>
+              <span className="text-xs text-muted-foreground">{d.label}</span>
             </div>
           ))}
         </div>
