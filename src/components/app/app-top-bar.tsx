@@ -26,7 +26,7 @@ export function AppTopBar() {
           <Logo size={22} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+          <p className="font-display text-[11px] font-bold tracking-[-0.04em] text-primary">
             Vidya Orbit
           </p>
           <div className="-ml-2 max-w-[220px] sm:max-w-xs">

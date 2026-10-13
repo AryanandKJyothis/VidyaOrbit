@@ -151,8 +151,8 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="flex flex-1 flex-col leading-tight">
-              <span className="font-display text-base font-bold tracking-[-0.04em] text-sidebar-foreground">
-                Vidya Orbit
+              <span className="font-display text-base font-bold tracking-[-0.05em] text-sidebar-foreground">
+                VIDYA ORBIT
               </span>
             </div>
           )}

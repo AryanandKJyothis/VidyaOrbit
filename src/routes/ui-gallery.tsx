@@ -75,8 +75,8 @@ function UiGallery() {
                 >
                   <Logo size={26} />
                 </div>
-                <span className="font-display text-sm font-bold tracking-[-0.04em]">
-                  Vidya Orbit
+                <span className="font-display text-sm font-bold tracking-[-0.05em]">
+                  VIDYA ORBIT
                 </span>
               </div>
               <nav className="space-y-1 text-sm">
@@ -102,7 +102,7 @@ function UiGallery() {
               </nav>
             </aside>
             <div className="min-w-0 flex-1 space-y-3 p-4 sm:p-6">
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+              <p className="font-display text-[11px] font-bold tracking-[-0.04em] text-primary">
                 Vidya Orbit
               </p>
               <GreetingBanner

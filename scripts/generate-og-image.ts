@@ -1,5 +1,5 @@
 /**
- * Generate Vidya Orbit brand raster assets from the SVG mark.
+ * Generate Vidya Orbit brand raster assets from the exact kit SVGs.
  * Run with: bun scripts/generate-og-image.ts
  *
  * Writes:
@@ -14,11 +14,11 @@ import sharp from "sharp";
 import fs from "fs";
 import path from "path";
 
-const ORBIT_BLUE = "#1746E8";
 const SIGNAL_ORANGE = "#F05A28";
 const INK = "#111111";
 const PAPER = "#F8F7F2";
 const SLATE = "#52545A";
+const ORBIT_BLUE = "#1746E8";
 
 const ROOT = process.cwd();
 const MARK_SVG = path.join(ROOT, "brand/vidya-orbit-mark.svg");
@@ -50,15 +50,26 @@ function pngToIco(pngs: { size: number; buffer: Buffer }[]): Buffer {
   return Buffer.concat([header, entries, ...blobs]);
 }
 
-function markOnPaperSvg(size: number, paddingRatio: number): string {
+/** Inner markup of the kit file — never redraw the mark geometry. */
+function svgInner(svg: string): string {
+  return svg
+    .replace(/<\?xml[^>]*>/i, "")
+    .replace(/<svg[^>]*>/i, "")
+    .replace(/<\/svg>\s*$/i, "")
+    .trim();
+}
+
+function markOnPaperSvg(
+  markSvg: string,
+  size: number,
+  paddingRatio: number,
+): string {
   const pad = Math.round(size * paddingRatio);
   const inner = size - pad * 2;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
   <rect width="${size}" height="${size}" fill="${PAPER}"/>
   <svg x="${pad}" y="${pad}" width="${inner}" height="${inner}" viewBox="0 0 200 200">
-    <circle cx="100" cy="100" r="58" fill="${ORBIT_BLUE}"/>
-    <ellipse cx="100" cy="100" rx="88" ry="34" fill="none" stroke="${INK}" stroke-width="9" transform="rotate(-28 100 100)"/>
-    <circle cx="164" cy="58" r="12" fill="${SIGNAL_ORANGE}" stroke="${PAPER}" stroke-width="5"/>
+    ${svgInner(markSvg)}
   </svg>
 </svg>`;
 }
@@ -69,10 +80,14 @@ async function rasterizeSvg(svg: string, width: number, height = width) {
 
 async function generateOGImage() {
   const mark = fs.readFileSync(MARK_SVG, "utf8");
-  const markPng = await sharp(Buffer.from(mark))
-    .resize(160, 160, {
+  const logoBytes = fs.readFileSync(LOGO_SVG);
+
+  const lockupH = 52;
+  const lockupW = Math.round(lockupH * (780 / 180));
+  const logoPng = await sharp(logoBytes)
+    .resize(lockupW, lockupH, {
       fit: "contain",
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
+      background: { r: 248, g: 247, b: 242, alpha: 1 },
     })
     .png()
     .toBuffer();
@@ -81,8 +96,6 @@ async function generateOGImage() {
   <rect width="1200" height="630" fill="${PAPER}"/>
   <ellipse cx="980" cy="90" rx="220" ry="84" fill="none" stroke="${INK}" stroke-width="2" opacity="0.18" transform="rotate(-28 980 90)"/>
   <circle cx="1094" cy="38" r="10" fill="${SIGNAL_ORANGE}"/>
-  <circle cx="160" cy="118" r="36" fill="${ORBIT_BLUE}"/>
-  <text x="214" y="132" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="36" letter-spacing="1.2" fill="${INK}">VIDYA ORBIT</text>
   <text x="80" y="188" font-family="Arial, Helvetica, sans-serif" font-size="14" letter-spacing="3.2" fill="${SLATE}">ONE CLEAR VIEW OF YOUR CENTRE</text>
   <rect x="80" y="220" width="1040" height="1" fill="${INK}" opacity="0.18"/>
   <text x="80" y="310" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="56" fill="${INK}">Bring your</text>
@@ -101,7 +114,7 @@ async function generateOGImage() {
 </svg>`;
 
   const og = await sharp(Buffer.from(svg))
-    .composite([{ input: markPng, top: 38, left: 72 }])
+    .composite([{ input: logoPng, top: 48, left: 80 }])
     .png({ compressionLevel: 9 })
     .toBuffer();
 
@@ -109,7 +122,7 @@ async function generateOGImage() {
   fs.writeFileSync(ogPath, og);
 
   const logoOut = path.join(ROOT, "public", "logo.png");
-  await sharp(Buffer.from(markOnPaperSvg(512, 0.12)))
+  await sharp(Buffer.from(markOnPaperSvg(mark, 512, 0.12)))
     .png({ compressionLevel: 9 })
     .toFile(logoOut);
 
@@ -128,7 +141,7 @@ async function generateOGImage() {
     })
     .webp({ quality: 92 })
     .toFile(path.join(assetsDir, "logo-mark.webp"));
-  await sharp(Buffer.from(fs.readFileSync(LOGO_SVG)))
+  await sharp(logoBytes)
     .resize(1560, 360, {
       fit: "contain",
       background: { r: 248, g: 247, b: 242, alpha: 1 },
@@ -141,8 +154,8 @@ async function generateOGImage() {
   const iconDir = path.join(ROOT, "public", "icons");
   fs.mkdirSync(iconDir, { recursive: true });
 
-  const fav16 = await rasterizeSvg(markOnPaperSvg(16, 0.06), 16);
-  const fav32 = await rasterizeSvg(markOnPaperSvg(32, 0.08), 32);
+  const fav16 = await rasterizeSvg(markOnPaperSvg(mark, 16, 0.06), 16);
+  const fav32 = await rasterizeSvg(markOnPaperSvg(mark, 32, 0.08), 32);
   fs.writeFileSync(path.join(ROOT, "public", "favicon-16x16.png"), fav16);
   fs.writeFileSync(path.join(ROOT, "public", "favicon-32x32.png"), fav32);
   fs.writeFileSync(
@@ -153,12 +166,12 @@ async function generateOGImage() {
     ]),
   );
 
-  const apple = await rasterizeSvg(markOnPaperSvg(180, 0.14), 180);
+  const apple = await rasterizeSvg(markOnPaperSvg(mark, 180, 0.14), 180);
   fs.writeFileSync(path.join(ROOT, "public", "apple-touch-icon.png"), apple);
 
-  const icon192 = await rasterizeSvg(markOnPaperSvg(192, 0.12), 192);
-  const icon512 = await rasterizeSvg(markOnPaperSvg(512, 0.12), 512);
-  const maskable = await rasterizeSvg(markOnPaperSvg(512, 0.22), 512);
+  const icon192 = await rasterizeSvg(markOnPaperSvg(mark, 192, 0.12), 192);
+  const icon512 = await rasterizeSvg(markOnPaperSvg(mark, 512, 0.12), 512);
+  const maskable = await rasterizeSvg(markOnPaperSvg(mark, 512, 0.22), 512);
   fs.writeFileSync(path.join(iconDir, "icon-192.png"), icon192);
   fs.writeFileSync(path.join(iconDir, "icon-512.png"), icon512);
   fs.writeFileSync(path.join(iconDir, "icon-512-maskable.png"), maskable);
@@ -168,7 +181,9 @@ async function generateOGImage() {
     `Generated OG image: ${ogPath} (${(ogStats.size / 1024).toFixed(1)} KB)`,
   );
   console.log(`Generated logo: ${logoOut}`);
-  console.log("Generated favicon, apple-touch and manifest icons");
+  console.log(
+    "Generated favicon, apple-touch and manifest icons from exact kit SVGs",
+  );
 }
 
 generateOGImage().catch((err) => {
