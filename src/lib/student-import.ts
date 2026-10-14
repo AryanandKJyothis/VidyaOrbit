@@ -1,9 +1,56 @@
 import type { Student } from "@/hooks/use-data";
-import writeXlsxFile, { type SheetData } from "write-excel-file/browser";
 import { calendarDateISO } from "@/lib/format";
+import * as XLSX from "xlsx";
 
-/** Match `studentSchema` / import dialog */
+/** @deprecated Prefer isValidImportPhone — kept for older call sites. */
 export const IMPORT_PHONE_REGEX = /^[0-9+\-\s()]{6,20}$/;
+
+export const MAX_IMPORT_ROWS = 5000;
+export const MAX_IMPORT_BYTES = 8 * 1024 * 1024;
+export const IMPORT_INSERT_CHUNK = 80;
+
+export const TEMPLATE_SHEET_NAME = "Students";
+export const INSTRUCTIONS_SHEET_NAME = "Instructions";
+
+export const TEMPLATE_HEADERS = [
+  "Name",
+  "Batch",
+  "Phone",
+  "Parent name",
+  "Parent phone",
+  "Monthly fee",
+  "Joining date",
+  "Address",
+  "Notes",
+] as const;
+
+export type TemplateHeader = (typeof TEMPLATE_HEADERS)[number];
+
+export const TEMPLATE_EXAMPLE_ROWS: Record<TemplateHeader, string | number>[] =
+  [
+    {
+      Name: "Example Student One",
+      Batch: "Example Batch",
+      Phone: "9000000001",
+      "Parent name": "Example Parent One",
+      "Parent phone": "9000000002",
+      "Monthly fee": 1000,
+      "Joining date": "01-06-2025",
+      Address: "12 Example Street, Town",
+      Notes: "Delete this example row",
+    },
+    {
+      Name: "Example Student Two",
+      Batch: "Example Batch",
+      Phone: "9000000003",
+      "Parent name": "Example Parent Two",
+      "Parent phone": "9000000004",
+      "Monthly fee": 1500,
+      "Joining date": "15-06-2025",
+      Address: "34 Sample Road, Town",
+      Notes: "Delete this example row",
+    },
+  ];
 
 /** Last 10 digits for dedupe (India-style). */
 export function normalizePhoneKey(
@@ -16,10 +63,38 @@ export function normalizePhoneKey(
   return null;
 }
 
-function normKeyFromRow(phone: string | null, name: string): string {
-  const p = normalizePhoneKey(phone);
-  if (p) return `p:${p}`;
-  return `n:${name.trim().toLowerCase()}`;
+/** 10-digit phone, optional +91 / leading 0 and punctuation. */
+export function isValidImportPhone(phone: string | null | undefined): boolean {
+  return nationalTenDigits(phone) !== null;
+}
+
+function nationalTenDigits(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  const trimmed = String(phone).trim();
+  if (!trimmed) return null;
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length === 10) return digits;
+  if (digits.length === 12 && digits.startsWith("91")) return digits.slice(2);
+  if (digits.length === 11 && digits.startsWith("0")) return digits.slice(1);
+  return null;
+}
+
+function contactPhoneKey(
+  phone: string | null | undefined,
+  guardianPhone: string | null | undefined,
+): string | null {
+  return normalizePhoneKey(phone) ?? normalizePhoneKey(guardianPhone);
+}
+
+function identityKey(
+  name: string,
+  phone: string | null | undefined,
+  guardianPhone?: string | null,
+): string {
+  const n = name.trim().toLowerCase();
+  const p = contactPhoneKey(phone, guardianPhone);
+  if (p) return `np:${n}|${p}`;
+  return `n:${n}`;
 }
 
 export type ImportRowIssue =
@@ -28,17 +103,18 @@ export type ImportRowIssue =
   | "missing_phone"
   | "invalid_name"
   | "dup_file"
-  | "dup_db";
+  | "dup_db"
+  | "over_limit";
 
-/** Same rule as `studentSchemaWithPhone`: student or guardian phone. */
+/** Same rule as `studentSchemaWithPhone`: student or guardian phone, 10 digits. */
 export function importContactIssue(
   phone: string | null | undefined,
   guardianPhone: string | null | undefined,
 ): "invalid_phone" | "missing_phone" | null {
   const p = (phone ?? "").trim();
   const g = (guardianPhone ?? "").trim();
-  const pOk = Boolean(p && IMPORT_PHONE_REGEX.test(p));
-  const gOk = Boolean(g && IMPORT_PHONE_REGEX.test(g));
+  const pOk = Boolean(p && isValidImportPhone(p));
+  const gOk = Boolean(g && isValidImportPhone(g));
   if (pOk || gOk) return null;
   if (p || g) return "invalid_phone";
   return "missing_phone";
@@ -52,6 +128,9 @@ export type PreparedImportRow = {
   guardian_phone: string | null;
   fee_total: number;
   joining_date: string | null;
+  fee_due_date: string | null;
+  address: string | null;
+  notes: string | null;
   batch_id: string | null;
   /** Original batch name from sheet, if it didn't match any known batch */
   batch_name_raw?: string | null;
@@ -71,16 +150,22 @@ export type ImportField =
   | "guardian_phone"
   | "batch"
   | "fee"
-  | "joining_date";
+  | "joining_date"
+  | "address"
+  | "notes"
+  | "fee_due_date";
 
 export const FIELD_LABELS: Record<ImportField, string> = {
   name: "Name",
   phone: "Phone",
-  guardian: "Guardian",
-  guardian_phone: "Guardian phone",
+  guardian: "Parent / guardian",
+  guardian_phone: "Parent phone",
   batch: "Batch",
-  fee: "Fee total",
+  fee: "Monthly fee",
   joining_date: "Joining date",
+  address: "Address",
+  notes: "Notes",
+  fee_due_date: "Fee due date",
 };
 
 /** Lowercase, normalized aliases (incl. transliterated Malayalam/Hindi). */
@@ -105,6 +190,7 @@ export const FIELD_ALIASES: Record<ImportField, string[]> = {
     "contact",
     "contact number",
     "phone number",
+    "student phone",
     "ph",
     "ph no",
     "whatsapp",
@@ -145,6 +231,8 @@ export const FIELD_ALIASES: Record<ImportField, string[]> = {
     "fee",
     "fee total",
     "total fee",
+    "monthly fee",
+    "monthly fees",
     "tuition",
     "tuition fee",
     "amount",
@@ -160,6 +248,9 @@ export const FIELD_ALIASES: Record<ImportField, string[]> = {
     "start date",
     "joined on",
   ],
+  address: ["address", "home address", "house", "location"],
+  notes: ["notes", "note", "remarks", "remark", "comments"],
+  fee_due_date: ["fee due date", "due date", "fees due", "due on", "next due"],
 };
 
 export type ColumnMapping = Partial<Record<ImportField, string>>;
@@ -195,7 +286,6 @@ export function detectHeaderRow(matrix: unknown[][]): number {
       if (aliasSet.has(n)) score += 3;
       else if (n.length <= 30 && /[a-z]/.test(n)) score += 1;
     }
-    // Prefer earlier rows with similar score
     if (score > bestScore) {
       bestScore = score;
       best = i;
@@ -214,7 +304,6 @@ export function rowsFromMatrix(
     const s = c == null ? "" : String(c).trim();
     return s || `Column ${i + 1}`;
   });
-  // Dedupe duplicate header names
   const seen = new Map<string, number>();
   const headers = headerCells.map((h) => {
     const n = seen.get(h) ?? 0;
@@ -245,7 +334,6 @@ export function guessColumnMapping(headers: string[]): ColumnMapping {
   }));
   (Object.keys(FIELD_ALIASES) as ImportField[]).forEach((field) => {
     const aliases = FIELD_ALIASES[field].map(normalizeHeader);
-    // exact match first
     for (const h of normHeaders) {
       if (used.has(h.raw)) continue;
       if (aliases.includes(h.norm)) {
@@ -254,7 +342,6 @@ export function guessColumnMapping(headers: string[]): ColumnMapping {
         return;
       }
     }
-    // fuzzy contains
     for (const h of normHeaders) {
       if (used.has(h.raw)) continue;
       if (aliases.some((a) => h.norm.includes(a) || a.includes(h.norm))) {
@@ -269,8 +356,11 @@ export function guessColumnMapping(headers: string[]): ColumnMapping {
 
 // ── Cell parsing ────────────────────────────────────────────────────
 
-function parseDateCell(v: unknown): string | null {
+export function parseImportDate(v: unknown): string | null {
   if (v == null || v === "") return null;
+  if (v instanceof Date && !Number.isNaN(v.getTime())) {
+    return calendarDateISO(v);
+  }
   if (typeof v === "number" && !Number.isNaN(v)) {
     const d = new Date(Math.round((v - 25569) * 86400 * 1000));
     if (!Number.isNaN(d.getTime())) return calendarDateISO(d);
@@ -297,63 +387,236 @@ function pick(
   return v ?? "";
 }
 
+function asTrimmed(v: unknown): string {
+  if (v == null) return "";
+  return String(v).trim();
+}
+
+function asNullable(v: unknown, max: number): string | null {
+  const s = asTrimmed(v);
+  if (!s) return null;
+  return s.slice(0, max);
+}
+
+// ── Spreadsheet parse ───────────────────────────────────────────────
+
+export function parseSpreadsheetBuffer(
+  buf: ArrayBuffer,
+  fileName: string,
+): unknown[][] {
+  const name = fileName.toLowerCase();
+  const wb = name.endsWith(".csv")
+    ? XLSX.read(new TextDecoder("utf-8").decode(buf), {
+        type: "string",
+        raw: true,
+      })
+    : XLSX.read(buf, { type: "array", cellDates: true, raw: true });
+  if (!wb.SheetNames.length) return [];
+  const sheetName =
+    wb.SheetNames.find((s) => /student/i.test(s)) ?? wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  if (!ws) return [];
+  return XLSX.utils.sheet_to_json<unknown[]>(ws, {
+    header: 1,
+    raw: true,
+    defval: "",
+    blankrows: true,
+  });
+}
+
+export function workbookToArrayBuffer(wb: XLSX.WorkBook): ArrayBuffer {
+  const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const bytes = out instanceof Uint8Array ? out : new Uint8Array(out);
+  return bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength,
+  );
+}
+
+export function workbookToBlob(wb: XLSX.WorkBook): Blob {
+  return new Blob([workbookToArrayBuffer(wb)], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+}
+
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+export function instructionRows(batchNames: string[] = []): string[][] {
+  const batchesBlock: string[][] = batchNames.length
+    ? [
+        [
+          "Your batches (type these names exactly, or a new name to create one)",
+        ],
+        ...batchNames.map((b) => [b]),
+      ]
+    : [
+        ["Your batches"],
+        [
+          "None yet. Type a batch name on the Students sheet — Vidya will create it if you can add batches.",
+        ],
+      ];
+
+  return [
+    ["Vidya Orbit — student import"],
+    [],
+    ["How to fill the Students sheet"],
+    ["Column", "Required?", "Format"],
+    ["Name", "Yes", "Student's full name"],
+    [
+      "Batch",
+      "No",
+      "Must match an existing batch name. If it does not, Vidya will create that batch when you can add batches.",
+    ],
+    [
+      "Phone",
+      "Yes, if parent phone is empty",
+      "10 digits. Example: 9000000001. +91 is ok.",
+    ],
+    ["Parent name", "No", "Parent or guardian name"],
+    [
+      "Parent phone",
+      "Yes, if student phone is empty",
+      "10 digits. Example: 9000000002.",
+    ],
+    [
+      "Monthly fee",
+      "No",
+      "Number in rupees, without the ₹ sign. This is the student's fee total.",
+    ],
+    [
+      "Joining date",
+      "No",
+      "DD-MM-YYYY. Example: 01-06-2025. Leave blank for today.",
+    ],
+    ["Address", "No", "Home address"],
+    ["Notes", "No", "Anything you want to remember"],
+    [],
+    ["Tips"],
+    [
+      "Delete the two example rows before you import, or we will try to import them.",
+    ],
+    ["You can keep your own column titles — we will ask you to match them."],
+    ["A student or parent phone is required, same as Add student."],
+    [],
+    ...batchesBlock,
+    [],
+    ["മലയാളം"],
+    ["•", "Name (പേര്) നിർബന്ധമാണ്."],
+    ["•", "ഫോൺ 10 അക്കം. ഉദാ: 9000000001"],
+    ["•", "തീയതി: DD-MM-YYYY (01-06-2025)"],
+    [
+      "•",
+      "ബാച്ച് പേര് നിലവിലുള്ളതുമായി ചേരണം. ഇല്ലെങ്കിൽ പുതിയ ബാച്ച് ഉണ്ടാക്കും.",
+    ],
+  ];
+}
+
+export function buildStudentImportWorkbook(
+  batchNames: string[] = [],
+): XLSX.WorkBook {
+  const wb = XLSX.utils.book_new();
+  const studentAoA: (string | number)[][] = [
+    [...TEMPLATE_HEADERS],
+    ...TEMPLATE_EXAMPLE_ROWS.map((row) =>
+      TEMPLATE_HEADERS.map((h) => row[h] ?? ""),
+    ),
+  ];
+  const studentsWs = XLSX.utils.aoa_to_sheet(studentAoA);
+  studentsWs["!cols"] = TEMPLATE_HEADERS.map((h) => ({
+    wch: Math.max(16, h.length + 6),
+  }));
+  XLSX.utils.book_append_sheet(wb, studentsWs, TEMPLATE_SHEET_NAME);
+
+  const instructionsWs = XLSX.utils.aoa_to_sheet(instructionRows(batchNames));
+  instructionsWs["!cols"] = [{ wch: 22 }, { wch: 28 }, { wch: 72 }];
+  XLSX.utils.book_append_sheet(wb, instructionsWs, INSTRUCTIONS_SHEET_NAME);
+  return wb;
+}
+
+export function downloadStudentImportWorkbook(batchNames: string[] = []) {
+  const blob = workbookToBlob(buildStudentImportWorkbook(batchNames));
+  triggerDownload(blob, "vidya-students-import-template.xlsx");
+}
+
 // ── Validation helpers ──────────────────────────────────────────────
 
 export function buildExistingIndex(students: Student[]) {
-  const byPhone = new Map<string, Student>();
+  const byNamePhone = new Map<string, Student>();
   const byName = new Map<string, Student>();
   for (const s of students) {
     if (s.status === "archived") continue;
-    const k = normalizePhoneKey(s.phone);
-    if (k) byPhone.set(k, s);
-    byName.set(s.full_name.trim().toLowerCase(), s);
+    const name = s.full_name.trim().toLowerCase();
+    const phone = contactPhoneKey(s.phone, s.guardian_phone);
+    if (phone) byNamePhone.set(`${name}|${phone}`, s);
+    byName.set(name, s);
   }
-  return { byPhone, byName };
+  return { byNamePhone, byName };
 }
 
 export type ExistingIndex = ReturnType<typeof buildExistingIndex>;
+
+function lookupExisting(
+  existing: ExistingIndex,
+  name: string,
+  phone: string | null,
+  guardianPhone: string | null,
+): Student | undefined {
+  const n = name.trim().toLowerCase();
+  if (!n) return undefined;
+  const p = contactPhoneKey(phone, guardianPhone);
+  if (p) return existing.byNamePhone.get(`${n}|${p}`);
+  return existing.byName.get(n);
+}
+
+function cleanPhone(raw: string | null): string | null {
+  if (!raw) return null;
+  return isValidImportPhone(raw) ? raw : null;
+}
 
 /** Re-validate a single row after inline edit. Returns updated copy. */
 export function revalidateRow(
   row: PreparedImportRow,
   ctx: {
     existing: ExistingIndex;
-    seenKeys: Map<string, number>; // key -> firstRow (excluding this row)
+    seenKeys: Map<string, number>;
   },
 ): PreparedImportRow {
   const name = (row.full_name ?? "").trim();
   const phoneRaw = (row.phone ?? "").trim() || null;
+  const guardianPhoneRaw = (row.guardian_phone ?? "").trim() || null;
   let issue: ImportRowIssue = "none";
-  let phone: string | null = phoneRaw;
+  const phone = cleanPhone(phoneRaw);
+  const guardianPhone = cleanPhone(guardianPhoneRaw);
   let existingStudentId: string | undefined;
   let dupFileRow: number | undefined;
 
   if (!name || name.length > 120) issue = "invalid_name";
   else {
-    const contactIssue = importContactIssue(phoneRaw, row.guardian_phone);
-    if (contactIssue) {
-      issue = contactIssue;
-      if (contactIssue === "invalid_phone" && phoneRaw) phone = null;
-    }
+    const contactIssue = importContactIssue(phoneRaw, guardianPhoneRaw);
+    if (contactIssue) issue = contactIssue;
   }
 
   if (issue === "none") {
-    const key = normKeyFromRow(phone, name);
+    const key = identityKey(name, phone, guardianPhone);
     const first = ctx.seenKeys.get(key);
     if (first !== undefined && first !== row.sourceRow) {
       issue = "dup_file";
       dupFileRow = first;
     } else {
-      const k = normalizePhoneKey(phone);
-      if (k && ctx.existing.byPhone.has(k)) {
-        existingStudentId = ctx.existing.byPhone.get(k)!.id;
+      const match = lookupExisting(ctx.existing, name, phone, guardianPhone);
+      if (match) {
+        existingStudentId = match.id;
         issue = "dup_db";
-      } else if (!k) {
-        const byName = ctx.existing.byName.get(name.toLowerCase());
-        if (byName) {
-          existingStudentId = byName.id;
-          issue = "dup_db";
-        }
       }
     }
   }
@@ -362,6 +625,7 @@ export function revalidateRow(
     ...row,
     full_name: name.slice(0, 120),
     phone,
+    guardian_phone: guardianPhone,
     issue,
     dupFileRow,
     existingStudentId,
@@ -392,32 +656,30 @@ export function prepareStudentImportRows(
 
   rawRows.forEach((r, idx) => {
     const sourceRow = idx + offset;
-    const nameRaw = String(pick(r, m.name) ?? "").trim();
-    const phoneRaw = String(pick(r, m.phone) ?? "").trim();
-    const guardian = String(pick(r, m.guardian) ?? "").trim() || null;
-    const guardianPhoneRaw =
-      String(pick(r, m.guardian_phone) ?? "").trim() || null;
+    const nameRaw = asTrimmed(pick(r, m.name));
+    const phoneRaw = asTrimmed(pick(r, m.phone));
+    const guardian = asNullable(pick(r, m.guardian), 120);
+    const guardianPhoneRaw = asNullable(pick(r, m.guardian_phone), 20);
     const feeCell = pick(r, m.fee);
     const feeNum =
       feeCell === "" || feeCell == null
         ? opts.defaultFee
         : Math.max(0, Number(feeCell) || 0);
-    const join = parseDateCell(pick(r, m.joining_date));
-    const batchName = String(pick(r, m.batch) ?? "").trim();
+    const join = parseImportDate(pick(r, m.joining_date));
+    const due = parseImportDate(pick(r, m.fee_due_date));
+    const address = asNullable(pick(r, m.address), 500);
+    const notes = asNullable(pick(r, m.notes), 1000);
+    const batchName = asTrimmed(pick(r, m.batch));
     let batchId = opts.defaultBatchId;
     let batchNameRaw: string | null = null;
     if (batchName) {
       const id = opts.batchNameToId.get(batchName.toLowerCase());
       if (id) batchId = id;
-      else batchNameRaw = batchName; // unknown name
+      else batchNameRaw = batchName;
     }
 
-    let phone: string | null = phoneRaw || null;
-    if (phone && !IMPORT_PHONE_REGEX.test(phone)) phone = null;
-
-    let guardianPhone: string | null = guardianPhoneRaw;
-    if (guardianPhone && !IMPORT_PHONE_REGEX.test(guardianPhone))
-      guardianPhone = null;
+    const phone = cleanPhone(phoneRaw || null);
+    const guardianPhone = cleanPhone(guardianPhoneRaw);
 
     let issue: ImportRowIssue = "none";
     if (!nameRaw || nameRaw.length > 120) issue = "invalid_name";
@@ -426,11 +688,10 @@ export function prepareStudentImportRows(
       if (contactIssue) issue = contactIssue;
     }
 
-    const key = normKeyFromRow(phone, nameRaw);
+    const key = identityKey(nameRaw, phone, guardianPhone);
     if (issue === "none") {
       const first = fileFirstRowByKey.get(key);
       if (first !== undefined) {
-        issue = "dup_file";
         prepared.push({
           sourceRow,
           full_name: nameRaw.slice(0, 120),
@@ -439,9 +700,12 @@ export function prepareStudentImportRows(
           guardian_phone: guardianPhone,
           fee_total: feeNum,
           joining_date: join,
+          fee_due_date: due,
+          address,
+          notes,
           batch_id: batchId,
           batch_name_raw: batchNameRaw,
-          issue,
+          issue: "dup_file",
           dupFileRow: first,
         });
         return;
@@ -451,14 +715,11 @@ export function prepareStudentImportRows(
 
     let existingStudentId: string | undefined;
     if (issue === "none") {
-      const k = normalizePhoneKey(phone);
-      if (k && existing.byPhone.has(k))
-        existingStudentId = existing.byPhone.get(k)!.id;
-      else if (!k) {
-        const byName = existing.byName.get(nameRaw.toLowerCase());
-        if (byName) existingStudentId = byName.id;
+      const match = lookupExisting(existing, nameRaw, phone, guardianPhone);
+      if (match) {
+        existingStudentId = match.id;
+        issue = "dup_db";
       }
-      if (existingStudentId) issue = "dup_db";
     }
 
     prepared.push({
@@ -469,6 +730,9 @@ export function prepareStudentImportRows(
       guardian_phone: guardianPhone,
       fee_total: feeNum,
       joining_date: join,
+      fee_due_date: due,
+      address,
+      notes,
       batch_id: batchId,
       batch_name_raw: batchNameRaw,
       issue,
@@ -479,61 +743,123 @@ export function prepareStudentImportRows(
   return prepared;
 }
 
+/** Flag ready rows that would exceed the plan's remaining seats. */
+export function applyPlanLimit(
+  rows: PreparedImportRow[],
+  remainingSlots: number,
+): PreparedImportRow[] {
+  if (!Number.isFinite(remainingSlots)) return rows;
+  let used = 0;
+  return rows.map((r) => {
+    if (r.issue !== "none") return r;
+    if (used < remainingSlots) {
+      used += 1;
+      return r;
+    }
+    return { ...r, issue: "over_limit" as const };
+  });
+}
+
+export function unknownBatchNames(rows: PreparedImportRow[]): string[] {
+  const names = new Set<string>();
+  for (const r of rows) {
+    if (r.issue !== "none") continue;
+    const n = (r.batch_name_raw ?? "").trim();
+    if (n) names.add(n);
+  }
+  return [...names];
+}
+
 export function issueLabel(issue: ImportRowIssue): string {
   switch (issue) {
     case "invalid_name":
       return "Missing or invalid name";
     case "invalid_phone":
-      return "Invalid phone";
+      return "Phone must be 10 digits";
     case "missing_phone":
-      return "Phone or guardian phone required";
+      return "Phone or parent phone required";
     case "dup_file":
       return "Duplicate in file";
     case "dup_db":
       return "Already in Vidya";
+    case "over_limit":
+      return "Over plan limit";
     default:
       return "Ready";
   }
 }
 
-/** Download an .xlsx of just the rejected rows, with a Reason column. */
-export async function downloadRejectedRows(rows: PreparedImportRow[]) {
-  const rejected = rows.filter(
-    (r) =>
-      r.issue === "invalid_name" ||
-      r.issue === "invalid_phone" ||
-      r.issue === "missing_phone" ||
-      r.issue === "dup_file",
-  );
-  if (!rejected.length) return;
-  const data = rejected.map((r) => ({
-    "Source row": r.sourceRow,
-    Name: r.full_name,
-    Phone: r.phone ?? "",
-    Guardian: r.guardian_name ?? "",
-    Batch: r.batch_name_raw ?? "",
-    "Fee total": r.fee_total || "",
-    "Joining date": r.joining_date ?? "",
-    Reason:
+export function formatImportSummary(result: {
+  inserted: number;
+  updated?: number;
+  skipped: number;
+}): string {
+  const parts = [`${result.inserted} imported`];
+  if (result.updated) parts.push(`${result.updated} updated`);
+  parts.push(`${result.skipped} skipped`);
+  return parts.join(", ");
+}
+
+export function importOverLimitCopy(opts: {
+  planName: string;
+  remainingSlots: number;
+  readyCount: number;
+  willInsert: number;
+  overBy: number;
+}): string {
+  const plan = opts.planName || "this";
+  return `Your ${plan} plan only has room for ${opts.remainingSlots} more student${
+    opts.remainingSlots === 1 ? "" : "s"
+  }. This file has ${opts.readyCount} ready rows — we will import the first ${
+    opts.willInsert
+  } and skip the remaining ${opts.overBy}. Starter is 100 students, Growth is 500, Large is unlimited.`;
+}
+
+export function isRejectedIssue(issue: ImportRowIssue): boolean {
+  return issue !== "none";
+}
+
+export function buildRejectedRowsWorkbook(
+  rows: PreparedImportRow[],
+): XLSX.WorkBook | null {
+  const rejected = rows.filter((r) => isRejectedIssue(r.issue));
+  if (!rejected.length) return null;
+  const headers = [
+    "Source row",
+    "Name",
+    "Phone",
+    "Parent name",
+    "Parent phone",
+    "Batch",
+    "Monthly fee",
+    "Joining date",
+    "Reason",
+  ];
+  const aoa: (string | number)[][] = [
+    headers,
+    ...rejected.map((r) => [
+      r.sourceRow,
+      r.full_name,
+      r.phone ?? "",
+      r.guardian_name ?? "",
+      r.guardian_phone ?? "",
+      r.batch_name_raw ?? "",
+      r.fee_total || "",
+      r.joining_date ?? "",
       r.issue === "dup_file"
         ? `Duplicate of row ${r.dupFileRow ?? "?"} in this file`
         : issueLabel(r.issue),
-  }));
-  const headers = Object.keys(data[0]);
-  const sheet: SheetData = [
-    headers.map((value) => ({ value, fontWeight: "bold" as const })),
-    ...data.map((row) => headers.map((h) => row[h as keyof typeof row] ?? "")),
+    ]),
   ];
-  const blob = await writeXlsxFile([
-    { sheet: "Rejected rows", data: sheet },
-  ]).toBlob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "vidya-import-rejected.xlsx";
-  a.rel = "noopener";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  XLSX.utils.book_append_sheet(wb, ws, "Skipped rows");
+  return wb;
+}
+
+/** Download an .xlsx of skipped rows, with a Reason column. */
+export async function downloadRejectedRows(rows: PreparedImportRow[]) {
+  const wb = buildRejectedRowsWorkbook(rows);
+  if (!wb) return;
+  triggerDownload(workbookToBlob(wb), "vidya-import-skipped.xlsx");
 }
