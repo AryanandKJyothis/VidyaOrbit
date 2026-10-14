@@ -11,6 +11,12 @@ const attendance = readFileSync(
   "src/routes/_authenticated/attendance.tsx",
   "utf8",
 );
+const plan = readFileSync("src/routes/_authenticated/plan.tsx", "utf8");
+const fees = readFileSync("src/routes/_authenticated/fees.tsx", "utf8");
+const team = readFileSync(
+  "src/routes/_authenticated/settings.team.tsx",
+  "utf8",
+);
 
 describe("route permission gates (VO-028)", () => {
   it("students, batches, and attendance had no RoutePermissionGate before", () => {
@@ -25,5 +31,22 @@ describe("route permission gates (VO-028)", () => {
     expect(batches).toContain('resource="batches"');
     expect(attendance).toContain('resource="attendance"');
     expect(attendance).toContain('useCan("attendance", "write")');
+  });
+
+  it("gates plan/billing and hides staff export", () => {
+    expect(plan).toContain('resource="billing"');
+    expect(plan).toContain("canBill");
+    expect(plan).toContain("ownerId={ownerId}");
+    expect(students).toContain("useCanExport");
+    expect(batches).toContain("useCanExport");
+    expect(fees).toContain("useCanExport");
+    expect(fees).toContain('useCan("fees", "write")');
+  });
+
+  it("shows Team to every member and invites by role, not a custom matrix", () => {
+    expect(team).toContain("canManage");
+    expect(team).toContain("ROLE_LABELS");
+    expect(team).not.toContain("PERMISSION_PRESETS");
+    expect(team).not.toContain("permissions:");
   });
 });

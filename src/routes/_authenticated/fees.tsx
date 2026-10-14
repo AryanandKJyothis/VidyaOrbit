@@ -71,7 +71,7 @@ import {
 } from "@/lib/fee-reminder";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCan } from "@/hooks/use-active-workspace";
+import { useCan, useCanExport } from "@/hooks/use-active-workspace";
 import { FilterChips } from "@/components/app/filter-chips";
 import { InitialsAvatar } from "@/components/app/initials-avatar";
 
@@ -107,7 +107,9 @@ function FeesPageContent() {
   const batches = useBatches();
   const payments = usePayments();
   const institute = useInstitute();
-  const canRemind = canSendFeeReminders(useCan("fees", "write"));
+  const canWriteFees = useCan("fees", "write");
+  const canExport = useCanExport();
+  const canRemind = canSendFeeReminders(canWriteFees);
   const qc = useQueryClient();
   const search = useSearch({ from: "/_authenticated/fees" });
 
@@ -359,66 +361,70 @@ function FeesPageContent() {
         description="Collect payments, track dues and view recent receipts."
         actions={
           <div className="flex gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <Download className="mr-1.5 h-4 w-4" /> Export dues{" "}
-                  <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={async () => {
-                    const duesRows = filtered.map(
-                      ({ s, paid, balance, overdue }) => ({
-                        Student: s.full_name,
-                        Batch: s.batch_id ? batchById[s.batch_id] : "",
-                        "Due date": s.fee_due_date ?? "",
-                        "Total fee": Number(s.fee_total),
-                        Paid: paid,
-                        Balance: balance,
-                        Status: feeStatusLabel(
-                          feeCollectionStatus({ paid, balance, overdue }),
-                        ),
-                      }),
-                    );
-                    await exportToExcel(duesRows, "fee-dues", "Dues");
-                    toast.success(`Exported ${duesRows.length} dues (.xlsx)`);
-                  }}
-                >
-                  Dues (.xlsx)
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    const duesRows = filtered.map(
-                      ({ s, paid, balance, overdue }) => ({
-                        Student: s.full_name,
-                        Batch: s.batch_id ? batchById[s.batch_id] : "",
-                        "Due date": s.fee_due_date ?? "",
-                        "Total fee": Number(s.fee_total),
-                        Paid: paid,
-                        Balance: balance,
-                        Status: feeStatusLabel(
-                          feeCollectionStatus({ paid, balance, overdue }),
-                        ),
-                      }),
-                    );
-                    exportToCsv(duesRows, "fee-dues");
-                    toast.success(`Exported ${duesRows.length} dues (.csv)`);
-                  }}
-                >
-                  Dues (.csv)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              onClick={() => {
-                setPaymentDefaults({});
-                setOpen(true);
-              }}
-            >
-              <Plus className="mr-1.5 h-4 w-4" /> Record payment
-            </Button>
+            {canExport && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <Download className="mr-1.5 h-4 w-4" /> Export dues{" "}
+                    <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      const duesRows = filtered.map(
+                        ({ s, paid, balance, overdue }) => ({
+                          Student: s.full_name,
+                          Batch: s.batch_id ? batchById[s.batch_id] : "",
+                          "Due date": s.fee_due_date ?? "",
+                          "Total fee": Number(s.fee_total),
+                          Paid: paid,
+                          Balance: balance,
+                          Status: feeStatusLabel(
+                            feeCollectionStatus({ paid, balance, overdue }),
+                          ),
+                        }),
+                      );
+                      await exportToExcel(duesRows, "fee-dues", "Dues");
+                      toast.success(`Exported ${duesRows.length} dues (.xlsx)`);
+                    }}
+                  >
+                    Dues (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      const duesRows = filtered.map(
+                        ({ s, paid, balance, overdue }) => ({
+                          Student: s.full_name,
+                          Batch: s.batch_id ? batchById[s.batch_id] : "",
+                          "Due date": s.fee_due_date ?? "",
+                          "Total fee": Number(s.fee_total),
+                          Paid: paid,
+                          Balance: balance,
+                          Status: feeStatusLabel(
+                            feeCollectionStatus({ paid, balance, overdue }),
+                          ),
+                        }),
+                      );
+                      exportToCsv(duesRows, "fee-dues");
+                      toast.success(`Exported ${duesRows.length} dues (.csv)`);
+                    }}
+                  >
+                    Dues (.csv)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            {canWriteFees && (
+              <Button
+                onClick={() => {
+                  setPaymentDefaults({});
+                  setOpen(true);
+                }}
+              >
+                <Plus className="mr-1.5 h-4 w-4" /> Record payment
+              </Button>
+            )}
           </div>
         }
       />
@@ -849,52 +855,56 @@ function FeesPageContent() {
 
         <TabsContent value="payments" className="mt-4">
           <div className="mb-3 flex justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Download className="mr-1.5 h-4 w-4" /> Export payments{" "}
-                  <ChevronDown className="ml-1 h-3 w-3 opacity-60" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={async () => {
-                    const payRows = (payments.data ?? []).map((p) => ({
-                      "Receipt #": p.receipt_number ?? "",
-                      Student: studentById[p.student_id]?.full_name ?? "",
-                      Date: p.payment_date,
-                      Method: p.method,
-                      Amount: Number(p.amount),
-                      Reference: p.reference ?? "",
-                      Notes: p.notes ?? "",
-                    }));
-                    await exportToExcel(payRows, "payments", "Payments");
-                    toast.success(
-                      `Exported ${payRows.length} payments (.xlsx)`,
-                    );
-                  }}
-                >
-                  Payments (.xlsx)
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    const payRows = (payments.data ?? []).map((p) => ({
-                      "Receipt #": p.receipt_number ?? "",
-                      Student: studentById[p.student_id]?.full_name ?? "",
-                      Date: p.payment_date,
-                      Method: p.method,
-                      Amount: Number(p.amount),
-                      Reference: p.reference ?? "",
-                      Notes: p.notes ?? "",
-                    }));
-                    exportToCsv(payRows, "payments");
-                    toast.success(`Exported ${payRows.length} payments (.csv)`);
-                  }}
-                >
-                  Payments (.csv)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {canExport && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Download className="mr-1.5 h-4 w-4" /> Export payments{" "}
+                    <ChevronDown className="ml-1 h-3 w-3 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      const payRows = (payments.data ?? []).map((p) => ({
+                        "Receipt #": p.receipt_number ?? "",
+                        Student: studentById[p.student_id]?.full_name ?? "",
+                        Date: p.payment_date,
+                        Method: p.method,
+                        Amount: Number(p.amount),
+                        Reference: p.reference ?? "",
+                        Notes: p.notes ?? "",
+                      }));
+                      await exportToExcel(payRows, "payments", "Payments");
+                      toast.success(
+                        `Exported ${payRows.length} payments (.xlsx)`,
+                      );
+                    }}
+                  >
+                    Payments (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      const payRows = (payments.data ?? []).map((p) => ({
+                        "Receipt #": p.receipt_number ?? "",
+                        Student: studentById[p.student_id]?.full_name ?? "",
+                        Date: p.payment_date,
+                        Method: p.method,
+                        Amount: Number(p.amount),
+                        Reference: p.reference ?? "",
+                        Notes: p.notes ?? "",
+                      }));
+                      exportToCsv(payRows, "payments");
+                      toast.success(
+                        `Exported ${payRows.length} payments (.csv)`,
+                      );
+                    }}
+                  >
+                    Payments (.csv)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
           <Card>
             <CardContent className="p-0 overflow-x-auto">

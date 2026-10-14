@@ -15,6 +15,7 @@ import {
   hasAnyContact,
 } from "@/lib/contact-config";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
+import { canAccessBilling } from "@/lib/workspace-roles";
 
 export function PlanGate({
   min,
@@ -31,8 +32,8 @@ export function PlanGate({
   if (hasMinPlan(sub.data?.plan, min)) return <>{children}</>;
 
   const planName = PLANS.find((p) => p.code === min)?.name ?? min;
-  const isOwner = active?.role === "owner";
-  const contactMsg = getContactMessage(isOwner);
+  const canBill = !!active && canAccessBilling(active.role);
+  const contactMsg = getContactMessage(canBill);
   const contactUrl = getContactLink();
   const contactLabel = getContactLabel();
   const showContact = hasAnyContact();

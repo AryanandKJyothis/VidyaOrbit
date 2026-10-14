@@ -4,82 +4,39 @@ import { randomBytes } from "crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
-  assertWorkspaceOwner,
+  assertCanChangeRole,
+  assertCanInviteRole,
+  assertCanManageInvite,
+  assertCanManageTeam,
+  assertCanRemoveMember,
   inviteEmailMatches,
   inviteTokenSchema,
 } from "@/lib/workspace-invite-rules";
+import {
+  canManageTeam,
+  permissionsForRole,
+  type Permissions,
+  type WorkspaceRole,
+} from "@/lib/workspace-roles";
 
-const RESOURCES = [
-  "students",
-  "batches",
-  "attendance",
-  "fees",
-  "settings",
-  "billing",
-] as const;
-const PERMISSION_LEVELS = ["none", "read", "write"] as const;
-const ROLES = ["owner", "manager", "staff", "viewer"] as const;
+export {
+  INVITE_ROLES,
+  PERMISSION_PRESETS,
+  detectPresetOrCustom,
+  permissionsForRole,
+  permissionsMatchPreset,
+} from "@/lib/workspace-roles";
+export type { Permissions, WorkspaceRole } from "@/lib/workspace-roles";
 
-const permissionsSchema = z.object({
-  students: z.enum(PERMISSION_LEVELS),
-  batches: z.enum(PERMISSION_LEVELS),
-  attendance: z.enum(PERMISSION_LEVELS),
-  fees: z.enum(PERMISSION_LEVELS),
-  settings: z.enum(PERMISSION_LEVELS),
-  billing: z.enum(PERMISSION_LEVELS),
-});
-export type Permissions = z.infer<typeof permissionsSchema>;
-export type WorkspaceRole = (typeof ROLES)[number];
-
-export const PERMISSION_PRESETS: Record<
-  Exclude<WorkspaceRole, "owner">,
-  Permissions
-> = {
-  manager: {
-    students: "write",
-    batches: "write",
-    attendance: "write",
-    fees: "write",
-    settings: "write",
-    billing: "none",
-  },
-  staff: {
-    students: "write",
-    batches: "read",
-    attendance: "write",
-    fees: "write",
-    settings: "none",
-    billing: "none",
-  },
-  viewer: {
-    students: "read",
-    batches: "read",
-    attendance: "read",
-    fees: "read",
-    settings: "none",
-    billing: "none",
-  },
-};
-
-export function permissionsMatchPreset(
-  p: Permissions,
-  role: Exclude<WorkspaceRole, "owner">,
-): boolean {
-  const preset = PERMISSION_PRESETS[role];
-  return RESOURCES.every((k) => p[k] === preset[k]);
-}
-
-export function detectPresetOrCustom(
-  p: Permissions,
-): Exclude<WorkspaceRole, "owner"> | "custom" {
-  for (const r of ["manager", "staff", "viewer"] as const) {
-    if (permissionsMatchPreset(p, r)) return r;
-  }
-  return "custom";
-}
-
-async function assertOwner(ownerId: string, userId: string) {
-  assertWorkspaceOwner(ownerId, userId);
+async function callerMembership(ownerId: string, userId: string) {
+  const { data } = await supabaseAdmin
+    .from("workspace_members")
+    .select("role")
+    .eq("owner_id", ownerId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!data) throw new Error("Not a member of this workspace");
+  return data.role as WorkspaceRole;
 }
 
 // ============ Workspaces a user belongs to ============
@@ -115,22 +72,16 @@ export const listMyWorkspaces = createServerFn({ method: "GET" })
 
 // ============ Unified team list (members + pending invites) ============
 // Returns one ordered roster so the UI doesn't have to manage two tables.
-// Owner sees everything; non-owners see active members only (no invite tokens).
+// Every member sees the roster; owner and manager also see pending invites.
 export const listTeam = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { ownerId: string }) =>
     z.object({ ownerId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    // Permission: must be the owner OR a member of this workspace
-    const { data: callerMembership } = await supabaseAdmin
-      .from("workspace_members")
-      .select("role")
-      .eq("owner_id", data.ownerId)
-      .eq("user_id", context.userId)
-      .maybeSingle();
-    if (!callerMembership) throw new Error("Not a member of this workspace");
-    const isOwner = data.ownerId === context.userId;
+    const callerRole = await callerMembership(data.ownerId, context.userId);
+    const isOwner = callerRole === "owner" || data.ownerId === context.userId;
+    const canManage = canManageTeam(callerRole);
 
     const { data: members, error } = await supabaseAdmin
       .from("workspace_members")
@@ -194,7 +145,7 @@ export const listTeam = createServerFn({ method: "POST" })
           role: WorkspaceRole;
           permissions: Permissions;
           status: "pending" | "expired";
-          token: string | null; // null for non-owners
+          token: string | null; // null unless the caller can manage invites
           expiresAt: string;
           createdAt: string;
         };
@@ -212,7 +163,7 @@ export const listTeam = createServerFn({ method: "POST" })
     }));
 
     let inviteRows: Row[] = [];
-    if (isOwner) {
+    if (canManage) {
       const { data: invites } = await supabaseAdmin
         .from("workspace_invites")
         .select(
@@ -238,7 +189,12 @@ export const listTeam = createServerFn({ method: "POST" })
       }));
     }
 
-    return { isOwner, rows: [...memberRows, ...inviteRows] };
+    return {
+      isOwner,
+      canManage,
+      callerRole,
+      rows: [...memberRows, ...inviteRows],
+    };
   });
 
 // ============ Invite a member ============
@@ -249,13 +205,14 @@ export const inviteMember = createServerFn({ method: "POST" })
       .object({
         ownerId: z.string().uuid(),
         email: z.string().trim().toLowerCase().email().max(255),
-        role: z.enum(["manager", "staff", "viewer"]),
-        permissions: permissionsSchema,
+        role: z.enum(["manager", "staff"]),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertOwner(data.ownerId, context.userId);
+    const callerRole = await callerMembership(data.ownerId, context.userId);
+    assertCanManageTeam(callerRole);
+    assertCanInviteRole(callerRole, data.role);
 
     // Block duplicate active member by checking against existing members.
     const { data: existingMembers } = await supabaseAdmin
@@ -308,7 +265,7 @@ export const inviteMember = createServerFn({ method: "POST" })
         owner_id: data.ownerId,
         email: data.email,
         role: data.role,
-        permissions: data.permissions,
+        permissions: permissionsForRole(data.role),
         token,
         invited_by: context.userId,
       })
@@ -327,11 +284,13 @@ export const resendInvite = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: invite } = await supabaseAdmin
       .from("workspace_invites")
-      .select("id, owner_id, email, status")
+      .select("id, owner_id, email, status, role")
       .eq("id", data.inviteId)
       .maybeSingle();
     if (!invite) throw new Error("Invite not found");
-    await assertOwner(invite.owner_id, context.userId);
+    const callerRole = await callerMembership(invite.owner_id, context.userId);
+    assertCanManageTeam(callerRole);
+    assertCanManageInvite(callerRole, invite.role as WorkspaceRole);
 
     const token = randomBytes(32).toString("base64url");
     const expires = new Date(
@@ -353,11 +312,13 @@ export const revokeInvite = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: invite } = await supabaseAdmin
       .from("workspace_invites")
-      .select("owner_id, status")
+      .select("owner_id, status, role")
       .eq("id", data.inviteId)
       .maybeSingle();
     if (!invite) throw new Error("Invite not found");
-    await assertOwner(invite.owner_id, context.userId);
+    const callerRole = await callerMembership(invite.owner_id, context.userId);
+    assertCanManageTeam(callerRole);
+    assertCanManageInvite(callerRole, invite.role as WorkspaceRole);
     if (invite.status !== "pending") throw new Error("Invite is not pending");
     const { error } = await supabaseAdmin
       .from("workspace_invites")
@@ -502,7 +463,7 @@ export const acceptInvite = createServerFn({ method: "POST" })
           owner_id: invite.owner_id,
           user_id: context.userId,
           role: invite.role,
-          permissions: invite.permissions,
+          permissions: permissionsForRole(invite.role as WorkspaceRole),
           invited_by: invite.owner_id,
         },
         { onConflict: "owner_id,user_id" },
@@ -552,8 +513,7 @@ export const updateMember = createServerFn({ method: "POST" })
     z
       .object({
         memberId: z.string().uuid(),
-        role: z.enum(["manager", "staff", "viewer"]),
-        permissions: permissionsSchema,
+        role: z.enum(["manager", "staff"]),
       })
       .parse(input),
   )
@@ -564,12 +524,15 @@ export const updateMember = createServerFn({ method: "POST" })
       .eq("id", data.memberId)
       .maybeSingle();
     if (!m) throw new Error("Member not found");
-    await assertOwner(m.owner_id, context.userId);
-    if (m.role === "owner")
-      throw new Error("Cannot modify the workspace owner");
+    const callerRole = await callerMembership(m.owner_id, context.userId);
+    assertCanManageTeam(callerRole);
+    assertCanChangeRole(callerRole, m.role as WorkspaceRole);
     const { error } = await supabaseAdmin
       .from("workspace_members")
-      .update({ role: data.role, permissions: data.permissions })
+      .update({
+        role: data.role,
+        permissions: permissionsForRole(data.role),
+      })
       .eq("id", data.memberId);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -588,9 +551,9 @@ export const removeMember = createServerFn({ method: "POST" })
       .eq("id", data.memberId)
       .maybeSingle();
     if (!m) throw new Error("Member not found");
-    await assertOwner(m.owner_id, context.userId);
-    if (m.role === "owner")
-      throw new Error("Cannot remove the workspace owner");
+    const callerRole = await callerMembership(m.owner_id, context.userId);
+    assertCanManageTeam(callerRole);
+    assertCanRemoveMember(callerRole, m.role as WorkspaceRole);
     const { error } = await supabaseAdmin
       .from("workspace_members")
       .delete()

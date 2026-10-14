@@ -26,6 +26,8 @@ import {
   planCodeForTier,
 } from "@/lib/plan-limits";
 import { getContactLabel, getContactLink } from "@/lib/contact-config";
+import { RoutePermissionGate } from "@/components/route-permission-gate";
+import { useCan, useActiveWorkspace } from "@/hooks/use-active-workspace";
 
 type BillingCycle = "monthly" | "annual";
 type PlanTier = "starter" | "growth" | "large";
@@ -47,11 +49,17 @@ type PricingData = {
 };
 
 export const Route = createFileRoute("/_authenticated/plan")({
-  component: PlanPage,
+  component: () => (
+    <RoutePermissionGate resource="billing" level="read">
+      <PlanPage />
+    </RoutePermissionGate>
+  ),
 });
 
 function PlanPage() {
   const subQuery = useSubscription();
+  const { active } = useActiveWorkspace();
+  const canBill = useCan("billing", "write");
   const [cycle, setCycle] = useState<BillingCycle>("annual");
   const [pricing, setPricing] = useState<PricingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,7 +67,7 @@ function PlanPage() {
   const [pricingError, setPricingError] = useState(false);
 
   const subscription = subQuery.data;
-  const isOwner = subscription?.isOwner ?? false;
+  const ownerId = active?.ownerId ?? "";
 
   useEffect(() => {
     let cancelled = false;
@@ -109,10 +117,10 @@ function PlanPage() {
       </div>
 
       {/* Renewal banner */}
-      {expiryDate && isOwner && (
+      {expiryDate && canBill && (
         <RenewalBanner
           expiryDate={expiryDate}
-          isOwner={isOwner}
+          isOwner={canBill}
           isExpired={isExpired}
         />
       )}
@@ -197,7 +205,8 @@ function PlanPage() {
               cycle={cycle}
               currentPlan={currentPlan}
               currentExpiry={subscription?.expiry_date ?? null}
-              isOwner={isOwner}
+              canBill={canBill}
+              ownerId={ownerId}
               billingEnabled={billingEnabled}
               hasPaidSetup={Boolean(subscription?.setup_fee_paid)}
               onSuccess={async () => {
@@ -225,7 +234,8 @@ type PricingCardProps = {
   cycle: BillingCycle;
   currentPlan: string;
   currentExpiry: string | null;
-  isOwner: boolean;
+  canBill: boolean;
+  ownerId: string;
   billingEnabled: boolean;
   hasPaidSetup: boolean;
   onSuccess: () => void | Promise<unknown>;
@@ -236,7 +246,8 @@ function PricingCard({
   cycle,
   currentPlan,
   currentExpiry,
-  isOwner,
+  canBill,
+  ownerId,
   billingEnabled,
   hasPaidSetup,
   onSuccess,
@@ -330,18 +341,20 @@ function PricingCard({
         </ul>
       </CardContent>
       <CardFooter>
-        {billingEnabled && isOwner ? (
+        {billingEnabled && canBill ? (
           <RazorpayCheckout
             tier={tier.tier}
             cycle={cycle}
+            ownerId={ownerId}
             currentPlan={currentPlan}
             currentExpiry={currentExpiry}
             buttonLabel={checkoutLabel}
             onSuccess={onSuccess}
+            disabled={!ownerId}
           />
-        ) : !isOwner ? (
+        ) : !canBill ? (
           <Button variant="outline" className="w-full" disabled>
-            Owner Only
+            No billing access
           </Button>
         ) : contactLink ? (
           <Button asChild className="w-full">

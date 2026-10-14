@@ -33,6 +33,8 @@ vi.mock("razorpay", () => ({
 }));
 
 const OWNER = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const MANAGER = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+const STAFF = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const ORDER_UUID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const RZ_ORDER = "order_test1";
 const RZ_PAY = "pay_test1";
@@ -199,6 +201,56 @@ describe("POST /api/billing/create-order", () => {
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.code).toBe("NOT_OWNER");
+  });
+
+  it("lets a manager purchase for the centre they belong to", async () => {
+    parseBearerMock.mockResolvedValue({ ok: true, userId: MANAGER });
+    let billedOwner: string | null = null;
+    fromMock.mockImplementation((table: string) => {
+      if (table === "workspace_members")
+        return thenable({ data: { role: "manager" }, error: null });
+      if (table === "subscriptions")
+        return thenable({
+          data: { plan: "free", plan_price: null, expiry_date: null },
+          error: null,
+        });
+      if (table === "institutes")
+        return thenable({ data: { owner_id: OWNER }, error: null });
+      if (table === "students")
+        return thenable({ data: null, error: null, count: 10 });
+      if (table === "billing_orders") {
+        const t = thenable({ data: null, error: null, count: 0 });
+        (t.insert as ReturnType<typeof vi.fn>).mockImplementation((row) => {
+          billedOwner = (row as { owner_id: string }).owner_id;
+          return t;
+        });
+        return t;
+      }
+      return thenable({ data: null, error: null });
+    });
+    const res = await postCreate({
+      tier: "growth",
+      cycle: "monthly",
+      ownerId: OWNER,
+    });
+    expect(res.status).toBe(200);
+    expect(billedOwner).toBe(OWNER);
+  });
+
+  it("blocks staff from purchasing for the centre", async () => {
+    parseBearerMock.mockResolvedValue({ ok: true, userId: STAFF });
+    fromMock.mockImplementation((table: string) => {
+      if (table === "workspace_members")
+        return thenable({ data: { role: "staff" }, error: null });
+      return thenable({ data: null, error: null });
+    });
+    const res = await postCreate({
+      tier: "growth",
+      cycle: "monthly",
+      ownerId: OWNER,
+    });
+    expect(res.status).toBe(403);
+    expect((await res.json()).code).toBe("FORBIDDEN_BILLING");
   });
 
   it("stores the server-computed amount (growth monthly first order includes setup)", async () => {
