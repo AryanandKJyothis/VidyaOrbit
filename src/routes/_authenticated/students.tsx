@@ -153,8 +153,8 @@ function StudentsList() {
   const pct = unlimited ? 0 : Math.min(100, (currentCount / planLimit) * 100);
   const atLimit = atStudentPlanLimit(currentCount, planLimit);
 
-  const isOwner = active?.role === "owner";
-  const contactMsg = getContactMessage(isOwner);
+  const canBill = useCan("billing", "write");
+  const contactMsg = getContactMessage(canBill);
   const contactUrl = getContactLink();
   const contactLabel = getContactLabel();
   const showContact = hasAnyContact();

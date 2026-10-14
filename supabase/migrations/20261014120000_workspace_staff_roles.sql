@@ -1,6 +1,7 @@
 -- Multi-staff roles for a centre (Owner / Director, Manager, Staff).
 -- Locks staff permission JSON to view-students + attendance/fees write,
--- and makes student DELETE owner-or-manager only.
+-- gives managers billing/plan write, and makes student DELETE
+-- owner-or-manager only. Institute DELETE stays owner-only.
 --
 -- DO NOT apply this migration from the agent or from a laptop unless a
 -- human has reviewed it. It is shipped in the repo so it can be applied
@@ -48,6 +49,7 @@ CREATE POLICY students_delete ON public.students
 
 -- Align existing staff/manager rows with the product presets.
 -- Staff: view students, write attendance and fees, no settings/billing.
+-- Manager: write everywhere including billing (plan, pay, invoices).
 UPDATE public.workspace_members
 SET permissions = '{"students":"read","batches":"read","attendance":"write","fees":"write","settings":"none","billing":"none"}'::jsonb
 WHERE role = 'staff';
@@ -58,13 +60,31 @@ WHERE role = 'staff'
   AND status = 'pending';
 
 UPDATE public.workspace_members
-SET permissions = '{"students":"write","batches":"write","attendance":"write","fees":"write","settings":"write","billing":"none"}'::jsonb
+SET permissions = '{"students":"write","batches":"write","attendance":"write","fees":"write","settings":"write","billing":"write"}'::jsonb
 WHERE role = 'manager';
 
 UPDATE public.workspace_invites
-SET permissions = '{"students":"write","batches":"write","attendance":"write","fees":"write","settings":"write","billing":"none"}'::jsonb
+SET permissions = '{"students":"write","batches":"write","attendance":"write","fees":"write","settings":"write","billing":"write"}'::jsonb
 WHERE role = 'manager'
   AND status = 'pending';
+
+-- Managers (billing:write) can read the centre's plan and invoices.
+-- Staff still cannot. Writes stay service_role-only.
+DROP POLICY IF EXISTS "read own subscription" ON public.subscriptions;
+CREATE POLICY "read own subscription" ON public.subscriptions
+  FOR SELECT TO authenticated
+  USING (
+    owner_id = auth.uid()
+    OR public.has_resource_access(owner_id, auth.uid(), 'billing', false)
+  );
+
+DROP POLICY IF EXISTS "read own billing orders" ON public.billing_orders;
+CREATE POLICY "read own billing orders" ON public.billing_orders
+  FOR SELECT TO authenticated
+  USING (
+    owner_id = auth.uid()
+    OR public.has_resource_access(owner_id, auth.uid(), 'billing', false)
+  );
 
 ALTER TABLE public.workspace_members
   ALTER COLUMN permissions SET DEFAULT '{"students":"read","batches":"read","attendance":"write","fees":"write","settings":"none","billing":"none"}'::jsonb;

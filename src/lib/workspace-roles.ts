@@ -2,9 +2,11 @@
  * Centre staff roles for a workspace (e.g. APJ Academy).
  *
  * Three product roles:
- *   Owner / Director — full access, billing, deleting the centre, all staff.
- *   Manager — everything except billing/plan and deleting the centre.
- *              Can invite and remove staff, but never the owner.
+ *   Owner / Director — full access. Only they can delete the centre;
+ *     nobody can remove or demote them.
+ *   Manager — everything else, including billing/plan (view, pay, change,
+ *     invoices). Can invite, change, and remove staff or other managers,
+ *     but never the owner.
  *   Staff — attendance, viewing students, recording fee payments.
  *           No billing, no staff management, no deleting students, no export.
  *
@@ -55,7 +57,7 @@ export const PERMISSION_PRESETS: Record<
     attendance: "write",
     fees: "write",
     settings: "write",
-    billing: "none",
+    billing: "write",
   },
   staff: {
     students: "read",
@@ -90,7 +92,7 @@ export const ROLE_LABELS: Record<WorkspaceRole, string> = {
 
 export const ROLE_DESCRIPTIONS: Record<InviteRole, string> = {
   manager:
-    "Runs the centre — students, attendance, fees, settings, and staff. Cannot change the plan or delete the centre.",
+    "Runs the centre — students, attendance, fees, settings, staff, and billing. Cannot delete the centre or remove the owner.",
   staff:
     "Day-to-day work — mark attendance, view students, and record fee payments. Cannot manage staff, export data, or delete students.",
 };
@@ -126,7 +128,7 @@ export function canManageTeam(role: WorkspaceRole): boolean {
 }
 
 export function canAccessBilling(role: WorkspaceRole): boolean {
-  return role === "owner";
+  return role === "owner" || role === "manager";
 }
 
 export function canDeleteCentre(role: WorkspaceRole): boolean {
@@ -143,34 +145,30 @@ export function canDeleteStudents(role: WorkspaceRole): boolean {
 
 export function canInviteRole(
   actor: WorkspaceRole,
-  target: InviteRole,
+  _target: InviteRole,
 ): boolean {
-  if (actor === "owner") return target === "manager" || target === "staff";
-  if (actor === "manager") return target === "staff";
-  return false;
+  return canManageTeam(actor);
 }
 
-/** Owner may change manager/staff/viewer. Managers cannot change roles. */
+/** Owner and manager may change manager/staff/viewer. Nobody can demote the owner. */
 export function canChangeRole(
   actor: WorkspaceRole,
   target: WorkspaceRole,
 ): boolean {
   if (target === "owner") return false;
-  return actor === "owner";
+  return canManageTeam(actor);
 }
 
 /**
- * Owner may remove anyone except the owner.
- * Manager may remove staff (and leftover viewers), never the owner or another manager.
+ * Owner and manager may remove anyone except the owner.
+ * Nobody can remove or demote the owner.
  */
 export function canRemoveMember(
   actor: WorkspaceRole,
   target: WorkspaceRole,
 ): boolean {
   if (target === "owner") return false;
-  if (actor === "owner") return true;
-  if (actor === "manager") return target === "staff" || target === "viewer";
-  return false;
+  return canManageTeam(actor);
 }
 
 /** Resend/revoke a pending invite — same scope as removing that role. */
@@ -216,8 +214,11 @@ const ROLE_CAPABILITIES: Record<WorkspaceRole, ReadonlySet<RoleCapability>> = {
     "edit_settings",
   ]),
   manager: new Set([
+    "billing",
     "manage_team",
     "invite_staff",
+    "invite_manager",
+    "change_roles",
     "remove_staff",
     "delete_students",
     "export_data",

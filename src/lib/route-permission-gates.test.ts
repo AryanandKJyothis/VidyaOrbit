@@ -35,6 +35,8 @@ describe("route permission gates (VO-028)", () => {
 
   it("gates plan/billing and hides staff export", () => {
     expect(plan).toContain('resource="billing"');
+    expect(plan).toContain("canBill");
+    expect(plan).toContain("ownerId={ownerId}");
     expect(students).toContain("useCanExport");
     expect(batches).toContain("useCanExport");
     expect(fees).toContain("useCanExport");

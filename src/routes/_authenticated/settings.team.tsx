@@ -192,7 +192,7 @@ function TeamPageContent() {
       <div className="grid gap-3 sm:grid-cols-3">
         <RoleLegend
           title={ROLE_LABELS.owner}
-          body="Full access, billing, and deleting the centre. Manages every teammate."
+          body="Full access. Only they can delete the centre; nobody can remove or demote them."
         />
         <RoleLegend
           title={ROLE_LABELS.manager}

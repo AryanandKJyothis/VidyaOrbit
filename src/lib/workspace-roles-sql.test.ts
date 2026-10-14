@@ -55,6 +55,14 @@ describe("workspace staff roles migration lock", () => {
     expect(sql).toMatch(/WHERE role = 'staff'[\s\S]*WHERE role = 'manager'/s);
   });
 
+  it("lets managers read subscriptions and billing orders via billing access", () => {
+    expect(sql).toContain(
+      "public.has_resource_access(owner_id, auth.uid(), 'billing', false)",
+    );
+    expect(MANAGER_PERMISSIONS_JSON).toContain('"billing":"write"');
+    expect(STAFF_PERMISSIONS_JSON).toContain('"billing":"none"');
+  });
+
   it("does not grant client writes on workspace_members or invites", () => {
     expect(sql).not.toMatch(
       /GRANT\s+(ALL|INSERT|UPDATE|DELETE).*workspace_members/i,

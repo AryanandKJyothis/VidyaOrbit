@@ -38,41 +38,45 @@ describe("workspace invite rules", () => {
     );
   });
 
-  it("lets a manager invite staff but not a manager", () => {
+  it("lets owner and manager invite manager or staff, never staff inviting", () => {
     expect(() => assertCanInviteRole("manager", "staff")).not.toThrow();
-    expect(() => assertCanInviteRole("manager", "manager")).toThrow(
-      /Managers can invite staff/,
-    );
+    expect(() => assertCanInviteRole("manager", "manager")).not.toThrow();
     expect(() => assertCanInviteRole("owner", "manager")).not.toThrow();
-    expect(() => assertCanInviteRole("staff", "staff")).toThrow();
+    expect(() => assertCanInviteRole("staff", "staff")).toThrow(
+      /You can't invite/,
+    );
   });
 
-  it("lets only the owner change roles, never the owner row", () => {
+  it("lets owner and manager change roles, never the owner row", () => {
     expect(() => assertCanChangeRole("owner", "staff")).not.toThrow();
     expect(() => assertCanChangeRole("owner", "manager")).not.toThrow();
+    expect(() => assertCanChangeRole("manager", "staff")).not.toThrow();
+    expect(() => assertCanChangeRole("manager", "manager")).not.toThrow();
     expect(() => assertCanChangeRole("owner", "owner")).toThrow(
       /Cannot modify the workspace owner/,
     );
-    expect(() => assertCanChangeRole("manager", "staff")).toThrow(
-      /Only the owner can change/,
+    expect(() => assertCanChangeRole("staff", "staff")).toThrow(
+      /You can't change this teammate's role/,
     );
   });
 
-  it("lets a manager remove staff but not the owner or another manager", () => {
+  it("lets a manager remove staff or another manager, but never the owner", () => {
     expect(() => assertCanRemoveMember("manager", "staff")).not.toThrow();
+    expect(() => assertCanRemoveMember("manager", "manager")).not.toThrow();
     expect(() => assertCanRemoveMember("manager", "owner")).toThrow(
       /Cannot remove the workspace owner/,
     );
-    expect(() => assertCanRemoveMember("manager", "manager")).toThrow(
-      /not the owner or other managers/,
-    );
     expect(() => assertCanRemoveMember("owner", "manager")).not.toThrow();
+    expect(() => assertCanRemoveMember("staff", "staff")).toThrow(
+      /You can't remove/,
+    );
   });
 
-  it("lets a manager resend staff invites but not manager invites", () => {
+  it("lets a manager resend staff and manager invites, not the owner", () => {
     expect(() => assertCanManageInvite("manager", "staff")).not.toThrow();
-    expect(() => assertCanManageInvite("manager", "manager")).toThrow(
-      /staff invites/,
+    expect(() => assertCanManageInvite("manager", "manager")).not.toThrow();
+    expect(() => assertCanManageInvite("manager", "owner")).toThrow(
+      /You can't manage this invite/,
     );
     expect(() => assertCanManageInvite("owner", "manager")).not.toThrow();
   });

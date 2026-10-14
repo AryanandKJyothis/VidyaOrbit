@@ -36,11 +36,7 @@ export function assertCanInviteRole(
   target: string,
 ): asserts target is InviteRole {
   if (!isInviteRole(target) || !canInviteRole(actor, target)) {
-    throw new Error(
-      actor === "manager"
-        ? "Managers can invite staff, not other managers or the owner"
-        : "You can't invite someone with that role",
-    );
+    throw new Error("You can't invite someone with that role");
   }
 }
 
@@ -52,7 +48,7 @@ export function assertCanChangeRole(
     throw new Error("Cannot modify the workspace owner");
   }
   if (!canChangeRole(actor, target)) {
-    throw new Error("Only the owner can change a teammate's role");
+    throw new Error("You can't change this teammate's role");
   }
 }
 
@@ -64,11 +60,7 @@ export function assertCanRemoveMember(
     throw new Error("Cannot remove the workspace owner");
   }
   if (!canRemoveMember(actor, target)) {
-    throw new Error(
-      actor === "manager"
-        ? "Managers can remove staff, not the owner or other managers"
-        : "You can't remove this teammate",
-    );
+    throw new Error("You can't remove this teammate");
   }
 }
 
@@ -77,10 +69,6 @@ export function assertCanManageInvite(
   inviteRole: WorkspaceRole,
 ): void {
   if (!canManageInvite(actor, inviteRole)) {
-    throw new Error(
-      actor === "manager"
-        ? "Managers can manage staff invites, not manager invites"
-        : "You can't manage this invite",
-    );
+    throw new Error("You can't manage this invite");
   }
 }

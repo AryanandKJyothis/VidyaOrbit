@@ -51,6 +51,7 @@ interface RazorpayInstance {
 type CheckoutProps = {
   tier: "starter" | "growth" | "large";
   cycle: "monthly" | "annual";
+  ownerId: string;
   currentPlan?: string;
   currentExpiry?: string | null;
   onSuccess?: () => void | Promise<unknown>;
@@ -170,6 +171,7 @@ async function pollSubscriptionRefresh(args: {
 export function RazorpayCheckout({
   tier,
   cycle,
+  ownerId,
   currentPlan,
   currentExpiry,
   onSuccess,
@@ -223,7 +225,7 @@ export function RazorpayCheckout({
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ tier, cycle }),
+        body: JSON.stringify({ tier, cycle, ownerId }),
       });
 
       const errorData = await orderRes.json().catch(() => ({}));

@@ -28,10 +28,13 @@ import {
   tierChangeSupportMessage,
 } from "@/lib/billing-guards";
 import { formatLimit, studentLimitForTier } from "@/lib/plan-limits";
+import { callerCanBillForCentre } from "@/lib/billing-workspace";
+import type { WorkspaceRole } from "@/lib/workspace-roles";
 
 const bodySchema = z.object({
   tier: z.string().min(1),
   cycle: z.string().min(1),
+  ownerId: z.string().uuid().optional(),
 });
 
 export const Route = createFileRoute("/api/billing/create-order")({
@@ -103,6 +106,44 @@ export const Route = createFileRoute("/api/billing/create-order")({
           );
         }
 
+        const centreOwnerId = body.ownerId ?? userId;
+        if (centreOwnerId !== userId) {
+          const { data: mem, error: memErr } = await supabaseAdmin
+            .from("workspace_members")
+            .select("role")
+            .eq("owner_id", centreOwnerId)
+            .eq("user_id", userId)
+            .maybeSingle();
+          if (memErr) {
+            console.error("[create-order] membership read error:", memErr);
+            return Response.json(
+              {
+                ok: false,
+                code: "DB_ERROR",
+                message: "Could not verify workspace membership.",
+              },
+              { status: 500 },
+            );
+          }
+          if (
+            !callerCanBillForCentre({
+              userId,
+              centreOwnerId,
+              membershipRole: (mem?.role as WorkspaceRole | undefined) ?? null,
+            })
+          ) {
+            return Response.json(
+              {
+                ok: false,
+                code: "FORBIDDEN_BILLING",
+                message:
+                  "You don't have permission to change this centre's plan.",
+              },
+              { status: 403 },
+            );
+          }
+        }
+
         // Validate tier and cycle
         if (!isValidTier(body.tier)) {
           return Response.json(
@@ -133,7 +174,7 @@ export const Route = createFileRoute("/api/billing/create-order")({
         const { data: sub, error: subErr } = await supabaseAdmin
           .from("subscriptions")
           .select("plan, plan_price, notes, expiry_date, setup_fee_paid")
-          .eq("owner_id", userId)
+          .eq("owner_id", centreOwnerId)
           .maybeSingle();
 
         if (subErr) {
@@ -177,7 +218,7 @@ export const Route = createFileRoute("/api/billing/create-order")({
         const { data: inst, error: instErr } = await supabaseAdmin
           .from("institutes")
           .select("owner_id, name, contact_email")
-          .eq("owner_id", userId)
+          .eq("owner_id", centreOwnerId)
           .maybeSingle();
 
         if (instErr) {
@@ -198,7 +239,7 @@ export const Route = createFileRoute("/api/billing/create-order")({
             {
               ok: false,
               code: "NOT_OWNER",
-              message: "Only workspace owners can purchase plans.",
+              message: "Could not find this centre.",
             },
             { status: 403 },
           );
@@ -210,7 +251,7 @@ export const Route = createFileRoute("/api/billing/create-order")({
           const { count: studentCount, error: countErr } = await supabaseAdmin
             .from("students")
             .select("id", { count: "exact", head: true })
-            .eq("owner_id", userId)
+            .eq("owner_id", centreOwnerId)
             .neq("status", "archived");
 
           if (countErr) {
@@ -239,7 +280,11 @@ export const Route = createFileRoute("/api/billing/create-order")({
 
         let hasPriorPaidOrder: boolean;
         try {
-          hasPriorPaidOrder = await hasSetupFeePaid(userId, supabaseAdmin, sub);
+          hasPriorPaidOrder = await hasSetupFeePaid(
+            centreOwnerId,
+            supabaseAdmin,
+            sub,
+          );
         } catch (e) {
           console.error("[create-order] hasSetupFeePaid error:", e);
           return Response.json(
@@ -260,7 +305,7 @@ export const Route = createFileRoute("/api/billing/create-order")({
 
         const receipt = `vidya_${tier}_${cycle}_${Date.now().toString(36)}`;
         const notes = {
-          owner_id: userId,
+          owner_id: centreOwnerId,
           tier,
           cycle,
         };
@@ -289,7 +334,7 @@ export const Route = createFileRoute("/api/billing/create-order")({
         const { error: insertErr } = await supabaseAdmin
           .from("billing_orders")
           .insert({
-            owner_id: userId,
+            owner_id: centreOwnerId,
             razorpay_order_id: rzOrder.id,
             intent: `${tier}_${cycle}`, // Store as "tier_cycle"
             tier,

@@ -55,10 +55,11 @@ describe("permission presets", () => {
     });
   });
 
-  it("gives the manager write everywhere except billing", () => {
-    expect(PERMISSION_PRESETS.manager.billing).toBe("none");
+  it("gives the manager write everywhere including billing", () => {
+    expect(PERMISSION_PRESETS.manager.billing).toBe("write");
     expect(PERMISSION_PRESETS.manager.settings).toBe("write");
     expect(PERMISSION_PRESETS.manager.students).toBe("write");
+    expect(permissionsForRole("manager")).toEqual(PERMISSION_PRESETS.manager);
   });
 
   it("gives staff view-only students, write attendance and fees, no settings or billing", () => {
@@ -74,15 +75,15 @@ describe("permission presets", () => {
 });
 
 describe("role capabilities matrix", () => {
-  it("lets only the owner bill, delete the centre, and invite managers", () => {
+  it("lets owner and manager bill; only the owner can delete the centre", () => {
     expect(canAccessBilling("owner")).toBe(true);
-    expect(canAccessBilling("manager")).toBe(false);
+    expect(canAccessBilling("manager")).toBe(true);
     expect(canAccessBilling("staff")).toBe(false);
     expect(canDeleteCentre("owner")).toBe(true);
     expect(canDeleteCentre("manager")).toBe(false);
     expect(canDeleteCentre("staff")).toBe(false);
     expect(canInviteRole("owner", "manager")).toBe(true);
-    expect(canInviteRole("manager", "manager")).toBe(false);
+    expect(canInviteRole("manager", "manager")).toBe(true);
   });
 
   it("lets owner and manager export and delete students; staff cannot", () => {
@@ -115,14 +116,19 @@ describe("role capabilities matrix", () => {
     expect(canRemoveMember("owner", "staff")).toBe(true);
   });
 
-  it("lets the manager invite and remove staff, but not managers or the owner", () => {
+  it("lets the manager invite, change, and remove staff or managers, but never the owner", () => {
     expect(canInviteRole("manager", "staff")).toBe(true);
-    expect(canInviteRole("manager", "manager")).toBe(false);
+    expect(canInviteRole("manager", "manager")).toBe(true);
     expect(canRemoveMember("manager", "staff")).toBe(true);
-    expect(canRemoveMember("manager", "manager")).toBe(false);
-    expect(canChangeRole("manager", "staff")).toBe(false);
+    expect(canRemoveMember("manager", "manager")).toBe(true);
+    expect(canChangeRole("manager", "staff")).toBe(true);
+    expect(canChangeRole("manager", "manager")).toBe(true);
+    expect(canChangeRole("manager", "owner")).toBe(false);
     expect(canManageInvite("manager", "staff")).toBe(true);
-    expect(canManageInvite("manager", "manager")).toBe(false);
+    expect(canManageInvite("manager", "manager")).toBe(true);
+    expect(roleHasCapability("manager", "billing")).toBe(true);
+    expect(roleHasCapability("manager", "delete_centre")).toBe(false);
+    expect(roleHasCapability("manager", "remove_owner")).toBe(false);
   });
 
   it("denies staff every management, billing, export, and delete capability", () => {
