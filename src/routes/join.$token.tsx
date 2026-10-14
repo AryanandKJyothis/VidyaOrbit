@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { getStorageKey } from "@/hooks/use-active-workspace";
 import { previewInvite, acceptInvite } from "@/lib/workspace.functions";
+import { ROLE_LABELS, type WorkspaceRole } from "@/lib/workspace-roles";
 import { formatUserError } from "@/lib/format-error";
 import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
 import { signInWithGoogle } from "@/lib/google-auth";
@@ -126,7 +127,7 @@ function ValidInvite({
         <span className="font-medium text-ink">{preview.workspaceName}</span> as{" "}
         <Badge variant="secondary" className="ml-1 align-middle !rounded-[4px]">
           <Shield className="h-3 w-3 mr-1" />
-          {preview.role}
+          {ROLE_LABELS[preview.role as WorkspaceRole] ?? preview.role}
         </Badge>
       </p>
       <div className="mt-8 space-y-4">

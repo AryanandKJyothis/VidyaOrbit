@@ -59,6 +59,7 @@ function StudentDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const canViewFees = useCan("fees", "read");
+  const canWriteFees = useCan("fees", "write");
   const canWriteStudents = useCan("students", "write");
 
   const updateStudent = useUpsertStudent();
@@ -166,7 +167,7 @@ function StudentDetail() {
                 <Pencil className="mr-1.5 h-4 w-4" /> Edit
               </Button>
             )}
-            {canViewFees && (
+            {canWriteFees && (
               <Button onClick={() => setPayOpen(true)}>
                 <Plus className="mr-1.5 h-4 w-4" /> Add payment
               </Button>
@@ -220,7 +221,7 @@ function StudentDetail() {
                 <Select
                   value={s.batch_id ?? "none"}
                   onValueChange={handleBatchChange}
-                  disabled={updateStudent.isPending}
+                  disabled={!canWriteStudents || updateStudent.isPending}
                 >
                   <SelectTrigger className="h-11 min-h-11 text-sm">
                     <SelectValue />

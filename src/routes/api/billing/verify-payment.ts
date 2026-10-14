@@ -17,6 +17,8 @@ import {
   isSetupRefundReview,
   SETUP_ALREADY_PAID_MESSAGE,
 } from "@/lib/billing-guards";
+import { callerCanBillForCentre } from "@/lib/billing-workspace";
+import type { WorkspaceRole } from "@/lib/workspace-roles";
 
 const bodySchema = z.object({
   razorpay_order_id: z.string().min(1),
@@ -131,7 +133,6 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
           .from("billing_orders")
           .select("*")
           .eq("razorpay_order_id", razorpay_order_id)
-          .eq("owner_id", userId)
           .maybeSingle();
 
         if (orderErr) {
@@ -152,6 +153,42 @@ export const Route = createFileRoute("/api/billing/verify-payment")({
             { ok: false, code: "ORDER_NOT_FOUND", message: "Order not found." },
             { status: 404 },
           );
+        }
+
+        if (order.owner_id !== userId) {
+          const { data: mem, error: memErr } = await supabaseAdmin
+            .from("workspace_members")
+            .select("role")
+            .eq("owner_id", order.owner_id)
+            .eq("user_id", userId)
+            .maybeSingle();
+          if (memErr) {
+            console.error("[verify-payment] membership read error:", memErr);
+            return Response.json(
+              {
+                ok: false,
+                code: "DB_ERROR",
+                message: "Could not verify workspace membership.",
+              },
+              { status: 500 },
+            );
+          }
+          if (
+            !callerCanBillForCentre({
+              userId,
+              centreOwnerId: order.owner_id,
+              membershipRole: (mem?.role as WorkspaceRole | undefined) ?? null,
+            })
+          ) {
+            return Response.json(
+              {
+                ok: false,
+                code: "ORDER_NOT_FOUND",
+                message: "Order not found.",
+              },
+              { status: 404 },
+            );
+          }
         }
 
         // Fetch payment from Razorpay API to validate amount & currency

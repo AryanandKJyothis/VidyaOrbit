@@ -49,7 +49,11 @@ import { EmptyState } from "@/components/empty-state";
 import { InitialsAvatar } from "@/components/app/initials-avatar";
 import { QueryErrorState } from "@/components/query-state";
 import { formatUserError } from "@/lib/format-error";
-import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
+import {
+  useActiveWorkspace,
+  useCan,
+  useCanExport,
+} from "@/hooks/use-active-workspace";
 import { RoutePermissionGate } from "@/components/route-permission-gate";
 
 export const Route = createFileRoute("/_authenticated/batches")({
@@ -68,6 +72,7 @@ function BatchesPage() {
   const qc = useQueryClient();
   const { active } = useActiveWorkspace();
   const canWriteBatches = useCan("batches", "write");
+  const canExport = useCanExport();
   const [editing, setEditing] = useState<Batch | undefined>();
   const [open, setOpen] = useState(false);
 
@@ -101,55 +106,57 @@ function BatchesPage() {
         description="Create class batches and manage capacity."
         actions={
           <div className="flex flex-wrap gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  disabled={!(batches.data ?? []).length}
-                >
-                  <Download className="mr-1.5 h-4 w-4" /> Export{" "}
-                  <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={async () => {
-                    const rows = (batches.data ?? []).map((b) => ({
-                      Name: b.name,
-                      Subject: b.subject ?? "",
-                      Teacher: b.teacher_name ?? "",
-                      Timing: b.timing ?? "",
-                      Days: (b.days_of_week ?? []).join(", "),
-                      Capacity: b.capacity,
-                      Active: b.is_active ? "Yes" : "No",
-                      Students: countByBatch[b.id] ?? 0,
-                    }));
-                    await exportToExcel(rows, "batches", "Batches");
-                    toast.success(`Exported ${rows.length} batches (.xlsx)`);
-                  }}
-                >
-                  Spreadsheet (.xlsx)
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    const rows = (batches.data ?? []).map((b) => ({
-                      Name: b.name,
-                      Subject: b.subject ?? "",
-                      Teacher: b.teacher_name ?? "",
-                      Timing: b.timing ?? "",
-                      Days: (b.days_of_week ?? []).join(", "),
-                      Capacity: b.capacity,
-                      Active: b.is_active ? "Yes" : "No",
-                      Students: countByBatch[b.id] ?? 0,
-                    }));
-                    exportToCsv(rows, "batches");
-                    toast.success(`Exported ${rows.length} batches (.csv)`);
-                  }}
-                >
-                  CSV (.csv)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {canExport && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={!(batches.data ?? []).length}
+                  >
+                    <Download className="mr-1.5 h-4 w-4" /> Export{" "}
+                    <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      const rows = (batches.data ?? []).map((b) => ({
+                        Name: b.name,
+                        Subject: b.subject ?? "",
+                        Teacher: b.teacher_name ?? "",
+                        Timing: b.timing ?? "",
+                        Days: (b.days_of_week ?? []).join(", "),
+                        Capacity: b.capacity,
+                        Active: b.is_active ? "Yes" : "No",
+                        Students: countByBatch[b.id] ?? 0,
+                      }));
+                      await exportToExcel(rows, "batches", "Batches");
+                      toast.success(`Exported ${rows.length} batches (.xlsx)`);
+                    }}
+                  >
+                    Spreadsheet (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      const rows = (batches.data ?? []).map((b) => ({
+                        Name: b.name,
+                        Subject: b.subject ?? "",
+                        Teacher: b.teacher_name ?? "",
+                        Timing: b.timing ?? "",
+                        Days: (b.days_of_week ?? []).join(", "),
+                        Capacity: b.capacity,
+                        Active: b.is_active ? "Yes" : "No",
+                        Students: countByBatch[b.id] ?? 0,
+                      }));
+                      exportToCsv(rows, "batches");
+                      toast.success(`Exported ${rows.length} batches (.csv)`);
+                    }}
+                  >
+                    CSV (.csv)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Button
               onClick={() => {
                 setEditing(undefined);

@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import Papa from "papaparse";
-import readXlsxFile from "read-excel-file/browser";
 import {
   Dialog,
   DialogContent,
@@ -50,12 +48,21 @@ import {
   buildExistingIndex,
   revalidateRow,
   downloadRejectedRows,
+  parseSpreadsheetBuffer,
+  applyPlanLimit,
+  unknownBatchNames,
+  formatImportSummary,
+  importOverLimitCopy,
+  MAX_IMPORT_ROWS,
+  MAX_IMPORT_BYTES,
+  IMPORT_INSERT_CHUNK,
   FIELD_LABELS,
   type PreparedImportRow,
   type ColumnMapping,
   type ImportField,
   type ImportRowIssue,
 } from "@/lib/student-import";
+import { PLAN_DISPLAY_NAMES, type PlanCode } from "@/lib/plan-limits";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -78,9 +85,10 @@ const FIELD_ORDER: ImportField[] = [
   "batch",
   "fee",
   "joining_date",
+  "address",
+  "notes",
+  "fee_due_date",
 ];
-const MAX_IMPORT_ROWS = 500;
-const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -103,6 +111,7 @@ export function ImportStudentsDialog({
   const sub = useSubscription();
   const qc = useQueryClient();
   const canWriteFees = useCan("fees", "write");
+  const canWriteBatches = useCan("batches", "write");
 
   const [step, setStep] = useState<Step>(1);
   const [fileName, setFileName] = useState("");
@@ -158,12 +167,12 @@ export function ImportStudentsDialog({
       if (file.size > MAX_IMPORT_BYTES) {
         toast.error("That file is too large.", {
           description:
-            "Upload a spreadsheet under 2 MB with up to 500 student rows.",
+            "Upload a spreadsheet under 8 MB with up to 5,000 student rows.",
         });
         return;
       }
       const buf = await file.arrayBuffer();
-      const matrix = await matrixFromSpreadsheet(file, buf);
+      const matrix = parseSpreadsheetBuffer(buf, file.name);
       if (!matrix.length) {
         toast.error("That file looks empty.", {
           description:
@@ -182,7 +191,7 @@ export function ImportStudentsDialog({
       }
       if (rows.length > MAX_IMPORT_ROWS) {
         toast.error("Too many rows.", {
-          description: `Import up to ${MAX_IMPORT_ROWS} students at a time. Split this file and try again.`,
+          description: `Import up to ${MAX_IMPORT_ROWS.toLocaleString("en-IN")} students at a time. Split this file and try again.`,
         });
         return;
       }
@@ -209,14 +218,17 @@ export function ImportStudentsDialog({
     }
     const defaultFee = Math.max(0, Number(feeTotal) || 0);
     const defaultBatch = batchId === "none" ? null : batchId;
-    const rows = prepareStudentImportRows(sheetRows, {
-      mapping,
-      defaultBatchId: defaultBatch,
-      defaultFee,
-      batchNameToId,
-      existingStudents: students.data ?? [],
-      rowOffset: headerRowIndex + 2,
-    });
+    const rows = applyPlanLimit(
+      prepareStudentImportRows(sheetRows, {
+        mapping,
+        defaultBatchId: defaultBatch,
+        defaultFee,
+        batchNameToId,
+        existingStudents: students.data ?? [],
+        rowOffset: headerRowIndex + 2,
+      }),
+      remainingSlots,
+    );
     setPrepared(rows);
     setStep(3);
   };
@@ -229,7 +241,6 @@ export function ImportStudentsDialog({
 
   const saveEdit = (sourceRow: number, patch: Partial<PreparedImportRow>) => {
     setPrepared((prev) => {
-      // rebuild seenKeys excluding this row, so dup_file recomputes properly
       const seenKeys = new Map<string, number>();
       for (const r of prev) {
         if (r.sourceRow === sourceRow) continue;
@@ -241,14 +252,29 @@ export function ImportStudentsDialog({
           continue;
         const name = (r.full_name ?? "").trim().toLowerCase();
         const phoneKey = r.phone ? r.phone.replace(/\D/g, "").slice(-10) : "";
-        const key = phoneKey ? `p:${phoneKey}` : `n:${name}`;
+        const guardianKey = r.guardian_phone
+          ? r.guardian_phone.replace(/\D/g, "").slice(-10)
+          : "";
+        const key = phoneKey
+          ? `np:${name}|${phoneKey}`
+          : guardianKey
+            ? `np:${name}|${guardianKey}`
+            : `n:${name}`;
         if (!seenKeys.has(key)) seenKeys.set(key, r.sourceRow);
       }
-      return prev.map((r) => {
-        if (r.sourceRow !== sourceRow) return r;
-        const merged = { ...r, ...patch };
-        return revalidateRow(merged, { existing: existingIndex, seenKeys });
+      const next = prev.map((r) => {
+        const base =
+          r.issue === "over_limit" ? { ...r, issue: "none" as const } : r;
+        if (base.sourceRow !== sourceRow) return base;
+        return revalidateRow(
+          { ...base, ...patch },
+          {
+            existing: existingIndex,
+            seenKeys,
+          },
+        );
       });
+      return applyPlanLimit(next, remainingSlots);
     });
   };
 
@@ -257,14 +283,16 @@ export function ImportStudentsDialog({
     let ready = 0,
       invalid = 0,
       dupFile = 0,
-      dupDb = 0;
+      dupDb = 0,
+      overLimit = 0;
     for (const r of prepared) {
       if (r.issue === "none") ready++;
       else if (r.issue === "dup_db") dupDb++;
       else if (r.issue === "dup_file") dupFile++;
+      else if (r.issue === "over_limit") overLimit++;
       else invalid++;
     }
-    return { ready, invalid, dupFile, dupDb };
+    return { ready, invalid, dupFile, dupDb, overLimit };
   }, [prepared]);
 
   const filteredPrepared = useMemo(() => {
@@ -277,17 +305,25 @@ export function ImportStudentsDialog({
         return (
           r.issue === "invalid_name" ||
           r.issue === "invalid_phone" ||
-          r.issue === "missing_phone"
+          r.issue === "missing_phone" ||
+          r.issue === "over_limit"
         );
       return true;
     });
   }, [prepared, filter]);
 
   // ── Plan-limit preflight ──────────────────────────────────────────
-  const willInsertAll = counts.ready;
   const willUpdate = dupStrategy === "update" ? counts.dupDb : 0;
-  const overBy = Math.max(0, willInsertAll - remainingSlots);
-  const willInsertCapped = Math.max(0, willInsertAll - overBy);
+  const overBy = counts.overLimit;
+  const willInsertCapped = counts.ready;
+  const pendingBatches = useMemo(
+    () => (canWriteBatches ? unknownBatchNames(prepared) : []),
+    [canWriteBatches, prepared],
+  );
+  const planDisplayName =
+    PLAN_DISPLAY_NAMES[(sub.data?.plan ?? "free") as PlanCode] ??
+    sub.data?.plan ??
+    "this";
 
   // ── Step 4: import ────────────────────────────────────────────────
   const importAll = async () => {
@@ -295,8 +331,7 @@ export function ImportStudentsDialog({
     const defaultFee = Math.max(0, Number(feeTotal) || 0);
     const defaultBatch = batchId === "none" ? null : batchId;
 
-    const insertCandidates = prepared.filter((r) => r.issue === "none");
-    const toInsert = insertCandidates.slice(0, remainingSlots);
+    const toInsert = prepared.filter((r) => r.issue === "none");
     const toUpdate =
       dupStrategy === "update"
         ? prepared.filter((r) => r.issue === "dup_db" && r.existingStudentId)
@@ -314,6 +349,32 @@ export function ImportStudentsDialog({
 
     setBusy(true);
     try {
+      const batchIds = new Map(batchNameToId);
+      const toCreate = unknownBatchNames(toInsert);
+      if (canWriteBatches && toCreate.length) {
+        const { data: created, error: batchError } = await supabase
+          .from("batches")
+          .insert(
+            toCreate.map((name) => ({
+              owner_id: ownerId,
+              name,
+            })),
+          )
+          .select("id, name");
+        if (batchError) throw batchError;
+        for (const b of created ?? []) {
+          batchIds.set(b.name.trim().toLowerCase(), b.id);
+        }
+        qc.invalidateQueries({ queryKey: ["batches"] });
+      }
+
+      const resolveBatchId = (r: PreparedImportRow) => {
+        if (r.batch_id) return r.batch_id;
+        const raw = (r.batch_name_raw ?? "").trim().toLowerCase();
+        if (raw && batchIds.has(raw)) return batchIds.get(raw)!;
+        return defaultBatch;
+      };
+
       let updated = 0;
       for (const r of toUpdate) {
         const updatePayload: {
@@ -321,20 +382,27 @@ export function ImportStudentsDialog({
           phone: string | null;
           guardian_name: string | null;
           guardian_phone: string | null;
+          address: string | null;
+          notes: string | null;
           batch_id: string | null;
           joining_date?: string;
           fee_total?: number;
+          fee_due_date?: string | null;
         } = {
           full_name: r.full_name,
           phone: r.phone,
           guardian_name: r.guardian_name,
           guardian_phone: r.guardian_phone,
-          batch_id: r.batch_id ?? defaultBatch,
+          address: r.address,
+          notes: r.notes,
+          batch_id: resolveBatchId(r),
           ...(r.joining_date ? { joining_date: r.joining_date } : {}),
         };
-        // Only include fee fields if user has fees:write permission
         if (canWriteFees && r.fee_total) {
           updatePayload.fee_total = r.fee_total;
+        }
+        if (canWriteFees && r.fee_due_date) {
+          updatePayload.fee_due_date = r.fee_due_date;
         }
         const { error } = await supabase
           .from("students")
@@ -352,19 +420,21 @@ export function ImportStudentsDialog({
           phone: r.phone,
           guardian_name: r.guardian_name,
           guardian_phone: r.guardian_phone,
-          batch_id: r.batch_id ?? defaultBatch,
+          address: r.address,
+          notes: r.notes,
+          batch_id: resolveBatchId(r),
           joining_date: r.joining_date ?? todayISO(),
           status: "active",
         };
-        // Only include fee_total if user has fees:write permission
         if (canWriteFees) {
           row.fee_total = r.fee_total || defaultFee;
+          if (r.fee_due_date) row.fee_due_date = r.fee_due_date;
         }
         return row;
       });
 
       let inserted = 0;
-      for (const part of chunk(payload, 40)) {
+      for (const part of chunk(payload, IMPORT_INSERT_CHUNK)) {
         const { error } = await supabase
           .from("students")
           .insert(part as never[]);
@@ -372,13 +442,11 @@ export function ImportStudentsDialog({
         inserted += part.length;
       }
 
-      const skipped = prepared.length - inserted - updated; // invalid + dup_file + over-limit + skipped dups
+      const skipped = prepared.length - inserted - updated;
       setImportResult({ inserted, updated, skipped });
       qc.invalidateQueries({ queryKey: ["students"] });
       qc.invalidateQueries({ queryKey: ["subscription"] });
-      toast.success(
-        `Imported ${inserted} new${updated ? ` · updated ${updated}` : ""}`,
-      );
+      toast.success(formatImportSummary({ inserted, updated, skipped }));
     } catch (e) {
       toast.error(formatUserError(e, "Import failed."), {
         description:
@@ -459,10 +527,11 @@ export function ImportStudentsDialog({
               setDupStrategy={setDupStrategy}
               remainingSlots={remainingSlots}
               planLimit={planLimit}
-              planName={sub.data?.plan ?? "free"}
+              planName={planDisplayName}
               overBy={overBy}
               willInsertCapped={willInsertCapped}
               willUpdate={willUpdate}
+              pendingBatches={pendingBatches}
             />
           )}
 
@@ -588,7 +657,10 @@ function StepUpload({
           <li>
             <span className="text-foreground font-medium">Name</span> — required
           </li>
-          <li>Phone, Guardian, Batch, Fee total, Joining date — optional</li>
+          <li>
+            Phone (10 digits), parent name, parent phone, batch, monthly fee,
+            joining date (DD-MM-YYYY) — optional except a phone
+          </li>
           <li>
             Don't worry about exact column names — we'll match them in the next
             step.
@@ -620,7 +692,7 @@ function StepUpload({
           Drag &amp; drop your spreadsheet here
         </p>
         <p className="text-xs text-muted-foreground">
-          .xlsx, .xls, or .csv — up to 500 rows
+          .xlsx, .xls, or .csv — up to 5,000 rows
         </p>
         {fileName && (
           <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-success/10 px-2.5 py-1 text-xs text-success">
@@ -655,11 +727,11 @@ function StepUpload({
         <div className="flex-1 text-sm">
           <p className="font-medium">Don't have a file yet?</p>
           <p className="text-xs text-muted-foreground">
-            Download our template — it includes example rows, instructions in
-            English &amp; Malayalam,{" "}
+            Download our template — two fake example rows you can delete, plus
+            an Instructions sheet.{" "}
             {hasBatches
-              ? "and your existing batch names."
-              : "and a batches sheet."}
+              ? "Your batch names are listed there."
+              : "New batch names will be created if you can add batches."}
           </p>
         </div>
         <Button
@@ -848,10 +920,17 @@ function StepReview({
   overBy,
   willInsertCapped,
   willUpdate,
+  pendingBatches,
 }: {
   prepared: PreparedImportRow[];
   filtered: PreparedImportRow[];
-  counts: { ready: number; invalid: number; dupFile: number; dupDb: number };
+  counts: {
+    ready: number;
+    invalid: number;
+    dupFile: number;
+    dupDb: number;
+    overLimit: number;
+  };
   filter: FilterBucket;
   setFilter: (f: FilterBucket) => void;
   editingRow: number | null;
@@ -865,6 +944,7 @@ function StepReview({
   overBy: number;
   willInsertCapped: number;
   willUpdate: number;
+  pendingBatches: string[];
 }) {
   return (
     <div className="space-y-3">
@@ -899,7 +979,7 @@ function StepReview({
           tone="muted"
           label={`Duplicates in file ${counts.dupFile}`}
         />
-        {(counts.invalid > 0 || counts.dupFile > 0) && (
+        {(counts.invalid > 0 || counts.dupFile > 0 || counts.overLimit > 0) && (
           <Button
             type="button"
             variant="ghost"
@@ -907,7 +987,7 @@ function StepReview({
             className="ml-auto h-11 min-h-11 text-sm"
             onClick={() => void downloadRejectedRows(prepared)}
           >
-            <FileDown className="mr-1 h-3 w-3" /> Download rejected rows
+            <FileDown className="mr-1 h-3 w-3" /> Download error report
           </Button>
         )}
       </div>
@@ -916,16 +996,33 @@ function StepReview({
       {!isUnlimited(planLimit) && overBy > 0 && (
         <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
           <p className="font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-            <AlertTriangle className="h-3.5 w-3.5" /> Your {planName} plan only
-            fits {remainingSlots} more students
+            <AlertTriangle className="h-3.5 w-3.5" /> This import is over your
+            plan limit
           </p>
           <p className="mt-0.5 text-muted-foreground">
-            This file has {counts.ready} ready rows — only the first{" "}
-            <span className="font-medium text-foreground">
-              {willInsertCapped}
-            </span>{" "}
-            will import. The remaining {overBy} are saved nowhere — upgrade your
-            plan to add them.
+            {importOverLimitCopy({
+              planName,
+              remainingSlots,
+              readyCount: counts.ready + overBy,
+              willInsert: willInsertCapped,
+              overBy,
+            })}
+          </p>
+        </div>
+      )}
+
+      {pendingBatches.length > 0 && (
+        <div className="rounded-md border bg-muted/20 p-3 text-xs">
+          <p className="font-medium">
+            {pendingBatches.length} new batch
+            {pendingBatches.length === 1 ? "" : "es"} will be created
+          </p>
+          <p className="mt-0.5 text-muted-foreground">
+            {pendingBatches.slice(0, 8).join(", ")}
+            {pendingBatches.length > 8
+              ? ` and ${pendingBatches.length - 8} more`
+              : ""}
+            .
           </p>
         </div>
       )}
@@ -954,6 +1051,12 @@ function StepReview({
       )}
 
       {/* Preview table */}
+      {filtered.length > 250 && (
+        <p className="text-xs text-muted-foreground">
+          Showing the first 250 of {filtered.length} rows. Use the filters above
+          to find problems.
+        </p>
+      )}
       <div className="rounded-md border overflow-hidden">
         <div className="max-h-[42vh] overflow-auto">
           <table className="w-full text-xs">
@@ -978,7 +1081,7 @@ function StepReview({
                   </td>
                 </tr>
               )}
-              {filtered.map((r) => (
+              {filtered.slice(0, 250).map((r) => (
                 <PreviewRow
                   key={r.sourceRow}
                   row={r}
@@ -1040,6 +1143,7 @@ function PreviewRow({
     invalid_phone: "text-destructive",
     missing_phone: "text-destructive",
     dup_file: "text-destructive",
+    over_limit: "text-amber-700 dark:text-amber-400",
   };
 
   if (isEditing) {
@@ -1198,13 +1302,7 @@ function StepResult({
     );
   }
 
-  const hadRejects = prepared.some(
-    (r) =>
-      r.issue === "invalid_name" ||
-      r.issue === "invalid_phone" ||
-      r.issue === "missing_phone" ||
-      r.issue === "dup_file",
-  );
+  const hadRejects = prepared.some((r) => r.issue !== "none");
 
   return (
     <div className="space-y-3">
@@ -1212,8 +1310,7 @@ function StepResult({
         <CheckCircle2 className="mx-auto h-8 w-8 text-success" />
         <p className="mt-2 text-sm font-medium">Import complete</p>
         <p className="text-xs text-muted-foreground">
-          {result.inserted} added · {result.updated} updated · {result.skipped}{" "}
-          skipped
+          {formatImportSummary(result)}
         </p>
       </div>
       {hadRejects && (
@@ -1222,7 +1319,7 @@ function StepResult({
           className="w-full"
           onClick={() => void downloadRejectedRows(prepared)}
         >
-          <FileDown className="mr-1.5 h-4 w-4" /> Download rejected rows
+          <FileDown className="mr-1.5 h-4 w-4" /> Download error report
         </Button>
       )}
       <button
@@ -1234,26 +1331,4 @@ function StepResult({
       </button>
     </div>
   );
-}
-
-async function matrixFromSpreadsheet(
-  file: File,
-  buf: ArrayBuffer,
-): Promise<unknown[][]> {
-  const name = file.name.toLowerCase();
-  if (name.endsWith(".csv")) {
-    const text = new TextDecoder("utf-8").decode(buf);
-    const parsed = Papa.parse<unknown[]>(text, {
-      skipEmptyLines: false,
-    });
-    if (parsed.errors.length) {
-      throw new Error(parsed.errors[0]?.message ?? "Could not parse CSV");
-    }
-    return parsed.data;
-  }
-
-  const sheets = await readXlsxFile(file);
-  const selected =
-    sheets.find((sheet) => /student/i.test(sheet.sheet)) ?? sheets[0];
-  return selected?.data ?? [];
 }

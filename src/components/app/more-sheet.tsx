@@ -50,7 +50,7 @@ export function MoreSheet({
       label: "Team",
       to: "/settings/team",
       icon: Users2,
-      show: !!active && canSettings,
+      show: !!active,
     },
     { label: "Analytics", to: "/analytics", icon: BarChart3, show: true },
     { label: "Plan", to: "/plan", icon: CreditCard, show: canBilling },

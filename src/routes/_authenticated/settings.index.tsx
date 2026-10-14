@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { useReminderPrefs, setReminderPrefs } from "@/hooks/use-reminders";
 import { useOnboarding } from "@/hooks/use-onboarding";
+import { useCan } from "@/hooks/use-active-workspace";
 
 export const Route = createFileRoute("/_authenticated/settings/")({
   component: SettingsPage,
@@ -56,6 +57,8 @@ function SettingsPageContent() {
   const planMeta = PLANS.find((p) => p.code === sub.data?.plan);
   const { resetChecklist } = useOnboarding();
   const signOut = useSignOut();
+  const canWriteSettings = useCan("settings", "write");
+  const canBilling = useCan("billing", "read");
   const [form, setForm] = useState({
     name: "",
     contact_phone: "",
@@ -215,7 +218,10 @@ function SettingsPageContent() {
                 <div className="text-xs text-muted-foreground">
                   Currency: INR · Timezone: Asia/Kolkata
                 </div>
-                <Button type="submit" disabled={mut.isPending}>
+                <Button
+                  type="submit"
+                  disabled={mut.isPending || !canWriteSettings}
+                >
                   {mut.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
@@ -229,7 +235,7 @@ function SettingsPageContent() {
         </Card>
 
         <div className="space-y-6">
-          {sub.data && (
+          {sub.data && canBilling && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Your current plan</CardTitle>

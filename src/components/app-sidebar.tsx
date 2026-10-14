@@ -114,7 +114,9 @@ export function AppSidebar() {
     ...manageItems.filter((it) => !it.resource || permsMap[it.resource]),
     // Team is visible only to members with settings:read (to see teammates).
     // Non-owners get a read-only view; the page itself enforces permissions.
-    ...(active && canSettings
+    // Team is visible to every workspace member so staff can see who's who.
+    // Invite / change / remove are enforced on the page and in the RPCs.
+    ...(active
       ? [{ title: "Team", url: "/settings/team", icon: Users2 } as NavItem]
       : []),
     ...(isAdmin
