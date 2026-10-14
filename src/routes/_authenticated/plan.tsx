@@ -26,6 +26,7 @@ import {
   planCodeForTier,
 } from "@/lib/plan-limits";
 import { getContactLabel, getContactLink } from "@/lib/contact-config";
+import { RoutePermissionGate } from "@/components/route-permission-gate";
 
 type BillingCycle = "monthly" | "annual";
 type PlanTier = "starter" | "growth" | "large";
@@ -47,7 +48,11 @@ type PricingData = {
 };
 
 export const Route = createFileRoute("/_authenticated/plan")({
-  component: PlanPage,
+  component: () => (
+    <RoutePermissionGate resource="billing" level="read">
+      <PlanPage />
+    </RoutePermissionGate>
+  ),
 });
 
 function PlanPage() {

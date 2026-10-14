@@ -57,7 +57,11 @@ import { OverLimitBanner } from "@/components/over-limit-banner";
 import { FilterChips } from "@/components/app/filter-chips";
 import { InitialsAvatar } from "@/components/app/initials-avatar";
 import { isPastIstDate } from "@/lib/format";
-import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
+import {
+  useActiveWorkspace,
+  useCan,
+  useCanExport,
+} from "@/hooks/use-active-workspace";
 import { RoutePermissionGate } from "@/components/route-permission-gate";
 import {
   getContactMessage,
@@ -95,6 +99,7 @@ function StudentsList() {
   const qc = useQueryClient();
   const canViewFees = useCan("fees", "read");
   const canWriteStudents = useCan("students", "write");
+  const canExport = useCanExport();
 
   const [q, setQ] = useState("");
   const [batchFilter, setBatchFilter] = useState<string>("all");
@@ -189,81 +194,87 @@ function StudentsList() {
         description="Manage all students, their batches and fee plans."
         actions={
           <div className="flex gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <Download className="mr-1.5 h-4 w-4" /> Export{" "}
-                  <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={async () => {
-                    const rows = filtered.map((s) => {
-                      const baseRow: Record<string, string | number> = {
-                        Name: s.full_name,
-                        Phone: s.phone ?? "",
-                        Guardian: s.guardian_name ?? "",
-                        "Guardian phone": s.guardian_phone ?? "",
-                        Batch: s.batch_id ? (batchById[s.batch_id] ?? "") : "",
-                        "Joining date": s.joining_date,
-                        Status: s.status,
-                      };
+            {canExport && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <Download className="mr-1.5 h-4 w-4" /> Export{" "}
+                    <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      const rows = filtered.map((s) => {
+                        const baseRow: Record<string, string | number> = {
+                          Name: s.full_name,
+                          Phone: s.phone ?? "",
+                          Guardian: s.guardian_name ?? "",
+                          "Guardian phone": s.guardian_phone ?? "",
+                          Batch: s.batch_id
+                            ? (batchById[s.batch_id] ?? "")
+                            : "",
+                          "Joining date": s.joining_date,
+                          Status: s.status,
+                        };
 
-                      // Only include fee columns if user has fees permission
-                      if (canViewFees) {
-                        baseRow["Total fee"] = Number(s.fee_total);
-                        baseRow["Paid"] = paidByStudent[s.id] ?? 0;
-                        baseRow["Balance"] = Math.max(
-                          0,
-                          Number(s.fee_total) - (paidByStudent[s.id] ?? 0),
-                        );
-                        baseRow["Due date"] = s.fee_due_date ?? "";
-                      }
+                        // Only include fee columns if user has fees permission
+                        if (canViewFees) {
+                          baseRow["Total fee"] = Number(s.fee_total);
+                          baseRow["Paid"] = paidByStudent[s.id] ?? 0;
+                          baseRow["Balance"] = Math.max(
+                            0,
+                            Number(s.fee_total) - (paidByStudent[s.id] ?? 0),
+                          );
+                          baseRow["Due date"] = s.fee_due_date ?? "";
+                        }
 
-                      baseRow["Address"] = s.address ?? "";
-                      return baseRow;
-                    });
-                    await exportToExcel(rows, "students", "Students");
-                    toast.success(`Exported ${rows.length} students (.xlsx)`);
-                  }}
-                >
-                  Spreadsheet (.xlsx)
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    const rows = filtered.map((s) => {
-                      const baseRow: Record<string, string | number> = {
-                        Name: s.full_name,
-                        Phone: s.phone ?? "",
-                        Guardian: s.guardian_name ?? "",
-                        "Guardian phone": s.guardian_phone ?? "",
-                        Batch: s.batch_id ? (batchById[s.batch_id] ?? "") : "",
-                        "Joining date": s.joining_date,
-                        Status: s.status,
-                      };
+                        baseRow["Address"] = s.address ?? "";
+                        return baseRow;
+                      });
+                      await exportToExcel(rows, "students", "Students");
+                      toast.success(`Exported ${rows.length} students (.xlsx)`);
+                    }}
+                  >
+                    Spreadsheet (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      const rows = filtered.map((s) => {
+                        const baseRow: Record<string, string | number> = {
+                          Name: s.full_name,
+                          Phone: s.phone ?? "",
+                          Guardian: s.guardian_name ?? "",
+                          "Guardian phone": s.guardian_phone ?? "",
+                          Batch: s.batch_id
+                            ? (batchById[s.batch_id] ?? "")
+                            : "",
+                          "Joining date": s.joining_date,
+                          Status: s.status,
+                        };
 
-                      if (canViewFees) {
-                        baseRow["Total fee"] = Number(s.fee_total);
-                        baseRow["Paid"] = paidByStudent[s.id] ?? 0;
-                        baseRow["Balance"] = Math.max(
-                          0,
-                          Number(s.fee_total) - (paidByStudent[s.id] ?? 0),
-                        );
-                        baseRow["Due date"] = s.fee_due_date ?? "";
-                      }
+                        if (canViewFees) {
+                          baseRow["Total fee"] = Number(s.fee_total);
+                          baseRow["Paid"] = paidByStudent[s.id] ?? 0;
+                          baseRow["Balance"] = Math.max(
+                            0,
+                            Number(s.fee_total) - (paidByStudent[s.id] ?? 0),
+                          );
+                          baseRow["Due date"] = s.fee_due_date ?? "";
+                        }
 
-                      baseRow["Address"] = s.address ?? "";
-                      return baseRow;
-                    });
-                    exportToCsv(rows, "students");
-                    toast.success(`Exported ${rows.length} students (.csv)`);
-                  }}
-                >
-                  CSV (.csv)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                        baseRow["Address"] = s.address ?? "";
+                        return baseRow;
+                      });
+                      exportToCsv(rows, "students");
+                      toast.success(`Exported ${rows.length} students (.csv)`);
+                    }}
+                  >
+                    CSV (.csv)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             {canWriteStudents && (
               <>
                 <Button

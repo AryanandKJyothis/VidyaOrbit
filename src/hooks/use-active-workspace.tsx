@@ -14,6 +14,7 @@ import {
   type Permissions,
   type WorkspaceRole,
 } from "@/lib/workspace.functions";
+import { canExportData, canManageTeam } from "@/lib/workspace-roles";
 
 export type Workspace = {
   ownerId: string;
@@ -126,4 +127,16 @@ export function useCan(
   const p = active.permissions[resource];
   if (level === "write") return p === "write";
   return p === "read" || p === "write";
+}
+
+export function useCanExport(): boolean {
+  const { active } = useActiveWorkspace();
+  if (!active) return false;
+  return canExportData(active.role);
+}
+
+export function useCanManageTeam(): boolean {
+  const { active } = useActiveWorkspace();
+  if (!active) return false;
+  return canManageTeam(active.role);
 }

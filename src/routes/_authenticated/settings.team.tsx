@@ -7,13 +7,12 @@ import {
   UserPlus,
   MoreHorizontal,
   Trash2,
-  Settings as Cog,
   Copy,
   Send,
   MessageCircle,
   Mail,
+  Shield,
 } from "lucide-react";
-import { RoutePermissionGate } from "@/components/route-permission-gate";
 import { PageHeader } from "@/components/page-header";
 import { InitialsAvatar } from "@/components/app/initials-avatar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -65,12 +64,19 @@ import {
   resendInvite,
   updateMember,
   removeMember,
-  PERMISSION_PRESETS,
-  type Permissions,
   type WorkspaceRole,
 } from "@/lib/workspace.functions";
+import {
+  ROLE_DESCRIPTIONS,
+  ROLE_LABELS,
+  canChangeRole,
+  canInviteRole,
+  canManageInvite,
+  canManageTeam,
+  canRemoveMember,
+  type InviteRole,
+} from "@/lib/workspace-roles";
 import { formatUserError } from "@/lib/format-error";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/settings/team")({
   component: TeamPage,
@@ -113,10 +119,6 @@ function statusBadge(row: TeamRow) {
   );
 }
 
-function roleLabel(role: WorkspaceRole) {
-  return role.charAt(0).toUpperCase() + role.slice(1);
-}
-
 function lastActiveLabel(iso: string | null) {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -131,17 +133,30 @@ function lastActiveLabel(iso: string | null) {
   return d.toLocaleDateString();
 }
 
-function TeamPage() {
-  return (
-    <RoutePermissionGate resource="settings" level="read">
-      <TeamPageContent />
-    </RoutePermissionGate>
+function inviteRolesFor(caller: WorkspaceRole): InviteRole[] {
+  return (["manager", "staff"] as const).filter((r) =>
+    canInviteRole(caller, r),
   );
+}
+
+function TeamPage() {
+  const { active, loading } = useActiveWorkspace();
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-12 w-64" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+  if (!active) return null;
+  return <TeamPageContent />;
 }
 
 function TeamPageContent() {
   const { active } = useActiveWorkspace();
   const ownerId = active?.ownerId ?? "";
+  const callerRole = active?.role ?? "staff";
 
   const fetchTeam = useServerFn(listTeam);
   const qc = useQueryClient();
@@ -153,7 +168,7 @@ function TeamPageContent() {
     staleTime: 30_000,
   });
 
-  const isOwner = !!team.data?.isOwner;
+  const canManage = team.data?.canManage ?? canManageTeam(callerRole);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editMember, setEditMember] = useState<TeamRow | null>(null);
   const [removeTarget, setRemoveTarget] = useState<TeamRow | null>(null);
@@ -163,20 +178,28 @@ function TeamPageContent() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Staff"
-        description={
-          isOwner
-            ? "Workspace members who can take attendance, collect fees, or manage the centre."
-            : "People who can access this workspace alongside you."
-        }
+        title="Team"
+        description="Who can run this centre — Owner / Director, Manager, and Staff."
         actions={
-          isOwner ? (
+          canManage ? (
             <Button onClick={() => setInviteOpen(true)}>
               <UserPlus className="h-4 w-4 mr-2" /> Invite teammate
             </Button>
           ) : undefined
         }
       />
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <RoleLegend
+          title={ROLE_LABELS.owner}
+          body="Full access, billing, and deleting the centre. Manages every teammate."
+        />
+        <RoleLegend
+          title={ROLE_LABELS.manager}
+          body={ROLE_DESCRIPTIONS.manager}
+        />
+        <RoleLegend title={ROLE_LABELS.staff} body={ROLE_DESCRIPTIONS.staff} />
+      </div>
 
       <Card>
         <CardContent className="p-0">
@@ -196,7 +219,7 @@ function TeamPageContent() {
                   <TableHead className="hidden md:table-cell">
                     Last active
                   </TableHead>
-                  {isOwner && (
+                  {canManage && (
                     <TableHead className="w-12 text-right"></TableHead>
                   )}
                 </TableRow>
@@ -223,7 +246,7 @@ function TeamPageContent() {
                       <Badge
                         variant={row.role === "owner" ? "default" : "outline"}
                       >
-                        {roleLabel(row.role)}
+                        {ROLE_LABELS[row.role]}
                       </Badge>
                     </TableCell>
                     <TableCell>{statusBadge(row)}</TableCell>
@@ -232,10 +255,11 @@ function TeamPageContent() {
                         ? lastActiveLabel(row.lastActive)
                         : `Expires ${new Date(row.expiresAt).toLocaleDateString()}`}
                     </TableCell>
-                    {isOwner && (
+                    {canManage && (
                       <TableCell className="text-right">
                         <RowActions
                           row={row}
+                          callerRole={callerRole}
                           onEdit={() => setEditMember(row)}
                           onRemove={() => setRemoveTarget(row)}
                         />
@@ -246,7 +270,7 @@ function TeamPageContent() {
                 {(team.data?.rows ?? []).length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={isOwner ? 5 : 4}
+                      colSpan={canManage ? 5 : 4}
                       className="py-10 text-center text-sm text-muted-foreground"
                     >
                       No teammates yet.
@@ -261,6 +285,7 @@ function TeamPageContent() {
 
       <InviteDialog
         ownerId={ownerId}
+        callerRole={callerRole}
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         onCreated={() => qc.invalidateQueries({ queryKey: ["team", ownerId] })}
@@ -279,12 +304,32 @@ function TeamPageContent() {
   );
 }
 
+function RoleLegend({ title, body }: { title: string; body: string }) {
+  return (
+    <Card>
+      <CardContent className="flex gap-3 p-4">
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
+          <Shield className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold">{title}</div>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+            {body}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function RowActions({
   row,
+  callerRole,
   onEdit,
   onRemove,
 }: {
   row: TeamRow;
+  callerRole: WorkspaceRole;
   onEdit: () => void;
   onRemove: () => void;
 }) {
@@ -317,9 +362,38 @@ function RowActions({
     onError: (e) => toast.error(formatUserError(e)),
   });
 
-  // Don't show actions for the owner row
-  if (row.kind === "member" && row.role === "owner") return null;
-  if (row.kind === "member" && row.isYou) return null;
+  if (row.kind === "member") {
+    const showEdit = canChangeRole(callerRole, row.role) && !row.isYou;
+    const showRemove = canRemoveMember(callerRole, row.role) && !row.isYou;
+    if (!showEdit && !showRemove) return null;
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" aria-label="Row actions">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          {showEdit && (
+            <DropdownMenuItem onSelect={onEdit}>
+              <Shield className="mr-2 h-4 w-4" /> Change role
+            </DropdownMenuItem>
+          )}
+          {showEdit && showRemove && <DropdownMenuSeparator />}
+          {showRemove && (
+            <DropdownMenuItem
+              onSelect={onRemove}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Remove from workspace
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  if (!canManageInvite(callerRole, row.role)) return null;
 
   return (
     <DropdownMenu>
@@ -329,69 +403,52 @@ function RowActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        {row.kind === "member" ? (
+        {row.token && (
           <>
-            <DropdownMenuItem onSelect={onEdit}>
-              <Cog className="mr-2 h-4 w-4" /> Edit permissions
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem
-              onSelect={onRemove}
-              className="text-destructive focus:text-destructive"
+              onSelect={() => {
+                navigator.clipboard
+                  .writeText(joinUrl(row.token!))
+                  .then(() => toast.success("Invite link copied"))
+                  .catch(() =>
+                    toast.error(
+                      "Could not copy the invite link. Use the resend action to display a new link.",
+                    ),
+                  );
+              }}
             >
-              <Trash2 className="mr-2 h-4 w-4" /> Remove from workspace
+              <Copy className="mr-2 h-4 w-4" /> Copy invite link
             </DropdownMenuItem>
-          </>
-        ) : (
-          <>
-            {row.token && (
-              <>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    navigator.clipboard
-                      .writeText(joinUrl(row.token!))
-                      .then(() => toast.success("Invite link copied"))
-                      .catch(() =>
-                        toast.error(
-                          "Could not copy the invite link. Use the resend action to display a new link.",
-                        ),
-                      );
-                  }}
-                >
-                  <Copy className="mr-2 h-4 w-4" /> Copy invite link
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    const msg = encodeURIComponent(
-                      `You've been invited to join our Vidya Orbit workspace: ${joinUrl(row.token!)}`,
-                    );
-                    window.open(
-                      `https://wa.me/?text=${msg}`,
-                      "_blank",
-                      "noopener,noreferrer",
-                    );
-                  }}
-                >
-                  <MessageCircle className="mr-2 h-4 w-4" /> Share on WhatsApp
-                </DropdownMenuItem>
-              </>
-            )}
             <DropdownMenuItem
-              onSelect={() => resend.mutate()}
-              disabled={resend.isPending}
+              onSelect={() => {
+                const msg = encodeURIComponent(
+                  `You've been invited to join our Vidya Orbit workspace: ${joinUrl(row.token!)}`,
+                );
+                window.open(
+                  `https://wa.me/?text=${msg}`,
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              }}
             >
-              <Send className="mr-2 h-4 w-4" /> Resend (extend 7 days)
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={() => revoke.mutate()}
-              disabled={revoke.isPending}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" /> Revoke invite
+              <MessageCircle className="mr-2 h-4 w-4" /> Share on WhatsApp
             </DropdownMenuItem>
           </>
         )}
+        <DropdownMenuItem
+          onSelect={() => resend.mutate()}
+          disabled={resend.isPending}
+        >
+          <Send className="mr-2 h-4 w-4" /> Resend (extend 7 days)
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={() => revoke.mutate()}
+          disabled={revoke.isPending}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 className="mr-2 h-4 w-4" /> Revoke invite
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -399,23 +456,23 @@ function RowActions({
 
 function InviteDialog({
   ownerId,
+  callerRole,
   open,
   onOpenChange,
   onCreated,
 }: {
   ownerId: string;
+  callerRole: WorkspaceRole;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onCreated: () => void;
 }) {
+  const allowed = inviteRolesFor(callerRole);
+  const defaultRole: InviteRole = allowed.includes("staff")
+    ? "staff"
+    : (allowed[0] ?? "staff");
   const [email, setEmail] = useState("");
-  const [pick, setPick] = useState<{
-    role: Exclude<WorkspaceRole, "owner">;
-    permissions: Permissions;
-  }>({
-    role: "staff",
-    permissions: PERMISSION_PRESETS.staff,
-  });
+  const [role, setRole] = useState<InviteRole>(defaultRole);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
 
   const fn = useServerFn(inviteMember);
@@ -425,8 +482,7 @@ function InviteDialog({
         data: {
           ownerId,
           email: email.trim().toLowerCase(),
-          role: pick.role,
-          permissions: pick.permissions,
+          role,
         },
       }),
     onSuccess: (invite) => {
@@ -445,7 +501,7 @@ function InviteDialog({
 
   function reset() {
     setEmail("");
-    setPick({ role: "staff", permissions: PERMISSION_PRESETS.staff });
+    setRole(defaultRole);
     setCreatedLink(null);
   }
 
@@ -518,17 +574,21 @@ function InviteDialog({
             <DialogHeader>
               <DialogTitle>Invite a teammate</DialogTitle>
               <DialogDescription>
-                We&apos;ll create a one-time link they can use to join — even if
-                they don&apos;t have an account yet.
+                Pick a role. Permissions are fixed for that role — they cannot
+                be customised on the invite.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-5">
               <EmailField value={email} onChange={setEmail} />
               <div>
                 <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  What can they do?
+                  Role
                 </div>
-                <RolePermissionPicker value={pick} onChange={setPick} />
+                <RolePermissionPicker
+                  value={role}
+                  onChange={setRole}
+                  allowedRoles={allowed}
+                />
               </div>
             </div>
             <DialogFooter>
@@ -537,7 +597,7 @@ function InviteDialog({
               </Button>
               <Button
                 onClick={() => m.mutate()}
-                disabled={m.isPending || !email}
+                disabled={m.isPending || !email || allowed.length === 0}
               >
                 {m.isPending ? "Creating…" : "Create invite link"}
               </Button>
@@ -558,22 +618,11 @@ function EditMemberDialog({
   onOpenChange: (v: boolean) => void;
   onSaved: () => void;
 }) {
-  // Initialize from row each time the dialog opens — fixes the prior bug where
-  // opening edit on a second member showed the first member's permissions.
-  const [pick, setPick] = useState<{
-    role: Exclude<WorkspaceRole, "owner">;
-    permissions: Permissions;
-  }>({
-    role: "staff",
-    permissions: PERMISSION_PRESETS.staff,
-  });
+  const [role, setRole] = useState<InviteRole>("staff");
 
   useEffect(() => {
     if (row && row.role !== "owner") {
-      setPick({
-        role: row.role as Exclude<WorkspaceRole, "owner">,
-        permissions: row.permissions,
-      });
+      setRole(row.role === "manager" ? "manager" : "staff");
     }
   }, [row]);
 
@@ -583,12 +632,11 @@ function EditMemberDialog({
       fn({
         data: {
           memberId: row!.id,
-          role: pick.role,
-          permissions: pick.permissions,
+          role,
         },
       }),
     onSuccess: () => {
-      toast.success("Permissions updated");
+      toast.success("Role updated");
       onSaved();
       onOpenChange(false);
     },
@@ -597,12 +645,12 @@ function EditMemberDialog({
 
   return (
     <Dialog open={!!row} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("max-w-md")}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit permissions</DialogTitle>
+          <DialogTitle>Change role</DialogTitle>
           <DialogDescription>{row?.email}</DialogDescription>
         </DialogHeader>
-        <RolePermissionPicker value={pick} onChange={setPick} />
+        <RolePermissionPicker value={role} onChange={setRole} />
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
