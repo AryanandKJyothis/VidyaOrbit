@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 const searchSchema = z.object({
   invite: z.string().min(10).max(200).optional(),
   mode: z.enum(["login", "signup"]).optional().catch(undefined),
+  plan: z.string().min(1).max(64).optional(),
 });
 
 export const Route = createFileRoute("/login")({

@@ -20,6 +20,7 @@ import {
   getTelHref,
   getWhatsAppHref,
 } from "@/lib/contact-config";
+import { AUTH_SIGNUP_SEARCH } from "@/lib/auth-aliases";
 import { WHATSAPP_PREFILL } from "@/lib/landing-copy";
 import {
   OG_IMAGE_ALT,
@@ -73,7 +74,7 @@ function NotFoundComponent() {
               <Link to="/pricing">Pricing</Link>
             </Button>
             <Button asChild variant="ghost">
-              <Link to="/login" search={{ mode: "signup" }}>
+              <Link to="/login" search={AUTH_SIGNUP_SEARCH}>
                 Start free
               </Link>
             </Button>
