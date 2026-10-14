@@ -382,6 +382,9 @@ describe("Excel template and error report", () => {
 
   it("round-trips the template through the spreadsheet parser", () => {
     const buf = workbookToArrayBuffer(buildStudentImportWorkbook());
+    expect(
+      parseSpreadsheetBuffer(new Uint8Array(buf), "template.xlsx").length,
+    ).toBeGreaterThan(1);
     const matrix = parseSpreadsheetBuffer(buf, "template.xlsx");
     const headerRow = detectHeaderRow(matrix);
     const { headers, rows } = rowsFromMatrix(matrix, headerRow);

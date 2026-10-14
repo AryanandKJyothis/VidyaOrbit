@@ -401,16 +401,17 @@ function asNullable(v: unknown, max: number): string | null {
 // ── Spreadsheet parse ───────────────────────────────────────────────
 
 export function parseSpreadsheetBuffer(
-  buf: ArrayBuffer,
+  buf: ArrayBuffer | Uint8Array,
   fileName: string,
 ): unknown[][] {
   const name = fileName.toLowerCase();
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
   const wb = name.endsWith(".csv")
-    ? XLSX.read(new TextDecoder("utf-8").decode(buf), {
+    ? XLSX.read(new TextDecoder("utf-8").decode(bytes), {
         type: "string",
         raw: true,
       })
-    : XLSX.read(buf, { type: "array", cellDates: true, raw: true });
+    : XLSX.read(bytes, { type: "array", cellDates: true, raw: true });
   if (!wb.SheetNames.length) return [];
   const sheetName =
     wb.SheetNames.find((s) => /student/i.test(s)) ?? wb.SheetNames[0];
