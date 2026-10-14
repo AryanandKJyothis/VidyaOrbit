@@ -60,6 +60,13 @@ function AuthenticatedLayout() {
                   <span>Vidya Orbit · Data privacy and security built-in</span>
                   <span className="mx-2 opacity-40">·</span>
                   <Link
+                    to="/privacy"
+                    className="inline-flex min-h-11 items-center text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground transition-colors [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
+                  >
+                    Privacy
+                  </Link>
+                  <span className="mx-2 opacity-40">·</span>
+                  <Link
                     to="/terms"
                     className="inline-flex min-h-11 items-center text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground transition-colors [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
                   >
@@ -67,10 +74,17 @@ function AuthenticatedLayout() {
                   </Link>
                   <span className="mx-2 opacity-40">·</span>
                   <Link
-                    to="/privacy"
+                    to="/refund-policy"
                     className="inline-flex min-h-11 items-center text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground transition-colors [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
                   >
-                    Privacy
+                    Refunds &amp; cancellations
+                  </Link>
+                  <span className="mx-2 opacity-40">·</span>
+                  <Link
+                    to="/contact"
+                    className="inline-flex min-h-11 items-center text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground transition-colors [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
+                  >
+                    Contact
                   </Link>
                 </footer>
               </main>

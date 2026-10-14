@@ -147,5 +147,7 @@ ${plans}
 - Sign in: ${SITE_URL}/login
 - Privacy: ${SITE_URL}/privacy
 - Terms: ${SITE_URL}/terms
+- Refunds: ${SITE_URL}/refund-policy
+- Contact: ${SITE_URL}/contact
 `;
 }

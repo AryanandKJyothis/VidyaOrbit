@@ -1,5 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getContactConfig } from "@/lib/contact-config";
+import {
+  LegalOperatorIntro,
+  LegalPageLayout,
+  LegalSection,
+} from "@/components/public/legal-page";
+import {
+  GRIEVANCE_OFFICER_EMAIL,
+  GRIEVANCE_OFFICER_NAME,
+  GRIEVANCE_OFFICER_PHONE,
+} from "@/lib/legal";
 import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/terms")({
@@ -9,156 +18,151 @@ export const Route = createFileRoute("/terms")({
 
 function TermsPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12">
-      <Link
-        to="/"
-        className="text-sm text-muted-foreground hover:text-foreground"
-      >
-        ← Back to home
-      </Link>
-      <h1 className="mt-4 font-display text-3xl font-semibold">
-        Terms of Service
-      </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Last updated: 8 October 2026
-      </p>
+    <LegalPageLayout title="Terms of Service">
+      <LegalSection title="1. Acceptance of terms">
+        <LegalOperatorIntro />
+        <p className="mt-2">
+          By creating an account or using Vidya Orbit ("the service"), you agree
+          to these terms. If you do not agree, do not use the service.
+        </p>
+      </LegalSection>
 
-      <div className="prose prose-sm mt-8 max-w-none space-y-6 text-foreground">
-        <Section title="1. Acceptance of terms">
-          <p>
-            By creating an account or using Vidya ("the service"), you agree to
-            be bound by these terms. If you do not agree, please do not use the
-            service.
-          </p>
-        </Section>
+      <LegalSection title="2. Who may use Vidya Orbit">
+        <p>
+          You must be 18 or older and authorised to act for the coaching or
+          tuition centre whose account you create or use. If you invite staff,
+          you confirm they are likewise authorised by the centre.
+        </p>
+      </LegalSection>
 
-        <Section title="2. The service">
-          <p>
-            Vidya Orbit is a software platform for coaching centres and tuition
-            institutes to manage students, batches, attendance, fees and
-            receipts. We offer a Free plan and paid plans (Starter, Growth and
-            Large). Paid plans unlock higher student limits and additional
-            features. Current pricing is shown on the{" "}
-            <Link to="/pricing" className="text-primary hover:underline">
-              pricing page
-            </Link>{" "}
-            and may change with reasonable notice.
-          </p>
-        </Section>
+      <LegalSection title="3. The service">
+        <p>
+          Vidya Orbit is software for coaching centres and tuition institutes to
+          manage students, batches, attendance, fees and receipts. We offer a
+          Free plan and paid plans (Starter, Growth and Large). Paid plans
+          unlock higher student limits and additional features. Current pricing
+          is shown on the{" "}
+          <Link to="/pricing" className="text-primary hover:underline">
+            pricing page
+          </Link>
+          . Paid plans can be paid in the app on the Plan page through Razorpay
+          (monthly or annual), or arranged with us.
+        </p>
+      </LegalSection>
 
-        <Section title="3. Your account">
-          <p>
-            You are responsible for maintaining the confidentiality of your
-            login credentials and for all activity that occurs under your
-            account. You must provide accurate information and notify us
-            promptly of any unauthorised access.
-          </p>
-        </Section>
+      <LegalSection title="4. Your account">
+        <p>
+          You are responsible for keeping login credentials confidential and for
+          activity under your account. Provide accurate information and tell us
+          promptly of any unauthorised access.
+        </p>
+      </LegalSection>
 
-        <Section title="4. Your data">
-          <p>
-            You retain ownership of all student, batch, fee and other institute
-            data you enter into Vidya. You are responsible for ensuring you have
-            the right to store that data, for complying with applicable data
-            protection laws, and for obtaining consent from students or
-            guardians where required.
-          </p>
-        </Section>
+      <LegalSection title="5. Centre obligations and data processing">
+        <p>
+          You retain ownership of student, batch, fee and other institute data
+          you enter into Vidya Orbit. For that data, your centre is the Data
+          Fiduciary and Vidya Orbit is the Data Processor, as described in our{" "}
+          <Link to="/privacy" className="text-primary hover:underline">
+            Privacy Policy
+          </Link>
+          .
+        </p>
+        <p className="mt-2">The centre must:</p>
+        <ul className="ml-4 mt-2 list-disc space-y-1">
+          <li>
+            obtain verifiable parental consent before storing a child's personal
+            data in Vidya Orbit;
+          </li>
+          <li>
+            handle Data Principal requests (access, correction, erasure,
+            grievance, nomination) for student and parent data, and tell us when
+            you need our help as processor;
+          </li>
+          <li>
+            use the service only for the centre's own operations and in line
+            with applicable law, including the Digital Personal Data Protection
+            Act, 2023.
+          </li>
+        </ul>
+      </LegalSection>
 
-        <Section title="5. Acceptable use">
-          <p>
-            You agree not to misuse the service, including by attempting to gain
-            unauthorised access, uploading malicious content, attempting to
-            bypass billing or plan limits, or using the platform for any illegal
-            purpose.
-          </p>
-        </Section>
+      <LegalSection title="6. Acceptable use">
+        <p>
+          You agree not to misuse Vidya Orbit, including by attempting
+          unauthorised access, uploading malicious content, bypassing billing or
+          plan limits, or using the platform for any illegal purpose.
+        </p>
+      </LegalSection>
 
-        <Section id="refund" title="6. Paid subscriptions, billing and refunds">
-          <p>
-            Paid plans can be paid in the app on the Plan page through Razorpay
-            (monthly or annual), or arranged with us. You can request to cancel
-            or change your plan at any time by contacting us; changes take
-            effect at the end of the current billing period where applicable.
-            Because the service is delivered digitally and immediately on
-            payment, fees already paid are non-refundable except where required
-            by law. If your subscription lapses or is cancelled, your account
-            automatically reverts to the Free tier and data beyond the Free-tier
-            limits remains stored and fully accessible; adding new students is
-            paused until you upgrade again.
-          </p>
-        </Section>
+      <LegalSection title="7. Fees, price changes and refunds">
+        <p>
+          We may change prices. We will give at least 30 days' notice before a
+          change applies to you. The{" "}
+          <Link to="/refund-policy" className="text-primary hover:underline">
+            refund policy
+          </Link>{" "}
+          explains one-time Razorpay payments, cancellations, the setup fee, and
+          when a refund is given.
+        </p>
+      </LegalSection>
 
-        <Section title="7. Availability and warranty">
-          <p>
-            The service is provided "as is" without warranty of any kind. We do
-            not guarantee uninterrupted availability and are not liable for any
-            loss of data or business arising from use of the service. We
-            recommend you keep your own backups of critical information.
-          </p>
-        </Section>
+      <LegalSection title="8. Availability and liability">
+        <p>
+          Vidya Orbit is provided "as is" without warranty of any kind. We do
+          not guarantee uninterrupted availability. We recommend you keep your
+          own backups of critical information.
+        </p>
+        <p className="mt-2">
+          To the extent permitted by law, our total liability arising out of or
+          in connection with Vidya Orbit is capped at the fees you paid us in
+          the 12 months before the claim.
+        </p>
+      </LegalSection>
 
-        <Section title="8. Termination">
-          <p>
-            You may stop using the service at any time. We may suspend or
-            terminate accounts that violate these terms or that are used to harm
-            other users or the platform. Paid subscriptions cancelled by us for
-            violation of these terms are non-refundable.
-          </p>
-        </Section>
+      <LegalSection title="9. Termination">
+        <p>
+          You may stop using the service at any time. Email us to cancel a paid
+          plan; access continues to the end of the paid period, as set out in
+          the{" "}
+          <Link to="/refund-policy" className="text-primary hover:underline">
+            refund policy
+          </Link>
+          . We may suspend or terminate accounts that violate these terms or
+          that are used to harm other users or the platform.
+        </p>
+      </LegalSection>
 
-        <Section title="9. Changes">
-          <p>
-            We may update these terms from time to time. Continued use of the
-            service after changes constitutes acceptance of the new terms.
-          </p>
-        </Section>
+      <LegalSection title="10. Governing law">
+        <p>
+          These terms are governed by the laws of India. Courts in Kerala have
+          exclusive jurisdiction over disputes.
+        </p>
+      </LegalSection>
 
-        <ContactSection />
-      </div>
-    </div>
-  );
-}
+      <LegalSection title="11. Changes">
+        <p>
+          We may update these terms from time to time. Continued use of Vidya
+          Orbit after changes constitutes acceptance of the new terms.
+        </p>
+      </LegalSection>
 
-function Section({
-  id,
-  title,
-  children,
-}: {
-  id?: string;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section id={id} className={id ? "scroll-mt-24" : undefined}>
-      <h2 className="font-display text-lg font-semibold">{title}</h2>
-      <div className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        {children}
-      </div>
-    </section>
-  );
-}
-
-function ContactSection() {
-  const { email, phone } = getContactConfig();
-  return (
-    <Section title="10. Contact">
-      <p>For any questions about these terms, contact:</p>
-      <ul className="ml-4 list-disc">
-        <li>Aryanand K Jyothis</li>
-        {email && (
+      <LegalSection title="12. Contact">
+        <p>For questions about these terms:</p>
+        <ul className="ml-4 mt-2 list-disc">
+          <li>{GRIEVANCE_OFFICER_NAME}</li>
           <li>
             Email:{" "}
             <a
               className="text-primary hover:underline"
-              href={`mailto:${email}`}
+              href={`mailto:${GRIEVANCE_OFFICER_EMAIL}`}
             >
-              {email}
+              {GRIEVANCE_OFFICER_EMAIL}
             </a>
           </li>
-        )}
-        {phone && <li>Phone: {phone}</li>}
-      </ul>
-    </Section>
+          <li>Phone: {GRIEVANCE_OFFICER_PHONE}</li>
+        </ul>
+      </LegalSection>
+    </LegalPageLayout>
   );
 }

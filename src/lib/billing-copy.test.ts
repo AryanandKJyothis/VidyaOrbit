@@ -4,16 +4,24 @@ import { LANDING_CLAIMS } from "./landing-copy";
 import { LANDING_FAQS, PRICING_FAQS } from "./public-faqs";
 import { buildLlmsTxt } from "./seo-documents";
 
-const publicCopyFiles = [
+const productCopyFiles = [
   "src/routes/pricing.tsx",
-  "src/routes/terms.tsx",
-  "src/routes/privacy.tsx",
   "src/routes/_authenticated/plan.tsx",
   "src/components/landing/landing-page.tsx",
   "src/lib/public-faqs.ts",
   "src/lib/seo-documents.ts",
   "public/llms.txt",
 ];
+
+const legalCopyFiles = [
+  "src/routes/terms.tsx",
+  "src/routes/privacy.tsx",
+  "src/routes/refund-policy.tsx",
+  "src/routes/contact.tsx",
+  "src/lib/legal.ts",
+];
+
+const publicCopyFiles = [...productCopyFiles, ...legalCopyFiles];
 
 function haystack() {
   return [
@@ -35,9 +43,25 @@ describe("public billing copy (VO-060 / VO-061)", () => {
     expect(blob).not.toContain("plan to add online payment");
   });
 
-  it("does not mention GST on product or public pages", () => {
-    const blob = haystack();
+  it("does not mention GST on product or marketing pages", () => {
+    const blob = [
+      ...LANDING_CLAIMS.map((c) => c.text),
+      ...LANDING_FAQS.map((f) => `${f.q} ${f.a}`),
+      ...PRICING_FAQS.map((f) => `${f.q} ${f.a}`),
+      buildLlmsTxt(),
+      ...productCopyFiles.map((file) => readFileSync(file, "utf8")),
+    ]
+      .join("\n")
+      .toLowerCase();
     expect(blob).not.toMatch(/\bgst\b/);
+  });
+
+  it("legal pages disclose that the business is not GST registered", () => {
+    const blob = legalCopyFiles
+      .map((file) => readFileSync(file, "utf8"))
+      .join("\n")
+      .toLowerCase();
+    expect(blob).toContain("not gst registered");
   });
 
   it("says paid plans can be paid in the app through Razorpay", () => {

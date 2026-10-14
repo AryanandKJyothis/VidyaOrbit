@@ -58,14 +58,26 @@ export const PUBLIC_PAGES = {
   privacy: {
     title: "Privacy Policy — Vidya Orbit",
     description:
-      "How Vidya Orbit handles student, fee and attendance data for coaching centres in Kerala. Isolation per institute, encryption in transit and at rest.",
+      "How Vidya Orbit handles student, parent, account and billing data under the DPDP Act 2023 for coaching centres in Kerala.",
     path: "/privacy",
   },
   terms: {
     title: "Terms of Service — Vidya Orbit",
     description:
-      "Terms of service for Vidya Orbit, coaching and tuition centre management software operated from Valanchery, Malappuram, Kerala.",
+      "Terms of service for Vidya Orbit coaching and tuition centre management software.",
     path: "/terms",
+  },
+  refundPolicy: {
+    title: "Refunds & cancellations — Vidya Orbit",
+    description:
+      "Vidya Orbit refund and cancellation policy: one-time Razorpay payments, no auto-renewal, setup fee, and how to cancel by email.",
+    path: "/refund-policy",
+  },
+  contact: {
+    title: "Contact — Vidya Orbit",
+    description:
+      "Contact Vidya Orbit — operator, email, phone and grievance officer for coaching centre software in Kerala.",
+    path: "/contact",
   },
   forgotPassword: {
     title: "Forgot password — Vidya Orbit",
@@ -103,6 +115,8 @@ export const SITEMAP_PATHS = [
   PUBLIC_PAGES.login.path,
   PUBLIC_PAGES.privacy.path,
   PUBLIC_PAGES.terms.path,
+  PUBLIC_PAGES.refundPolicy.path,
+  PUBLIC_PAGES.contact.path,
 ] as const;
 
 export function canonicalUrl(path: string): string {
