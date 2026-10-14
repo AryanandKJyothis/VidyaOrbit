@@ -14,6 +14,7 @@ import {
   Phone,
   Upload,
   Download,
+  FileDown,
   ChevronDown,
   Sparkles,
   Users,
@@ -42,7 +43,11 @@ import {
 } from "@/lib/plan-limits";
 import { StudentDialog } from "@/components/student-dialog";
 import { formatINR } from "@/lib/format";
-import { exportToExcel, exportToCsv } from "@/lib/export";
+import {
+  exportToExcel,
+  exportToCsv,
+  downloadStudentImportTemplate,
+} from "@/lib/export";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatUserError } from "@/lib/format-error";
@@ -268,10 +273,20 @@ function StudentsList() {
               <>
                 <Button
                   variant="outline"
+                  onClick={() =>
+                    void downloadStudentImportTemplate(
+                      (batches.data ?? []).map((b) => b.name),
+                    )
+                  }
+                >
+                  <FileDown className="mr-1.5 h-4 w-4" /> Download template
+                </Button>
+                <Button
+                  variant="outline"
                   onClick={() => setImportOpen(true)}
                   disabled={atLimit}
                 >
-                  <Upload className="mr-1.5 h-4 w-4" /> Import
+                  <Upload className="mr-1.5 h-4 w-4" /> Import from Excel
                 </Button>
                 <Button
                   onClick={() => {
@@ -433,10 +448,20 @@ function StudentsList() {
                   </Button>
                   <Button
                     variant="outline"
+                    onClick={() =>
+                      void downloadStudentImportTemplate(
+                        (batches.data ?? []).map((b) => b.name),
+                      )
+                    }
+                  >
+                    <FileDown className="mr-1.5 h-4 w-4" /> Download template
+                  </Button>
+                  <Button
+                    variant="outline"
                     onClick={() => setImportOpen(true)}
                     disabled={atLimit}
                   >
-                    <Upload className="mr-1.5 h-4 w-4" /> Import spreadsheet
+                    <Upload className="mr-1.5 h-4 w-4" /> Import from Excel
                   </Button>
                 </>
               )}
