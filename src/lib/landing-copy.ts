@@ -26,8 +26,61 @@ export const WHATSAPP_PREFILL =
 
 export const CTA_WHATSAPP = "WhatsApp Aryanand";
 export const CTA_START_FREE = "Start free";
+export const CTA_LOG_IN = "Log in";
+export const CTA_GO_TO_DASHBOARD = "Go to dashboard";
 export const CTA_BOOK_DEMO = "Book a free demo";
 export const CTA_FINAL = "Get your centre into one orbit.";
+
+/** Always-on marketing landing. `/` still redirects signed-in users. */
+export const MARKETING_LANDING_PATH = "/home";
+export const APP_WEBSITE_LABEL = "Website";
+
+export function marketingHomePath(pathname: string): "/" | "/home" {
+  return pathname === MARKETING_LANDING_PATH ? "/home" : "/";
+}
+
+export function landingSignupCta(loggedIn: true): {
+  to: "/dashboard";
+  label: string;
+};
+export function landingSignupCta(loggedIn: false): {
+  to: "/login";
+  label: string;
+  search: { mode: "signup" };
+};
+export function landingSignupCta(
+  loggedIn: boolean,
+):
+  | { to: "/dashboard"; label: string }
+  | { to: "/login"; label: string; search: { mode: "signup" } };
+export function landingSignupCta(loggedIn: boolean) {
+  if (loggedIn) {
+    return { to: "/dashboard" as const, label: CTA_GO_TO_DASHBOARD };
+  }
+  return {
+    to: "/login" as const,
+    label: CTA_START_FREE,
+    search: { mode: "signup" as const },
+  };
+}
+
+export function landingLoginCta(loggedIn: true): {
+  to: "/dashboard";
+  label: string;
+};
+export function landingLoginCta(loggedIn: false): {
+  to: "/login";
+  label: string;
+};
+export function landingLoginCta(
+  loggedIn: boolean,
+): { to: "/dashboard"; label: string } | { to: "/login"; label: string };
+export function landingLoginCta(loggedIn: boolean) {
+  if (loggedIn) {
+    return { to: "/dashboard" as const, label: CTA_GO_TO_DASHBOARD };
+  }
+  return { to: "/login" as const, label: CTA_LOG_IN };
+}
 
 export const AUDIENCE_LINE =
   "Not a student app. Built for the people who run the centre.";

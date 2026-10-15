@@ -7,7 +7,8 @@ import {
   type PlanDisplay,
 } from "@/lib/pricing-display";
 import { getWhatsAppHref } from "@/lib/contact-config";
-import { CTA_BOOK_DEMO, CTA_START_FREE } from "@/lib/landing-copy";
+import { useAuth } from "@/hooks/use-auth";
+import { CTA_BOOK_DEMO, landingSignupCta } from "@/lib/landing-copy";
 import { cn } from "@/lib/utils";
 
 const PAID_PLANS = APPROVED_PRICING.filter((p) => p.code !== "free");
@@ -70,6 +71,8 @@ function PlanColumn({ plan, annual }: { plan: PlanDisplay; annual: boolean }) {
   const showSetup = !annual && plan.setupFee > 0;
   const message = `Hi, I'd like the ${plan.displayName} plan (${annual ? "annual" : "monthly"}) for my centre.`;
   const wa = getWhatsAppHref(message);
+  const { session } = useAuth();
+  const signup = landingSignupCta(Boolean(session));
 
   return (
     <article
@@ -159,7 +162,11 @@ function PlanColumn({ plan, annual }: { plan: PlanDisplay; annual: boolean }) {
           </Button>
         </a>
       ) : (
-        <Link to="/login" search={{ mode: "signup" }} className="mt-8">
+        <Link
+          to={signup.to}
+          search={"search" in signup ? signup.search : undefined}
+          className="mt-8"
+        >
           <Button
             className={cn(
               "h-11 w-full !rounded-[4px]",
@@ -168,7 +175,7 @@ function PlanColumn({ plan, annual }: { plan: PlanDisplay; annual: boolean }) {
                 : "bg-orbit-blue text-paper hover:bg-orbit-blue/90",
             )}
           >
-            {CTA_START_FREE}
+            {signup.label}
           </Button>
         </Link>
       )}

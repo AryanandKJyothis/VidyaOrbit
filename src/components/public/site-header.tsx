@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { LogoWordmark } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { getWhatsAppHref } from "@/lib/contact-config";
 import {
   CTA_BOOK_DEMO,
-  CTA_START_FREE,
   WHATSAPP_PREFILL,
+  landingLoginCta,
+  landingSignupCta,
+  marketingHomePath,
 } from "@/lib/landing-copy";
+import { useAuth } from "@/hooks/use-auth";
 import { usePrefers } from "@/hooks/use-prefers";
 import { easeDrawer, fadeOnly, springSnappy } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -39,6 +42,12 @@ export function SiteHeader({
   const wa = getWhatsAppHref(WHATSAPP_PREFILL);
   const [open, setOpen] = useState(false);
   const { reducedMotion } = usePrefers();
+  const { session } = useAuth();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const homeTo = marketingHomePath(pathname);
+  const loggedIn = Boolean(session);
+  const signup = landingSignupCta(loggedIn);
+  const login = landingLoginCta(loggedIn);
 
   useEffect(() => {
     if (!open) return;
@@ -64,7 +73,7 @@ export function SiteHeader({
       <header className="sticky top-0 z-40 border-b border-ink/15 bg-paper">
         <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between gap-4 px-8 sm:px-16">
           <Link
-            to="/"
+            to={homeTo}
             aria-label="Vidya Orbit home"
             className="shrink-0"
             onClick={() => setOpen(false)}
@@ -78,7 +87,7 @@ export function SiteHeader({
                 {LANDING_LINKS.map((l) => (
                   <Link
                     key={l.hash}
-                    to="/"
+                    to={homeTo}
                     hash={l.hash}
                     hashScrollIntoView={{
                       behavior: reducedMotion ? "instant" : "smooth",
@@ -108,17 +117,17 @@ export function SiteHeader({
               </>
             )}
             <Link
-              to="/login"
+              to={login.to}
               className="transition-colors duration-150 hover:text-ink"
             >
-              Log in
+              {login.label}
             </Link>
           </nav>
 
           <div className="flex items-center gap-2">
             <Link
-              to="/login"
-              search={{ mode: "signup" }}
+              to={signup.to}
+              search={"search" in signup ? signup.search : undefined}
               className="hidden sm:inline-flex"
             >
               <Button
@@ -126,7 +135,7 @@ export function SiteHeader({
                 variant="outline"
                 className="h-9 !rounded-[4px] border-ink px-3 text-ink"
               >
-                {CTA_START_FREE}
+                {signup.label}
               </Button>
             </Link>
             {wa && (
@@ -248,23 +257,26 @@ export function SiteHeader({
                   className="border-b border-ink/20"
                 >
                   <Link
-                    to="/login"
+                    to={login.to}
                     className="block py-4 font-display text-2xl font-bold tracking-[-0.03em]"
                     onClick={() => setOpen(false)}
                   >
-                    Log in
+                    {login.label}
                   </Link>
                 </motion.li>
               </ul>
               <div className="mt-auto flex flex-col gap-2">
-                <Link to="/login" search={{ mode: "signup" }}>
+                <Link
+                  to={signup.to}
+                  search={"search" in signup ? signup.search : undefined}
+                >
                   <Button
                     size="lg"
                     variant="outline"
                     className="w-full !rounded-[4px] border-ink"
                     onClick={() => setOpen(false)}
                   >
-                    {CTA_START_FREE}
+                    {signup.label}
                   </Button>
                 </Link>
                 {wa && (

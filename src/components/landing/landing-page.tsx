@@ -17,11 +17,11 @@ import {
 } from "@/lib/contact-config";
 import { usePrefers } from "@/hooks/use-prefers";
 import { fadeOnly, springDefault } from "@/lib/motion";
+import { useAuth } from "@/hooks/use-auth";
 import {
   AUDIENCE_LINE,
   CTA_BOOK_DEMO,
   CTA_FINAL,
-  CTA_START_FREE,
   FOUNDER_LINE,
   HERO_EYEBROW,
   HERO_MALAYALAM,
@@ -30,6 +30,7 @@ import {
   TAGLINE_LINES,
   WHATSAPP_PREFILL,
   WORK_STRIP,
+  landingSignupCta,
 } from "@/lib/landing-copy";
 import { SAMPLE_CENTRE, SAMPLE_LABEL } from "@/lib/landing-sample";
 import { LANDING_FAQS } from "@/lib/public-faqs";
@@ -73,6 +74,8 @@ function LandingCtas({
   inverted?: boolean;
   demoFirst?: boolean;
 }) {
+  const { session } = useAuth();
+  const signup = landingSignupCta(Boolean(session));
   const wa = getWhatsAppHref(WHATSAPP_PREFILL);
   const demoClass = inverted
     ? `${BTN} w-full bg-paper text-ink hover:bg-paper/90 sm:w-auto`
@@ -89,9 +92,13 @@ function LandingCtas({
     </a>
   ) : null;
   const start = (
-    <Link key="start" to="/login" search={{ mode: "signup" }}>
+    <Link
+      key="start"
+      to={signup.to}
+      search={"search" in signup ? signup.search : undefined}
+    >
       <Button size="lg" variant="outline" className={freeClass}>
-        {CTA_START_FREE}
+        {signup.label}
       </Button>
     </Link>
   );

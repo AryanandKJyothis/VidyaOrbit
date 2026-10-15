@@ -182,6 +182,8 @@ describe("crawl documents", () => {
     expect(xml).not.toContain("/api");
     expect(xml).not.toContain("/join");
     expect(xml).not.toContain("/forgot-password");
+    expect(xml).not.toContain("/home");
+    expect(SITEMAP_PATHS).not.toContain("/home");
   });
 
   it("writes llms.txt from live pricing and contact defaults", () => {

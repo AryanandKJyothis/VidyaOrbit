@@ -3,6 +3,8 @@ import { LANDING_FAQS } from "./public-faqs";
 import {
   BANNED_LANDING_PHRASES,
   CTA_BOOK_DEMO,
+  CTA_GO_TO_DASHBOARD,
+  CTA_LOG_IN,
   CTA_START_FREE,
   FOUNDER_LINE,
   HERO_EYEBROW,
@@ -12,6 +14,9 @@ import {
   LANDING_CLAIMS,
   LANDING_DESCRIPTION,
   LANDING_TITLE,
+  landingLoginCta,
+  landingSignupCta,
+  marketingHomePath,
 } from "./landing-copy";
 import { SITE_URL } from "./site";
 
@@ -44,6 +49,34 @@ describe("landing copy", () => {
   it("uses owner CTAs", () => {
     expect(CTA_BOOK_DEMO).toBe("Book a free demo");
     expect(CTA_START_FREE).toBe("Start free");
+    expect(CTA_LOG_IN).toBe("Log in");
+    expect(CTA_GO_TO_DASHBOARD).toBe("Go to dashboard");
+  });
+
+  it("swaps Start free and Log in for Go to dashboard when signed in", () => {
+    expect(landingSignupCta(false)).toEqual({
+      to: "/login",
+      label: CTA_START_FREE,
+      search: { mode: "signup" },
+    });
+    expect(landingSignupCta(true)).toEqual({
+      to: "/dashboard",
+      label: CTA_GO_TO_DASHBOARD,
+    });
+    expect(landingLoginCta(false)).toEqual({
+      to: "/login",
+      label: CTA_LOG_IN,
+    });
+    expect(landingLoginCta(true)).toEqual({
+      to: "/dashboard",
+      label: CTA_GO_TO_DASHBOARD,
+    });
+  });
+
+  it("keeps in-page landing links on /home", () => {
+    expect(marketingHomePath("/home")).toBe("/home");
+    expect(marketingHomePath("/")).toBe("/");
+    expect(marketingHomePath("/pricing")).toBe("/");
   });
 
   it("keeps a Malayalam line for native-speaker review", () => {

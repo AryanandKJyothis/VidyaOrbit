@@ -120,7 +120,10 @@ export const PUBLIC_PAGES = {
   },
 } as const satisfies Record<string, PublicPageSeo>;
 
-/** Indexable marketing URLs for sitemap.xml. */
+/**
+ * Indexable marketing URLs for sitemap.xml.
+ * `/home` reuses the landing page but is omitted so crawlers treat `/` as canonical.
+ */
 export const SITEMAP_PATHS = [
   PUBLIC_PAGES.home.path,
   PUBLIC_PAGES.pricing.path,

@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Users2,
   Mail,
+  Globe,
 } from "lucide-react";
 import {
   Sidebar,
@@ -37,6 +38,7 @@ import { WorkspaceSwitcher } from "@/components/workspace-switcher";
 import { listMyPendingInvites } from "@/lib/workspace.functions";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { APP_WEBSITE_LABEL } from "@/lib/landing-copy";
 
 type NavItem = {
   title: string;
@@ -195,6 +197,17 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border">
         {!collapsed && <PlanBadge />}
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip={APP_WEBSITE_LABEL}>
+              <Link
+                to="/home"
+                className="group text-sidebar-foreground/80 hover:text-sidebar-foreground"
+              >
+                <Globe className="h-4 w-4" />
+                {!collapsed && <span>{APP_WEBSITE_LABEL}</span>}
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Sign out"
