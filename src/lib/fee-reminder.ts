@@ -251,7 +251,7 @@ export function markReminderOpened(
   return next;
 }
 
-/** Receipt share stays a wa.me draft. There is no public receipt URL. */
+/** Fee-paid WhatsApp draft. Include `receiptUrl` so the parent can open the receipt. */
 export function buildReceiptShare(input: {
   centreName: string;
   studentName: string;
@@ -259,13 +259,17 @@ export function buildReceiptShare(input: {
   studentPhone: string | null;
   amount: number;
   receiptNumber: string | null;
+  receiptUrl?: string | null;
 }): { message: string; href: string | null } {
   const centre = input.centreName.trim() || "your centre";
   const number = input.receiptNumber?.trim();
   const message = [
     number ? `Receipt ${number} from ${centre}` : `Receipt from ${centre}`,
     `${input.studentName} paid ${formatINR(input.amount)}.`,
-  ].join("\n");
+    input.receiptUrl ? `View receipt: ${input.receiptUrl}` : null,
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join("\n");
   const digits =
     whatsAppDigits(input.guardianPhone) ?? whatsAppDigits(input.studentPhone);
   return {

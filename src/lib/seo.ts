@@ -106,6 +106,18 @@ export const PUBLIC_PAGES = {
     path: "/auth/callback",
     noindex: true,
   },
+  publicReceipt: {
+    title: "Fee receipt — Vidya Orbit",
+    description: "A fee receipt shared by a coaching or tuition centre.",
+    path: "/r",
+    noindex: true,
+  },
+  publicReport: {
+    title: "Report card — Vidya Orbit",
+    description: "A monthly student report card shared by a coaching centre.",
+    path: "/report",
+    noindex: true,
+  },
 } as const satisfies Record<string, PublicPageSeo>;
 
 /** Indexable marketing URLs for sitemap.xml. */

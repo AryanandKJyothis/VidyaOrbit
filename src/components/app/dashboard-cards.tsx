@@ -206,6 +206,9 @@ export function TodayAttendanceCard({
                 },
               ]}
             />
+            <Button asChild variant="outline" size="sm" className="w-full">
+              <Link to="/absentees">Today's absentees</Link>
+            </Button>
             <div className="grid grid-cols-3 gap-2">
               {[
                 { label: "Present", value: present, dot: "bg-success" },

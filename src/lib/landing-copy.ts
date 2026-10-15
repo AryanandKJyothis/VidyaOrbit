@@ -78,8 +78,9 @@ export const LANDING_CLAIMS: LandingClaim[] = [
       "src/routes/_authenticated/settings.team.tsx Share on WhatsApp; src/lib/workspace.functions.ts inviteMember",
   },
   {
-    text: "Numbered receipts show the centre name and can be printed or saved as PDF from the browser.",
-    source: "src/routes/_authenticated/receipts.$paymentId.tsx window.print()",
+    text: "Numbered receipts show the centre name and can be printed or saved as PDF from the browser. A parent can also open a private receipt link.",
+    source:
+      "src/routes/_authenticated/receipts.$paymentId.tsx window.print(); src/routes/r.$token.tsx",
   },
   {
     text: "Students store parent/guardian name and phone. VidyaOrbit prepares a WhatsApp fee reminder with the centre UPI link; the owner sends it, and the parent pays the centre.",

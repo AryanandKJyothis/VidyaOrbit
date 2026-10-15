@@ -13,6 +13,11 @@ const attendance = readFileSync(
 );
 const plan = readFileSync("src/routes/_authenticated/plan.tsx", "utf8");
 const fees = readFileSync("src/routes/_authenticated/fees.tsx", "utf8");
+const absentees = readFileSync(
+  "src/routes/_authenticated/absentees.tsx",
+  "utf8",
+);
+const reports = readFileSync("src/routes/_authenticated/reports.tsx", "utf8");
 const team = readFileSync(
   "src/routes/_authenticated/settings.team.tsx",
   "utf8",
@@ -31,6 +36,9 @@ describe("route permission gates (VO-028)", () => {
     expect(batches).toContain('resource="batches"');
     expect(attendance).toContain('resource="attendance"');
     expect(attendance).toContain('useCan("attendance", "write")');
+    expect(absentees).toContain('resource="attendance"');
+    expect(reports).toContain('resource="students"');
+    expect(reports).toContain("canSendReportCard");
   });
 
   it("gates plan/billing and hides staff export", () => {

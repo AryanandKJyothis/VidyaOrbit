@@ -303,6 +303,85 @@ export type Database = {
         };
         Relationships: [];
       };
+      receipt_shares: {
+        Row: {
+          created_at: string;
+          owner_id: string;
+          payment_id: string;
+          revoked_at: string | null;
+          share_token: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          owner_id: string;
+          payment_id: string;
+          revoked_at?: string | null;
+          share_token: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          owner_id?: string;
+          payment_id?: string;
+          revoked_at?: string | null;
+          share_token?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "receipt_shares_payment_id_fkey";
+            columns: ["payment_id"];
+            isOneToOne: true;
+            referencedRelation: "fee_payments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      report_shares: {
+        Row: {
+          created_at: string;
+          id: string;
+          owner_id: string;
+          report_month: string;
+          revoked_at: string | null;
+          share_token: string;
+          student_id: string;
+          teacher_remark: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          owner_id: string;
+          report_month: string;
+          revoked_at?: string | null;
+          share_token: string;
+          student_id: string;
+          teacher_remark?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          owner_id?: string;
+          report_month?: string;
+          revoked_at?: string | null;
+          share_token?: string;
+          student_id?: string;
+          teacher_remark?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "report_shares_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       razorpay_webhook_deliveries: {
         Row: {
           created_at: string;
@@ -708,6 +787,30 @@ export type Database = {
       current_plan: {
         Args: { _uid: string };
         Returns: Database["public"]["Enums"]["plan_code"];
+      };
+      get_public_receipt: { Args: { _token: string }; Returns: Json };
+      get_public_report: { Args: { _token: string }; Returns: Json };
+      issue_receipt_share: { Args: { _payment_id: string }; Returns: Json };
+      issue_report_share: {
+        Args: {
+          _student_id: string;
+          _report_month: string;
+          _teacher_remark?: string | null;
+        };
+        Returns: Json;
+      };
+      regenerate_receipt_share: {
+        Args: { _payment_id: string };
+        Returns: Json;
+      };
+      regenerate_report_share: {
+        Args: { _student_id: string; _report_month: string };
+        Returns: Json;
+      };
+      revoke_receipt_share: { Args: { _payment_id: string }; Returns: Json };
+      revoke_report_share: {
+        Args: { _student_id: string; _report_month: string };
+        Returns: Json;
       };
       has_resource_access: {
         Args: {
