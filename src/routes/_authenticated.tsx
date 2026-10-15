@@ -21,6 +21,7 @@ import {
 import { OwnerOnboardingHost } from "@/components/owner-onboarding-host";
 import { usePrefers } from "@/hooks/use-prefers";
 import { fadeOnly, springDefault } from "@/lib/motion";
+import { APP_WEBSITE_LABEL } from "@/lib/landing-copy";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -85,6 +86,13 @@ function AuthenticatedLayout() {
                     className="inline-flex min-h-11 items-center text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground transition-colors [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
                   >
                     Contact
+                  </Link>
+                  <span className="mx-2 opacity-40">·</span>
+                  <Link
+                    to="/home"
+                    className="inline-flex min-h-11 items-center text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground transition-colors [@media(hover:hover)_and_(pointer:fine)]:hover:underline"
+                  >
+                    {APP_WEBSITE_LABEL}
                   </Link>
                 </footer>
               </main>

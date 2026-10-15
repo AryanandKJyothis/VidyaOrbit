@@ -8,7 +8,7 @@ import {
   type PlanDisplay,
 } from "@/lib/pricing-display";
 import { getContactConfig, getWhatsAppHref } from "@/lib/contact-config";
-import { CTA_START_FREE } from "@/lib/landing-copy";
+import { CTA_START_FREE, STARTER_ROI_LINE } from "@/lib/landing-copy";
 
 function PaidPlanCtas({
   plan,
@@ -80,6 +80,11 @@ export function PublicPricingGrid() {
               {plan.displayName}
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">{plan.tagline}</p>
+            {plan.code === "starter" && (
+              <p className="mt-2 text-sm leading-relaxed text-foreground/80">
+                {STARTER_ROI_LINE}
+              </p>
+            )}
             <div className="mt-5">
               <div className="flex items-baseline gap-1">
                 <span className="font-display text-3xl font-bold">

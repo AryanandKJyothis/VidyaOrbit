@@ -119,6 +119,7 @@ Owners of coaching centres, tuition centres, and small institutes who currently 
 - Attendance on a phone: present / late / absent, including All present
 - Fee tracking: paid, pending, overdue; cash, UPI or bank
 - Numbered receipts with the centre name; print or save as PDF, then send on WhatsApp yourself
+- Monthly report cards and today's absentee alerts as WhatsApp drafts the centre sends
 - Staff invites with a join link (owner chooses whether staff can see fees)
 - Excel / CSV import (.xlsx, .xls, .csv) — pasting cells is not supported
 - Export students, batches, dues and payments as Excel or CSV
@@ -128,7 +129,7 @@ VidyaOrbit prepares a WhatsApp fee reminder with the centre UPI link. The owner 
 
 ## Pricing (INR)
 
-Prices below are the public plans in the product. Pay in the app on the Plan page through Razorpay, or contact us to arrange it.
+Prices below are the public plans in the product. Pay in the app on the Plan page with UPI or cards through Razorpay.
 
 ${plans}
 

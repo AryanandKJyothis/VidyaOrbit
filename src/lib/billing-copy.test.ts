@@ -68,6 +68,8 @@ describe("public billing copy (VO-060 / VO-061)", () => {
     const blob = haystack();
     expect(blob).toContain("razorpay");
     expect(blob).toContain("plan page");
+    expect(blob).toContain("upi or cards");
+    expect(blob).not.toContain("invoice only");
     expect(
       PRICING_FAQS.find((f) => f.q === "How do I upgrade?")?.a.toLowerCase(),
     ).toContain("razorpay");

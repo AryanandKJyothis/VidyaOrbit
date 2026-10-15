@@ -75,7 +75,7 @@ function PricingPage() {
               </h1>
               <p className="mt-4 text-muted-foreground sm:text-lg">
                 Start free. Upgrade only when your centre grows. Pay in the app
-                on the Plan page through Razorpay, or contact us to arrange it.
+                on the Plan page with UPI or cards through Razorpay.
               </p>
             </div>
           </div>
@@ -85,8 +85,8 @@ function PricingPage() {
           <PublicPricingGrid />
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Paid plans can be paid in the app on the Plan page through Razorpay
-            (monthly or annual), or arranged with us.{" "}
+            Paid plans can be paid in the app on the Plan page with UPI or cards
+            through Razorpay (monthly or annual).{" "}
             <Link
               to="/refund-policy"
               className="font-medium text-foreground underline-offset-4 hover:underline"

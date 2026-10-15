@@ -6,9 +6,9 @@
  */
 
 export const LANDING_TITLE =
-  "Vidya Orbit — Coaching centre management software in Kerala";
+  "Vidya Orbit — Tuition and coaching centre management software in Kerala";
 export const LANDING_DESCRIPTION =
-  "Vidya Orbit is coaching and tuition centre software for Kerala — attendance, fees, students, staff and receipts. Built in Valanchery, Malappuram.";
+  "Tuition and coaching centre management software for Kerala: attendance, fees, receipts and report cards. Built in Valanchery, Malappuram. Pay in the app with UPI or cards.";
 
 export const HERO_EYEBROW = "For owners and managers in Kerala";
 export const HERO_TITLE = "See who came. Who paid. Who still owes.";
@@ -26,8 +26,81 @@ export const WHATSAPP_PREFILL =
 
 export const CTA_WHATSAPP = "WhatsApp Aryanand";
 export const CTA_START_FREE = "Start free";
+export const CTA_LOG_IN = "Log in";
+export const CTA_GO_TO_DASHBOARD = "Go to dashboard";
 export const CTA_BOOK_DEMO = "Book a free demo";
+export const CTA_BOOK_SETUP_CALL = "Book a free setup call";
 export const CTA_FINAL = "Get your centre into one orbit.";
+
+export const OFFLINE_LINE =
+  "No more lost registers or endless scrolling through chat threads.";
+
+export const STARTER_ROI_LINE =
+  "Pays for itself if it recovers just one missed fee a month.";
+
+export const RAZORPAY_LIVE_LINE =
+  "Pay in the app with UPI or cards through Razorpay.";
+
+export const WHATSAPP_SHARE_LINE =
+  "Send receipts, report cards and absentee alerts on WhatsApp in one tap. Ready made links and PDFs for your parent groups. You send from your centre's own WhatsApp. The app never messages parents by itself.";
+
+export const HERO_SCREENSHOT = {
+  src: "/landing/preview-attendance.webp",
+  width: 780,
+  height: 1158,
+  alt: "Sample attendance roster with present, late and absent marks. Demo data.",
+} as const;
+
+/** Always-on marketing landing. `/` still redirects signed-in users. */
+export const MARKETING_LANDING_PATH = "/home";
+export const APP_WEBSITE_LABEL = "Website";
+
+export function marketingHomePath(pathname: string): "/" | "/home" {
+  return pathname === MARKETING_LANDING_PATH ? "/home" : "/";
+}
+
+export function landingSignupCta(loggedIn: true): {
+  to: "/dashboard";
+  label: string;
+};
+export function landingSignupCta(loggedIn: false): {
+  to: "/login";
+  label: string;
+  search: { mode: "signup" };
+};
+export function landingSignupCta(
+  loggedIn: boolean,
+):
+  | { to: "/dashboard"; label: string }
+  | { to: "/login"; label: string; search: { mode: "signup" } };
+export function landingSignupCta(loggedIn: boolean) {
+  if (loggedIn) {
+    return { to: "/dashboard" as const, label: CTA_GO_TO_DASHBOARD };
+  }
+  return {
+    to: "/login" as const,
+    label: CTA_START_FREE,
+    search: { mode: "signup" as const },
+  };
+}
+
+export function landingLoginCta(loggedIn: true): {
+  to: "/dashboard";
+  label: string;
+};
+export function landingLoginCta(loggedIn: false): {
+  to: "/login";
+  label: string;
+};
+export function landingLoginCta(
+  loggedIn: boolean,
+): { to: "/dashboard"; label: string } | { to: "/login"; label: string };
+export function landingLoginCta(loggedIn: boolean) {
+  if (loggedIn) {
+    return { to: "/dashboard" as const, label: CTA_GO_TO_DASHBOARD };
+  }
+  return { to: "/login" as const, label: CTA_LOG_IN };
+}
 
 export const AUDIENCE_LINE =
   "Not a student app. Built for the people who run the centre.";
@@ -78,12 +151,22 @@ export const LANDING_CLAIMS: LandingClaim[] = [
       "src/routes/_authenticated/settings.team.tsx Share on WhatsApp; src/lib/workspace.functions.ts inviteMember",
   },
   {
-    text: "Numbered receipts show the centre name and can be printed or saved as PDF from the browser. A parent can also open a private receipt link.",
+    text: "Numbered receipts show the centre name and can be printed or saved as PDF, then shared on WhatsApp as a wa.me draft with a private receipt link. You send it from the centre's own WhatsApp.",
     source:
-      "src/routes/_authenticated/receipts.$paymentId.tsx window.print(); src/routes/r.$token.tsx",
+      "src/routes/_authenticated/receipts.$paymentId.tsx window.print(); src/lib/fee-reminder.ts buildReceiptShare; src/routes/r.$token.tsx",
   },
   {
-    text: "Students store parent/guardian name and phone. VidyaOrbit prepares a WhatsApp fee reminder with the centre UPI link; the owner sends it, and the parent pays the centre.",
+    text: "Monthly report cards show attendance and fees for a month. Send to parent opens a WhatsApp draft with a private /report link. The app does not message parents by itself.",
+    source:
+      "src/routes/_authenticated/reports.tsx Send to parent; src/lib/share-links.ts buildReportShareMessage",
+  },
+  {
+    text: "Today's absentees lists students marked absent today, grouped by batch, with a WhatsApp draft the centre sends from its own WhatsApp.",
+    source:
+      "src/routes/_authenticated/absentees.tsx; src/lib/absentees.ts buildAbsenteeMessage",
+  },
+  {
+    text: "Students store parent/guardian name and phone. VidyaOrbit prepares a WhatsApp fee reminder with the centre UPI link; the owner sends it from the centre's own WhatsApp, and the parent pays the centre. The app does not message parents by itself.",
     source:
       "src/lib/fee-reminder.ts; src/routes/_authenticated/fees.tsx Remind on WhatsApp",
   },
@@ -97,7 +180,7 @@ export const LANDING_CLAIMS: LandingClaim[] = [
     source: "src/lib/export.ts used from students, batches and fees pages",
   },
   {
-    text: "Paid plans can be paid in the app through Razorpay, or arranged with us.",
+    text: "Paid plans can be paid in the app with UPI or cards through Razorpay.",
     source:
       "src/routes/_authenticated/plan.tsx RazorpayCheckout; src/routes/api/billing",
   },

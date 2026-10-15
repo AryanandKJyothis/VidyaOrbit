@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { LogoWordmark } from "@/components/logo";
 import {
   FOUNDER_NAME,
@@ -7,17 +7,27 @@ import {
   getTelHref,
   getWhatsAppHref,
 } from "@/lib/contact-config";
-import { WHATSAPP_PREFILL } from "@/lib/landing-copy";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  WHATSAPP_PREFILL,
+  landingLoginCta,
+  landingSignupCta,
+  marketingHomePath,
+} from "@/lib/landing-copy";
 
 export function SiteFooter() {
   const { email, phone } = getContactConfig();
   const tel = getTelHref();
   const wa = getWhatsAppHref(WHATSAPP_PREFILL);
+  const { session } = useAuth();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const homeTo = marketingHomePath(pathname);
+  const loggedIn = Boolean(session);
 
   return (
     <footer className="border-t border-ink/20 bg-paper">
       <div className="mx-auto max-w-[1280px] px-8 py-16 sm:px-16">
-        <Link to="/" aria-label="Vidya Orbit home" className="block">
+        <Link to={homeTo} aria-label="Vidya Orbit home" className="block">
           <LogoWordmark size={72} className="h-auto w-full max-w-full" />
         </Link>
 
@@ -25,22 +35,30 @@ export function SiteFooter() {
           <div>
             <p className="font-medium text-ink">Product</p>
             <nav className="mt-3 flex flex-col gap-2">
-              <Link to="/" hash="features" className="hover:text-ink">
+              <Link to={homeTo} hash="features" className="hover:text-ink">
                 Features
               </Link>
               <Link to="/pricing" className="hover:text-ink">
                 Pricing
               </Link>
-              <Link
-                to="/login"
-                search={{ mode: "signup" }}
-                className="hover:text-ink"
-              >
-                Start free
-              </Link>
-              <Link to="/login" className="hover:text-ink">
-                Log in
-              </Link>
+              {loggedIn ? (
+                <Link to="/dashboard" className="hover:text-ink">
+                  {landingSignupCta(true).label}
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    search={landingSignupCta(false).search}
+                    className="hover:text-ink"
+                  >
+                    {landingSignupCta(false).label}
+                  </Link>
+                  <Link to="/login" className="hover:text-ink">
+                    {landingLoginCta(false).label}
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
 

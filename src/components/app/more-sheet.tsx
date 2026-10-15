@@ -3,6 +3,7 @@ import { useSignOut } from "@/hooks/use-sign-out";
 import {
   BarChart3,
   CreditCard,
+  Globe,
   Layers,
   LogOut,
   Mail,
@@ -20,6 +21,7 @@ import {
 import { useCan, useActiveWorkspace } from "@/hooks/use-active-workspace";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { cn } from "@/lib/utils";
+import { APP_WEBSITE_LABEL } from "@/lib/landing-copy";
 
 type MoreItem = {
   label: string;
@@ -66,6 +68,12 @@ export function MoreSheet({
       to: "/admin",
       icon: ShieldCheck,
       show: isAdmin,
+    },
+    {
+      label: APP_WEBSITE_LABEL,
+      to: "/home",
+      icon: Globe,
+      show: true,
     },
   ];
 

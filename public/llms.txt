@@ -1,8 +1,8 @@
 # Vidya Orbit
 
-> Vidya Orbit — Coaching centre management software in Kerala
+> Vidya Orbit — Tuition and coaching centre management software in Kerala
 
-Vidya Orbit is coaching and tuition centre software for Kerala — attendance, fees, students, staff and receipts. Built in Valanchery, Malappuram.
+Tuition and coaching centre management software for Kerala: attendance, fees, receipts and report cards. Built in Valanchery, Malappuram. Pay in the app with UPI or cards.
 
 Vidya Orbit is a SaaS product for coaching centres and tuition centres in Kerala. The founder, Aryanand, is based in Valanchery, Kerala (Malappuram district). After a WhatsApp or phone call he imports the centre's students from Excel or CSV, sets up batches and fees, adds staff, and gives a 30-minute training.
 
@@ -18,6 +18,7 @@ Owners of coaching centres, tuition centres, and small institutes who currently 
 - Attendance on a phone: present / late / absent, including All present
 - Fee tracking: paid, pending, overdue; cash, UPI or bank
 - Numbered receipts with the centre name; print or save as PDF, then send on WhatsApp yourself
+- Monthly report cards and today's absentee alerts as WhatsApp drafts the centre sends
 - Staff invites with a join link (owner chooses whether staff can see fees)
 - Excel / CSV import (.xlsx, .xls, .csv) — pasting cells is not supported
 - Export students, batches, dues and payments as Excel or CSV
@@ -27,7 +28,7 @@ VidyaOrbit prepares a WhatsApp fee reminder with the centre UPI link. The owner 
 
 ## Pricing (INR)
 
-Prices below are the public plans in the product. Pay in the app on the Plan page through Razorpay, or contact us to arrange it.
+Prices below are the public plans in the product. Pay in the app on the Plan page with UPI or cards through Razorpay.
 
 - Free: ₹0/month — Up to 25 students. For trying things out.
 - Starter: ₹499/month or ₹4,999/year — Up to 100 students. Save ₹989.

@@ -3,8 +3,7 @@
  * the landing page, /pricing, and JSON-LD structured data.
  *
  * These display prices are separate from the internal plan codes and database limits.
- * When Razorpay payments go live (PR #7), server-side prices should be synced to match
- * this display config.
+ * Keep them in sync with server-side Razorpay checkout in billing-pricing.ts.
  */
 
 export interface PlanDisplay {
