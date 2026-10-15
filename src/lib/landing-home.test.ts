@@ -4,8 +4,12 @@ import { Route as HomeRoute } from "@/routes/home";
 import { Route as IndexRoute } from "@/routes/index";
 import {
   APP_WEBSITE_LABEL,
+  CTA_BOOK_SETUP_CALL,
   CTA_GO_TO_DASHBOARD,
+  HERO_SCREENSHOT,
   MARKETING_LANDING_PATH,
+  OFFLINE_LINE,
+  STARTER_ROI_LINE,
 } from "./landing-copy";
 import { PUBLIC_PAGES, canonicalUrl, pageHead } from "./seo";
 
@@ -73,6 +77,30 @@ describe("/home marketing landing", () => {
     expect(footerSrc).toContain("landingSignupCta");
     expect(footerSrc).toContain("landingLoginCta");
     expect(CTA_GO_TO_DASHBOARD).toBe("Go to dashboard");
+  });
+
+  it("shows the product screenshot, setup call CTA and offline line", () => {
+    expect(landingSrc).toContain("HERO_SCREENSHOT");
+    expect(landingSrc).toContain("CTA_BOOK_SETUP_CALL");
+    expect(landingSrc).toContain("OFFLINE_LINE");
+    expect(pricingSrc).toContain("STARTER_ROI_LINE");
+    expect(CTA_BOOK_SETUP_CALL).toBe("Book a free setup call");
+    expect(HERO_SCREENSHOT.src.endsWith(".webp")).toBe(true);
+    expect(OFFLINE_LINE.length).toBeGreaterThan(20);
+    expect(STARTER_ROI_LINE.toLowerCase()).toContain("missed fee");
+  });
+
+  it("mounts a mobile WhatsApp chip that skips app routes", () => {
+    const root = readFileSync("src/routes/__root.tsx", "utf8");
+    const fab = readFileSync(
+      "src/components/public/sticky-whatsapp.tsx",
+      "utf8",
+    );
+    expect(root).toContain("StickyWhatsApp");
+    expect(fab).toContain("isAppShellPath");
+    expect(fab).toContain("md:hidden");
+    expect(fab).toContain("getWhatsAppHref");
+    expect(fab).toContain("Chat on WhatsApp");
   });
 
   it("links to /home from the signed-in app menu and footer", () => {

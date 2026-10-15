@@ -3,17 +3,23 @@ import { LANDING_FAQS } from "./public-faqs";
 import {
   BANNED_LANDING_PHRASES,
   CTA_BOOK_DEMO,
+  CTA_BOOK_SETUP_CALL,
   CTA_GO_TO_DASHBOARD,
   CTA_LOG_IN,
   CTA_START_FREE,
   FOUNDER_LINE,
   HERO_EYEBROW,
   HERO_MALAYALAM,
+  HERO_SCREENSHOT,
   HERO_SUB,
   HERO_TITLE,
   LANDING_CLAIMS,
   LANDING_DESCRIPTION,
   LANDING_TITLE,
+  OFFLINE_LINE,
+  RAZORPAY_LIVE_LINE,
+  STARTER_ROI_LINE,
+  WHATSAPP_SHARE_LINE,
   landingLoginCta,
   landingSignupCta,
   marketingHomePath,
@@ -28,6 +34,10 @@ function haystack() {
     HERO_MALAYALAM,
     FOUNDER_LINE,
     LANDING_DESCRIPTION,
+    OFFLINE_LINE,
+    STARTER_ROI_LINE,
+    RAZORPAY_LIVE_LINE,
+    WHATSAPP_SHARE_LINE,
     ...LANDING_CLAIMS.map((c) => c.text),
     ...LANDING_FAQS.map((f) => `${f.q} ${f.a}`),
   ]
@@ -48,9 +58,37 @@ describe("landing copy", () => {
 
   it("uses owner CTAs", () => {
     expect(CTA_BOOK_DEMO).toBe("Book a free demo");
+    expect(CTA_BOOK_SETUP_CALL).toBe("Book a free setup call");
     expect(CTA_START_FREE).toBe("Start free");
     expect(CTA_LOG_IN).toBe("Log in");
     expect(CTA_GO_TO_DASHBOARD).toBe("Go to dashboard");
+  });
+
+  it("contrasts paper registers and chat threads", () => {
+    expect(OFFLINE_LINE.toLowerCase()).toContain("lost registers");
+    expect(OFFLINE_LINE.toLowerCase()).toContain("chat threads");
+  });
+
+  it("frames WhatsApp as ready made messages the centre sends", () => {
+    expect(WHATSAPP_SHARE_LINE.toLowerCase()).toContain("whatsapp");
+    expect(WHATSAPP_SHARE_LINE.toLowerCase()).toContain("own whatsapp");
+    expect(WHATSAPP_SHARE_LINE.toLowerCase()).toContain(
+      "never messages parents by itself",
+    );
+    expect(WHATSAPP_SHARE_LINE.toLowerCase()).not.toContain("report card");
+    expect(WHATSAPP_SHARE_LINE.toLowerCase()).not.toContain("auto-message");
+  });
+
+  it("nudges Starter with a missed-fee ROI line", () => {
+    expect(STARTER_ROI_LINE.toLowerCase()).toContain("one missed fee");
+    expect(RAZORPAY_LIVE_LINE.toLowerCase()).toContain("upi or cards");
+    expect(RAZORPAY_LIVE_LINE.toLowerCase()).toContain("razorpay");
+  });
+
+  it("uses a real product WebP in the hero", () => {
+    expect(HERO_SCREENSHOT.src).toMatch(/\.webp$/);
+    expect(HERO_SCREENSHOT.src).toContain("/landing/");
+    expect(HERO_SCREENSHOT.alt.toLowerCase()).toContain("attendance");
   });
 
   it("swaps Start free and Log in for Go to dashboard when signed in", () => {
@@ -91,6 +129,9 @@ describe("landing copy", () => {
 
   it("titles the brand first", () => {
     expect(LANDING_TITLE.startsWith("Vidya Orbit")).toBe(true);
+    expect(LANDING_TITLE.toLowerCase()).toContain("tuition");
+    expect(LANDING_TITLE.toLowerCase()).toContain("kerala");
+    expect(LANDING_DESCRIPTION.toLowerCase()).toContain("malappuram");
   });
 
   it("avoids known false or fake-social phrases", () => {

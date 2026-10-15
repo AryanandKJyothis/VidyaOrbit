@@ -21,8 +21,12 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   AUDIENCE_LINE,
   CTA_BOOK_DEMO,
+  CTA_BOOK_SETUP_CALL,
   CTA_FINAL,
   FOUNDER_LINE,
+  HERO_SCREENSHOT,
+  OFFLINE_LINE,
+  WHATSAPP_SHARE_LINE,
   HERO_EYEBROW,
   HERO_MALAYALAM,
   HERO_SUB,
@@ -47,6 +51,7 @@ export function LandingPage() {
       <SiteHeader />
       <main id="main-content">
         <Hero />
+        <OfflineLine />
         <WorkStrip />
         <ProductBand />
         <Audience />
@@ -70,9 +75,11 @@ export function LandingPage() {
 function LandingCtas({
   inverted = false,
   demoFirst = true,
+  whatsappLabel = CTA_BOOK_DEMO,
 }: {
   inverted?: boolean;
   demoFirst?: boolean;
+  whatsappLabel?: string;
 }) {
   const { session } = useAuth();
   const signup = landingSignupCta(Boolean(session));
@@ -87,7 +94,7 @@ function LandingCtas({
   const demo = wa ? (
     <a key="demo" href={wa} target="_blank" rel="noreferrer">
       <Button size="lg" className={demoClass}>
-        {CTA_BOOK_DEMO}
+        {whatsappLabel}
       </Button>
     </a>
   ) : null;
@@ -104,7 +111,7 @@ function LandingCtas({
   );
 
   return (
-    <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+    <div className="mt-8 flex flex-col items-stretch gap-3 pr-16 sm:flex-row sm:items-center sm:pr-0">
       {demoFirst ? (
         <>
           {demo}
@@ -128,16 +135,12 @@ function Hero() {
 
   return (
     <section className="relative overflow-hidden">
-      <OrbitMotif
-        spin
-        className="pointer-events-none absolute -right-16 top-8 hidden h-[22rem] w-[22rem] opacity-90 lg:block lg:right-4 lg:top-2 lg:h-[30rem] lg:w-[30rem]"
-      />
       <div
-        className={`${SHELL} relative grid grid-cols-12 gap-6 pb-12 pt-10 sm:pb-16 sm:pt-16`}
+        className={`${SHELL} relative grid grid-cols-12 items-start gap-6 pb-12 pt-10 sm:pb-16 sm:pt-16`}
       >
-        <div className="col-span-12 lg:col-span-8">
+        <div className="col-span-12 lg:col-span-7">
           <p className="text-sm font-medium text-slate">{HERO_EYEBROW}</p>
-          <h1 className="mt-6 max-w-[16ch] font-display text-5xl font-bold leading-[0.95] tracking-[-0.04em] sm:text-7xl lg:text-8xl">
+          <h1 className="mt-6 max-w-[16ch] font-display text-5xl font-bold leading-[0.95] tracking-[-0.04em] text-balance sm:text-7xl lg:text-8xl">
             {lines.map((line, i) => (
               <motion.span
                 key={line}
@@ -165,9 +168,35 @@ function Hero() {
           >
             {HERO_MALAYALAM}
           </p>
-          <LandingCtas />
+          <LandingCtas demoFirst={false} whatsappLabel={CTA_BOOK_SETUP_CALL} />
+        </div>
+        <div className="col-span-12 lg:col-span-5 lg:pt-4">
+          <figure className="mx-auto w-full max-w-[300px] overflow-hidden border border-ink/20 bg-paper lg:ml-auto lg:max-w-[340px]">
+            <img
+              src={HERO_SCREENSHOT.src}
+              alt={HERO_SCREENSHOT.alt}
+              width={HERO_SCREENSHOT.width}
+              height={HERO_SCREENSHOT.height}
+              className="screenshot mx-auto block h-auto w-full"
+              loading="eager"
+              decoding="async"
+              sizes="(min-width: 1024px) 340px, 300px"
+            />
+          </figure>
         </div>
       </div>
+    </section>
+  );
+}
+
+function OfflineLine() {
+  return (
+    <section className="border-t border-ink/20">
+      <p
+        className={`${SHELL} py-8 max-w-none text-pretty font-display text-xl font-bold tracking-[-0.03em] text-balance sm:py-10 sm:text-2xl`}
+      >
+        {OFFLINE_LINE}
+      </p>
     </section>
   );
 }
@@ -271,7 +300,7 @@ function Features() {
     {
       n: "02",
       title: "Track fees as they come in.",
-      body: "Record cash or UPI. Numbered receipts with your centre name.",
+      body: "Record cash or UPI. Numbered receipts with your centre name. Share them on WhatsApp in one tap.",
     },
     {
       n: "03",
@@ -306,6 +335,9 @@ function Features() {
             </div>
           ))}
         </div>
+        <p className="mt-10 max-w-2xl text-pretty text-base leading-relaxed text-slate">
+          {WHATSAPP_SHARE_LINE}
+        </p>
       </div>
     </section>
   );
@@ -325,8 +357,9 @@ function OverdueBand() {
           See who still owes before parents ask.
         </h2>
         <p className="mt-6 max-w-lg text-pretty text-lg leading-relaxed text-paper/75">
-          Filter overdue fees. We prepare the WhatsApp reminder with the amount
-          and your UPI link. You send it. The parent pays your centre.
+          Filter overdue fees. Ready made WhatsApp reminders with the amount and
+          your UPI link. You send from your own WhatsApp. The parent pays your
+          centre. The app never messages parents by itself.
         </p>
       </div>
     </section>

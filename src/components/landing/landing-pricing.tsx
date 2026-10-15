@@ -8,7 +8,12 @@ import {
 } from "@/lib/pricing-display";
 import { getWhatsAppHref } from "@/lib/contact-config";
 import { useAuth } from "@/hooks/use-auth";
-import { CTA_BOOK_DEMO, landingSignupCta } from "@/lib/landing-copy";
+import {
+  CTA_BOOK_DEMO,
+  RAZORPAY_LIVE_LINE,
+  STARTER_ROI_LINE,
+  landingSignupCta,
+} from "@/lib/landing-copy";
 import { cn } from "@/lib/utils";
 
 const PAID_PLANS = APPROVED_PRICING.filter((p) => p.code !== "free");
@@ -53,8 +58,7 @@ export function LandingPricing() {
 
       <p className="mt-8 max-w-2xl text-sm leading-relaxed text-slate">
         Free for up to 25 students if you want to look around first, no card
-        required. Paid plans can be paid in the app on the Plan page through
-        Razorpay, or arranged with us.{" "}
+        required. {RAZORPAY_LIVE_LINE}{" "}
         <Link to="/pricing" className="text-ink underline underline-offset-4">
           Full plan list
         </Link>
@@ -112,6 +116,16 @@ function PlanColumn({ plan, annual }: { plan: PlanDisplay; annual: boolean }) {
           {period}
         </span>
       </p>
+      {plan.code === "starter" && (
+        <p
+          className={cn(
+            "mt-3 text-sm leading-relaxed",
+            highlight ? "text-paper/80" : "text-slate",
+          )}
+        >
+          {STARTER_ROI_LINE}
+        </p>
+      )}
       {showSetup && (
         <p
           className={cn(

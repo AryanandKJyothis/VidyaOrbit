@@ -14,6 +14,7 @@ import { RouteProgress } from "@/components/route-progress";
 import { LogoWordmark } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { SkipToContent } from "@/components/skip-to-content";
+import { StickyWhatsApp } from "@/components/public/sticky-whatsapp";
 import {
   FOUNDER_NAME,
   getContactConfig,
@@ -231,6 +232,7 @@ function RootComponent() {
       <AuthProvider>
         <RouteProgress />
         <Outlet />
+        <StickyWhatsApp />
         <Toaster position="top-right" richColors />
       </AuthProvider>
     </QueryClientProvider>

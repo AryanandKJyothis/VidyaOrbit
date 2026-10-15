@@ -50,8 +50,13 @@ describe("public page SEO", () => {
   it("puts the brand first on the home title and names Kerala", () => {
     expect(PUBLIC_PAGES.home.title.startsWith("Vidya Orbit")).toBe(true);
     expect(PUBLIC_PAGES.home.title.toLowerCase()).toContain("kerala");
+    expect(PUBLIC_PAGES.home.title.toLowerCase()).toContain("tuition");
+    expect(PUBLIC_PAGES.home.title.toLowerCase()).toContain("coaching");
     expect(PUBLIC_PAGES.home.description.toLowerCase()).toContain("valanchery");
     expect(PUBLIC_PAGES.home.description.toLowerCase()).toContain("malappuram");
+    expect(PUBLIC_PAGES.home.description.toLowerCase()).toContain(
+      "management software",
+    );
   });
 
   it("emits canonical, OG and Twitter tags pointing at www", () => {

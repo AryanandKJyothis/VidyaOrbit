@@ -16,7 +16,7 @@ function landingPricingAnswer(): string {
   const starter = getPlanByCode("starter")!;
   const growth = getPlanByCode("growth")!;
   const large = getPlanByCode("large")!;
-  return `${free.displayName} is ${formatIndianPrice(free.monthlyPrice)} for ${free.studentLimit.toLowerCase()}. ${starter.displayName} is ${formatIndianPrice(starter.monthlyPrice)}/month (${formatIndianPrice(starter.annualPrice)}/year) for ${starter.studentLimit.toLowerCase()}. ${growth.displayName} is ${formatIndianPrice(growth.monthlyPrice)}/month (${formatIndianPrice(growth.annualPrice)}/year); ${large.displayName} is ${formatIndianPrice(large.monthlyPrice)}/month (${formatIndianPrice(large.annualPrice)}/year). Pay a paid plan in the app on the Plan page through Razorpay, or contact us to arrange it.`;
+  return `${free.displayName} is ${formatIndianPrice(free.monthlyPrice)} for ${free.studentLimit.toLowerCase()}. ${starter.displayName} is ${formatIndianPrice(starter.monthlyPrice)}/month (${formatIndianPrice(starter.annualPrice)}/year) for ${starter.studentLimit.toLowerCase()}. ${growth.displayName} is ${formatIndianPrice(growth.monthlyPrice)}/month (${formatIndianPrice(growth.annualPrice)}/year); ${large.displayName} is ${formatIndianPrice(large.monthlyPrice)}/month (${formatIndianPrice(large.annualPrice)}/year). Pay a paid plan in the app on the Plan page with UPI or cards through Razorpay.`;
 }
 
 function setupFeeAnswer(): string {
@@ -38,7 +38,7 @@ export const LANDING_FAQS: FaqItem[] = [
   },
   {
     q: "Can I switch plans?",
-    a: "Yes. Open Plan in the app and pay through Razorpay, or contact us. You can move up or down; existing data stays. Changes take effect at the end of the current billing period where applicable.",
+    a: "Yes. Open Plan in the app and pay with UPI or cards through Razorpay. You can move up or down; existing data stays. Changes take effect at the end of the current billing period where applicable.",
   },
   {
     q: "Is there a setup fee?",
@@ -70,7 +70,7 @@ export const LANDING_FAQS: FaqItem[] = [
   },
   {
     q: "Can it send fee reminders or receipts on WhatsApp?",
-    a: "VidyaOrbit prepares a WhatsApp message with the student name, month, amount due, your centre name, and your centre's UPI payment link. You tap send. The parent pays your centre directly. After you mark the fee received, share the numbered receipt the same way, or print it from the browser.",
+    a: "Yes. Share fee reminders and numbered receipts on WhatsApp in one tap. Ready made messages with the amount, your centre name and UPI link, plus a PDF of the receipt. You send from your centre's own WhatsApp. The app never messages parents by itself.",
   },
 ];
 
@@ -85,7 +85,7 @@ export const PRICING_FAQS: FaqItem[] = [
   },
   {
     q: "How do I upgrade?",
-    a: "Open Plan in the app and pay through Razorpay, or contact us and we'll help you upgrade to a paid plan that fits your needs.",
+    a: "Open Plan in the app and pay with UPI or cards through Razorpay. Message us if you need help picking a plan.",
   },
   {
     q: "Can I cancel or downgrade?",
