@@ -75,7 +75,8 @@ describe("landing copy", () => {
     expect(WHATSAPP_SHARE_LINE.toLowerCase()).toContain(
       "never messages parents by itself",
     );
-    expect(WHATSAPP_SHARE_LINE.toLowerCase()).not.toContain("report card");
+    expect(WHATSAPP_SHARE_LINE.toLowerCase()).toContain("report card");
+    expect(WHATSAPP_SHARE_LINE.toLowerCase()).toContain("absentee");
     expect(WHATSAPP_SHARE_LINE.toLowerCase()).not.toContain("auto-message");
   });
 
@@ -130,8 +131,12 @@ describe("landing copy", () => {
   it("titles the brand first", () => {
     expect(LANDING_TITLE.startsWith("Vidya Orbit")).toBe(true);
     expect(LANDING_TITLE.toLowerCase()).toContain("tuition");
+    expect(LANDING_TITLE.toLowerCase()).toContain("coaching");
+    expect(LANDING_TITLE.toLowerCase()).toContain("management software");
     expect(LANDING_TITLE.toLowerCase()).toContain("kerala");
+    expect(LANDING_DESCRIPTION.toLowerCase()).toContain("management software");
     expect(LANDING_DESCRIPTION.toLowerCase()).toContain("malappuram");
+    expect(LANDING_DESCRIPTION.toLowerCase()).toContain("valanchery");
   });
 
   it("avoids known false or fake-social phrases", () => {

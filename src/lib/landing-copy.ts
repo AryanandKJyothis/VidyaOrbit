@@ -6,9 +6,9 @@
  */
 
 export const LANDING_TITLE =
-  "Vidya Orbit — Tuition and coaching centre software in Kerala";
+  "Vidya Orbit — Tuition and coaching centre management software in Kerala";
 export const LANDING_DESCRIPTION =
-  "Tuition and coaching centre management software for Kerala: attendance, fees, students and receipts. Built in Valanchery, Malappuram. Pay in the app with UPI or cards.";
+  "Tuition and coaching centre management software for Kerala: attendance, fees, receipts and report cards. Built in Valanchery, Malappuram. Pay in the app with UPI or cards.";
 
 export const HERO_EYEBROW = "For owners and managers in Kerala";
 export const HERO_TITLE = "See who came. Who paid. Who still owes.";
@@ -42,7 +42,7 @@ export const RAZORPAY_LIVE_LINE =
   "Pay in the app with UPI or cards through Razorpay.";
 
 export const WHATSAPP_SHARE_LINE =
-  "Share fee reminders and numbered receipts on WhatsApp in one tap. Ready made messages and PDFs. You send from your centre's own WhatsApp. The app never messages parents by itself.";
+  "Send receipts, report cards and absentee alerts on WhatsApp in one tap. Ready made links and PDFs for your parent groups. You send from your centre's own WhatsApp. The app never messages parents by itself.";
 
 export const HERO_SCREENSHOT = {
   src: "/landing/preview-attendance.webp",
@@ -154,6 +154,16 @@ export const LANDING_CLAIMS: LandingClaim[] = [
     text: "Numbered receipts show the centre name and can be printed or saved as PDF, then shared on WhatsApp as a wa.me draft with a private receipt link. You send it from the centre's own WhatsApp.",
     source:
       "src/routes/_authenticated/receipts.$paymentId.tsx window.print(); src/lib/fee-reminder.ts buildReceiptShare; src/routes/r.$token.tsx",
+  },
+  {
+    text: "Monthly report cards show attendance and fees for a month. Send to parent opens a WhatsApp draft with a private /report link. The app does not message parents by itself.",
+    source:
+      "src/routes/_authenticated/reports.tsx Send to parent; src/lib/share-links.ts buildReportShareMessage",
+  },
+  {
+    text: "Today's absentees lists students marked absent today, grouped by batch, with a WhatsApp draft the centre sends from its own WhatsApp.",
+    source:
+      "src/routes/_authenticated/absentees.tsx; src/lib/absentees.ts buildAbsenteeMessage",
   },
   {
     text: "Students store parent/guardian name and phone. VidyaOrbit prepares a WhatsApp fee reminder with the centre UPI link; the owner sends it from the centre's own WhatsApp, and the parent pays the centre. The app does not message parents by itself.",

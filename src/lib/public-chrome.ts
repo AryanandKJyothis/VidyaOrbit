@@ -12,6 +12,10 @@ export const APP_SHELL_PREFIXES = [
   "/invites",
   "/admin",
   "/receipts",
+  "/absentees",
+  "/reports",
+  "/r",
+  "/report",
 ] as const;
 
 export function isAppShellPath(pathname: string): boolean {

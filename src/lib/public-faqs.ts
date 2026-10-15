@@ -69,8 +69,8 @@ export const LANDING_FAQS: FaqItem[] = [
     a: "Yes. Email us to cancel. Access continues to the end of the paid period, then your account reverts to Free and existing data stays accessible. See the Refunds & cancellations page for when a refund is given.",
   },
   {
-    q: "Can it send fee reminders or receipts on WhatsApp?",
-    a: "Yes. Share fee reminders and numbered receipts on WhatsApp in one tap. Ready made messages with the amount, your centre name and UPI link, plus a PDF of the receipt. You send from your centre's own WhatsApp. The app never messages parents by itself.",
+    q: "Can it send receipts, report cards or absentee alerts on WhatsApp?",
+    a: "Yes. Send receipts, report cards and absentee alerts on WhatsApp in one tap. Ready made links and PDFs for your parent groups, plus fee reminders with the amount and your UPI link. You send from your centre's own WhatsApp. The app never messages parents by itself.",
   },
 ];
 

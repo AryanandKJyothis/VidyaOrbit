@@ -81,6 +81,7 @@ describe("/home marketing landing", () => {
 
   it("shows the product screenshot, setup call CTA and offline line", () => {
     expect(landingSrc).toContain("HERO_SCREENSHOT");
+    expect(landingSrc).toContain('fetchPriority="high"');
     expect(landingSrc).toContain("CTA_BOOK_SETUP_CALL");
     expect(landingSrc).toContain("OFFLINE_LINE");
     expect(pricingSrc).toContain("STARTER_ROI_LINE");

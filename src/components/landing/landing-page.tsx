@@ -179,6 +179,7 @@ function Hero() {
               height={HERO_SCREENSHOT.height}
               className="screenshot mx-auto block h-auto w-full"
               loading="eager"
+              fetchPriority="high"
               decoding="async"
               sizes="(min-width: 1024px) 340px, 300px"
             />

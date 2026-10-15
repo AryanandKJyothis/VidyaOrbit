@@ -8,6 +8,10 @@ describe("isAppShellPath", () => {
     expect(isAppShellPath("/settings/team")).toBe(true);
     expect(isAppShellPath("/receipts/pay_1")).toBe(true);
     expect(isAppShellPath("/admin")).toBe(true);
+    expect(isAppShellPath("/absentees")).toBe(true);
+    expect(isAppShellPath("/reports")).toBe(true);
+    expect(isAppShellPath("/r/token")).toBe(true);
+    expect(isAppShellPath("/report/token")).toBe(true);
   });
 
   it("keeps marketing chrome on public pages", () => {
