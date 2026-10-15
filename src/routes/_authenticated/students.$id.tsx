@@ -172,6 +172,11 @@ function StudentDetail() {
                 <Plus className="mr-1.5 h-4 w-4" /> Add payment
               </Button>
             )}
+            <Button asChild variant="outline">
+              <Link to="/reports" search={{ student: s.id }}>
+                Report card
+              </Link>
+            </Button>
           </>
         }
       />

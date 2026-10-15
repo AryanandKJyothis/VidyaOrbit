@@ -25,6 +25,7 @@ import { Route as SigninRouteImport } from './routes/signin'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UiGalleryRouteImport } from './routes/ui-gallery'
+import { Route as AuthenticatedAbsenteesRouteImport } from './routes/_authenticated/absentees'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated/attendance'
@@ -34,11 +35,14 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedFeesRouteImport } from './routes/_authenticated/fees'
 import { Route as AuthenticatedInvitesRouteImport } from './routes/_authenticated/invites'
 import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/plan'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as JoinIndexRouteImport } from './routes/join.index'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
+import { Route as RTokenRouteImport } from './routes/r.$token'
+import { Route as ReportTokenRouteImport } from './routes/report.$token'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminAlertsRouteImport } from './routes/_authenticated/admin.alerts'
 import { Route as AuthenticatedAdminCentresRouteImport } from './routes/_authenticated/admin.centres'
@@ -133,6 +137,11 @@ const UiGalleryRoute = UiGalleryRouteImport.update({
   path: '/ui-gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAbsenteesRoute = AuthenticatedAbsenteesRouteImport.update({
+  id: '/absentees',
+  path: '/absentees',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -178,6 +187,11 @@ const AuthenticatedPlanRoute = AuthenticatedPlanRouteImport.update({
   path: '/plan',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -201,6 +215,16 @@ const JoinIndexRoute = JoinIndexRouteImport.update({
 const JoinTokenRoute = JoinTokenRouteImport.update({
   id: '/join/$token',
   path: '/join/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RTokenRoute = RTokenRouteImport.update({
+  id: '/r/$token',
+  path: '/r/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportTokenRoute = ReportTokenRouteImport.update({
+  id: '/report/$token',
+  path: '/report/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
@@ -297,6 +321,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/ui-gallery': typeof UiGalleryRoute
+  '/absentees': typeof AuthenticatedAbsenteesRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
@@ -306,10 +331,13 @@ export interface FileRoutesByFullPath {
   '/fees': typeof AuthenticatedFeesRoute
   '/invites': typeof AuthenticatedInvitesRoute
   '/plan': typeof AuthenticatedPlanRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
+  '/r/$token': typeof RTokenRoute
+  '/report/$token': typeof ReportTokenRoute
   '/join/': typeof JoinIndexRoute
   '/admin/alerts': typeof AuthenticatedAdminAlertsRoute
   '/admin/centres': typeof AuthenticatedAdminCentresRoute
@@ -342,6 +370,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/ui-gallery': typeof UiGalleryRoute
+  '/absentees': typeof AuthenticatedAbsenteesRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/batches': typeof AuthenticatedBatchesRoute
@@ -350,9 +379,12 @@ export interface FileRoutesByTo {
   '/fees': typeof AuthenticatedFeesRoute
   '/invites': typeof AuthenticatedInvitesRoute
   '/plan': typeof AuthenticatedPlanRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
+  '/r/$token': typeof RTokenRoute
+  '/report/$token': typeof ReportTokenRoute
   '/join': typeof JoinIndexRoute
   '/admin/alerts': typeof AuthenticatedAdminAlertsRoute
   '/admin/centres': typeof AuthenticatedAdminCentresRoute
@@ -387,6 +419,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/ui-gallery': typeof UiGalleryRoute
+  '/_authenticated/absentees': typeof AuthenticatedAbsenteesRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
@@ -396,10 +429,13 @@ export interface FileRoutesById {
   '/_authenticated/fees': typeof AuthenticatedFeesRoute
   '/_authenticated/invites': typeof AuthenticatedInvitesRoute
   '/_authenticated/plan': typeof AuthenticatedPlanRoute
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
+  '/r/$token': typeof RTokenRoute
+  '/report/$token': typeof ReportTokenRoute
   '/join/': typeof JoinIndexRoute
   '/_authenticated/admin/alerts': typeof AuthenticatedAdminAlertsRoute
   '/_authenticated/admin/centres': typeof AuthenticatedAdminCentresRoute
@@ -434,6 +470,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/terms'
     | '/ui-gallery'
+    | '/absentees'
     | '/admin'
     | '/analytics'
     | '/attendance'
@@ -443,10 +480,13 @@ export interface FileRouteTypes {
     | '/fees'
     | '/invites'
     | '/plan'
+    | '/reports'
     | '/settings'
     | '/students'
     | '/auth/callback'
     | '/join/$token'
+    | '/r/$token'
+    | '/report/$token'
     | '/join/'
     | '/admin/alerts'
     | '/admin/centres'
@@ -479,6 +519,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/terms'
     | '/ui-gallery'
+    | '/absentees'
     | '/analytics'
     | '/attendance'
     | '/batches'
@@ -487,9 +528,12 @@ export interface FileRouteTypes {
     | '/fees'
     | '/invites'
     | '/plan'
+    | '/reports'
     | '/students'
     | '/auth/callback'
     | '/join/$token'
+    | '/r/$token'
+    | '/report/$token'
     | '/join'
     | '/admin/alerts'
     | '/admin/centres'
@@ -523,6 +567,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/terms'
     | '/ui-gallery'
+    | '/_authenticated/absentees'
     | '/_authenticated/admin'
     | '/_authenticated/analytics'
     | '/_authenticated/attendance'
@@ -532,10 +577,13 @@ export interface FileRouteTypes {
     | '/_authenticated/fees'
     | '/_authenticated/invites'
     | '/_authenticated/plan'
+    | '/_authenticated/reports'
     | '/_authenticated/settings'
     | '/_authenticated/students'
     | '/auth/callback'
     | '/join/$token'
+    | '/r/$token'
+    | '/report/$token'
     | '/join/'
     | '/_authenticated/admin/alerts'
     | '/_authenticated/admin/centres'
@@ -572,6 +620,8 @@ export interface RootRouteChildren {
   UiGalleryRoute: typeof UiGalleryRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   JoinTokenRoute: typeof JoinTokenRoute
+  RTokenRoute: typeof RTokenRoute
+  ReportTokenRoute: typeof ReportTokenRoute
   JoinIndexRoute: typeof JoinIndexRoute
   ApiBillingCreateOrderRoute: typeof ApiBillingCreateOrderRoute
   ApiBillingPricingRoute: typeof ApiBillingPricingRoute
@@ -693,6 +743,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UiGalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/absentees': {
+      id: '/_authenticated/absentees'
+      path: '/absentees'
+      fullPath: '/absentees'
+      preLoaderRoute: typeof AuthenticatedAbsenteesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -756,6 +813,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlanRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -789,6 +853,20 @@ declare module '@tanstack/react-router' {
       path: '/join/$token'
       fullPath: '/join/$token'
       preLoaderRoute: typeof JoinTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/r/$token': {
+      id: '/r/$token'
+      path: '/r/$token'
+      fullPath: '/r/$token'
+      preLoaderRoute: typeof RTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/report/$token': {
+      id: '/report/$token'
+      path: '/report/$token'
+      fullPath: '/report/$token'
+      preLoaderRoute: typeof ReportTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/': {
@@ -942,6 +1020,7 @@ const AuthenticatedStudentsRouteWithChildren =
   )
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAbsenteesRoute: typeof AuthenticatedAbsenteesRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
@@ -951,12 +1030,14 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFeesRoute: typeof AuthenticatedFeesRoute
   AuthenticatedInvitesRoute: typeof AuthenticatedInvitesRoute
   AuthenticatedPlanRoute: typeof AuthenticatedPlanRoute
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
   AuthenticatedReceiptsPaymentIdRoute: typeof AuthenticatedReceiptsPaymentIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAbsenteesRoute: AuthenticatedAbsenteesRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
@@ -966,6 +1047,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFeesRoute: AuthenticatedFeesRoute,
   AuthenticatedInvitesRoute: AuthenticatedInvitesRoute,
   AuthenticatedPlanRoute: AuthenticatedPlanRoute,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
   AuthenticatedReceiptsPaymentIdRoute: AuthenticatedReceiptsPaymentIdRoute,
@@ -994,6 +1076,8 @@ const rootRouteChildren: RootRouteChildren = {
   UiGalleryRoute: UiGalleryRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   JoinTokenRoute: JoinTokenRoute,
+  RTokenRoute: RTokenRoute,
+  ReportTokenRoute: ReportTokenRoute,
   JoinIndexRoute: JoinIndexRoute,
   ApiBillingCreateOrderRoute: ApiBillingCreateOrderRoute,
   ApiBillingPricingRoute: ApiBillingPricingRoute,
@@ -1003,13 +1087,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

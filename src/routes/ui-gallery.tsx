@@ -46,6 +46,12 @@ import {
   FIXTURE_WIZARD_DRAFT,
 } from "@/components/onboarding-fixtures";
 import { TOUR_STEPS } from "@/lib/owner-onboarding";
+import { ReceiptDocument } from "@/components/public/receipt-document";
+import { ReportCardDocument } from "@/components/public/report-card-document";
+import {
+  FIXTURE_PUBLIC_RECEIPT,
+  FIXTURE_PUBLIC_REPORT,
+} from "@/components/public/share-fixtures";
 
 export const Route = createFileRoute("/ui-gallery")({
   beforeLoad: () => {
@@ -734,6 +740,24 @@ function UiGallery() {
             onSearch={() => {}}
             onFilter={() => {}}
           />
+        </div>
+      </section>
+
+      <section id="public-receipt" className="space-y-3">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Public receipt
+        </h2>
+        <div className="rounded-2xl border border-border bg-paper p-4 sm:p-6">
+          <ReceiptDocument receipt={FIXTURE_PUBLIC_RECEIPT} />
+        </div>
+      </section>
+
+      <section id="public-report" className="space-y-3">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Monthly report card
+        </h2>
+        <div className="rounded-2xl border border-border bg-paper p-4 sm:p-6">
+          <ReportCardDocument report={FIXTURE_PUBLIC_REPORT} />
         </div>
       </section>
 

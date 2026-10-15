@@ -193,7 +193,7 @@ describe("canSendFeeReminders (VO-064)", () => {
 });
 
 describe("buildReceiptShare", () => {
-  it("includes the receipt number and does not add a public URL", () => {
+  it("includes the receipt number and the public receipt URL", () => {
     const share = buildReceiptShare({
       centreName: "Orbit Coaching",
       studentName: "Amina",
@@ -201,12 +201,15 @@ describe("buildReceiptShare", () => {
       studentPhone: null,
       amount: 2500,
       receiptNumber: "RCT-2026-00012",
+      receiptUrl: "https://www.vidyaorbit.in/r/abc123token",
     });
     expect(share.message).toContain(
       "Receipt RCT-2026-00012 from Orbit Coaching",
     );
     expect(share.message).toContain("Amina paid");
-    expect(share.message).not.toContain("http");
+    expect(share.message).toContain(
+      "View receipt: https://www.vidyaorbit.in/r/abc123token",
+    );
     expect(share.href).toContain("https://wa.me/919876543210?text=");
   });
 });

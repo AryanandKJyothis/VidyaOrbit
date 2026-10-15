@@ -282,6 +282,11 @@ function AttendancePage() {
             ? `${roster.length} student${roster.length === 1 ? "" : "s"} · ${formatDate(date)}`
             : "Mark daily attendance by batch."
         }
+        actions={
+          <Button asChild variant="outline">
+            <Link to="/absentees">Today's absentees</Link>
+          </Button>
+        }
       />
 
       {noBatches ? (

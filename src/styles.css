@@ -727,22 +727,36 @@ tr {
   outline-offset: 2px;
 }
 
-/* Print receipt */
+/* Print receipt / report cards */
 @media print {
   body * {
     visibility: hidden;
   }
 
   .print-area,
-  .print-area * {
+  .print-area *,
+  .print-root,
+  .print-root * {
     visibility: visible;
   }
 
-  .print-area {
+  .print-area,
+  .print-root {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
+  }
+
+  .print-root .print-card {
+    position: relative;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .print-root .print-card:last-child {
+    break-after: auto;
+    page-break-after: auto;
   }
 
   .no-print {

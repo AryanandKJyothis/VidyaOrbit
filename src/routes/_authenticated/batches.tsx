@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Plus,
   Users,
@@ -261,6 +261,16 @@ function BatchesPage() {
                       )}
                     </div>
                     <div className="mt-4 flex gap-2">
+                      <Button
+                        asChild
+                        size="sm"
+                        variant="outline"
+                        className="h-11"
+                      >
+                        <Link to="/reports" search={{ batch: b.id }}>
+                          Report cards
+                        </Link>
+                      </Button>
                       {canWriteBatches && (
                         <>
                           <Button

@@ -85,6 +85,8 @@ describe("public page SEO", () => {
     expect(PUBLIC_PAGES.forgotPassword.noindex).toBe(true);
     expect(PUBLIC_PAGES.resetPassword.noindex).toBe(true);
     expect(PUBLIC_PAGES.authCallback.noindex).toBe(true);
+    expect(PUBLIC_PAGES.publicReceipt.noindex).toBe(true);
+    expect(PUBLIC_PAGES.publicReport.noindex).toBe(true);
     const robots = pageHead(PUBLIC_PAGES.join).meta.find(
       (m) => "name" in m && m.name === "robots",
     );
