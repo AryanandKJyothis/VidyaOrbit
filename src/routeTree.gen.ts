@@ -39,6 +39,7 @@ import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/p
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
+import { Route as ApiKeepAliveRouteImport } from './routes/api/keep-alive'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as JoinIndexRouteImport } from './routes/join.index'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
@@ -208,6 +209,11 @@ const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
   path: '/students',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ApiKeepAliveRoute = ApiKeepAliveRouteImport.update({
+  id: '/api/keep-alive',
+  path: '/api/keep-alive',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
@@ -341,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/api/keep-alive': typeof ApiKeepAliveRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
   '/r/$token': typeof RTokenRoute
@@ -389,6 +396,7 @@ export interface FileRoutesByTo {
   '/plan': typeof AuthenticatedPlanRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/api/keep-alive': typeof ApiKeepAliveRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
   '/r/$token': typeof RTokenRoute
@@ -441,6 +449,7 @@ export interface FileRoutesById {
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/api/keep-alive': typeof ApiKeepAliveRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
   '/r/$token': typeof RTokenRoute
@@ -493,6 +502,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/students'
+    | '/api/keep-alive'
     | '/auth/callback'
     | '/join/$token'
     | '/r/$token'
@@ -541,6 +551,7 @@ export interface FileRouteTypes {
     | '/plan'
     | '/reports'
     | '/students'
+    | '/api/keep-alive'
     | '/auth/callback'
     | '/join/$token'
     | '/r/$token'
@@ -592,6 +603,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports'
     | '/_authenticated/settings'
     | '/_authenticated/students'
+    | '/api/keep-alive'
     | '/auth/callback'
     | '/join/$token'
     | '/r/$token'
@@ -631,6 +643,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   TermsRoute: typeof TermsRoute
   UiGalleryRoute: typeof UiGalleryRoute
+  ApiKeepAliveRoute: typeof ApiKeepAliveRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   JoinTokenRoute: typeof JoinTokenRoute
   RTokenRoute: typeof RTokenRoute
@@ -853,6 +866,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/students'
       preLoaderRoute: typeof AuthenticatedStudentsRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/api/keep-alive': {
+      id: '/api/keep-alive'
+      path: '/api/keep-alive'
+      fullPath: '/api/keep-alive'
+      preLoaderRoute: typeof ApiKeepAliveRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
       id: '/auth/callback'
@@ -1095,6 +1115,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   TermsRoute: TermsRoute,
   UiGalleryRoute: UiGalleryRoute,
+  ApiKeepAliveRoute: ApiKeepAliveRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   JoinTokenRoute: JoinTokenRoute,
   RTokenRoute: RTokenRoute,
