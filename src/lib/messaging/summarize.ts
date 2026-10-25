@@ -90,3 +90,37 @@ export function formatFeePaidQueueToast(summary: AbsenceQueueSummary): {
   }
   return { title: "Payment recorded" };
 }
+
+/** Staff-facing line after overdue reminders are queued. */
+export function formatFeeOverdueQueueToast(summary: AbsenceQueueSummary): {
+  title: string;
+  description?: string;
+} {
+  if (summary.queued > 0 && summary.skippedNoPhone > 0) {
+    return {
+      title: `${summary.queued} overdue reminder${summary.queued === 1 ? "" : "s"} queued`,
+      description: `${summary.skippedNoPhone} skipped — no parent phone.`,
+    };
+  }
+  if (summary.queued > 0) {
+    return {
+      title: `${summary.queued} overdue reminder${summary.queued === 1 ? "" : "s"} queued`,
+      description:
+        "Open WhatsApp from the list to send from the centre number.",
+    };
+  }
+  if (summary.skippedNoPhone > 0) {
+    return {
+      title: "No parent phone on file",
+      description: `Add a guardian phone for ${summary.skippedNoPhone} student${summary.skippedNoPhone === 1 ? "" : "s"} so we can queue a WhatsApp draft.`,
+    };
+  }
+  if (summary.already > 0) {
+    return {
+      title: "Already reminded recently",
+      description:
+        "Those students were already queued or sent inside the reminder window.",
+    };
+  }
+  return { title: "No overdue students to remind" };
+}

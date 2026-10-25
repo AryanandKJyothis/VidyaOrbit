@@ -1,4 +1,4 @@
-/** Reusable parent-messaging kinds. A1 sends `absence`; A3 sends `fee_paid`. */
+/** Reusable parent-messaging kinds. A1 absence, A2 fee_overdue, A3 fee_paid. */
 export const MESSAGE_KINDS = ["absence", "fee_overdue", "fee_paid"] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];
 
@@ -15,16 +15,23 @@ export type SkipReason = (typeof SKIP_REASONS)[number];
 export const SENT_VIA = ["wa_me", "worker"] as const;
 export type SentVia = (typeof SENT_VIA)[number];
 
+export const DEFAULT_FEE_OVERDUE_DEDUPE_DAYS = 3;
+export const MIN_FEE_OVERDUE_DEDUPE_DAYS = 1;
+export const MAX_FEE_OVERDUE_DEDUPE_DAYS = 30;
+
 export type MessagingSettings = {
   /** Tier 2 auto-send. Off until the centre has a verified number + templates. */
   waAuto: boolean;
   /** English MVP. `ml` is reserved for Phase B. */
   locale: MessageLocale;
+  /** One fee_overdue row per student inside this many IST days. */
+  feeOverdueDedupeDays: number;
 };
 
 export const DEFAULT_MESSAGING_SETTINGS: MessagingSettings = {
   waAuto: false,
   locale: "en",
+  feeOverdueDedupeDays: DEFAULT_FEE_OVERDUE_DEDUPE_DAYS,
 };
 
 export type ResolvedParentPhone = {
@@ -74,6 +81,14 @@ export type FeePaidPayload = {
   phoneSource: ResolvedParentPhone["source"] | null;
 };
 
+export type FeeOverduePayload = {
+  studentName: string;
+  balance: number;
+  dueDate: string;
+  centreName: string;
+  phoneSource: ResolvedParentPhone["source"] | null;
+};
+
 export type AbsenceQueueSummary = {
   queued: number;
   sent: number;
@@ -94,5 +109,10 @@ export const EMPTY_ABSENCE_QUEUE_SUMMARY: AbsenceQueueSummary = {
 
 export type FeePaidQueueSummary = AbsenceQueueSummary;
 export const EMPTY_FEE_PAID_QUEUE_SUMMARY: FeePaidQueueSummary = {
+  ...EMPTY_ABSENCE_QUEUE_SUMMARY,
+};
+
+export type FeeOverdueQueueSummary = AbsenceQueueSummary;
+export const EMPTY_FEE_OVERDUE_QUEUE_SUMMARY: FeeOverdueQueueSummary = {
   ...EMPTY_ABSENCE_QUEUE_SUMMARY,
 };

@@ -133,3 +133,46 @@ export function renderFeePaidTemplate(
     templateKey: FEE_PAID_TEMPLATE_KEY,
   };
 }
+
+export const FEE_OVERDUE_TEMPLATE_KEY = "fee_overdue.v1";
+
+export type FeeOverdueTemplateInput = {
+  studentName: string;
+  balance: number;
+  dueDate: string;
+  centreName: string;
+};
+
+const enFeeOverdue = (input: FeeOverdueTemplateInput): string => {
+  const name = input.studentName.trim() || "your child";
+  const centre = input.centreName.trim() || "the centre";
+  return `Dear parent, ${name} has an overdue balance of ${formatAckRupees(input.balance)} at ${centre}. Due date: ${formatAckDate(input.dueDate)}. Please contact us to pay.`;
+};
+
+/**
+ * Phase B hook. Malayalam renderer stays null until that work lands.
+ * `renderFeeOverdueTemplate("ml")` falls back to English. No UPI link.
+ */
+export const FEE_OVERDUE_TEMPLATES: Record<
+  MessageLocale,
+  ((input: FeeOverdueTemplateInput) => string) | null
+> = {
+  en: enFeeOverdue,
+  ml: null,
+};
+
+export function renderFeeOverdueTemplate(
+  input: FeeOverdueTemplateInput,
+  locale: string | null | undefined = "en",
+): { body: string; locale: MessageLocale; templateKey: string } {
+  const requested = resolveMessageLocale(locale);
+  const used: MessageLocale = FEE_OVERDUE_TEMPLATES[requested]
+    ? requested
+    : "en";
+  const renderer = FEE_OVERDUE_TEMPLATES[used] ?? enFeeOverdue;
+  return {
+    body: renderer(input),
+    locale: used,
+    templateKey: FEE_OVERDUE_TEMPLATE_KEY,
+  };
+}

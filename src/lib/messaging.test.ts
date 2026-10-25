@@ -3,20 +3,28 @@ import { resolveParentWhatsAppPhone } from "./messaging/phone";
 import {
   formatAckRupees,
   renderAbsenceTemplate,
+  renderFeeOverdueTemplate,
   renderFeePaidTemplate,
 } from "./messaging/templates";
 import {
   absenceDedupeKey,
   canMarkOutboxSent,
+  canQueueFeeOverdue,
+  canSendFeeOverdue,
   canSendFeePaidAck,
+  feeOverdueDedupeKey,
   feePaidDedupeKey,
+  inFeeOverdueDedupeWindow,
+  listOverdueFeeStudents,
   planAbsenceOutbox,
+  planFeeOverdueOutbox,
   planFeePaidOutbox,
   remainingFeeBalance,
   summarizeAbsencePlan,
 } from "./messaging/policy";
 import {
   formatAbsenceQueueToast,
+  formatFeeOverdueQueueToast,
   formatFeePaidQueueToast,
   summarizeOutboxRows,
 } from "./messaging/summarize";
@@ -420,6 +428,206 @@ describe("fee-paid acknowledgement", () => {
         already: 0,
       }).title,
     ).toBe("Send receipt to parent");
+  });
+});
+
+describe("overdue fee reminder", () => {
+  const TODAY = "2026-10-25";
+  const students = [
+    {
+      id: "s-overdue-high",
+      fullName: "Zara",
+      feeTotal: 5000,
+      paidTotal: 500,
+      feeDueDate: "2026-10-01",
+      guardianPhone: "9876543210",
+    },
+    {
+      id: "s-overdue-low",
+      fullName: "Amina",
+      feeTotal: 2000,
+      paidTotal: 0,
+      feeDueDate: "2026-09-15",
+      guardianPhone: "9123456789",
+    },
+    {
+      id: "s-zero",
+      fullName: "Paid Kid",
+      feeTotal: 2000,
+      paidTotal: 2000,
+      feeDueDate: "2026-09-01",
+      guardianPhone: "9000000000",
+    },
+    {
+      id: "s-pending",
+      fullName: "Not Yet Due",
+      feeTotal: 3000,
+      paidTotal: 0,
+      feeDueDate: TODAY,
+      guardianPhone: "9111111111",
+    },
+    {
+      id: "s-future",
+      fullName: "Future Due",
+      feeTotal: 3000,
+      paidTotal: 0,
+      feeDueDate: "2026-11-01",
+      guardianPhone: "9222222222",
+    },
+    {
+      id: "s-no-phone",
+      fullName: "Silent",
+      feeTotal: 1500,
+      paidTotal: 0,
+      feeDueDate: "2026-10-10",
+      guardianPhone: "123",
+      studentPhone: null,
+    },
+  ];
+
+  it("lists only balance > 0 with a due date already passed, amount desc", () => {
+    const overdue = listOverdueFeeStudents(students, TODAY);
+    expect(overdue.map((s) => s.id)).toEqual([
+      "s-overdue-high",
+      "s-overdue-low",
+      "s-no-phone",
+    ]);
+    expect(overdue[0]?.balance).toBe(4500);
+    expect(overdue[1]?.balance).toBe(2000);
+    expect(overdue.every((s) => s.balance > 0)).toBe(true);
+    expect(overdue.some((s) => s.id === "s-zero")).toBe(false);
+    expect(overdue.some((s) => s.id === "s-pending")).toBe(false);
+  });
+
+  it("renders English copy with name, balance, due date, and centre — no UPI", () => {
+    const { body, locale } = renderFeeOverdueTemplate({
+      studentName: "Amina",
+      balance: 2500,
+      dueDate: "2026-03-15",
+      centreName: "Orbit Coaching",
+    });
+    expect(locale).toBe("en");
+    expect(body).toBe(
+      "Dear parent, Amina has an overdue balance of ₹2,500 at Orbit Coaching. Due date: 15 Mar 2026. Please contact us to pay.",
+    );
+    expect(body).not.toMatch(/upi:\/\//i);
+    expect(body).not.toMatch(/@oksbi|pay\?/i);
+    const ml = renderFeeOverdueTemplate(
+      {
+        studentName: "Amina",
+        balance: 2500,
+        dueDate: "2026-03-15",
+        centreName: "Orbit Coaching",
+      },
+      "ml",
+    );
+    expect(ml.locale).toBe("en");
+  });
+
+  it("queues overdue students and skips missing phones", () => {
+    const plan = planFeeOverdueOutbox({
+      students,
+      existing: [],
+      centreName: "Orbit Coaching",
+      today: TODAY,
+      dedupeDays: 3,
+    });
+    expect(plan.inserts).toHaveLength(3);
+    expect(plan.inserts[0]?.studentId).toBe("s-overdue-high");
+    expect(plan.inserts[0]?.status).toBe("queued");
+    expect(plan.inserts[0]?.dedupeKey).toBe(
+      feeOverdueDedupeKey("s-overdue-high", TODAY),
+    );
+    expect(plan.inserts[0]?.body).toContain("₹4,500");
+    expect(plan.inserts[0]?.body).not.toMatch(/upi:/i);
+    expect(plan.inserts.find((r) => r.studentId === "s-no-phone")?.status).toBe(
+      "skipped",
+    );
+    expect(
+      plan.inserts.find((r) => r.studentId === "s-no-phone")?.skipReason,
+    ).toBe("no_phone");
+    expect(plan.already).toBe(0);
+  });
+
+  it("never messages a zero-balance student even if requested", () => {
+    const plan = planFeeOverdueOutbox({
+      students,
+      requestedIds: ["s-zero", "s-pending", "s-overdue-low"],
+      existing: [],
+      centreName: "Orbit Coaching",
+      today: TODAY,
+    });
+    expect(plan.inserts.map((r) => r.studentId)).toEqual(["s-overdue-low"]);
+    expect(plan.ignoredNotOverdue).toBe(2);
+  });
+
+  it("dedupes one reminder per student inside the 3-day window", () => {
+    const first = planFeeOverdueOutbox({
+      students,
+      requestedIds: ["s-overdue-low"],
+      existing: [],
+      centreName: "Orbit Coaching",
+      today: TODAY,
+    });
+    const again = planFeeOverdueOutbox({
+      students,
+      requestedIds: ["s-overdue-low"],
+      existing: [
+        {
+          student_id: "s-overdue-low",
+          dedupe_key: first.inserts[0]!.dedupeKey,
+          status: "sent",
+          created_at: "2026-10-25T04:00:00.000Z",
+          sent_at: "2026-10-25T04:05:00.000Z",
+          skip_reason: null,
+        },
+      ],
+      centreName: "Orbit Coaching",
+      today: "2026-10-27",
+      dedupeDays: 3,
+    });
+    expect(again.inserts).toEqual([]);
+    expect(again.already).toBe(1);
+    expect(inFeeOverdueDedupeWindow("2026-10-25", "2026-10-27", 3)).toBe(true);
+    expect(inFeeOverdueDedupeWindow("2026-10-25", "2026-10-28", 3)).toBe(false);
+  });
+
+  it("allows a new row after the window and forbids fees:read from sending", () => {
+    const later = planFeeOverdueOutbox({
+      students,
+      requestedIds: ["s-overdue-low"],
+      existing: [
+        {
+          student_id: "s-overdue-low",
+          dedupe_key: feeOverdueDedupeKey("s-overdue-low", "2026-10-22"),
+          status: "sent",
+          created_at: "2026-10-22T04:00:00.000Z",
+          sent_at: "2026-10-22T04:05:00.000Z",
+          skip_reason: null,
+        },
+      ],
+      centreName: "Orbit Coaching",
+      today: TODAY,
+      dedupeDays: 3,
+    });
+    expect(later.inserts).toHaveLength(1);
+    expect(later.inserts[0]?.dedupeKey).toBe(
+      feeOverdueDedupeKey("s-overdue-low", TODAY),
+    );
+    expect(canQueueFeeOverdue("read")).toBe(false);
+    expect(canQueueFeeOverdue("write")).toBe(true);
+    expect(canSendFeeOverdue("read")).toBe(false);
+    expect(canSendFeeOverdue("write")).toBe(true);
+    expect(
+      formatFeeOverdueQueueToast({
+        queued: 2,
+        sent: 0,
+        skippedNoPhone: 0,
+        skippedNotAbsent: 0,
+        failed: 0,
+        already: 0,
+      }).title,
+    ).toBe("2 overdue reminders queued");
   });
 });
 

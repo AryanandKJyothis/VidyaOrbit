@@ -206,8 +206,8 @@ export function reminderSkipReason(
 }
 
 /**
- * WhatsApp overdue reminders are a fees write. There is no server send path
- * (client `wa.me` only); UI and this helper must both require write.
+ * Queueing overdue WhatsApp reminders is a fees write. Send is
+ * messages:write via /api/messaging/mark-sent. fees:read cannot queue.
  */
 export function canSendFeeReminders(
   fees: "none" | "read" | "write" | boolean | undefined,

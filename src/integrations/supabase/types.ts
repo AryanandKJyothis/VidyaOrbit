@@ -306,6 +306,7 @@ export type Database = {
       institute_messaging_settings: {
         Row: {
           created_at: string;
+          fee_overdue_dedupe_days: number;
           locale: string;
           owner_id: string;
           updated_at: string;
@@ -313,6 +314,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          fee_overdue_dedupe_days?: number;
           locale?: string;
           owner_id: string;
           updated_at?: string;
@@ -320,6 +322,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          fee_overdue_dedupe_days?: number;
           locale?: string;
           owner_id?: string;
           updated_at?: string;

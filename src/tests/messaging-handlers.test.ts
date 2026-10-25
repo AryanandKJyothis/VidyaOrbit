@@ -39,6 +39,8 @@ function thenable(result: { data?: unknown; error?: unknown }) {
     "eq",
     "in",
     "limit",
+    "order",
+    "gte",
   ]) {
     api[m] = vi.fn(self);
   }
@@ -301,6 +303,201 @@ describe("POST /api/messaging/enqueue-fee-paid", () => {
     expect(body.ok).toBe(true);
     expect(body.summary.already).toBe(1);
     expect(upsertFn).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/messaging/enqueue-fee-overdue", () => {
+  beforeEach(() => {
+    fromMock.mockReset();
+    parseBearerMock.mockReset();
+    vi.resetModules();
+  });
+
+  it("rejects fees:read — queueing overdue reminders is a fees write", async () => {
+    parseBearerMock.mockResolvedValue({ ok: true, userId: VIEWER });
+    fromMock.mockImplementation((table: string) => {
+      if (table === "workspace_members") {
+        return thenable({
+          data: {
+            role: "viewer",
+            permissions: { fees: "read", messages: "none" },
+          },
+          error: null,
+        });
+      }
+      return thenable({ data: null, error: null });
+    });
+    const { Route } =
+      await import("@/routes/api/messaging/enqueue-fee-overdue");
+    const POST = handlerOf(Route, "POST");
+    const res = await POST(
+      jsonReq("http://localhost/api/messaging/enqueue-fee-overdue", {
+        ownerId: OWNER,
+        studentIds: [STUDENT],
+      }),
+    );
+    expect(res.status).toBe(403);
+    expect((await res.json()).code).toBe("FORBIDDEN_FEES");
+  });
+
+  it("does not insert a second row inside the 3-day window", async () => {
+    parseBearerMock.mockResolvedValue({ ok: true, userId: OWNER });
+    const upsertFn = vi.fn(() => thenable({ data: null, error: null }));
+    fromMock.mockImplementation((table: string) => {
+      if (table === "students") {
+        return thenable({
+          data: [
+            {
+              id: STUDENT,
+              full_name: "Amina",
+              guardian_phone: "9876543210",
+              phone: null,
+              fee_total: 2000,
+              fee_due_date: "2026-10-01",
+              status: "active",
+            },
+          ],
+          error: null,
+        });
+      }
+      if (table === "fee_payments") {
+        return thenable({
+          data: [{ student_id: STUDENT, amount: 0 }],
+          error: null,
+        });
+      }
+      if (table === "institutes") {
+        return thenable({
+          data: { name: "Orbit Coaching" },
+          error: null,
+        });
+      }
+      if (table === "institute_messaging_settings") {
+        return thenable({
+          data: {
+            wa_auto: false,
+            locale: "en",
+            fee_overdue_dedupe_days: 3,
+          },
+          error: null,
+        });
+      }
+      if (table === "message_outbox") {
+        const api = thenable({
+          data: [
+            {
+              student_id: STUDENT,
+              dedupe_key: `fee_overdue:${STUDENT}:2026-10-25`,
+              status: "sent",
+              created_at: "2026-10-25T04:00:00.000Z",
+              sent_at: "2026-10-25T04:05:00.000Z",
+              skip_reason: null,
+            },
+          ],
+          error: null,
+        });
+        api.upsert = upsertFn;
+        return api;
+      }
+      return thenable({ data: [], error: null });
+    });
+
+    const { Route } =
+      await import("@/routes/api/messaging/enqueue-fee-overdue");
+    const POST = handlerOf(Route, "POST");
+    const res = await POST(
+      jsonReq("http://localhost/api/messaging/enqueue-fee-overdue", {
+        ownerId: OWNER,
+        studentIds: [STUDENT],
+      }),
+    );
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.summary.already).toBe(1);
+    expect(upsertFn).not.toHaveBeenCalled();
+  });
+
+  it("drops zero-balance students and writes no UPI in the body", async () => {
+    parseBearerMock.mockResolvedValue({ ok: true, userId: OWNER });
+    const upsertFn = vi.fn(() => thenable({ data: null, error: null }));
+    const paid = "55555555-5555-4555-8555-555555555555";
+    fromMock.mockImplementation((table: string) => {
+      if (table === "students") {
+        return thenable({
+          data: [
+            {
+              id: STUDENT,
+              full_name: "Amina",
+              guardian_phone: "9876543210",
+              phone: null,
+              fee_total: 2000,
+              fee_due_date: "2026-10-01",
+              status: "active",
+            },
+            {
+              id: paid,
+              full_name: "Paid Kid",
+              guardian_phone: "9123456789",
+              phone: null,
+              fee_total: 2000,
+              fee_due_date: "2026-10-01",
+              status: "active",
+            },
+          ],
+          error: null,
+        });
+      }
+      if (table === "fee_payments") {
+        return thenable({
+          data: [
+            { student_id: STUDENT, amount: 500 },
+            { student_id: paid, amount: 2000 },
+          ],
+          error: null,
+        });
+      }
+      if (table === "institutes") {
+        return thenable({ data: { name: "Orbit Coaching" }, error: null });
+      }
+      if (table === "institute_messaging_settings") {
+        return thenable({
+          data: { wa_auto: false, locale: "en", fee_overdue_dedupe_days: 3 },
+          error: null,
+        });
+      }
+      if (table === "message_outbox") {
+        const api = thenable({ data: [], error: null });
+        api.upsert = upsertFn;
+        return api;
+      }
+      return thenable({ data: [], error: null });
+    });
+
+    const { Route } =
+      await import("@/routes/api/messaging/enqueue-fee-overdue");
+    const POST = handlerOf(Route, "POST");
+    const res = await POST(
+      jsonReq("http://localhost/api/messaging/enqueue-fee-overdue", {
+        ownerId: OWNER,
+      }),
+    );
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(upsertFn).toHaveBeenCalledTimes(1);
+    const inserted = (upsertFn.mock.calls as unknown as unknown[][])[0]?.[0];
+    const rows = inserted as {
+      student_id: string;
+      body: string;
+      kind: string;
+    }[];
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.student_id).toBe(STUDENT);
+    expect(rows[0]?.kind).toBe("fee_overdue");
+    expect(rows[0]?.body).toContain("₹1,500");
+    expect(rows[0]?.body).toContain("Orbit Coaching");
+    expect(rows[0]?.body).not.toMatch(/upi:/i);
   });
 });
 
