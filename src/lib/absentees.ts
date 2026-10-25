@@ -1,8 +1,10 @@
-import { whatsAppDigits } from "@/lib/fee-reminder";
 import {
   parseOpenedReminderKeys,
   serializeOpenedReminderKeys,
 } from "@/lib/fee-reminder";
+import { renderAbsenceTemplate } from "@/lib/messaging/templates";
+import { buildAssistedWhatsAppHref } from "@/lib/messaging/wa-me";
+import { resolveParentWhatsAppPhone } from "@/lib/messaging/phone";
 
 export const ABSENTEE_SENT_STORAGE_KEY = "vidya:absentees:sent";
 
@@ -107,28 +109,29 @@ export function groupTodaysAbsentees(input: {
 export function buildAbsenteeMessage(input: {
   studentName: string;
   centreName: string;
+  sessionDate: string;
+  batchName: string;
   guardianPhone?: string | null;
   studentPhone?: string | null;
-  extra?: string;
 }): { message: string; href: string | null } {
-  const centre = input.centreName.trim() || "the centre";
-  const extra = input.extra?.trim();
-  const message = [
-    `${input.studentName} was absent today at ${centre}.`,
-    extra || "Please let us know if they will be back tomorrow.",
-  ].join("\n");
-  const digits =
-    whatsAppDigits(input.guardianPhone) ?? whatsAppDigits(input.studentPhone);
+  const { body } = renderAbsenceTemplate({
+    studentName: input.studentName,
+    centreName: input.centreName,
+    sessionDate: input.sessionDate,
+    batchName: input.batchName,
+  });
+  const phone = resolveParentWhatsAppPhone({
+    guardian_phone: input.guardianPhone,
+    phone: input.studentPhone,
+  });
   return {
-    message,
-    href: digits
-      ? `https://wa.me/${digits}?text=${encodeURIComponent(message)}`
-      : null,
+    message: body,
+    href: buildAssistedWhatsAppHref(phone?.e164 ?? null, body),
   };
 }
 
 export function canMessageAbsentees(
-  attendance: "none" | "read" | "write" | boolean | undefined,
+  messages: "none" | "read" | "write" | boolean | undefined,
 ): boolean {
-  return attendance === true || attendance === "write";
+  return messages === true || messages === "write";
 }

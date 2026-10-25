@@ -35,6 +35,11 @@ import {
 import { useReminderPrefs, setReminderPrefs } from "@/hooks/use-reminders";
 import { useOnboarding } from "@/hooks/use-onboarding";
 import { useCan } from "@/hooks/use-active-workspace";
+import {
+  useMessagingSettings,
+  useUpdateMessagingSettings,
+} from "@/hooks/use-messaging-settings";
+import { DEFAULT_MESSAGING_SETTINGS } from "@/lib/messaging/types";
 
 export const Route = createFileRoute("/_authenticated/settings/")({
   component: SettingsPage,
@@ -53,6 +58,8 @@ function SettingsPageContent() {
   const inst = useInstitute();
   const mut = useUpdateInstitute();
   const reminderPrefs = useReminderPrefs();
+  const messaging = useMessagingSettings();
+  const saveMessaging = useUpdateMessagingSettings();
   const sub = useSubscription();
   const planMeta = PLANS.find((p) => p.code === sub.data?.plan);
   const { resetChecklist } = useOnboarding();
@@ -277,6 +284,57 @@ function SettingsPageContent() {
                 <div className="mt-0.5 font-mono text-xs break-all text-muted-foreground">
                   {user?.id}
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bell className="h-4 w-4 opacity-70" /> Parent WhatsApp
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Marking a student Absent queues a WhatsApp draft. Staff tap once
+                to open it in the centre&apos;s own WhatsApp. The app does not
+                message parents by itself unless auto-send is on.
+              </p>
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">
+                    Auto-send (Tier 2)
+                  </Label>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Off until this centre has a verified WhatsApp number and
+                    approved templates. Leave off for daily assisted send.
+                  </p>
+                </div>
+                <Switch
+                  checked={
+                    (messaging.data ?? DEFAULT_MESSAGING_SETTINGS).waAuto
+                  }
+                  disabled={!canWriteSettings || saveMessaging.isPending}
+                  onCheckedChange={(v) => {
+                    void saveMessaging
+                      .mutateAsync({ waAuto: v })
+                      .then(() =>
+                        toast.success(
+                          v
+                            ? "Auto-send on. Queued messages may go out through the worker."
+                            : "Auto-send off. Staff send from WhatsApp.",
+                        ),
+                      )
+                      .catch((e) =>
+                        toast.error(
+                          formatUserError(
+                            e,
+                            "Could not save WhatsApp setting.",
+                          ),
+                        ),
+                      );
+                  }}
+                  className="shrink-0 mt-1"
+                />
               </div>
             </CardContent>
           </Card>

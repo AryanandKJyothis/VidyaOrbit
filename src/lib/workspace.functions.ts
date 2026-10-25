@@ -14,6 +14,7 @@ import {
 } from "@/lib/workspace-invite-rules";
 import {
   canManageTeam,
+  normalizePermissions,
   permissionsForRole,
   type Permissions,
   type WorkspaceRole,
@@ -64,7 +65,7 @@ export const listMyWorkspaces = createServerFn({ method: "GET" })
     return (members ?? []).map((m) => ({
       ownerId: m.owner_id,
       role: m.role as WorkspaceRole,
-      permissions: m.permissions as Permissions,
+      permissions: normalizePermissions(m.permissions, m.role as WorkspaceRole),
       name: names[m.owner_id] ?? "Workspace",
       isOwn: m.owner_id === userId,
     }));
@@ -155,7 +156,7 @@ export const listTeam = createServerFn({ method: "POST" })
       id: m.id,
       email: emails[m.user_id] ?? "",
       role: m.role as WorkspaceRole,
-      permissions: m.permissions as Permissions,
+      permissions: normalizePermissions(m.permissions, m.role as WorkspaceRole),
       status: "active" as const,
       lastActive: lastSignIn[m.user_id] ?? null,
       createdAt: m.created_at,
@@ -178,7 +179,10 @@ export const listTeam = createServerFn({ method: "POST" })
         id: i.id,
         email: i.email,
         role: i.role as WorkspaceRole,
-        permissions: i.permissions as Permissions,
+        permissions: normalizePermissions(
+          i.permissions,
+          i.role as WorkspaceRole,
+        ),
         status:
           new Date(i.expires_at).getTime() <= now
             ? ("expired" as const)

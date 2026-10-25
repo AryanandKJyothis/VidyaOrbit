@@ -7,8 +7,9 @@
  *   Manager — everything else, including billing/plan (view, pay, change,
  *     invoices). Can invite, change, and remove staff or other managers,
  *     but never the owner.
- *   Staff — attendance, viewing students, recording fee payments.
- *           No billing, no staff management, no deleting students, no export.
+ *   Staff — attendance, viewing students, recording fee payments,
+ *           and parent WhatsApp (messages). No billing, no staff
+ *           management, no deleting students, no export.
  *
  * `viewer` remains in the DB enum for existing rows; it is not offered in the UI.
  * Permissions JSON is derived from the role on the server — clients cannot pick
@@ -22,6 +23,7 @@ export const WORKSPACE_RESOURCES = [
   "fees",
   "settings",
   "billing",
+  "messages",
 ] as const;
 
 export const PERMISSION_LEVELS = ["none", "read", "write"] as const;
@@ -45,6 +47,7 @@ export const OWNER_PERMISSIONS: Permissions = {
   fees: "write",
   settings: "write",
   billing: "write",
+  messages: "write",
 };
 
 export const PERMISSION_PRESETS: Record<
@@ -58,6 +61,7 @@ export const PERMISSION_PRESETS: Record<
     fees: "write",
     settings: "write",
     billing: "write",
+    messages: "write",
   },
   staff: {
     students: "read",
@@ -66,6 +70,7 @@ export const PERMISSION_PRESETS: Record<
     fees: "write",
     settings: "none",
     billing: "none",
+    messages: "write",
   },
   viewer: {
     students: "read",
@@ -74,6 +79,7 @@ export const PERMISSION_PRESETS: Record<
     fees: "read",
     settings: "none",
     billing: "none",
+    messages: "none",
   },
 };
 
@@ -94,12 +100,36 @@ export const ROLE_DESCRIPTIONS: Record<InviteRole, string> = {
   manager:
     "Runs the centre — students, attendance, fees, settings, staff, and billing. Cannot delete the centre or remove the owner.",
   staff:
-    "Day-to-day work — mark attendance, view students, and record fee payments. Cannot manage staff, export data, or delete students.",
+    "Day-to-day work — mark attendance, notify parents on WhatsApp, view students, and record fee payments. Cannot manage staff, export data, or delete students.",
 };
 
 export function permissionsForRole(role: WorkspaceRole): Permissions {
   if (role === "owner") return OWNER_PERMISSIONS;
   return PERMISSION_PRESETS[role];
+}
+
+function asPermissionLevel(value: unknown): PermissionLevel | null {
+  if (value === "none" || value === "read" || value === "write") return value;
+  return null;
+}
+
+/**
+ * Fill missing resources from the role preset so adding `messages` (A5)
+ * does not lock existing staff out of parent WhatsApp.
+ */
+export function normalizePermissions(
+  raw: unknown,
+  role: WorkspaceRole = "viewer",
+): Permissions {
+  const fallback = permissionsForRole(role);
+  const obj =
+    raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const next = { ...fallback };
+  for (const key of WORKSPACE_RESOURCES) {
+    const level = asPermissionLevel(obj[key]);
+    if (level) next[key] = level;
+  }
+  return next;
 }
 
 export function permissionsMatchPreset(
@@ -194,7 +224,8 @@ export type RoleCapability =
   | "edit_students"
   | "attendance"
   | "record_fees"
-  | "edit_settings";
+  | "edit_settings"
+  | "send_messages";
 
 const ROLE_CAPABILITIES: Record<WorkspaceRole, ReadonlySet<RoleCapability>> = {
   owner: new Set([
@@ -212,6 +243,7 @@ const ROLE_CAPABILITIES: Record<WorkspaceRole, ReadonlySet<RoleCapability>> = {
     "attendance",
     "record_fees",
     "edit_settings",
+    "send_messages",
   ]),
   manager: new Set([
     "billing",
@@ -227,8 +259,14 @@ const ROLE_CAPABILITIES: Record<WorkspaceRole, ReadonlySet<RoleCapability>> = {
     "attendance",
     "record_fees",
     "edit_settings",
+    "send_messages",
   ]),
-  staff: new Set(["view_students", "attendance", "record_fees"]),
+  staff: new Set([
+    "view_students",
+    "attendance",
+    "record_fees",
+    "send_messages",
+  ]),
   viewer: new Set(["view_students"]),
 };
 
