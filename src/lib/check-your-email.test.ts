@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   checkEmailCopy,
   GMAIL_INBOX_URL,
+  OUTLOOK_INBOX_URL,
   remainingCooldown,
   RESEND_COOLDOWN_SECONDS,
   resendLabel,
@@ -31,8 +32,9 @@ describe("check-your-email copy and cooldown", () => {
     }
   });
 
-  it("opens Gmail in the browser inbox", () => {
+  it("opens Gmail and Outlook in the browser inbox", () => {
     expect(GMAIL_INBOX_URL).toBe("https://mail.google.com/");
+    expect(OUTLOOK_INBOX_URL).toBe("https://outlook.live.com/mail/");
   });
 });
 

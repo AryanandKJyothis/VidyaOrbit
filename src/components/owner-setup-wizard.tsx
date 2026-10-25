@@ -276,7 +276,10 @@ function YouFields({
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="setup-phone">
-          Phone <span className="text-destructive">*</span>
+          Phone
+          {mode === "staff" ? (
+            <span className="text-destructive"> *</span>
+          ) : null}
         </Label>
         <Input
           id="setup-phone"
@@ -295,8 +298,9 @@ function YouFields({
         <FieldError id="setup-phone-error" message={errors.contactPhone} />
         {!errors.contactPhone && (
           <p id="setup-phone-help" className="text-xs text-muted-foreground">
-            10-digit Indian mobile
-            {mode === "owner" ? ". Shown on receipts." : "."}
+            {mode === "owner"
+              ? "Optional. Add it in Settings before you send WhatsApp."
+              : "10-digit Indian mobile."}
           </p>
         )}
       </div>

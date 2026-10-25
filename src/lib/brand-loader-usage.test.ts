@@ -23,8 +23,10 @@ describe("branded loader usage", () => {
     expect(callback).toContain("LoadingScreen");
     expect(callback).toContain("Signing you in");
     expect(googleAuth).toContain("authCallbackUrl");
-    expect(authenticated).toContain("WorkspaceBootGate");
+    expect(authenticated).toContain("WorkspaceContentGate");
+    expect(authenticated).toContain("InlinePending");
     expect(authenticated).toContain("Preparing your workspace");
+    expect(authenticated).not.toContain("LoadingScreen");
     expect(wizard).toContain("BrandLoaderOverlay");
     expect(wizard).toContain("Saving your setup");
   });

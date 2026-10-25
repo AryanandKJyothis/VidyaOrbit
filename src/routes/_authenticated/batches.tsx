@@ -186,7 +186,8 @@ function BatchesPage() {
         <EmptyState
           icon={Layers}
           title="Create your first batch"
-          description="Batches group students by timing or programme — you’ll need one before marking attendance."
+          description="Group students by class or timing so attendance and fees stay in one place."
+          reassurance="You can add more batches later. One is enough to start."
         >
           <Button onClick={() => setOpen(true)} disabled={!canWriteBatches}>
             <Plus className="mr-1.5 h-4 w-4" /> New batch

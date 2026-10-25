@@ -2,6 +2,7 @@
 export const RESEND_COOLDOWN_SECONDS = 60;
 
 export const GMAIL_INBOX_URL = "https://mail.google.com/";
+export const OUTLOOK_INBOX_URL = "https://outlook.live.com/mail/";
 
 export type CheckEmailKind = "signup" | "invite_signup" | "recovery";
 

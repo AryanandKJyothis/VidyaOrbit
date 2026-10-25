@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 import { useBatches, usePayments, useStudents } from "@/hooks/use-data";
 import { useOnboarding } from "@/hooks/use-onboarding";
-import { useOwnerOnboarding } from "@/hooks/use-owner-onboarding";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  deriveGettingStarted,
   isInvitedStaff,
   readJoiningTeamFlag,
   type GettingStartedItem,
@@ -41,19 +39,16 @@ export function OnboardingChecklist({
   if (items.length === 0) return null;
 
   return (
-    <Card className="mb-6 border-primary/25 bg-gradient-to-br from-primary/5 via-transparent to-transparent">
+    <Card className="mb-6 border-border">
       <CardHeader className="flex flex-row items-start justify-between gap-3 pb-2">
-        <div className="flex items-start gap-2">
-          <Sparkles className="mt-0.5 h-4 w-4 text-primary shrink-0" />
-          <div>
-            <CardTitle className="text-base font-semibold">
-              Getting started
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {doneCount}/{items.length} complete — finish these to run your
-              centre smoothly.
-            </p>
-          </div>
+        <div>
+          <CardTitle className="font-display text-base font-semibold tracking-tight">
+            Getting started
+          </CardTitle>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {doneCount}/{items.length} complete — import students, make a batch,
+            then mark a day or take a fee.
+          </p>
         </div>
         <Button
           variant="ghost"
@@ -90,11 +85,11 @@ export function OnboardingChecklist({
               <li
                 key={step.id}
                 className={cn(
-                  "flex flex-col gap-2 rounded-lg border border-border/80 bg-card/80 p-3 sm:flex-row sm:items-center sm:justify-between",
+                  "flex flex-col gap-2 rounded-lg border border-border/80 bg-card p-3 sm:flex-row sm:items-center sm:justify-between",
                   step.done && "opacity-70 bg-muted/30",
                 )}
               >
-                <div className="flex items-start gap-3 min-w-0">
+                <div className="flex min-w-0 items-start gap-3">
                   <span
                     className={cn(
                       "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
@@ -118,7 +113,7 @@ export function OnboardingChecklist({
                   <Button
                     asChild
                     size="sm"
-                    variant="secondary"
+                    variant={step.primary ? "default" : "secondary"}
                     className="shrink-0 self-start sm:self-center"
                   >
                     <Link to={step.to}>{step.label}</Link>
@@ -132,7 +127,7 @@ export function OnboardingChecklist({
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground h-11 min-h-11"
+                className="h-11 min-h-11 text-muted-foreground"
                 onClick={onDismiss}
               >
                 Dismiss checklist
@@ -145,15 +140,15 @@ export function OnboardingChecklist({
   );
 }
 
-/** Dashboard-only Getting started card. Hidden until setup is complete. */
+/** Dashboard Getting started card. First-win for new owners — not behind the wizard. */
 export function OwnerGettingStartedCard() {
   const { user } = useAuth();
   const { active } = useActiveWorkspace();
   const batches = useBatches();
   const students = useStudents();
   const payments = usePayments();
-  const { dismissedChecklist, dismissChecklist } = useOnboarding();
-  const onboarding = useOwnerOnboarding(user?.id ?? null);
+  const { dismissedChecklist, dismissChecklist, checklistFromCounts } =
+    useOnboarding();
   const metadata = user?.user_metadata as Record<string, unknown> | undefined;
   const staff = isInvitedStaff({
     joiningTeam: readJoiningTeamFlag(metadata),
@@ -168,8 +163,7 @@ export function OwnerGettingStartedCard() {
 
   const attendanceStarted = useQuery({
     queryKey: ["onboarding-attendance", active?.ownerId],
-    enabled:
-      !!user && !!active?.ownerId && !staff && onboarding.state.completed,
+    enabled: !!user && !!active?.ownerId && !staff,
     queryFn: async () => {
       const { count, error } = await supabase
         .from("attendance_sessions")
@@ -180,7 +174,7 @@ export function OwnerGettingStartedCard() {
     },
   });
 
-  const checklist = deriveGettingStarted({
+  const checklist = checklistFromCounts({
     batchCount: batches.data?.length ?? 0,
     activeStudentCount: activeStudents,
     paymentCount: payments.data?.length ?? 0,
@@ -188,7 +182,6 @@ export function OwnerGettingStartedCard() {
   });
 
   if (staff) return null;
-  if (!onboarding.state.completed) return null;
   if (dismissedChecklist) return null;
   if (!active) return null;
 

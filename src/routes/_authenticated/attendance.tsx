@@ -319,7 +319,8 @@ function AttendancePage() {
         <EmptyState
           icon={CalendarCheck}
           title="Create a batch first"
-          description="Attendance is tracked per batch. Add a batch, assign students to it, then come back here."
+          description="Attendance is marked per batch. Add a batch, put students in it, then come back."
+          reassurance="Takes a minute. You can change the batch name later."
         >
           <Button asChild>
             <Link to="/batches">Go to batches</Link>
@@ -457,10 +458,11 @@ function AttendancePage() {
                 {roster.length === 0 ? (
                   <EmptyState
                     title="No students in this batch"
-                    description="Assign active students to this batch from the Students page, then return to mark attendance."
+                    description="Assign students to this batch, then mark who is present."
+                    reassurance="Import a list if you already have names in Excel."
                   >
-                    <Button asChild variant="secondary">
-                      <Link to="/students">Manage students</Link>
+                    <Button asChild>
+                      <Link to="/students">Open students</Link>
                     </Button>
                   </EmptyState>
                 ) : (

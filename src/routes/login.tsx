@@ -16,10 +16,12 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { credentialsSchema } from "@/lib/validation";
+import { credentialsSchema, signupSchema } from "@/lib/validation";
 import { formatUserError } from "@/lib/format-error";
 import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
 import { signInWithGoogle } from "@/lib/google-auth";
+import { authCallbackUrl } from "@/lib/auth-callback";
+import { isRealInstituteName } from "@/lib/owner-onboarding";
 import { marketingOptInMetadata } from "@/lib/marketing-opt-in";
 import { MarketingOptInCheckbox } from "@/components/marketing-opt-in-checkbox";
 import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
@@ -103,20 +105,23 @@ function LoginPage() {
   };
 
   const handleSignup = async (formData: Record<string, string>) => {
-    const parsed = credentialsSchema.safeParse({
+    const parsed = signupSchema.safeParse({
       email: formData.email,
       password: formData.password,
+      institute_name: formData.institute_name,
     });
     if (!parsed.success)
       throw new Error(parsed.error.issues[0]?.message || "Validation failed");
 
+    const named = isRealInstituteName(parsed.data.institute_name);
     const { error } = await supabase.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
-        emailRedirectTo: `${redirectOrigin}${postLoginPath}`,
+        emailRedirectTo: authCallbackUrl(redirectOrigin, postLoginPath),
         data: {
           ...(joiningTeam ? { joining_team: true, invite_token: invite } : {}),
+          ...(named ? { institute_name: parsed.data.institute_name } : {}),
           ...marketingOptInMetadata(marketingOptIn),
         },
       },
@@ -132,7 +137,9 @@ function LoginPage() {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: pendingEmail,
-      options: { emailRedirectTo: `${redirectOrigin}${postLoginPath}` },
+      options: {
+        emailRedirectTo: authCallbackUrl(redirectOrigin, postLoginPath),
+      },
     });
     if (error) throw error;
   };
@@ -168,6 +175,19 @@ function LoginPage() {
       minLength: 8,
       autoComplete: "new-password",
     },
+    ...(!joiningTeam
+      ? [
+          {
+            id: "institute_name",
+            label: "Institute name",
+            type: "text" as const,
+            placeholder: "Bright Future Academy",
+            helperText: "Optional — you can name it after you sign in",
+            required: false,
+            autoComplete: "organization",
+          },
+        ]
+      : []),
   ];
 
   const contact = getContactConfig();
@@ -359,7 +379,7 @@ function LoginPage() {
                 subtitle={
                   joiningTeam
                     ? "Create your account to accept the invite"
-                    : "Start with email and password. We’ll ask for your centre next."
+                    : "Email and password to start. Institute name is optional."
                 }
                 fields={signupFields}
                 onSubmit={handleSignup}

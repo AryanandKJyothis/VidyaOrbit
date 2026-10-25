@@ -87,6 +87,31 @@ export function LoadingScreen({ label = "Loading…" }: { label?: string }) {
   );
 }
 
+/** Inline pending for route / shell content. Never a full-screen gate. */
+export function InlinePending({
+  label = "Loading…",
+  className,
+}: {
+  label?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex min-h-[12rem] flex-1 flex-col items-center justify-center px-4 py-10",
+        className,
+      )}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label={label}
+    >
+      <DotsLoader className="text-orbit-blue" />
+      <p className="mt-3 text-sm text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
 /** Covers a relative parent (setup modal) while a step saves. Form stays mounted. */
 export function BrandLoaderOverlay({ label = "Saving…" }: { label?: string }) {
   return (

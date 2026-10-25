@@ -164,13 +164,39 @@ export type WizardFieldErrors = Partial<
 >;
 
 export type GettingStartedItem = {
-  id: "batch" | "student" | "attendance" | "fee";
+  id: "student" | "batch" | "action";
   title: string;
   hint: string;
   to: "/batches" | "/students" | "/attendance" | "/fees";
   label: string;
   done: boolean;
+  primary?: boolean;
 };
+
+/** Metadata key written by signup when the owner names the centre there. */
+export function readInstituteNameFromMetadata(
+  metadata: Record<string, unknown> | null | undefined,
+): string {
+  if (!metadata) return "";
+  const candidate = [metadata.institute_name, metadata.instituteName].find(
+    (v) => typeof v === "string" && v.trim().length > 0,
+  );
+  return typeof candidate === "string" ? candidate.trim() : "";
+}
+
+/**
+ * SetupPrompt is the only institute-name path. Show it only for the
+ * placeholder / blank default — never if signup or metadata already named it.
+ */
+export function shouldShowSetupPrompt(input: {
+  instituteName?: string | null;
+  metadataInstituteName?: string | null;
+}): boolean {
+  if (isRealInstituteName(input.instituteName)) return false;
+  if (isRealInstituteName(input.metadataInstituteName)) return false;
+  const current = (input.instituteName ?? "").trim();
+  return current.length === 0 || current === PLACEHOLDER_INSTITUTE_NAME;
+}
 
 const LEGACY_WIZARD_STEPS: Record<string, WizardStepId> = {
   centre: "you",
@@ -304,9 +330,17 @@ export function validateWizardStep(
     } else if (draft.ownerName.trim().length > 120) {
       errors.ownerName = "Keep the name under 120 characters";
     }
-    if (!draft.contactPhone.trim()) {
-      errors.contactPhone = "Contact phone is required";
-    } else if (!isIndianMobile(draft.contactPhone)) {
+    if (mode === "staff") {
+      if (!draft.contactPhone.trim()) {
+        errors.contactPhone = "Contact phone is required";
+      } else if (!isIndianMobile(draft.contactPhone)) {
+        errors.contactPhone =
+          "Enter a 10-digit Indian mobile starting with 6–9";
+      }
+    } else if (
+      draft.contactPhone.trim() &&
+      !isIndianMobile(draft.contactPhone)
+    ) {
       errors.contactPhone = "Enter a 10-digit Indian mobile starting with 6–9";
     }
     if (mode === "owner") {
@@ -424,7 +458,10 @@ export function mergeDraftWithInstitute(
   };
 }
 
-/** Empty workspace that still needs the owner walk-through. */
+/**
+ * Empty / unnamed workspace. Phone is Settings / before-WA only — it is
+ * never a "new centre" signal and must not auto-open the wizard.
+ */
 export function looksLikeNewCentre(input: {
   instituteName?: string | null;
   contactPhone?: string | null;
@@ -432,9 +469,30 @@ export function looksLikeNewCentre(input: {
   activeStudentCount: number;
 }): boolean {
   const unnamed = !isRealInstituteName(input.instituteName);
-  const noPhone = !isIndianMobile(input.contactPhone ?? "");
   const emptyOps = input.batchCount === 0 && input.activeStudentCount === 0;
-  return unnamed || noPhone || emptyOps;
+  return unnamed || emptyOps;
+}
+
+/**
+ * First-run owners are not walled by the multi-step wizard.
+ * SetupPrompt (name) + checklist Import win. Wizard is resume-only.
+ */
+export function shouldAutoOpenOwnerWizard(input: {
+  setupComplete: boolean;
+  resumeRequested: boolean;
+  dismissedUntilInteraction?: boolean;
+}): boolean {
+  return shouldAutoOpenWizard({
+    setupComplete: input.setupComplete,
+    resumeRequested: input.resumeRequested,
+    looksIncomplete: false,
+    dismissedUntilInteraction: input.dismissedUntilInteraction,
+  });
+}
+
+/** Owners never get the click-capture trap. Dismiss stays dismissed. */
+export function shouldCaptureOwnerClicksToResume(): boolean {
+  return false;
 }
 
 export function firstIncompleteStep(input: {
@@ -528,38 +586,32 @@ export function deriveGettingStarted(input: {
   doneCount: number;
   allDone: boolean;
 } {
+  const actionDone = input.attendanceStarted || input.paymentCount > 0;
   const items: GettingStartedItem[] = [
+    {
+      id: "student",
+      title: "Import or add students",
+      hint: "Bring in your register from Excel, or add names one by one.",
+      to: "/students",
+      label: "Import",
+      done: input.activeStudentCount > 0,
+      primary: true,
+    },
     {
       id: "batch",
       title: "Create a batch",
       hint: "Group students by class or timing.",
       to: "/batches",
-      label: "Go to batches",
+      label: "Create batch",
       done: input.batchCount > 0,
     },
     {
-      id: "student",
-      title: "Add a student",
-      hint: "Manually or import from Excel.",
-      to: "/students",
-      label: "Add students",
-      done: input.activeStudentCount > 0,
-    },
-    {
-      id: "attendance",
-      title: "Mark attendance",
-      hint: "Pick a batch and save today’s sheet.",
-      to: "/attendance",
-      label: "Mark attendance",
-      done: input.attendanceStarted,
-    },
-    {
-      id: "fee",
-      title: "Record a fee",
-      hint: "Try cash or UPI once so receipts work.",
-      to: "/fees",
-      label: "Open fees",
-      done: input.paymentCount > 0,
+      id: "action",
+      title: "Mark attendance or record a fee",
+      hint: "Either one counts — pick whichever you do first today.",
+      to: input.attendanceStarted ? "/fees" : "/attendance",
+      label: input.attendanceStarted ? "Record a fee" : "Mark attendance",
+      done: actionDone,
     },
   ];
   const doneCount = items.filter((s) => s.done).length;

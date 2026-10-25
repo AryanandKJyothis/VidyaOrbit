@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 import {
-  useBatches,
   useInstitute,
-  useStudents,
   useUpdateInstitute,
   useUpsertBatch,
   useUpsertStudent,
@@ -19,7 +17,6 @@ import { todayISO } from "@/lib/format";
 import {
   isInvitedStaff,
   looksLikeIncompleteIdentity,
-  looksLikeNewCentre,
   mergeDraftWithInstitute,
   nextWizardStep,
   normalizeIndianMobile,
@@ -28,9 +25,11 @@ import {
   readUserIdentity,
   setupIsIncomplete,
   setupModeFor,
+  shouldAutoOpenOwnerWizard,
   shouldAutoOpenTour,
   shouldAutoOpenWizard,
   shouldCaptureClicksToResume,
+  shouldCaptureOwnerClicksToResume,
   stepsFor,
   validateWizardStep,
   type WizardFieldErrors,
@@ -53,13 +52,12 @@ import {
   AppGuidedTourView,
 } from "@/components/app-guided-tour";
 import { ImportStudentsDialog } from "@/components/import-students-dialog";
+import { SetupPrompt } from "@/components/setup-prompt";
 
 export function OwnerOnboardingHost() {
   const { user } = useAuth();
   const { active, loading: workspacesLoading } = useActiveWorkspace();
   const institute = useInstitute();
-  const batches = useBatches();
-  const students = useStudents();
   const updateInstitute = useUpdateInstitute();
   const upsertBatch = useUpsertBatch();
   const upsertStudent = useUpsertStudent();
@@ -94,23 +92,12 @@ export function OwnerOnboardingHost() {
   });
   const stepList = stepsFor(mode, includeMarketingStep);
 
-  const activeStudents = useMemo(
-    () => (students.data ?? []).filter((s) => s.status !== "archived").length,
-    [students.data],
-  );
-  const batchCount = batches.data?.length ?? 0;
-
   const looksIncomplete = staff
     ? looksLikeIncompleteIdentity({
         fullName: onboarding.state.draft.ownerName.trim() || identity.fullName,
         phone: onboarding.state.draft.contactPhone.trim() || identity.phone,
       })
-    : looksLikeNewCentre({
-        instituteName: institute.data?.name,
-        contactPhone: institute.data?.contact_phone,
-        batchCount,
-        activeStudentCount: activeStudents,
-      });
+    : false;
 
   const incomplete = setupIsIncomplete({
     completed: onboarding.state.completed,
@@ -122,12 +109,18 @@ export function OwnerOnboardingHost() {
     !workspacesLoading &&
     !!active &&
     !institute.isLoading &&
-    shouldAutoOpenWizard({
-      setupComplete: onboarding.state.completed,
-      resumeRequested,
-      looksIncomplete,
-      dismissedUntilInteraction: userDismissed,
-    });
+    (staff
+      ? shouldAutoOpenWizard({
+          setupComplete: onboarding.state.completed,
+          resumeRequested,
+          looksIncomplete,
+          dismissedUntilInteraction: userDismissed,
+        })
+      : shouldAutoOpenOwnerWizard({
+          setupComplete: onboarding.state.completed,
+          resumeRequested,
+          dismissedUntilInteraction: userDismissed,
+        }));
 
   const autoTour =
     !wizardOpen &&
@@ -136,10 +129,12 @@ export function OwnerOnboardingHost() {
       persisted: onboarding.state,
     });
 
-  const captureClicks = shouldCaptureClicksToResume({
-    setupIncomplete: incomplete && !!active && !workspacesLoading,
-    modalOpen: wizardOpen,
-  });
+  const captureClicks = staff
+    ? shouldCaptureClicksToResume({
+        setupIncomplete: incomplete && !!active && !workspacesLoading,
+        modalOpen: wizardOpen,
+      })
+    : shouldCaptureOwnerClicksToResume();
 
   useEffect(() => {
     if (!user) return;
@@ -234,17 +229,20 @@ export function OwnerOnboardingHost() {
         if (error) throw error;
       }
       if (step === "you") {
+        const phone = draft.contactPhone.trim()
+          ? normalizeIndianMobile(draft.contactPhone)
+          : "";
         const { error } = await supabase.auth.updateUser({
           data: {
             full_name: draft.ownerName.trim(),
-            phone: normalizeIndianMobile(draft.contactPhone),
+            ...(phone ? { phone } : {}),
           },
         });
         if (error) throw error;
         if (mode === "owner") {
           await updateInstitute.mutateAsync({
             name: draft.name.trim(),
-            contact_phone: normalizeIndianMobile(draft.contactPhone),
+            ...(phone ? { contact_phone: phone } : {}),
             address: draft.address.trim() || null,
           });
         }
@@ -347,6 +345,7 @@ export function OwnerOnboardingHost() {
       )}
 
       <ImportStudentsDialog open={importOpen} onOpenChange={setImportOpen} />
+      {!staff && !wizardOpen && <SetupPrompt />}
     </>
   );
 }

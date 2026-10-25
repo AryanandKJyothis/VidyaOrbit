@@ -10,12 +10,16 @@ import {
   mergeDraftWithInstitute,
   normalizeIndianMobile,
   parseOwnerSetupPersisted,
+  readInstituteNameFromMetadata,
   readJoiningTeamFlag,
   readUserIdentity,
   setupIsIncomplete,
+  shouldAutoOpenOwnerWizard,
   shouldAutoOpenTour,
   shouldAutoOpenWizard,
   shouldCaptureClicksToResume,
+  shouldCaptureOwnerClicksToResume,
+  shouldShowSetupPrompt,
   setupModeFor,
   validateWizardStep,
   nextWizardStep,
@@ -59,6 +63,17 @@ describe("signup is email and password only", () => {
     expect(parsed.success).toBe(true);
   });
 
+  it("treats institute name as optional and never requires phone", () => {
+    const named = signupSchema.safeParse({
+      email: "owner@centre.in",
+      password: "password1",
+      institute_name: "Samriddhi Centre",
+    });
+    expect(named.success).toBe(true);
+    expect("institute_name" in signupSchema.shape).toBe(true);
+    expect("phone" in signupSchema.shape).toBe(false);
+  });
+
   it("still requires a valid email and 8-character password", () => {
     expect(
       signupSchema.safeParse({ email: "nope", password: "password1" }).success,
@@ -81,12 +96,12 @@ describe("Google auth flag", () => {
 });
 
 describe("wizard step validation", () => {
-  it("requires name, Indian mobile, and centre name on the owner you-step", () => {
+  it("requires name and centre name on the owner you-step; phone is optional", () => {
     expect(validateWizardStep("you", draft())).toMatchObject({
       ownerName: "Enter your name",
       name: "Enter your centre name",
-      contactPhone: "Contact phone is required",
     });
+    expect(validateWizardStep("you", draft()).contactPhone).toBeUndefined();
     expect(
       validateWizardStep(
         "you",
@@ -115,6 +130,15 @@ describe("wizard step validation", () => {
           name: "Samriddhi Centre",
           contactPhone: "+91 9876543210",
           address: "Kottayam",
+        }),
+      ),
+    ).toEqual({});
+    expect(
+      validateWizardStep(
+        "you",
+        draft({
+          ownerName: "Anjali Krishnan",
+          name: "Samriddhi Centre",
         }),
       ),
     ).toEqual({});
@@ -280,7 +304,7 @@ describe("invited staff get name and phone only", () => {
 });
 
 describe("getting started checklist derivation", () => {
-  it("ticks items from real counts and hides when every item is done", () => {
+  it("starts at 0/3 with Import as the primary CTA", () => {
     const empty = deriveGettingStarted({
       batchCount: 0,
       activeStudentCount: 0,
@@ -289,13 +313,18 @@ describe("getting started checklist derivation", () => {
     });
     expect(empty.doneCount).toBe(0);
     expect(empty.allDone).toBe(false);
-    expect(empty.items.map((i) => i.done)).toEqual([
-      false,
-      false,
-      false,
-      false,
+    expect(empty.items).toHaveLength(3);
+    expect(empty.items.map((i) => i.id)).toEqual([
+      "student",
+      "batch",
+      "action",
     ]);
+    expect(empty.items.map((i) => i.done)).toEqual([false, false, false]);
+    expect(empty.items[0]?.label).toBe("Import");
+    expect(empty.items[0]?.primary).toBe(true);
+  });
 
+  it("ticks items from real counts and treats attendance or a fee as one step", () => {
     const partial = deriveGettingStarted({
       batchCount: 1,
       activeStudentCount: 2,
@@ -305,8 +334,18 @@ describe("getting started checklist derivation", () => {
     expect(partial.doneCount).toBe(2);
     expect(partial.items.find((i) => i.id === "batch")?.done).toBe(true);
     expect(partial.items.find((i) => i.id === "student")?.done).toBe(true);
-    expect(partial.items.find((i) => i.id === "fee")?.done).toBe(false);
+    expect(partial.items.find((i) => i.id === "action")?.done).toBe(false);
     expect(partial.allDone).toBe(false);
+
+    const feeOnly = deriveGettingStarted({
+      batchCount: 1,
+      activeStudentCount: 1,
+      paymentCount: 1,
+      attendanceStarted: false,
+    });
+    expect(feeOnly.items.find((i) => i.id === "action")?.done).toBe(true);
+    expect(feeOnly.doneCount).toBe(3);
+    expect(feeOnly.allDone).toBe(true);
 
     const done = deriveGettingStarted({
       batchCount: 1,
@@ -315,7 +354,7 @@ describe("getting started checklist derivation", () => {
       attendanceStarted: true,
     });
     expect(done.allDone).toBe(true);
-    expect(done.doneCount).toBe(4);
+    expect(done.doneCount).toBe(3);
   });
 
   it("does not count archived-only centres as having students", () => {
@@ -327,11 +366,42 @@ describe("getting started checklist derivation", () => {
     });
     expect(result.items.find((i) => i.id === "student")?.done).toBe(false);
     expect(result.allDone).toBe(false);
+    expect(result.doneCount).toBe(2);
+  });
+
+  it("does not bump progress just because the centre is named", () => {
+    const named = deriveGettingStarted({
+      batchCount: 0,
+      activeStudentCount: 0,
+      paymentCount: 0,
+      attendanceStarted: false,
+    });
+    expect(named.doneCount).toBe(0);
+    expect(shouldShowSetupPrompt({ instituteName: "Samriddhi Centre" })).toBe(
+      false,
+    );
+  });
+});
+
+describe("SetupPrompt institute-name path", () => {
+  it("prompts only for the placeholder or a blank name", () => {
+    expect(shouldShowSetupPrompt({ instituteName: "My Institute" })).toBe(true);
+    expect(shouldShowSetupPrompt({ instituteName: "" })).toBe(true);
+    expect(shouldShowSetupPrompt({ instituteName: "Samriddhi Centre" })).toBe(
+      false,
+    );
+    expect(
+      shouldShowSetupPrompt({
+        instituteName: "My Institute",
+        metadataInstituteName: "Samriddhi Centre",
+      }),
+    ).toBe(false);
+    expect(readInstituteNameFromMetadata({ institute_name: "X" })).toBe("X");
   });
 });
 
 describe("resume, dismiss, and first-run gates", () => {
-  it("opens the wizard for a new centre, not for a settled one", () => {
+  it("treats empty or unnamed workspaces as new; a named centre with students is settled without a phone", () => {
     expect(
       looksLikeNewCentre({
         instituteName: "My Institute",
@@ -344,6 +414,14 @@ describe("resume, dismiss, and first-run gates", () => {
       looksLikeNewCentre({
         instituteName: "Samriddhi Centre",
         contactPhone: "9876543210",
+        batchCount: 3,
+        activeStudentCount: 40,
+      }),
+    ).toBe(false);
+    expect(
+      looksLikeNewCentre({
+        instituteName: "Samriddhi Centre",
+        contactPhone: null,
         batchCount: 3,
         activeStudentCount: 40,
       }),
@@ -385,6 +463,41 @@ describe("resume, dismiss, and first-run gates", () => {
         setupComplete: true,
         resumeRequested: true,
         looksIncomplete: true,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not auto-open or click-capture a new owner who has no phone", () => {
+    for (const instituteName of ["My Institute", "Samriddhi Centre"] as const) {
+      expect(
+        shouldAutoOpenOwnerWizard({
+          setupComplete: false,
+          resumeRequested: false,
+        }),
+      ).toBe(false);
+      expect(shouldCaptureOwnerClicksToResume()).toBe(false);
+      const checklist = deriveGettingStarted({
+        batchCount: 0,
+        activeStudentCount: 0,
+        paymentCount: 0,
+        attendanceStarted: false,
+      });
+      expect(checklist.doneCount).toBe(0);
+      expect(checklist.items).toHaveLength(3);
+      expect(checklist.items[0]?.label).toBe("Import");
+      expect(
+        looksLikeNewCentre({
+          instituteName,
+          contactPhone: null,
+          batchCount: 0,
+          activeStudentCount: 0,
+        }),
+      ).toBe(true);
+    }
+    expect(
+      shouldAutoOpenOwnerWizard({
+        setupComplete: false,
+        resumeRequested: true,
       }),
     ).toBe(true);
   });

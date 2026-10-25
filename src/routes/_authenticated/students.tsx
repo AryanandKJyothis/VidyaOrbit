@@ -444,37 +444,13 @@ function StudentsList() {
             <EmptyState
               icon={Users}
               title="No students yet"
-              description="Add learners manually or import a spreadsheet — match batches later from the Students page."
+              description="Import your register from Excel — names, phones, and batches in one go."
+              reassurance="You can add or edit anyone afterwards. Nothing is sent to parents until you tap WhatsApp."
             >
               {canWriteStudents && (
-                <>
-                  <Button
-                    onClick={() => {
-                      setEditing(undefined);
-                      setOpen(true);
-                    }}
-                    disabled={atLimit}
-                  >
-                    <Plus className="mr-1.5 h-4 w-4" /> Add student
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      void downloadStudentImportTemplate(
-                        (batches.data ?? []).map((b) => b.name),
-                      )
-                    }
-                  >
-                    <FileDown className="mr-1.5 h-4 w-4" /> Download template
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setImportOpen(true)}
-                    disabled={atLimit}
-                  >
-                    <Upload className="mr-1.5 h-4 w-4" /> Import from Excel
-                  </Button>
-                </>
+                <Button onClick={() => setImportOpen(true)} disabled={atLimit}>
+                  <Upload className="mr-1.5 h-4 w-4" /> Import students
+                </Button>
               )}
             </EmptyState>
           ) : filtered.length === 0 ? (
