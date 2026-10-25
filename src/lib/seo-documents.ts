@@ -94,7 +94,7 @@ function planLlmsLine(p: (typeof APPROVED_PRICING)[number]): string {
   const save = getAnnualSavingsLabel(p);
   const setup =
     p.setupFee > 0
-      ? ` First monthly invoice includes a ${formatIndianPrice(p.setupFee)} setup fee (waived on annual).`
+      ? ` First monthly invoice includes optional ${formatIndianPrice(p.setupFee)} done for you setup (waived on annual).`
       : "";
   const saveBit = save ? ` ${save}.` : "";
   return `- ${p.displayName}: ${monthly}/month or ${annual}/year — ${p.studentLimit}.${setup}${saveBit}`;
@@ -126,9 +126,9 @@ Owners of coaching centres, tuition centres, and small institutes who currently 
 - Staff invites with a join link (owner chooses whether staff can see fees)
 - Excel / CSV import (.xlsx, .xls, .csv) — pasting cells is not supported
 - Export students, batches, dues and payments as Excel or CSV
-- Analytics dashboard on Starter and above
+- Analytics dashboard on Spark and above
 
-VidyaOrbit prepares a WhatsApp fee reminder with the centre UPI link. The owner sends it, and the parent pays the centre directly. The app does not message parents by itself.
+VidyaOrbit prepares a WhatsApp fee reminder with the centre UPI link. The owner sends an assisted wa.me draft from the centre's own phone, and the parent pays the centre directly. The app does not message parents by itself. Parents install nothing.
 
 ## Pricing (INR)
 

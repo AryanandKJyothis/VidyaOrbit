@@ -132,8 +132,7 @@ export function SiteHeader({
             >
               <Button
                 size="sm"
-                variant="outline"
-                className="h-9 !rounded-[4px] border-ink px-3 text-ink"
+                className="h-9 !rounded-[4px] bg-orbit-blue px-3 text-paper hover:bg-orbit-blue/90"
               >
                 {signup.label}
               </Button>
@@ -147,7 +146,8 @@ export function SiteHeader({
               >
                 <Button
                   size="sm"
-                  className="h-9 !rounded-[4px] bg-orbit-blue px-3 text-paper hover:bg-orbit-blue/90"
+                  variant="outline"
+                  className="h-9 !rounded-[4px] border-ink px-3 text-ink"
                 >
                   {CTA_BOOK_DEMO}
                 </Button>
@@ -272,8 +272,7 @@ export function SiteHeader({
                 >
                   <Button
                     size="lg"
-                    variant="outline"
-                    className="w-full !rounded-[4px] border-ink"
+                    className="w-full !rounded-[4px] bg-orbit-blue text-paper"
                     onClick={() => setOpen(false)}
                   >
                     {signup.label}
@@ -283,7 +282,8 @@ export function SiteHeader({
                   <a href={wa} target="_blank" rel="noreferrer">
                     <Button
                       size="lg"
-                      className="w-full !rounded-[4px] bg-orbit-blue text-paper"
+                      variant="outline"
+                      className="w-full !rounded-[4px] border-ink"
                     >
                       {CTA_BOOK_DEMO}
                     </Button>

@@ -145,7 +145,7 @@ describe("GET /api/billing/pricing", () => {
       body.tiers.find((t: { tier: string }) => t.tier === "growth").features,
     ).toEqual([
       "Up to 500 students",
-      "Everything in Starter",
+      "Everything in Spark",
       "Email & WhatsApp support",
     ]);
   });

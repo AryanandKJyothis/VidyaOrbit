@@ -64,7 +64,8 @@ describe("refund policy copy", () => {
     expect(refund).toContain("setup fee charged when one was already paid");
     expect(refund).toContain("plan that wasn't activated");
     expect(refund).toContain("5–7 business");
-    expect(refund).toContain("₹5,000 setup fee");
+    expect(refund).toContain("₹5,000");
+    expect(refund).toContain("done for you setup");
     expect(refund).toContain("Shipping and delivery are not applicable");
   });
 });

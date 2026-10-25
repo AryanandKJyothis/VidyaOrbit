@@ -256,7 +256,7 @@ function PricingCard({
     cycle === "monthly" ? tier.monthlyPricePaise : tier.annualPricePaise;
   const displayPrice = Math.floor(price / 100);
 
-  // Setup fee applies only on monthly for Growth/Large, and only if not yet paid
+  // DFY setup applies only on monthly for Orbit/Centre, and only if not yet paid
   const setupApplies =
     cycle === "monthly" && tier.setupFeePaise > 0 && !hasPaidSetup;
   const setupFee = setupApplies ? tier.setupFeePaise / 100 : 0;

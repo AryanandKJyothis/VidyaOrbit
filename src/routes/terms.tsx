@@ -39,9 +39,9 @@ function TermsPage() {
         <p>
           Vidya Orbit is software for coaching centres and tuition institutes to
           manage students, batches, attendance, fees and receipts. We offer a
-          Free plan and paid plans (Starter, Growth and Large). Paid plans
-          unlock higher student limits and additional features. Current pricing
-          is shown on the{" "}
+          Free plan and paid plans (Spark, Orbit and Centre). Paid plans unlock
+          higher student limits and additional features. Current pricing is
+          shown on the{" "}
           <Link to="/pricing" className="text-primary hover:underline">
             pricing page
           </Link>

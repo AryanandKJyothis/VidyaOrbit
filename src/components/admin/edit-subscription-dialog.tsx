@@ -490,10 +490,10 @@ export function EditSubscriptionDialog({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="free">Free</SelectItem>
-                    <SelectItem value="starter">Starter</SelectItem>
-                    <SelectItem value="growth">Growth</SelectItem>
+                    <SelectItem value="starter">Spark</SelectItem>
+                    <SelectItem value="growth">Orbit</SelectItem>
                     <SelectItem value="pro">
-                      {PLANS.find((p) => p.code === "pro")?.name ?? "Large"}
+                      {PLANS.find((p) => p.code === "pro")?.name ?? "Centre"}
                     </SelectItem>
                   </SelectContent>
                 </Select>

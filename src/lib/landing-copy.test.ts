@@ -6,8 +6,10 @@ import {
   CTA_BOOK_SETUP_CALL,
   CTA_GO_TO_DASHBOARD,
   CTA_LOG_IN,
+  CTA_GET_SPARK,
   CTA_START_FREE,
   FOUNDER_LINE,
+  HERO_TRUST_LINE,
   HERO_EYEBROW,
   HERO_MALAYALAM,
   HERO_SCREENSHOT,
@@ -38,6 +40,7 @@ function haystack() {
     STARTER_ROI_LINE,
     RAZORPAY_LIVE_LINE,
     WHATSAPP_SHARE_LINE,
+    HERO_TRUST_LINE,
     ...LANDING_CLAIMS.map((c) => c.text),
     ...LANDING_FAQS.map((f) => `${f.q} ${f.a}`),
   ]
@@ -60,6 +63,10 @@ describe("landing copy", () => {
     expect(CTA_BOOK_DEMO).toBe("Book a free demo");
     expect(CTA_BOOK_SETUP_CALL).toBe("Book a free setup call");
     expect(CTA_START_FREE).toBe("Start free");
+    expect(CTA_GET_SPARK).toBe("Get Spark");
+    expect(HERO_TRUST_LINE.toLowerCase()).toContain("no card");
+    expect(HERO_TRUST_LINE.toLowerCase()).toContain("assisted whatsapp");
+    expect(HERO_TRUST_LINE.toLowerCase()).toContain("cancel anytime");
     expect(CTA_LOG_IN).toBe("Log in");
     expect(CTA_GO_TO_DASHBOARD).toBe("Go to dashboard");
   });
@@ -69,15 +76,21 @@ describe("landing copy", () => {
     expect(OFFLINE_LINE.toLowerCase()).toContain("chat threads");
   });
 
-  it("frames WhatsApp as ready made messages the centre sends", () => {
+  it("frames WhatsApp as assisted send from the centre phone", () => {
     expect(WHATSAPP_SHARE_LINE.toLowerCase()).toContain("whatsapp");
-    expect(WHATSAPP_SHARE_LINE.toLowerCase()).toContain("own whatsapp");
+    expect(WHATSAPP_SHARE_LINE.toLowerCase()).toContain("assisted");
+    expect(WHATSAPP_SHARE_LINE.toLowerCase()).toContain("own phone");
     expect(WHATSAPP_SHARE_LINE.toLowerCase()).toContain(
       "never messages parents by itself",
+    );
+    expect(WHATSAPP_SHARE_LINE.toLowerCase()).toContain(
+      "parents install nothing",
     );
     expect(WHATSAPP_SHARE_LINE.toLowerCase()).toContain("report card");
     expect(WHATSAPP_SHARE_LINE.toLowerCase()).toContain("absentee");
     expect(WHATSAPP_SHARE_LINE.toLowerCase()).not.toContain("auto-message");
+    expect(WHATSAPP_SHARE_LINE.toLowerCase()).not.toContain("auto-send");
+    expect(WHATSAPP_SHARE_LINE.toLowerCase()).not.toContain("cloud api");
   });
 
   it("nudges Starter with a missed-fee ROI line", () => {

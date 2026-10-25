@@ -234,11 +234,11 @@ describe("Billing Pricing (Tier + Cycle)", () => {
     });
   });
 
-  describe("Large tier", () => {
+  describe("Centre tier", () => {
     it("should compute monthly with setup on first order", () => {
       const result = computePricing("large", "monthly", false);
 
-      expect(result.total).toBe(749900); // ₹7,499 (₹2,499 + ₹5,000)
+      expect(result.total).toBe(649900); // ₹6,499 (₹1,499 + ₹5,000)
       expect(result.line_items).toHaveLength(2);
       expect(result.line_items[0]).toEqual({
         item: "setup_fee",
@@ -246,21 +246,21 @@ describe("Billing Pricing (Tier + Cycle)", () => {
       });
       expect(result.line_items[1]).toEqual({
         item: "subscription_charge",
-        amount: 249900, // ₹2,499
+        amount: 149900, // ₹1,499
       });
     });
 
     it("should compute monthly without setup if already paid", () => {
       const result = computePricing("large", "monthly", true);
 
-      expect(result.total).toBe(249900); // ₹2,499 only
+      expect(result.total).toBe(149900); // ₹1,499 only
       expect(result.line_items).toHaveLength(1);
     });
 
     it("should compute annual without setup (waived)", () => {
       const result = computePricing("large", "annual", false);
 
-      expect(result.total).toBe(2500000); // ₹25,000 only
+      expect(result.total).toBe(1500000); // ₹15,000 only
       expect(result.line_items).toHaveLength(1);
       expect(result.months).toBe(12);
     });
@@ -327,9 +327,9 @@ describe("Billing Pricing (Tier + Cycle)", () => {
     it("should show correct savings for annual vs monthly", () => {
       const tiers: PlanTier[] = ["starter", "growth", "large"];
       const expectedSavings = [
-        989, // Starter: 12×499 − 4,999 = 5,988 − 4,999 = 989
-        1988, // Growth: 12×999 − 10,000 = 11,988 − 10,000 = 1,988
-        4988, // Large: 12×2,499 − 25,000 = 29,988 − 25,000 = 4,988
+        989, // Spark: 12×499 − 4,999 = 5,988 − 4,999 = 989
+        1988, // Orbit: 12×999 − 10,000 = 11,988 − 10,000 = 1,988
+        2988, // Centre: 12×1,499 − 15,000 = 17,988 − 15,000 = 2,988
       ];
 
       tiers.forEach((tier, i) => {

@@ -23,7 +23,7 @@ function setupFeeAnswer(): string {
   const growth = getPlanByCode("growth")!;
   const large = getPlanByCode("large")!;
   const starter = getPlanByCode("starter")!;
-  return `Yes. ${growth.displayName} and ${large.displayName} add a ${formatIndianPrice(growth.setupFee)} setup fee on the first monthly invoice. It is waived on annual plans. ${starter.displayName} has no setup fee.`;
+  return `Optional done for you setup is ${formatIndianPrice(growth.setupFee)}. ${growth.displayName} and ${large.displayName} add it on the first monthly invoice. It is waived on annual plans. ${starter.displayName} and Free do not include it. You can start without it.`;
 }
 
 /** Landing-page owner FAQ. Prices are read from APPROVED_PRICING. */
@@ -34,14 +34,14 @@ export const LANDING_FAQS: FaqItem[] = [
   },
   {
     q: "What does setup include?",
-    a: "Book a free demo on WhatsApp. We import your Excel or CSV, set up batches and fees, add staff, and train your team for 30 minutes.",
+    a: "Book a free demo on WhatsApp. Optional done for you setup is paid separately. We import your Excel or CSV, set up batches and fees, add staff, and train your team for 30 minutes.",
   },
   {
     q: "Can I switch plans?",
     a: "Yes. Open Plan in the app and pay with UPI or cards through Razorpay. You can move up or down; existing data stays. Changes take effect at the end of the current billing period where applicable.",
   },
   {
-    q: "Is there a setup fee?",
+    q: "Is done for you setup extra?",
     a: setupFeeAnswer(),
   },
   {
@@ -70,7 +70,7 @@ export const LANDING_FAQS: FaqItem[] = [
   },
   {
     q: "Can it send receipts, report cards or absentee alerts on WhatsApp?",
-    a: "Yes. Send receipts, report cards and absentee alerts on WhatsApp in one tap. Ready made links and PDFs for your parent groups, plus fee reminders with the amount and your UPI link. You send from your centre's own WhatsApp. The app never messages parents by itself.",
+    a: "Yes, as an assisted send from the centre's own phone. One tap opens a wa.me draft with the receipt, report card, absentee alert or fee reminder. You send it. The app never messages parents by itself, and parents install nothing.",
   },
 ];
 
@@ -100,7 +100,7 @@ export const PRICING_FAQS: FaqItem[] = [
     a: "Yes. Data is encrypted in transit and at rest, isolated per institute, and only your authorised team can access it. We never sell or share institute data.",
   },
   {
-    q: "Is there a setup fee?",
+    q: "Is done for you setup extra?",
     a: setupFeeAnswer(),
   },
 ];

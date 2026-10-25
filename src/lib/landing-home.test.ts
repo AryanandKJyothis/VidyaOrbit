@@ -83,6 +83,7 @@ describe("/home marketing landing", () => {
     expect(landingSrc).toContain("HERO_SCREENSHOT");
     expect(landingSrc).toContain('fetchPriority="high"');
     expect(landingSrc).toContain("CTA_BOOK_SETUP_CALL");
+    expect(landingSrc).toContain("HERO_TRUST_LINE");
     expect(landingSrc).toContain("OFFLINE_LINE");
     expect(pricingSrc).toContain("STARTER_ROI_LINE");
     expect(CTA_BOOK_SETUP_CALL).toBe("Book a free setup call");

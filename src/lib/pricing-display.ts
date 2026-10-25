@@ -19,6 +19,9 @@ export interface PlanDisplay {
   ctaLabel: string;
 }
 
+/** Optional done-for-you onboarding. Charged on first monthly Orbit/Centre only. */
+export const DFY_SETUP_FEE = 5000;
+
 export const APPROVED_PRICING: PlanDisplay[] = [
   {
     code: "free",
@@ -40,7 +43,7 @@ export const APPROVED_PRICING: PlanDisplay[] = [
   },
   {
     code: "starter",
-    displayName: "Starter",
+    displayName: "Spark",
     tagline: "Growing coaching centres",
     studentLimit: "Up to 100 students",
     monthlyPrice: 499,
@@ -53,39 +56,39 @@ export const APPROVED_PRICING: PlanDisplay[] = [
       "Analytics dashboard",
       "Email & WhatsApp support",
     ],
-    ctaLabel: "Choose Starter",
+    ctaLabel: "Get Spark",
   },
   {
     code: "growth",
-    displayName: "Growth",
+    displayName: "Orbit",
     tagline: "Multi-batch institutions",
     studentLimit: "Up to 500 students",
     monthlyPrice: 999,
     annualPrice: 10000,
-    setupFee: 5000,
+    setupFee: DFY_SETUP_FEE,
     annualSetupFee: 0,
     features: [
       "Up to 500 students",
-      "Everything in Starter",
+      "Everything in Spark",
       "Email & WhatsApp support",
     ],
-    ctaLabel: "Choose Growth",
+    ctaLabel: "Choose Orbit",
   },
   {
     code: "large",
-    displayName: "Large",
-    tagline: "Large institutions",
+    displayName: "Centre",
+    tagline: "Bigger centres",
     studentLimit: "Unlimited students",
-    monthlyPrice: 2499,
-    annualPrice: 25000,
-    setupFee: 5000,
+    monthlyPrice: 1499,
+    annualPrice: 15000,
+    setupFee: DFY_SETUP_FEE,
     annualSetupFee: 0,
     features: [
       "Unlimited students",
-      "Everything in Growth",
+      "Everything in Orbit",
       "Email & WhatsApp support",
     ],
-    ctaLabel: "Choose Large",
+    ctaLabel: "Choose Centre",
   },
 ];
 
@@ -102,9 +105,13 @@ export function getAnnualSavingsLabel(plan: PlanDisplay): string | null {
   const savings = getAnnualSavings(plan);
   if (savings <= 0) return null;
   if (plan.setupFee > 0) {
-    return `Save ${formatIndianPrice(savings)} + free setup`;
+    return `Save ${formatIndianPrice(savings)} · DFY setup waived`;
   }
   return `Save ${formatIndianPrice(savings)}`;
+}
+
+export function dfySetupLine(): string {
+  return `Optional done for you setup is ${formatIndianPrice(DFY_SETUP_FEE)}. Added on the first monthly Orbit or Centre invoice. Not charged on Spark, annual plans, or if you already paid it.`;
 }
 
 export function getPlanByCode(code: string): PlanDisplay | undefined {

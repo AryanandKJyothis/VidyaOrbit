@@ -3,6 +3,7 @@ import { JsonLd } from "@/components/json-ld";
 import { Button } from "@/components/ui/button";
 import { getContactConfig } from "@/lib/contact-config";
 import { PRICING_FAQS } from "@/lib/public-faqs";
+import { dfySetupLine } from "@/lib/pricing-display";
 import { PUBLIC_PAGES, pageHead, pricingJsonLd } from "@/lib/seo";
 import { ShieldCheck, MessageCircle, Mail } from "lucide-react";
 import { PublicPricingGrid } from "@/components/public/pricing-grid";
@@ -74,7 +75,8 @@ function PricingPage() {
                 Simple, INR-first pricing
               </h1>
               <p className="mt-4 text-muted-foreground sm:text-lg">
-                Start free. Upgrade only when your centre grows. Pay in the app
+                Spark ₹499, Orbit ₹999, Centre ₹1,499 a month. Start free, then
+                upgrade when your centre grows. {dfySetupLine()} Pay in the app
                 on the Plan page with UPI or cards through Razorpay.
               </p>
             </div>
