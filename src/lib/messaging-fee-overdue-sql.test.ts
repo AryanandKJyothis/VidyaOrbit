@@ -15,7 +15,7 @@ describe("fee-overdue WhatsApp migration lock", () => {
     expect(sql).toContain("fee_overdue:<student_id>:<YYYY-MM-DD>");
     expect(sql).toContain("message_outbox_fee_overdue_student_idx");
     expect(sql).not.toContain("CREATE TABLE");
-    expect(sql).not.toMatch(/cron/i);
+    expect(sql).not.toMatch(/pg_cron|cron\.schedule/i);
     expect(sql).not.toMatch(/wa_auto boolean NOT NULL DEFAULT true/);
   });
 

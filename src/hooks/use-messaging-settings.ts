@@ -15,30 +15,42 @@ export function useMessagingSettings() {
     enabled: !!ownerId,
     staleTime: 60_000,
     queryFn: async (): Promise<MessagingSettings> => {
-      let { data, error } = await supabase
+      const first = await supabase
         .from("institute_messaging_settings")
         .select("wa_auto, locale, fee_overdue_dedupe_days")
         .eq("owner_id", ownerId!)
         .maybeSingle();
-      if (error && /fee_overdue_dedupe_days/i.test(error.message)) {
+      if (first.error && /fee_overdue_dedupe_days/i.test(first.error.message)) {
         const fallback = await supabase
           .from("institute_messaging_settings")
           .select("wa_auto, locale")
           .eq("owner_id", ownerId!)
           .maybeSingle();
-        data = fallback.data;
-        error = fallback.error;
+        if (fallback.error) {
+          if (
+            fallback.error.code === "42P01" ||
+            /does not exist|institute_messaging_settings/i.test(
+              fallback.error.message,
+            )
+          ) {
+            return DEFAULT_MESSAGING_SETTINGS;
+          }
+          throw fallback.error;
+        }
+        return settingsFromRow(fallback.data);
       }
-      if (error) {
+      if (first.error) {
         if (
-          error.code === "42P01" ||
-          /does not exist|institute_messaging_settings/i.test(error.message)
+          first.error.code === "42P01" ||
+          /does not exist|institute_messaging_settings/i.test(
+            first.error.message,
+          )
         ) {
           return DEFAULT_MESSAGING_SETTINGS;
         }
-        throw error;
+        throw first.error;
       }
-      return settingsFromRow(data);
+      return settingsFromRow(first.data);
     },
   });
 }

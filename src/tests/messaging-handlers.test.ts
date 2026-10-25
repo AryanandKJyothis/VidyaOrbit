@@ -486,7 +486,8 @@ describe("POST /api/messaging/enqueue-fee-overdue", () => {
     expect(res.status).toBe(200);
     expect(body.ok).toBe(true);
     expect(upsertFn).toHaveBeenCalledTimes(1);
-    const rows = upsertFn.mock.calls[0]![0] as {
+    const inserted = (upsertFn.mock.calls as unknown as unknown[][])[0]?.[0];
+    const rows = inserted as {
       student_id: string;
       body: string;
       kind: string;
