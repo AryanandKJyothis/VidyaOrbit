@@ -390,6 +390,7 @@ export type Database = {
       receipt_shares: {
         Row: {
           created_at: string;
+          expires_at: string;
           owner_id: string;
           payment_id: string;
           revoked_at: string | null;
@@ -398,6 +399,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          expires_at?: string;
           owner_id: string;
           payment_id: string;
           revoked_at?: string | null;
@@ -406,6 +408,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          expires_at?: string;
           owner_id?: string;
           payment_id?: string;
           revoked_at?: string | null;
@@ -425,6 +428,7 @@ export type Database = {
       report_shares: {
         Row: {
           created_at: string;
+          expires_at: string;
           id: string;
           owner_id: string;
           report_month: string;
@@ -436,6 +440,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          expires_at?: string;
           id?: string;
           owner_id: string;
           report_month: string;
@@ -447,6 +452,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          expires_at?: string;
           id?: string;
           owner_id?: string;
           report_month?: string;
@@ -465,6 +471,39 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      public_share_access_log: {
+        Row: {
+          created_at: string;
+          id: number;
+          ip_hash: string;
+          owner_id: string | null;
+          result: string;
+          share_kind: string;
+          token_hash: string;
+          ua_hash: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: number;
+          ip_hash: string;
+          owner_id?: string | null;
+          result: string;
+          share_kind: string;
+          token_hash: string;
+          ua_hash: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: number;
+          ip_hash?: string;
+          owner_id?: string | null;
+          result?: string;
+          share_kind?: string;
+          token_hash?: string;
+          ua_hash?: string;
+        };
+        Relationships: [];
       };
       razorpay_webhook_deliveries: {
         Row: {
@@ -874,6 +913,10 @@ export type Database = {
       };
       get_public_receipt: { Args: { _token: string }; Returns: Json };
       get_public_report: { Args: { _token: string }; Returns: Json };
+      public_share_access_summary: {
+        Args: { _owner_id?: string; _days?: number };
+        Returns: Json;
+      };
       issue_receipt_share: { Args: { _payment_id: string }; Returns: Json };
       issue_report_share: {
         Args: {

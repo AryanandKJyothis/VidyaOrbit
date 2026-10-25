@@ -174,6 +174,9 @@ describe("crawl documents", () => {
     for (const path of ROBOTS_DISALLOW) {
       expect(robots).toContain(`Disallow: ${path}`);
     }
+    expect(robots).toContain("Disallow: /r/");
+    expect(robots).toContain("Disallow: /report");
+    expect(robots).not.toMatch(/Disallow: \/r$/m);
     expect(robots).not.toContain("Disallow: /login");
     expect(robots).not.toContain("Disallow: /pricing");
   });

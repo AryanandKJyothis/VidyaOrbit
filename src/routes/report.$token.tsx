@@ -34,7 +34,10 @@ function PublicReportPage() {
   return (
     <SharePageShell title="Report card" canPrint={report?.ok === true}>
       {!isShareTokenShape(token) ||
-      (lookup.isSuccess && report && !report.ok) ? (
+      (lookup.isSuccess &&
+        report &&
+        !report.ok &&
+        report.reason !== "unavailable") ? (
         <ShareUnavailable
           title={
             report && !report.ok && report.reason === "revoked"
@@ -45,7 +48,8 @@ function PublicReportPage() {
         />
       ) : lookup.isLoading ? (
         <Skeleton className="h-96 rounded-2xl" />
-      ) : lookup.isError ? (
+      ) : lookup.isError ||
+        (report && !report.ok && report.reason === "unavailable") ? (
         <ShareUnavailable
           title="Could not open this report"
           body="Try again in a moment, or ask the centre to send the link again."

@@ -337,6 +337,16 @@ function SettingsPageContent() {
                   className="shrink-0 mt-1"
                 />
               </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Public receipt links expire after 180 days. You can turn a link
+                off earlier. Lookups are logged without the raw token.{" "}
+                <Link
+                  to="/privacy"
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  Privacy policy
+                </Link>
+              </p>
             </CardContent>
           </Card>
           <Card>

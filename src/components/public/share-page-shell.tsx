@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogoWordmark } from "@/components/logo";
@@ -25,6 +26,16 @@ export function SharePageShell({
       <main className="print-root mx-auto max-w-2xl px-4 pb-16">
         <h1 className="no-print sr-only">{title}</h1>
         {children}
+        <p className="no-print mt-10 text-center text-xs text-muted-foreground">
+          This share link is private. Vidya Orbit does not use it for ads or
+          profiling.{" "}
+          <Link
+            to="/privacy"
+            className="underline underline-offset-2 hover:text-ink"
+          >
+            Privacy policy
+          </Link>
+        </p>
       </main>
     </div>
   );

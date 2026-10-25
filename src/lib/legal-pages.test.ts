@@ -69,6 +69,23 @@ describe("refund policy copy", () => {
   });
 });
 
+describe("public share privacy notice", () => {
+  it("links the privacy policy from the public share page and messaging settings", () => {
+    const shell = src("src/components/public/share-page-shell.tsx");
+    expect(shell).toContain("does not use it for ads or profiling");
+    expect(shell).toContain('to="/privacy"');
+    const settings = src("src/routes/_authenticated/settings.index.tsx");
+    expect(settings).toContain("Public receipt links expire after 180 days");
+    expect(settings).toContain('to="/privacy"');
+  });
+
+  it("does not mention expiry on the public not-found page", () => {
+    const page = src("src/routes/r.$token.tsx");
+    expect(page).toContain("Receipt not found");
+    expect(page).not.toMatch(/was expired|expired link|this receipt expired/i);
+  });
+});
+
 describe("legal footer links", () => {
   it("lists Privacy, Terms, Refunds & cancellations and Contact", () => {
     const footer = src("src/components/public/site-footer.tsx");
