@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Save,
@@ -43,6 +43,9 @@ import { formatUserError } from "@/lib/format-error";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/empty-state";
 import { QueryErrorState } from "@/components/query-state";
+import { enqueueAbsencesAfterSave } from "@/lib/messaging/client";
+import { formatAbsenceQueueToast } from "@/lib/messaging/summarize";
+import { hasValidParentPhone } from "@/lib/messaging/phone";
 
 export const Route = createFileRoute("/_authenticated/attendance")({
   component: () => (
@@ -60,6 +63,7 @@ const ATT_DATE_KEY = "vidya:attendance:last-date";
 function AttendancePage() {
   const { user } = useAuth();
   const { active } = useActiveWorkspace();
+  const navigate = useNavigate();
   const canWriteAttendance = useCan("attendance", "write");
   const ownerId = active?.ownerId ?? null;
   const batches = useBatches();
@@ -215,14 +219,36 @@ function AttendancePage() {
       }
       const rows = plan.upsertRows;
       const unmarked = roster.length - rows.length;
-      toast.success(
-        unmarked > 0
-          ? `Attendance saved. ${unmarked} unmarked student${unmarked === 1 ? " was" : "s were"} not recorded.`
-          : "Attendance saved",
-      );
+      const notify = await enqueueAbsencesAfterSave({
+        ownerId,
+        sessionId,
+      });
       qc.invalidateQueries({ queryKey: ["att-session"] });
       qc.invalidateQueries({ queryKey: ["att-summary"] });
       qc.invalidateQueries({ queryKey: ["att-all"] });
+      qc.invalidateQueries({ queryKey: ["message-outbox"] });
+      if (notify.ok && notify.summary) {
+        const copy = formatAbsenceQueueToast(notify.summary);
+        toast.success(copy.title, {
+          description:
+            unmarked > 0
+              ? `${unmarked} unmarked student${unmarked === 1 ? " was" : "s were"} not recorded.${copy.description ? ` ${copy.description}` : ""}`
+              : copy.description,
+          action:
+            notify.summary.queued > 0
+              ? {
+                  label: "Send",
+                  onClick: () => void navigate({ to: "/absentees" }),
+                }
+              : undefined,
+        });
+      } else {
+        toast.success(
+          unmarked > 0
+            ? `Attendance saved. ${unmarked} unmarked student${unmarked === 1 ? " was" : "s were"} not recorded.`
+            : "Attendance saved",
+        );
+      }
     } catch (e) {
       toast.error(formatUserError(e, "Could not save attendance."));
     } finally {
@@ -456,9 +482,15 @@ function AttendancePage() {
                             <div className="truncate text-sm font-semibold leading-tight">
                               {s.full_name}
                             </div>
-                            {s.phone && (
-                              <div className="truncate text-xs text-muted-foreground">
-                                {s.phone}
+                            {hasValidParentPhone(s) ? (
+                              s.phone ? (
+                                <div className="truncate text-xs text-muted-foreground">
+                                  {s.phone}
+                                </div>
+                              ) : null
+                            ) : (
+                              <div className="truncate text-xs text-destructive">
+                                No parent phone
                               </div>
                             )}
                           </div>

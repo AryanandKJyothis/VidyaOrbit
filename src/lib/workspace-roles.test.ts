@@ -11,6 +11,7 @@ import {
   canManageInvite,
   canManageTeam,
   canRemoveMember,
+  normalizePermissions,
   permissionsForRole,
   roleHasCapability,
   type RoleCapability,
@@ -52,6 +53,7 @@ describe("permission presets", () => {
       fees: "write",
       settings: "write",
       billing: "write",
+      messages: "write",
     });
   });
 
@@ -70,7 +72,22 @@ describe("permission presets", () => {
       fees: "write",
       settings: "none",
       billing: "none",
+      messages: "write",
     });
+    expect(PERMISSION_PRESETS.viewer.messages).toBe("none");
+  });
+
+  it("fills missing messages from the role so existing members keep access", () => {
+    const staleStaff = {
+      students: "read",
+      batches: "read",
+      attendance: "write",
+      fees: "write",
+      settings: "none",
+      billing: "none",
+    };
+    expect(normalizePermissions(staleStaff, "staff").messages).toBe("write");
+    expect(normalizePermissions(staleStaff, "viewer").messages).toBe("none");
   });
 });
 
@@ -138,6 +155,8 @@ describe("role capabilities matrix", () => {
     expect(roleHasCapability("staff", "view_students")).toBe(true);
     expect(roleHasCapability("staff", "attendance")).toBe(true);
     expect(roleHasCapability("staff", "record_fees")).toBe(true);
+    expect(roleHasCapability("staff", "send_messages")).toBe(true);
+    expect(roleHasCapability("viewer", "send_messages")).toBe(false);
   });
 
   it("gives the owner every listed capability except removing themselves", () => {
@@ -156,6 +175,7 @@ describe("role capabilities matrix", () => {
       "attendance",
       "record_fees",
       "edit_settings",
+      "send_messages",
     ];
     for (const cap of ownerCaps) {
       expect(roleHasCapability("owner", cap)).toBe(true);

@@ -1,9 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import {
-  MANAGER_PERMISSIONS_JSON,
-  STAFF_PERMISSIONS_JSON,
-} from "./workspace-roles";
+
+/** Frozen JSON from this migration — later presets add `messages`. */
+const HISTORICAL_STAFF_PERMISSIONS_JSON =
+  '{"students":"read","batches":"read","attendance":"write","fees":"write","settings":"none","billing":"none"}';
+const HISTORICAL_MANAGER_PERMISSIONS_JSON =
+  '{"students":"write","batches":"write","attendance":"write","fees":"write","settings":"write","billing":"write"}';
 
 const PATH = "supabase/migrations/20261014120000_workspace_staff_roles.sql";
 const sql = readFileSync(PATH, "utf8");
@@ -50,8 +52,8 @@ describe("workspace staff roles migration lock", () => {
   });
 
   it("backfills staff and manager permission JSON to match the TypeScript presets", () => {
-    expect(sql).toContain(STAFF_PERMISSIONS_JSON);
-    expect(sql).toContain(MANAGER_PERMISSIONS_JSON);
+    expect(sql).toContain(HISTORICAL_STAFF_PERMISSIONS_JSON);
+    expect(sql).toContain(HISTORICAL_MANAGER_PERMISSIONS_JSON);
     expect(sql).toMatch(/WHERE role = 'staff'[\s\S]*WHERE role = 'manager'/s);
   });
 
@@ -59,8 +61,8 @@ describe("workspace staff roles migration lock", () => {
     expect(sql).toContain(
       "public.has_resource_access(owner_id, auth.uid(), 'billing', false)",
     );
-    expect(MANAGER_PERMISSIONS_JSON).toContain('"billing":"write"');
-    expect(STAFF_PERMISSIONS_JSON).toContain('"billing":"none"');
+    expect(HISTORICAL_MANAGER_PERMISSIONS_JSON).toContain('"billing":"write"');
+    expect(HISTORICAL_STAFF_PERMISSIONS_JSON).toContain('"billing":"none"');
   });
 
   it("does not grant client writes on workspace_members or invites", () => {

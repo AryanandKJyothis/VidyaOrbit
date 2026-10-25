@@ -19,6 +19,11 @@ const RESOURCES: { key: keyof Permissions; label: string; hint?: string }[] = [
     label: "Billing & subscription",
     hint: "Only the owner should usually have this.",
   },
+  {
+    key: "messages",
+    label: "Parent WhatsApp",
+    hint: "Send absence alerts from the centre's own WhatsApp.",
+  },
 ];
 
 export function PermissionChecklist({

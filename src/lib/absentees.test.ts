@@ -94,10 +94,12 @@ describe("today's absentees", () => {
     const share = buildAbsenteeMessage({
       studentName: "Amina",
       centreName: "Orbit Coaching",
+      sessionDate: "2026-10-15",
+      batchName: "Class 10 Maths",
       guardianPhone: "9876543210",
     });
     expect(share.message).toBe(
-      "Amina was absent today at Orbit Coaching.\nPlease let us know if they will be back tomorrow.",
+      "Dear parent, Amina was absent today (15 Oct 2026, Class 10 Maths) at Orbit Coaching. Please contact us if this is unexpected.",
     );
     expect(share.href).toContain("https://wa.me/919876543210?text=");
   });

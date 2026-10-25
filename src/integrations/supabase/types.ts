@@ -303,6 +303,90 @@ export type Database = {
         };
         Relationships: [];
       };
+      institute_messaging_settings: {
+        Row: {
+          created_at: string;
+          locale: string;
+          owner_id: string;
+          updated_at: string;
+          wa_auto: boolean;
+        };
+        Insert: {
+          created_at?: string;
+          locale?: string;
+          owner_id: string;
+          updated_at?: string;
+          wa_auto?: boolean;
+        };
+        Update: {
+          created_at?: string;
+          locale?: string;
+          owner_id?: string;
+          updated_at?: string;
+          wa_auto?: boolean;
+        };
+        Relationships: [];
+      };
+      message_outbox: {
+        Row: {
+          body: string | null;
+          created_at: string;
+          created_by: string | null;
+          dedupe_key: string;
+          id: string;
+          kind: string;
+          owner_id: string;
+          payload: Json;
+          phone: string | null;
+          sent_at: string | null;
+          sent_via: string | null;
+          session_date: string | null;
+          session_id: string | null;
+          skip_reason: string | null;
+          status: string;
+          student_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          body?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          dedupe_key: string;
+          id?: string;
+          kind: string;
+          owner_id: string;
+          payload?: Json;
+          phone?: string | null;
+          sent_at?: string | null;
+          sent_via?: string | null;
+          session_date?: string | null;
+          session_id?: string | null;
+          skip_reason?: string | null;
+          status?: string;
+          student_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          body?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          dedupe_key?: string;
+          id?: string;
+          kind?: string;
+          owner_id?: string;
+          payload?: Json;
+          phone?: string | null;
+          sent_at?: string | null;
+          sent_via?: string | null;
+          session_date?: string | null;
+          session_id?: string | null;
+          skip_reason?: string | null;
+          status?: string;
+          student_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       receipt_shares: {
         Row: {
           created_at: string;

@@ -59,6 +59,9 @@ import { Route as ApiBillingCreateOrderRouteImport } from './routes/api/billing/
 import { Route as ApiBillingPricingRouteImport } from './routes/api/billing/pricing'
 import { Route as ApiBillingVerifyPaymentRouteImport } from './routes/api/billing/verify-payment'
 import { Route as ApiWebhooksRazorpayRouteImport } from './routes/api/webhooks/razorpay'
+import { Route as ApiMessagingEnqueueAbsencesRouteImport } from './routes/api/messaging/enqueue-absences'
+import { Route as ApiMessagingMarkSentRouteImport } from './routes/api/messaging/mark-sent'
+import { Route as ApiMessagingProcessAutoRouteImport } from './routes/api/messaging/process-auto'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -316,6 +319,22 @@ const ApiWebhooksRazorpayRoute = ApiWebhooksRazorpayRouteImport.update({
   path: '/api/webhooks/razorpay',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMessagingEnqueueAbsencesRoute =
+  ApiMessagingEnqueueAbsencesRouteImport.update({
+    id: '/api/messaging/enqueue-absences',
+    path: '/api/messaging/enqueue-absences',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMessagingMarkSentRoute = ApiMessagingMarkSentRouteImport.update({
+  id: '/api/messaging/mark-sent',
+  path: '/api/messaging/mark-sent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMessagingProcessAutoRoute = ApiMessagingProcessAutoRouteImport.update({
+  id: '/api/messaging/process-auto',
+  path: '/api/messaging/process-auto',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -365,6 +384,9 @@ export interface FileRoutesByFullPath {
   '/api/billing/pricing': typeof ApiBillingPricingRoute
   '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
+  '/api/messaging/enqueue-absences': typeof ApiMessagingEnqueueAbsencesRoute
+  '/api/messaging/mark-sent': typeof ApiMessagingMarkSentRoute
+  '/api/messaging/process-auto': typeof ApiMessagingProcessAutoRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
 }
@@ -414,6 +436,9 @@ export interface FileRoutesByTo {
   '/api/billing/pricing': typeof ApiBillingPricingRoute
   '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
+  '/api/messaging/enqueue-absences': typeof ApiMessagingEnqueueAbsencesRoute
+  '/api/messaging/mark-sent': typeof ApiMessagingMarkSentRoute
+  '/api/messaging/process-auto': typeof ApiMessagingProcessAutoRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
 }
@@ -467,6 +492,9 @@ export interface FileRoutesById {
   '/api/billing/pricing': typeof ApiBillingPricingRoute
   '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
+  '/api/messaging/enqueue-absences': typeof ApiMessagingEnqueueAbsencesRoute
+  '/api/messaging/mark-sent': typeof ApiMessagingMarkSentRoute
+  '/api/messaging/process-auto': typeof ApiMessagingProcessAutoRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
 }
@@ -520,6 +548,9 @@ export interface FileRouteTypes {
     | '/api/billing/pricing'
     | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
+    | '/api/messaging/enqueue-absences'
+    | '/api/messaging/mark-sent'
+    | '/api/messaging/process-auto'
     | '/admin/'
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
@@ -569,6 +600,9 @@ export interface FileRouteTypes {
     | '/api/billing/pricing'
     | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
+    | '/api/messaging/enqueue-absences'
+    | '/api/messaging/mark-sent'
+    | '/api/messaging/process-auto'
     | '/admin'
     | '/settings'
   id:
@@ -621,6 +655,9 @@ export interface FileRouteTypes {
     | '/api/billing/pricing'
     | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
+    | '/api/messaging/enqueue-absences'
+    | '/api/messaging/mark-sent'
+    | '/api/messaging/process-auto'
     | '/_authenticated/admin/'
     | '/_authenticated/settings/'
   fileRoutesById: FileRoutesById
@@ -653,6 +690,9 @@ export interface RootRouteChildren {
   ApiBillingPricingRoute: typeof ApiBillingPricingRoute
   ApiBillingVerifyPaymentRoute: typeof ApiBillingVerifyPaymentRoute
   ApiWebhooksRazorpayRoute: typeof ApiWebhooksRazorpayRoute
+  ApiMessagingEnqueueAbsencesRoute: typeof ApiMessagingEnqueueAbsencesRoute
+  ApiMessagingMarkSentRoute: typeof ApiMessagingMarkSentRoute
+  ApiMessagingProcessAutoRoute: typeof ApiMessagingProcessAutoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1007,6 +1047,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWebhooksRazorpayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/messaging/enqueue-absences': {
+      id: '/api/messaging/enqueue-absences'
+      path: '/api/messaging/enqueue-absences'
+      fullPath: '/api/messaging/enqueue-absences'
+      preLoaderRoute: typeof ApiMessagingEnqueueAbsencesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/messaging/mark-sent': {
+      id: '/api/messaging/mark-sent'
+      path: '/api/messaging/mark-sent'
+      fullPath: '/api/messaging/mark-sent'
+      preLoaderRoute: typeof ApiMessagingMarkSentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/messaging/process-auto': {
+      id: '/api/messaging/process-auto'
+      path: '/api/messaging/process-auto'
+      fullPath: '/api/messaging/process-auto'
+      preLoaderRoute: typeof ApiMessagingProcessAutoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1125,6 +1186,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBillingPricingRoute: ApiBillingPricingRoute,
   ApiBillingVerifyPaymentRoute: ApiBillingVerifyPaymentRoute,
   ApiWebhooksRazorpayRoute: ApiWebhooksRazorpayRoute,
+  ApiMessagingEnqueueAbsencesRoute: ApiMessagingEnqueueAbsencesRoute,
+  ApiMessagingMarkSentRoute: ApiMessagingMarkSentRoute,
+  ApiMessagingProcessAutoRoute: ApiMessagingProcessAutoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
