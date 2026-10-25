@@ -229,7 +229,9 @@ function FeePaidAcksPage() {
                         onClick={() => void sendOne(row)}
                       >
                         <MessageCircle className="mr-1.5 h-4 w-4" />
-                        {row.status === "sent" ? "Open again" : "Send to parent"}
+                        {row.status === "sent"
+                          ? "Open again"
+                          : "Send to parent"}
                       </Button>
                     )}
                   </li>
@@ -259,9 +261,7 @@ function StatusLine({ row }: { row: QueueRow }) {
     );
   }
   if (row.status === "skipped") {
-    return (
-      <p className="mt-0.5 text-xs text-muted-foreground">Skipped</p>
-    );
+    return <p className="mt-0.5 text-xs text-muted-foreground">Skipped</p>;
   }
   if (row.status === "failed") {
     return (

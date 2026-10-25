@@ -44,7 +44,9 @@ export const Route = createFileRoute("/api/messaging/enqueue-fee-paid")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        if (!allowRequest(`msg-fee-paid:${clientAddress(request)}`, 30, 60_000)) {
+        if (
+          !allowRequest(`msg-fee-paid:${clientAddress(request)}`, 30, 60_000)
+        ) {
           return tooManyRequests();
         }
 

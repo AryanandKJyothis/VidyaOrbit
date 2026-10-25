@@ -220,7 +220,9 @@ function ReceiptPageContent() {
                 : "Send acknowledgement"}
             </Button>
           )}
-          {(!canSendAck || !outbox.data || outbox.data.status === "skipped") && (
+          {(!canSendAck ||
+            !outbox.data ||
+            outbox.data.status === "skipped") && (
             <Button
               variant="outline"
               onClick={async () => {

@@ -368,9 +368,7 @@ describe("fee-paid acknowledgement", () => {
       feeTotal: 2000,
       paidTotal: 1500,
       phone: resolveParentWhatsAppPhone({ guardian_phone: "9876543210" }),
-      existing: [
-        { dedupe_key: feePaidDedupeKey(PAYMENT), status: "queued" },
-      ],
+      existing: [{ dedupe_key: feePaidDedupeKey(PAYMENT), status: "queued" }],
     });
     expect(replay.insert).toBeNull();
     expect(replay.already).toBe(true);

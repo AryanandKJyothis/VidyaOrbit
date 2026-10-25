@@ -259,7 +259,10 @@ describe("POST /api/messaging/enqueue-fee-paid", () => {
         });
       }
       if (table === "institute_messaging_settings") {
-        return thenable({ data: { wa_auto: false, locale: "en" }, error: null });
+        return thenable({
+          data: { wa_auto: false, locale: "en" },
+          error: null,
+        });
       }
       if (table === "receipt_shares") {
         return thenable({

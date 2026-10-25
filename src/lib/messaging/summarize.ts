@@ -58,7 +58,8 @@ export function formatFeePaidQueueToast(summary: AbsenceQueueSummary): {
   if (summary.queued > 0 && summary.skippedNoPhone > 0) {
     return {
       title: "Send receipt to parent",
-      description: "One draft is ready; add a parent phone for the skipped student.",
+      description:
+        "One draft is ready; add a parent phone for the skipped student.",
     };
   }
   if (summary.queued > 0 && summary.already > 0) {
@@ -70,7 +71,8 @@ export function formatFeePaidQueueToast(summary: AbsenceQueueSummary): {
   if (summary.queued > 0) {
     return {
       title: "Send receipt to parent",
-      description: "Open the queue to send the acknowledgement from your WhatsApp.",
+      description:
+        "Open the queue to send the acknowledgement from your WhatsApp.",
     };
   }
   if (summary.skippedNoPhone > 0) {

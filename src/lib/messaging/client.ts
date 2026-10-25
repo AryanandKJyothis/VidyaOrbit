@@ -81,9 +81,9 @@ export async function enqueueFeePaidAfterPayment(input: {
       },
       body: JSON.stringify(input),
     });
-    const body = (await res.json().catch(() => null)) as
-      | EnqueueFeePaidResponse
-      | null;
+    const body = (await res
+      .json()
+      .catch(() => null)) as EnqueueFeePaidResponse | null;
     if (!body) {
       return {
         ok: false,

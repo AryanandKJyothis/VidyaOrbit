@@ -71,7 +71,11 @@ import {
 } from "@/lib/fee-reminder";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useActiveWorkspace, useCan, useCanExport } from "@/hooks/use-active-workspace";
+import {
+  useActiveWorkspace,
+  useCan,
+  useCanExport,
+} from "@/hooks/use-active-workspace";
 import { FilterChips } from "@/components/app/filter-chips";
 import { InitialsAvatar } from "@/components/app/initials-avatar";
 import { supabase } from "@/integrations/supabase/client";
