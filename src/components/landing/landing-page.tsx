@@ -25,6 +25,7 @@ import {
   CTA_FINAL,
   FOUNDER_LINE,
   HERO_SCREENSHOT,
+  HERO_TRUST_LINE,
   OFFLINE_LINE,
   WHATSAPP_SHARE_LINE,
   HERO_EYEBROW,
@@ -36,6 +37,7 @@ import {
   WORK_STRIP,
   landingSignupCta,
 } from "@/lib/landing-copy";
+import { dfySetupLine } from "@/lib/pricing-display";
 import { SAMPLE_CENTRE, SAMPLE_LABEL } from "@/lib/landing-sample";
 import { LANDING_FAQS } from "@/lib/public-faqs";
 import { cn } from "@/lib/utils";
@@ -74,26 +76,26 @@ export function LandingPage() {
 
 function LandingCtas({
   inverted = false,
-  demoFirst = true,
   whatsappLabel = CTA_BOOK_DEMO,
+  showTrust = false,
 }: {
   inverted?: boolean;
-  demoFirst?: boolean;
   whatsappLabel?: string;
+  showTrust?: boolean;
 }) {
   const { session } = useAuth();
   const signup = landingSignupCta(Boolean(session));
   const wa = getWhatsAppHref(WHATSAPP_PREFILL);
-  const demoClass = inverted
+  const primaryClass = inverted
     ? `${BTN} w-full bg-paper text-ink hover:bg-paper/90 sm:w-auto`
     : `${BTN} w-full bg-orbit-blue text-paper hover:bg-orbit-blue/90 sm:w-auto`;
-  const freeClass = inverted
+  const secondaryClass = inverted
     ? `${BTN} w-full border border-paper/40 bg-transparent text-paper hover:bg-paper/10 sm:w-auto`
     : `${BTN} w-full border border-ink bg-transparent text-ink hover:bg-ink/5 sm:w-auto`;
 
   const demo = wa ? (
     <a key="demo" href={wa} target="_blank" rel="noreferrer">
-      <Button size="lg" className={demoClass}>
+      <Button size="lg" variant="outline" className={secondaryClass}>
         {whatsappLabel}
       </Button>
     </a>
@@ -104,24 +106,26 @@ function LandingCtas({
       to={signup.to}
       search={"search" in signup ? signup.search : undefined}
     >
-      <Button size="lg" variant="outline" className={freeClass}>
+      <Button size="lg" className={primaryClass}>
         {signup.label}
       </Button>
     </Link>
   );
 
   return (
-    <div className="mt-8 flex flex-col items-stretch gap-3 pr-16 sm:flex-row sm:items-center sm:pr-0">
-      {demoFirst ? (
-        <>
-          {demo}
-          {start}
-        </>
-      ) : (
-        <>
-          {start}
-          {demo}
-        </>
+    <div className="mt-8">
+      <div className="flex flex-col items-stretch gap-3 pr-16 sm:flex-row sm:items-center sm:pr-0">
+        {start}
+        {demo}
+      </div>
+      {showTrust && (
+        <p
+          className={
+            inverted ? "mt-3 text-sm text-paper/70" : "mt-3 text-sm text-slate"
+          }
+        >
+          {HERO_TRUST_LINE}
+        </p>
       )}
     </div>
   );
@@ -168,7 +172,7 @@ function Hero() {
           >
             {HERO_MALAYALAM}
           </p>
-          <LandingCtas demoFirst={false} whatsappLabel={CTA_BOOK_SETUP_CALL} />
+          <LandingCtas showTrust whatsappLabel={CTA_BOOK_SETUP_CALL} />
         </div>
         <div className="col-span-12 lg:col-span-5 lg:pt-4">
           <figure className="mx-auto w-full max-w-[300px] overflow-hidden border border-ink/20 bg-paper lg:ml-auto lg:max-w-[340px]">
@@ -358,9 +362,9 @@ function OverdueBand() {
           See who still owes before parents ask.
         </h2>
         <p className="mt-6 max-w-lg text-pretty text-lg leading-relaxed text-paper/75">
-          Filter overdue fees. Ready made WhatsApp reminders with the amount and
-          your UPI link. You send from your own WhatsApp. The parent pays your
-          centre. The app never messages parents by itself.
+          Filter overdue fees. Ready made WhatsApp drafts with the amount and
+          your UPI link. You send an assisted message from your own phone. The
+          parent pays your centre. The app never messages parents by itself.
         </p>
       </div>
     </section>
@@ -404,6 +408,10 @@ function HowItWorks() {
             </li>
           ))}
         </ol>
+        <p className="mt-8 max-w-2xl text-pretty text-base leading-relaxed text-slate">
+          {dfySetupLine()} Start Free or Spark and set the centre up yourself if
+          you prefer.
+        </p>
       </div>
     </section>
   );
@@ -418,8 +426,8 @@ function Pricing() {
           One price per plan. Monthly or annual.
         </h2>
         <p className="mt-4 max-w-xl text-pretty text-base leading-relaxed text-slate">
-          Starter, Growth and Large. ₹5,000 setup on monthly Growth and Large
-          only, waived on annual. Same figures as the pricing page.
+          Spark, Orbit and Centre. {dfySetupLine()} Same figures as the pricing
+          page.
         </p>
         <div className="mt-12">
           <LandingPricing />
@@ -500,7 +508,7 @@ function FinalCta() {
           Talk to {FOUNDER_NAME} in {FOUNDER_TOWN}. Book a free demo. Or start
           free and look around.
         </p>
-        <LandingCtas inverted />
+        <LandingCtas inverted showTrust />
         {phone && <p className="mt-6 text-sm text-paper/60">{phone}</p>}
       </div>
     </section>

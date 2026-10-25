@@ -46,7 +46,7 @@ export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
     setup_fee_paise: 0,
     monthly_price_paise: 49900, // ₹499
     annual_price_paise: 499900, // ₹4,999
-    display_name: "Starter",
+    display_name: "Spark",
     description: "Up to 100 students",
   },
   growth: {
@@ -55,16 +55,16 @@ export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
     setup_fee_paise: 500000, // ₹5,000 first monthly only
     monthly_price_paise: 99900, // ₹999
     annual_price_paise: 1000000, // ₹10,000
-    display_name: "Growth",
+    display_name: "Orbit",
     description: "Up to 500 students",
   },
   large: {
     tier: "large",
     student_limit: UNLIMITED_STUDENT_SENTINEL,
     setup_fee_paise: 500000, // ₹5,000 first monthly only
-    monthly_price_paise: 249900, // ₹2,499
-    annual_price_paise: 2500000, // ₹25,000
-    display_name: "Large",
+    monthly_price_paise: 149900, // ₹1,499
+    annual_price_paise: 1500000, // ₹15,000
+    display_name: "Centre",
     description: "Unlimited students",
   },
 };
@@ -93,7 +93,7 @@ export function isValidCycle(cycle: string): cycle is BillingCycle {
 /**
  * Compute pricing for a plan purchase.
  * Setup is a one-time onboarding fee: charged only when there is no prior
- * captured payment, and only on monthly Growth/Large. Annual first orders
+ * captured payment, and only on monthly Orbit/Centre. Annual first orders
  * do not include a setup line, but that capture still counts as paid so a
  * later monthly switch is not charged setup.
  * @param hasPriorPaidOrder Whether the workspace has any captured *live* paid

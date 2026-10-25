@@ -10,6 +10,7 @@ import { getWhatsAppHref } from "@/lib/contact-config";
 import { useAuth } from "@/hooks/use-auth";
 import {
   CTA_BOOK_DEMO,
+  CTA_GET_SPARK,
   RAZORPAY_LIVE_LINE,
   STARTER_ROI_LINE,
   landingSignupCta,
@@ -133,8 +134,8 @@ function PlanColumn({ plan, annual }: { plan: PlanDisplay; annual: boolean }) {
             highlight ? "text-paper/80" : "text-slate",
           )}
         >
-          {formatIndianPrice(plan.setupFee)} one time setup on monthly billing.
-          Waived on annual plans.
+          Optional DFY setup {formatIndianPrice(plan.setupFee)} on first monthly
+          invoice. Waived on annual.
         </p>
       )}
       {annual && plan.setupFee > 0 && (
@@ -144,7 +145,7 @@ function PlanColumn({ plan, annual }: { plan: PlanDisplay; annual: boolean }) {
             highlight ? "text-paper/80" : "text-slate",
           )}
         >
-          Setup fee waived on annual billing.
+          Optional DFY setup waived on annual billing.
         </p>
       )}
       <ul className="mt-6 flex-1 space-y-2 text-sm">
@@ -162,7 +163,24 @@ function PlanColumn({ plan, annual }: { plan: PlanDisplay; annual: boolean }) {
             </li>
           ))}
       </ul>
-      {wa ? (
+      {plan.code === "starter" ? (
+        <Link
+          to={signup.to}
+          search={"search" in signup ? signup.search : undefined}
+          className="mt-8"
+        >
+          <Button
+            className={cn(
+              "h-11 w-full !rounded-[4px]",
+              highlight
+                ? "bg-paper text-ink hover:bg-paper/90"
+                : "bg-orbit-blue text-paper hover:bg-orbit-blue/90",
+            )}
+          >
+            {signup.to === "/dashboard" ? signup.label : CTA_GET_SPARK}
+          </Button>
+        </Link>
+      ) : wa ? (
         <a href={wa} target="_blank" rel="noreferrer" className="mt-8">
           <Button
             className={cn(

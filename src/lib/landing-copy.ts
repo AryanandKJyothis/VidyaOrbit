@@ -26,11 +26,13 @@ export const WHATSAPP_PREFILL =
 
 export const CTA_WHATSAPP = "WhatsApp Aryanand";
 export const CTA_START_FREE = "Start free";
+export const CTA_GET_SPARK = "Get Spark";
 export const CTA_LOG_IN = "Log in";
 export const CTA_GO_TO_DASHBOARD = "Go to dashboard";
 export const CTA_BOOK_DEMO = "Book a free demo";
 export const CTA_BOOK_SETUP_CALL = "Book a free setup call";
 export const CTA_FINAL = "Get your centre into one orbit.";
+export const HERO_TRUST_LINE = "No card · Assisted WhatsApp · Cancel anytime";
 
 export const OFFLINE_LINE =
   "No more lost registers or endless scrolling through chat threads.";
@@ -42,7 +44,7 @@ export const RAZORPAY_LIVE_LINE =
   "Pay in the app with UPI or cards through Razorpay.";
 
 export const WHATSAPP_SHARE_LINE =
-  "Send receipts, report cards and absentee alerts on WhatsApp in one tap. Ready made links and PDFs for your parent groups. You send from your centre's own WhatsApp. The app never messages parents by itself.";
+  "Send receipts, report cards and absentee alerts on WhatsApp in one tap. Ready made links and PDFs for your parent groups. You send an assisted draft from the centre's own phone. The app never messages parents by itself. Parents install nothing.";
 
 export const HERO_SCREENSHOT = {
   src: "/landing/preview-attendance.webp",
@@ -171,7 +173,7 @@ export const LANDING_CLAIMS: LandingClaim[] = [
       "src/lib/fee-reminder.ts; src/routes/_authenticated/fees.tsx Remind on WhatsApp",
   },
   {
-    text: "Free plan is up to 25 students. Analytics is a Starter+ feature, not on Free.",
+    text: "Free plan is up to 25 students. Analytics is a Spark and above feature, not on Free.",
     source:
       "src/lib/pricing-display.ts; src/routes/_authenticated/analytics.tsx hasMinPlan starter",
   },
@@ -200,4 +202,11 @@ export const BANNED_LANDING_PHRASES = [
   "no training, no onboarding",
   "coming soon",
   "checkout is not live",
+  "no setup fees",
+  "parent portal",
+  "biometric",
+  "cloud api",
+  "auto-send",
+  "automatically send",
+  "free trial",
 ];

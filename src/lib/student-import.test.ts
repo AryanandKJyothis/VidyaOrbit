@@ -347,8 +347,8 @@ describe("plan limit and summary", () => {
     });
     expect(copy).toContain("Starter");
     expect(copy).toContain("5");
-    expect(copy).toContain("Growth is 500");
-    expect(copy).toContain("Large is unlimited");
+    expect(copy).toContain("Orbit is 500");
+    expect(copy).toContain("Centre is unlimited");
   });
 });
 

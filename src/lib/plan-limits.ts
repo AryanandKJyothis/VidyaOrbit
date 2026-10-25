@@ -11,7 +11,7 @@ export type PlanTier = "starter" | "growth" | "large";
 export const UNLIMITED_STUDENT_SENTINEL = 2147483647;
 
 /**
- * Cap per plan_code. `null` means unlimited (pro / Large).
+ * Cap per plan_code. `null` means unlimited (pro / Centre).
  * Do not override these from env — the DB function is authoritative.
  */
 export const PLAN_STUDENT_LIMITS: Record<PlanCode, number | null> = {
@@ -23,9 +23,9 @@ export const PLAN_STUDENT_LIMITS: Record<PlanCode, number | null> = {
 
 export const PLAN_DISPLAY_NAMES: Record<PlanCode, string> = {
   free: "Free",
-  starter: "Starter",
-  growth: "Growth",
-  pro: "Large",
+  starter: "Spark",
+  growth: "Orbit",
+  pro: "Centre",
 };
 
 export function planCodeForTier(tier: PlanTier): Exclude<PlanCode, "free"> {

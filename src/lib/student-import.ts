@@ -813,7 +813,7 @@ export function importOverLimitCopy(opts: {
     opts.remainingSlots === 1 ? "" : "s"
   }. This file has ${opts.readyCount} ready rows — we will import the first ${
     opts.willInsert
-  } and skip the remaining ${opts.overBy}. Starter is 100 students, Growth is 500, Large is unlimited.`;
+  } and skip the remaining ${opts.overBy}. Spark is 100 students, Orbit is 500, Centre is unlimited.`;
 }
 
 export function isRejectedIssue(issue: ImportRowIssue): boolean {

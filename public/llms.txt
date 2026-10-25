@@ -22,18 +22,18 @@ Owners of coaching centres, tuition centres, and small institutes who currently 
 - Staff invites with a join link (owner chooses whether staff can see fees)
 - Excel / CSV import (.xlsx, .xls, .csv) — pasting cells is not supported
 - Export students, batches, dues and payments as Excel or CSV
-- Analytics dashboard on Starter and above
+- Analytics dashboard on Spark and above
 
-VidyaOrbit prepares a WhatsApp fee reminder with the centre UPI link. The owner sends it, and the parent pays the centre directly. The app does not message parents by itself.
+VidyaOrbit prepares a WhatsApp fee reminder with the centre UPI link. The owner sends an assisted wa.me draft from the centre's own phone, and the parent pays the centre directly. The app does not message parents by itself. Parents install nothing.
 
 ## Pricing (INR)
 
 Prices below are the public plans in the product. Pay in the app on the Plan page with UPI or cards through Razorpay.
 
 - Free: ₹0/month — Up to 25 students. For trying things out.
-- Starter: ₹499/month or ₹4,999/year — Up to 100 students. Save ₹989.
-- Growth: ₹999/month or ₹10,000/year — Up to 500 students. First monthly invoice includes a ₹5,000 setup fee (waived on annual). Save ₹1,988 + free setup.
-- Large: ₹2,499/month or ₹25,000/year — Unlimited students. First monthly invoice includes a ₹5,000 setup fee (waived on annual). Save ₹4,988 + free setup.
+- Spark: ₹499/month or ₹4,999/year — Up to 100 students. Save ₹989.
+- Orbit: ₹999/month or ₹10,000/year — Up to 500 students. First monthly invoice includes optional ₹5,000 done for you setup (waived on annual). Save ₹1,988 · DFY setup waived.
+- Centre: ₹1,499/month or ₹15,000/year — Unlimited students. First monthly invoice includes optional ₹5,000 done for you setup (waived on annual). Save ₹2,988 · DFY setup waived.
 
 ## Location and contact
 

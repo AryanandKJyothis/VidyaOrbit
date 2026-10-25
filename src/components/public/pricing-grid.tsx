@@ -8,14 +8,20 @@ import {
   type PlanDisplay,
 } from "@/lib/pricing-display";
 import { getContactConfig, getWhatsAppHref } from "@/lib/contact-config";
-import { CTA_START_FREE, STARTER_ROI_LINE } from "@/lib/landing-copy";
+import {
+  CTA_GET_SPARK,
+  CTA_START_FREE,
+  STARTER_ROI_LINE,
+} from "@/lib/landing-copy";
 
 function PaidPlanCtas({
   plan,
   isRecommended,
+  flush = false,
 }: {
   plan: PlanDisplay;
   isRecommended: boolean;
+  flush?: boolean;
 }) {
   const { email } = getContactConfig();
   const planName = plan.displayName;
@@ -24,7 +30,7 @@ function PaidPlanCtas({
   const emailSubject = `${planName} plan inquiry`;
 
   return (
-    <div className="mt-6 flex flex-col gap-2">
+    <div className={flush ? "flex flex-col gap-2" : "mt-6 flex flex-col gap-2"}>
       {wa && (
         <a href={wa} target="_blank" rel="noreferrer">
           <Button
@@ -108,8 +114,8 @@ export function PublicPricingGrid() {
                   )}
                   {plan.setupFee > 0 && (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {formatIndianPrice(plan.setupFee)} one-time setup on
-                      monthly (waived on annual)
+                      {formatIndianPrice(plan.setupFee)} optional DFY setup on
+                      first monthly invoice (waived on annual)
                     </p>
                   )}
                 </>
@@ -129,6 +135,15 @@ export function PublicPricingGrid() {
                   {plan.ctaLabel || CTA_START_FREE}
                 </Button>
               </Link>
+            ) : plan.code === "starter" ? (
+              <div className="mt-6 flex flex-col gap-2">
+                <Link to="/login" search={{ mode: "signup" }}>
+                  <Button className="w-full" size="default">
+                    {CTA_GET_SPARK}
+                  </Button>
+                </Link>
+                <PaidPlanCtas plan={plan} isRecommended={false} flush />
+              </div>
             ) : (
               <PaidPlanCtas plan={plan} isRecommended={isRecommended} />
             )}

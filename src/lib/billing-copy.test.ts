@@ -74,4 +74,17 @@ describe("public billing copy (VO-060 / VO-061)", () => {
       PRICING_FAQS.find((f) => f.q === "How do I upgrade?")?.a.toLowerCase(),
     ).toContain("razorpay");
   });
+
+  it("uses Spark / Orbit / Centre and optional DFY setup", () => {
+    const blob = haystack();
+    expect(blob).toContain("spark");
+    expect(blob).toContain("₹499");
+    expect(blob).toContain("₹999");
+    expect(blob).toContain("₹1,499");
+    expect(blob).toContain("₹5,000");
+    expect(blob).toContain("done for you");
+    expect(blob).not.toContain("no setup fees");
+    expect(blob).not.toContain("starter, growth and large");
+    expect(blob).not.toContain("₹2,499");
+  });
 });

@@ -10,9 +10,9 @@ Amounts are computed on the server in paise from **code constants** in `src/lib/
 
 | Tier (checkout) | `plan_code` | Students  | Monthly | Annual  | Setup (monthly, first paid order only) |
 | --------------- | ----------- | --------- | ------- | ------- | -------------------------------------- |
-| Starter         | `starter`   | 100       | ₹499    | ₹4,999  | ₹0                                     |
-| Growth          | `growth`    | 500       | ₹999    | ₹10,000 | ₹5,000                                 |
-| Large           | `pro`       | Unlimited | ₹2,499  | ₹25,000 | ₹5,000                                 |
+| Spark           | `starter`   | 100       | ₹499    | ₹4,999  | ₹0                                     |
+| Orbit           | `growth`    | 500       | ₹999    | ₹10,000 | ₹5,000                                 |
+| Centre          | `pro`       | Unlimited | ₹1,499  | ₹15,000 | ₹5,000                                 |
 
 Student caps live in `src/lib/plan-limits.ts` and in `public.plan_student_limit` (after `20261008093000`). They are **not** env-overridable. UI helpers `isUnlimited` / `formatLimit` never print the Postgres sentinel `2147483647`.
 
@@ -20,7 +20,7 @@ Public `/pricing` and in-app `/plan` both read the same display/checkout amounts
 
 ### Setup fee
 
-Setup is a **one-time onboarding fee**. Charged only on **monthly** Growth/Large when the centre has not yet made a **live** payment. Annual first orders do not include a setup line; a live annual capture still counts as paid, so a later monthly switch is not charged setup. Starter setup is ₹0.
+Setup is a **one-time done-for-you onboarding fee**. Charged only on **monthly** Orbit/Centre when the centre has not yet made a **live** payment. Annual first orders do not include a setup line; a live annual capture still counts as paid, so a later monthly switch is not charged setup. Spark setup is ₹0.
 
 Preview shares the production database. Test-card payments (`key_mode = 'test'`, set server-side from a `rzp_test_` `RAZORPAY_KEY_ID`) still activate so Preview can be tested end to end, but they **never** set `setup_fee_paid` and **never** count as already paid (SQL activation, `subscription_health`, `hasSetupFeePaid`, and the “other captured order” duplicate-setup check). Only `key_mode = 'live'` activated orders count.
 

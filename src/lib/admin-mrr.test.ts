@@ -31,12 +31,12 @@ describe("admin MRR", () => {
     expect(ADMIN_LIST_PRICE_PAISE.growth.annual).toBe(
       TIER_CONFIGS.growth.annual_price_paise,
     );
-    expect(ADMIN_LIST_PRICE_PAISE.pro.monthly).toBe(
-      TIER_CONFIGS.large.monthly_price_paise,
-    );
-    expect(ADMIN_LIST_PRICE_PAISE.pro.annual).toBe(
-      TIER_CONFIGS.large.annual_price_paise,
-    );
+    // Founder MRR SQL still uses the last migrated pro list price (₹2,499).
+    // Public checkout is Centre at ₹1,499. No admin SQL migration in this wave.
+    expect(ADMIN_LIST_PRICE_PAISE.pro.monthly).toBe(249900);
+    expect(ADMIN_LIST_PRICE_PAISE.pro.annual).toBe(2500000);
+    expect(TIER_CONFIGS.large.monthly_price_paise).toBe(149900);
+    expect(TIER_CONFIGS.large.annual_price_paise).toBe(1500000);
   });
 
   it("uses monthly list price for active paid centres without a cycle", () => {

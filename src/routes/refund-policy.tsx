@@ -50,9 +50,9 @@ function RefundPolicyPage() {
 
       <LegalSection title="4. Setup fee">
         <p>
-          The ₹5,000 setup fee on the first monthly Growth or Large payment is
-          non-refundable after onboarding is delivered. It is waived on annual
-          plans.
+          Optional done for you setup is ₹5,000 on the first monthly Orbit or
+          Centre payment. It is non-refundable after onboarding is delivered. It
+          is waived on annual plans. Spark and Free do not include it.
         </p>
       </LegalSection>
 
