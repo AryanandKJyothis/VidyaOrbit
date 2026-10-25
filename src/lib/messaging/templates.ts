@@ -1,4 +1,6 @@
 import { formatDate } from "@/lib/format";
+import { publicReceiptUrl } from "@/lib/share-links";
+import { SITE_URL } from "@/lib/site";
 import type { MessageLocale } from "./types";
 
 export const ABSENCE_TEMPLATE_KEY = "absence.v1";
@@ -58,5 +60,76 @@ export function renderAbsenceTemplate(
     body: renderer(input),
     locale: used,
     templateKey: ABSENCE_TEMPLATE_KEY,
+  };
+}
+
+export const FEE_PAID_TEMPLATE_KEY = "fee_paid.v1";
+
+export type FeePaidTemplateInput = {
+  studentName: string;
+  amount: number;
+  paymentDate: string;
+  receiptNumber: string | null;
+  shareToken: string;
+  balance: number;
+};
+
+/**
+ * Indian grouping, no decimals, no locale-dependent spaces.
+ * Must match public.format_inr_ack in the A3 migration.
+ */
+export function formatAckRupees(amount: number): string {
+  const n = Math.round(Number.isFinite(amount) ? amount : 0);
+  const digits = String(Math.abs(n));
+  if (digits.length <= 3) {
+    return `₹${n < 0 ? "-" : ""}${digits}`;
+  }
+  let grouped = digits.slice(-3);
+  let rest = digits.slice(0, -3);
+  while (rest.length > 0) {
+    const chunk = rest.slice(-2);
+    grouped = `${chunk},${grouped}`;
+    rest = rest.slice(0, -chunk.length);
+  }
+  return `₹${n < 0 ? "-" : ""}${grouped}`;
+}
+
+export function formatAckDate(iso: string): string {
+  const day = iso.slice(0, 10);
+  const [year, month, date] = day.split("-").map(Number);
+  if (!year || !month || !date) return day;
+  return formatDate(new Date(Date.UTC(year, month - 1, date, 12, 0, 0)));
+}
+
+const enFeePaid = (input: FeePaidTemplateInput): string => {
+  const name = input.studentName.trim() || "your child";
+  const receipt = input.receiptNumber?.trim() || "—";
+  const url = publicReceiptUrl(input.shareToken, SITE_URL);
+  return `Payment received: ${formatAckRupees(input.amount)} for ${name} on ${formatAckDate(input.paymentDate)}. Receipt ${receipt}: ${url}. Balance: ${formatAckRupees(input.balance)}.`;
+};
+
+/**
+ * Phase B hook. Malayalam renderer stays null until that work lands.
+ * `renderFeePaidTemplate("ml")` falls back to English.
+ */
+export const FEE_PAID_TEMPLATES: Record<
+  MessageLocale,
+  ((input: FeePaidTemplateInput) => string) | null
+> = {
+  en: enFeePaid,
+  ml: null,
+};
+
+export function renderFeePaidTemplate(
+  input: FeePaidTemplateInput,
+  locale: string | null | undefined = "en",
+): { body: string; locale: MessageLocale; templateKey: string } {
+  const requested = resolveMessageLocale(locale);
+  const used: MessageLocale = FEE_PAID_TEMPLATES[requested] ? requested : "en";
+  const renderer = FEE_PAID_TEMPLATES[used] ?? enFeePaid;
+  return {
+    body: renderer(input),
+    locale: used,
+    templateKey: FEE_PAID_TEMPLATE_KEY,
   };
 }

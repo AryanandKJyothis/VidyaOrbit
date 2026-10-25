@@ -1,4 +1,4 @@
-/** Reusable parent-messaging kinds. A1 sends `absence` only. */
+/** Reusable parent-messaging kinds. A1 sends `absence`; A3 sends `fee_paid`. */
 export const MESSAGE_KINDS = ["absence", "fee_overdue", "fee_paid"] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];
 
@@ -62,6 +62,18 @@ export type AbsencePayload = {
   phoneSource: ResolvedParentPhone["source"] | null;
 };
 
+export type FeePaidPayload = {
+  paymentId: string;
+  studentName: string;
+  amount: number;
+  paymentDate: string;
+  receiptNumber: string | null;
+  receiptUrl: string;
+  shareToken: string;
+  balance: number;
+  phoneSource: ResolvedParentPhone["source"] | null;
+};
+
 export type AbsenceQueueSummary = {
   queued: number;
   sent: number;
@@ -78,4 +90,9 @@ export const EMPTY_ABSENCE_QUEUE_SUMMARY: AbsenceQueueSummary = {
   skippedNotAbsent: 0,
   failed: 0,
   already: 0,
+};
+
+export type FeePaidQueueSummary = AbsenceQueueSummary;
+export const EMPTY_FEE_PAID_QUEUE_SUMMARY: FeePaidQueueSummary = {
+  ...EMPTY_ABSENCE_QUEUE_SUMMARY,
 };

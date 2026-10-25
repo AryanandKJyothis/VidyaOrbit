@@ -70,10 +70,11 @@ import {
   type FeeCollectionStatus,
 } from "@/lib/fee-reminder";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
-import { useCan, useCanExport } from "@/hooks/use-active-workspace";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useActiveWorkspace, useCan, useCanExport } from "@/hooks/use-active-workspace";
 import { FilterChips } from "@/components/app/filter-chips";
 import { InitialsAvatar } from "@/components/app/initials-avatar";
+import { supabase } from "@/integrations/supabase/client";
 
 const FEE_STATUSES = ["all", "pending", "partial", "overdue", "paid"] as const;
 type FeeStatusFilter = (typeof FEE_STATUSES)[number];
@@ -110,8 +111,28 @@ function FeesPageContent() {
   const canWriteFees = useCan("fees", "write");
   const canExport = useCanExport();
   const canRemind = canSendFeeReminders(canWriteFees);
+  const { active } = useActiveWorkspace();
   const qc = useQueryClient();
   const search = useSearch({ from: "/_authenticated/fees" });
+  const feePaidQueue = useQuery({
+    queryKey: ["message-outbox", "fee_paid", "queued", active?.ownerId],
+    enabled: !!active?.ownerId,
+    queryFn: async () => {
+      const { error, count } = await supabase
+        .from("message_outbox")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", active!.ownerId)
+        .eq("kind", "fee_paid")
+        .eq("status", "queued");
+      if (error) {
+        if (error.code === "42P01" || /message_outbox/i.test(error.message)) {
+          return 0;
+        }
+        throw error;
+      }
+      return count ?? 0;
+    },
+  });
 
   const [open, setOpen] = useState(false);
   const [paymentDefaults, setPaymentDefaults] = useState<{
@@ -415,6 +436,14 @@ function FeesPageContent() {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+            {(feePaidQueue.data ?? 0) > 0 && (
+              <Button asChild variant="outline">
+                <Link to="/receipts/acks">
+                  <MessageCircle className="mr-1.5 h-4 w-4" />
+                  Send receipts ({feePaidQueue.data})
+                </Link>
+              </Button>
+            )}
             {canWriteFees && (
               <Button
                 onClick={() => {
@@ -428,6 +457,21 @@ function FeesPageContent() {
           </div>
         }
       />
+
+      {(feePaidQueue.data ?? 0) > 0 && (
+        <Card className="mb-4 border-primary/30 bg-primary-soft">
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm">
+              {feePaidQueue.data} receipt
+              {feePaidQueue.data === 1 ? "" : "s"} waiting to send to parents
+              from your WhatsApp.
+            </p>
+            <Button asChild size="sm">
+              <Link to="/receipts/acks">Send acknowledgements</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="overflow-hidden bg-primary text-primary-foreground">
         <CardContent className="p-4 sm:p-5">

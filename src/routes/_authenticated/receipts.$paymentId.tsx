@@ -26,6 +26,12 @@ import { formatUserError } from "@/lib/format-error";
 import { publicReceiptUrl } from "@/lib/share-links";
 import { toast } from "sonner";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
+import { markOutboxSent } from "@/lib/messaging/client";
+import { canSendFeePaidAck, feePaidDedupeKey } from "@/lib/messaging/policy";
+import {
+  buildAssistedWhatsAppHref,
+  openAssistedWhatsApp,
+} from "@/lib/messaging/wa-me";
 
 export const Route = createFileRoute("/_authenticated/receipts/$paymentId")({
   component: ReceiptPage,
@@ -45,6 +51,7 @@ function ReceiptPageContent() {
   });
   const { active } = useActiveWorkspace();
   const canWriteFees = useCan("fees", "write");
+  const canSendAck = canSendFeePaidAck(useCan("messages", "write"));
   const qc = useQueryClient();
   const payment = useQuery({
     queryKey: ["payment", paymentId, active?.ownerId],
@@ -100,11 +107,36 @@ function ReceiptPageContent() {
     },
   });
 
+  const outbox = useQuery({
+    queryKey: ["message-outbox", "fee_paid", paymentId, active?.ownerId],
+    enabled: !!paymentId && !!active?.ownerId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("message_outbox")
+        .select("id, phone, body, status, skip_reason")
+        .eq("owner_id", active!.ownerId)
+        .eq("kind", "fee_paid")
+        .eq("dedupe_key", feePaidDedupeKey(paymentId))
+        .maybeSingle();
+      if (error) {
+        if (error.code === "42P01" || /message_outbox/i.test(error.message)) {
+          return null;
+        }
+        throw error;
+      }
+      return data;
+    },
+  });
+
   const shareToken = share.data?.share_token;
   const shareRevoked = !!share.data?.revoked_at;
   const receiptUrl = shareToken
     ? publicReceiptUrl(shareToken, window.location.origin)
     : null;
+  const ackHref = buildAssistedWhatsAppHref(
+    outbox.data?.phone,
+    outbox.data?.body,
+  );
 
   if (payment.isLoading || student.isLoading)
     return <Skeleton className="h-96" />;
@@ -155,46 +187,81 @@ function ReceiptPageContent() {
           </Link>
         </Button>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={async () => {
-              let url = receiptUrl;
-              if (!url && canWriteFees) {
-                try {
-                  const issued = await ensureShare.mutateAsync("issue");
-                  if (issued?.token) {
-                    url = publicReceiptUrl(
-                      issued.token,
-                      window.location.origin,
-                    );
-                  }
-                } catch (e) {
-                  toast.error(formatUserError(e));
+          {canSendAck && outbox.data && outbox.data.status !== "skipped" && (
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (!active?.ownerId || !outbox.data || !ackHref) {
+                  toast.error(
+                    "Add a guardian or student phone to share this receipt.",
+                  );
                   return;
                 }
-              }
-              const draft = buildReceiptShare({
-                centreName: i?.name ?? "your centre",
-                studentName: s.full_name,
-                guardianPhone: s.guardian_phone,
-                studentPhone: s.phone,
-                amount: Number(p.amount),
-                receiptNumber: p.receipt_number,
-                receiptUrl: shareRevoked ? null : url,
-              });
-              if (!draft.href) {
-                toast.error(
-                  "Add a guardian or student phone to share this receipt.",
-                );
-                return;
-              }
-              if (!openWhatsApp(draft.href)) {
-                toast.error("Allow pop-ups to open WhatsApp.");
-              }
-            }}
-          >
-            <MessageCircle className="mr-1.5 h-4 w-4" /> Share on WhatsApp
-          </Button>
+                if (!openAssistedWhatsApp(ackHref)) {
+                  toast.error("Allow pop-ups to open WhatsApp.");
+                  return;
+                }
+                const result = await markOutboxSent({
+                  ownerId: active.ownerId,
+                  outboxId: outbox.data.id,
+                });
+                if (!result.ok && result.code !== "ALREADY_PROCESSED") {
+                  toast.error(
+                    result.message ?? "Could not mark this message sent.",
+                  );
+                  return;
+                }
+                void qc.invalidateQueries({ queryKey: ["message-outbox"] });
+              }}
+            >
+              <MessageCircle className="mr-1.5 h-4 w-4" />{" "}
+              {outbox.data.status === "sent"
+                ? "Open WhatsApp again"
+                : "Send acknowledgement"}
+            </Button>
+          )}
+          {(!canSendAck || !outbox.data || outbox.data.status === "skipped") && (
+            <Button
+              variant="outline"
+              onClick={async () => {
+                let url = receiptUrl;
+                if (!url && canWriteFees) {
+                  try {
+                    const issued = await ensureShare.mutateAsync("issue");
+                    if (issued?.token) {
+                      url = publicReceiptUrl(
+                        issued.token,
+                        window.location.origin,
+                      );
+                    }
+                  } catch (e) {
+                    toast.error(formatUserError(e));
+                    return;
+                  }
+                }
+                const draft = buildReceiptShare({
+                  centreName: i?.name ?? "your centre",
+                  studentName: s.full_name,
+                  guardianPhone: s.guardian_phone,
+                  studentPhone: s.phone,
+                  amount: Number(p.amount),
+                  receiptNumber: p.receipt_number,
+                  receiptUrl: shareRevoked ? null : url,
+                });
+                if (!draft.href) {
+                  toast.error(
+                    "Add a guardian or student phone to share this receipt.",
+                  );
+                  return;
+                }
+                if (!openWhatsApp(draft.href)) {
+                  toast.error("Allow pop-ups to open WhatsApp.");
+                }
+              }}
+            >
+              <MessageCircle className="mr-1.5 h-4 w-4" /> Share on WhatsApp
+            </Button>
+          )}
           <Button onClick={() => window.print()}>
             <Printer className="mr-1.5 h-4 w-4" /> Print / Save PDF
           </Button>

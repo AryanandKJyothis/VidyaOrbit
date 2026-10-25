@@ -25,6 +25,8 @@ const STAFF = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const VIEWER = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const SESSION = "11111111-1111-4111-8111-111111111111";
 const OUTBOX = "22222222-2222-4222-8222-222222222222";
+const PAYMENT = "33333333-3333-4333-8333-333333333333";
+const STUDENT = "44444444-4444-4444-8444-444444444444";
 
 function thenable(result: { data?: unknown; error?: unknown }) {
   const api: Record<string, unknown> = {};
@@ -83,6 +85,33 @@ describe("POST /api/messaging/mark-sent", () => {
 
   afterEach(() => {
     vi.resetModules();
+  });
+
+  it("rejects fees:read without messages:write", async () => {
+    parseBearerMock.mockResolvedValue({ ok: true, userId: VIEWER });
+    fromMock.mockImplementation((table: string) => {
+      if (table === "workspace_members") {
+        return thenable({
+          data: {
+            role: "viewer",
+            permissions: { fees: "read", messages: "none" },
+          },
+          error: null,
+        });
+      }
+      return thenable({ data: null, error: null });
+    });
+
+    const { Route } = await import("@/routes/api/messaging/mark-sent");
+    const POST = handlerOf(Route, "POST");
+    const res = await POST(
+      jsonReq("http://localhost/api/messaging/mark-sent", {
+        ownerId: OWNER,
+        outboxId: OUTBOX,
+      }),
+    );
+    expect(res.status).toBe(403);
+    expect((await res.json()).code).toBe("FORBIDDEN_MESSAGES");
   });
 
   it("rejects a viewer even if they post the owner's id", async () => {
@@ -149,6 +178,126 @@ describe("POST /api/messaging/mark-sent", () => {
     expect(res.status).toBe(200);
     expect(body.ok).toBe(true);
     expect(body.href).toContain("https://wa.me/919876543210?text=");
+  });
+});
+
+describe("POST /api/messaging/enqueue-fee-paid", () => {
+  beforeEach(() => {
+    fromMock.mockReset();
+    parseBearerMock.mockReset();
+    vi.resetModules();
+  });
+
+  it("rejects fees:read — queueing a payment ack is a fees write", async () => {
+    parseBearerMock.mockResolvedValue({ ok: true, userId: VIEWER });
+    fromMock.mockImplementation((table: string) => {
+      if (table === "workspace_members") {
+        return thenable({
+          data: {
+            role: "viewer",
+            permissions: { fees: "read", messages: "none" },
+          },
+          error: null,
+        });
+      }
+      return thenable({ data: null, error: null });
+    });
+    const { Route } = await import("@/routes/api/messaging/enqueue-fee-paid");
+    const POST = handlerOf(Route, "POST");
+    const res = await POST(
+      jsonReq("http://localhost/api/messaging/enqueue-fee-paid", {
+        ownerId: OWNER,
+        paymentId: PAYMENT,
+      }),
+    );
+    expect(res.status).toBe(403);
+    expect((await res.json()).code).toBe("FORBIDDEN_FEES");
+  });
+
+  it("does not insert a second row when the payment is already queued", async () => {
+    parseBearerMock.mockResolvedValue({ ok: true, userId: STAFF });
+    const upsertFn = vi.fn(() => thenable({ data: null, error: null }));
+    fromMock.mockImplementation((table: string) => {
+      if (table === "workspace_members") {
+        return thenable({
+          data: { role: "staff", permissions: {} },
+          error: null,
+        });
+      }
+      if (table === "fee_payments") {
+        const api = thenable({
+          data: {
+            id: PAYMENT,
+            owner_id: OWNER,
+            student_id: STUDENT,
+            amount: 1500,
+            payment_date: "2026-10-25",
+            receipt_number: "RCT-1",
+          },
+          error: null,
+        });
+        api.then = (
+          resolve: (v: unknown) => unknown,
+          reject?: (e: unknown) => unknown,
+        ) =>
+          Promise.resolve({
+            data: [{ amount: 1500 }],
+            error: null,
+          }).then(resolve, reject);
+        return api;
+      }
+      if (table === "students") {
+        return thenable({
+          data: {
+            id: STUDENT,
+            full_name: "Amina",
+            guardian_phone: "9876543210",
+            phone: null,
+            fee_total: 2000,
+          },
+          error: null,
+        });
+      }
+      if (table === "institute_messaging_settings") {
+        return thenable({ data: { wa_auto: false, locale: "en" }, error: null });
+      }
+      if (table === "receipt_shares") {
+        return thenable({
+          data: { share_token: "a".repeat(48), revoked_at: null },
+          error: null,
+        });
+      }
+      if (table === "message_outbox") {
+        const api = thenable({
+          data: [
+            {
+              id: OUTBOX,
+              dedupe_key: `fee_paid:${PAYMENT}`,
+              status: "queued",
+              skip_reason: null,
+            },
+          ],
+          error: null,
+        });
+        api.upsert = upsertFn;
+        return api;
+      }
+      return thenable({ data: null, error: null });
+    });
+
+    const { Route } = await import("@/routes/api/messaging/enqueue-fee-paid");
+    const POST = handlerOf(Route, "POST");
+    const res = await POST(
+      jsonReq("http://localhost/api/messaging/enqueue-fee-paid", {
+        ownerId: OWNER,
+        paymentId: PAYMENT,
+      }),
+    );
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.summary.already).toBe(1);
+    expect(upsertFn).not.toHaveBeenCalled();
   });
 });
 

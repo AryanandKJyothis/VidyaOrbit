@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   callerCanReadMessages,
   callerCanWriteAttendance,
+  callerCanWriteFees,
   callerCanWriteMessages,
 } from "@/lib/messaging/workspace";
 import type { WorkspaceRole } from "@/lib/workspace-roles";
@@ -44,6 +45,30 @@ export async function assertAttendanceWrite(
       ok: false,
       code: "FORBIDDEN_ATTENDANCE",
       message: "You don't have permission to mark attendance for this centre.",
+    },
+    { status: 403 },
+  );
+}
+
+export async function assertFeesWrite(
+  centreOwnerId: string,
+  userId: string,
+): Promise<Response | null> {
+  const membership = await loadMembership(centreOwnerId, userId);
+  if (
+    callerCanWriteFees({
+      userId,
+      centreOwnerId,
+      membership,
+    })
+  ) {
+    return null;
+  }
+  return Response.json(
+    {
+      ok: false,
+      code: "FORBIDDEN_FEES",
+      message: "You don't have permission to record payments for this centre.",
     },
     { status: 403 },
   );

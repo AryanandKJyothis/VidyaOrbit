@@ -49,3 +49,42 @@ export function formatAbsenceQueueToast(summary: AbsenceQueueSummary): {
   }
   return { title: "Attendance saved" };
 }
+
+/** Staff-facing line after a payment is recorded. */
+export function formatFeePaidQueueToast(summary: AbsenceQueueSummary): {
+  title: string;
+  description?: string;
+} {
+  if (summary.queued > 0 && summary.skippedNoPhone > 0) {
+    return {
+      title: "Send receipt to parent",
+      description: "One draft is ready; add a parent phone for the skipped student.",
+    };
+  }
+  if (summary.queued > 0 && summary.already > 0) {
+    return {
+      title: "Receipt acknowledgement already queued",
+      description: "Open the queue to send it from your WhatsApp.",
+    };
+  }
+  if (summary.queued > 0) {
+    return {
+      title: "Send receipt to parent",
+      description: "Open the queue to send the acknowledgement from your WhatsApp.",
+    };
+  }
+  if (summary.skippedNoPhone > 0) {
+    return {
+      title: "No parent phone on file",
+      description:
+        "Add a guardian phone so we can queue a WhatsApp receipt acknowledgement.",
+    };
+  }
+  if (summary.already > 0 || summary.sent > 0) {
+    return {
+      title: "Payment recorded",
+      description: "The receipt acknowledgement was already queued.",
+    };
+  }
+  return { title: "Payment recorded" };
+}

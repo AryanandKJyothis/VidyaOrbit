@@ -51,6 +51,7 @@ import { Route as AuthenticatedAdminCentresRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated/admin.payments'
 import { Route as AuthenticatedAdminSubscriptionsRouteImport } from './routes/_authenticated/admin.subscriptions'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
+import { Route as AuthenticatedReceiptsAcksRouteImport } from './routes/_authenticated/receipts.acks'
 import { Route as AuthenticatedReceiptsPaymentIdRouteImport } from './routes/_authenticated/receipts.$paymentId'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedSettingsTeamRouteImport } from './routes/_authenticated/settings.team'
@@ -60,6 +61,7 @@ import { Route as ApiBillingPricingRouteImport } from './routes/api/billing/pric
 import { Route as ApiBillingVerifyPaymentRouteImport } from './routes/api/billing/verify-payment'
 import { Route as ApiWebhooksRazorpayRouteImport } from './routes/api/webhooks/razorpay'
 import { Route as ApiMessagingEnqueueAbsencesRouteImport } from './routes/api/messaging/enqueue-absences'
+import { Route as ApiMessagingEnqueueFeePaidRouteImport } from './routes/api/messaging/enqueue-fee-paid'
 import { Route as ApiMessagingMarkSentRouteImport } from './routes/api/messaging/mark-sent'
 import { Route as ApiMessagingProcessAutoRouteImport } from './routes/api/messaging/process-auto'
 
@@ -276,6 +278,12 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedReceiptsAcksRoute =
+  AuthenticatedReceiptsAcksRouteImport.update({
+    id: '/receipts/acks',
+    path: '/receipts/acks',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedReceiptsPaymentIdRoute =
   AuthenticatedReceiptsPaymentIdRouteImport.update({
     id: '/receipts/$paymentId',
@@ -323,6 +331,12 @@ const ApiMessagingEnqueueAbsencesRoute =
   ApiMessagingEnqueueAbsencesRouteImport.update({
     id: '/api/messaging/enqueue-absences',
     path: '/api/messaging/enqueue-absences',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMessagingEnqueueFeePaidRoute =
+  ApiMessagingEnqueueFeePaidRouteImport.update({
+    id: '/api/messaging/enqueue-fee-paid',
+    path: '/api/messaging/enqueue-fee-paid',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiMessagingMarkSentRoute = ApiMessagingMarkSentRouteImport.update({
@@ -377,6 +391,7 @@ export interface FileRoutesByFullPath {
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/receipts/acks': typeof AuthenticatedReceiptsAcksRoute
   '/receipts/$paymentId': typeof AuthenticatedReceiptsPaymentIdRoute
   '/settings/team': typeof AuthenticatedSettingsTeamRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
@@ -385,6 +400,7 @@ export interface FileRoutesByFullPath {
   '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
   '/api/messaging/enqueue-absences': typeof ApiMessagingEnqueueAbsencesRoute
+  '/api/messaging/enqueue-fee-paid': typeof ApiMessagingEnqueueFeePaidRoute
   '/api/messaging/mark-sent': typeof ApiMessagingMarkSentRoute
   '/api/messaging/process-auto': typeof ApiMessagingProcessAutoRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -429,6 +445,7 @@ export interface FileRoutesByTo {
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/receipts/acks': typeof AuthenticatedReceiptsAcksRoute
   '/receipts/$paymentId': typeof AuthenticatedReceiptsPaymentIdRoute
   '/settings/team': typeof AuthenticatedSettingsTeamRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
@@ -437,6 +454,7 @@ export interface FileRoutesByTo {
   '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
   '/api/messaging/enqueue-absences': typeof ApiMessagingEnqueueAbsencesRoute
+  '/api/messaging/enqueue-fee-paid': typeof ApiMessagingEnqueueFeePaidRoute
   '/api/messaging/mark-sent': typeof ApiMessagingMarkSentRoute
   '/api/messaging/process-auto': typeof ApiMessagingProcessAutoRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -485,6 +503,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/_authenticated/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/_authenticated/receipts/acks': typeof AuthenticatedReceiptsAcksRoute
   '/_authenticated/receipts/$paymentId': typeof AuthenticatedReceiptsPaymentIdRoute
   '/_authenticated/settings/team': typeof AuthenticatedSettingsTeamRoute
   '/_authenticated/students/$id': typeof AuthenticatedStudentsIdRoute
@@ -493,6 +512,7 @@ export interface FileRoutesById {
   '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
   '/api/messaging/enqueue-absences': typeof ApiMessagingEnqueueAbsencesRoute
+  '/api/messaging/enqueue-fee-paid': typeof ApiMessagingEnqueueFeePaidRoute
   '/api/messaging/mark-sent': typeof ApiMessagingMarkSentRoute
   '/api/messaging/process-auto': typeof ApiMessagingProcessAutoRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -541,6 +561,7 @@ export interface FileRouteTypes {
     | '/admin/payments'
     | '/admin/subscriptions'
     | '/admin/users'
+    | '/receipts/acks'
     | '/receipts/$paymentId'
     | '/settings/team'
     | '/students/$id'
@@ -549,6 +570,7 @@ export interface FileRouteTypes {
     | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
     | '/api/messaging/enqueue-absences'
+    | '/api/messaging/enqueue-fee-paid'
     | '/api/messaging/mark-sent'
     | '/api/messaging/process-auto'
     | '/admin/'
@@ -593,6 +615,7 @@ export interface FileRouteTypes {
     | '/admin/payments'
     | '/admin/subscriptions'
     | '/admin/users'
+    | '/receipts/acks'
     | '/receipts/$paymentId'
     | '/settings/team'
     | '/students/$id'
@@ -601,6 +624,7 @@ export interface FileRouteTypes {
     | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
     | '/api/messaging/enqueue-absences'
+    | '/api/messaging/enqueue-fee-paid'
     | '/api/messaging/mark-sent'
     | '/api/messaging/process-auto'
     | '/admin'
@@ -648,6 +672,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/payments'
     | '/_authenticated/admin/subscriptions'
     | '/_authenticated/admin/users'
+    | '/_authenticated/receipts/acks'
     | '/_authenticated/receipts/$paymentId'
     | '/_authenticated/settings/team'
     | '/_authenticated/students/$id'
@@ -656,6 +681,7 @@ export interface FileRouteTypes {
     | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
     | '/api/messaging/enqueue-absences'
+    | '/api/messaging/enqueue-fee-paid'
     | '/api/messaging/mark-sent'
     | '/api/messaging/process-auto'
     | '/_authenticated/admin/'
@@ -691,6 +717,7 @@ export interface RootRouteChildren {
   ApiBillingVerifyPaymentRoute: typeof ApiBillingVerifyPaymentRoute
   ApiWebhooksRazorpayRoute: typeof ApiWebhooksRazorpayRoute
   ApiMessagingEnqueueAbsencesRoute: typeof ApiMessagingEnqueueAbsencesRoute
+  ApiMessagingEnqueueFeePaidRoute: typeof ApiMessagingEnqueueFeePaidRoute
   ApiMessagingMarkSentRoute: typeof ApiMessagingMarkSentRoute
   ApiMessagingProcessAutoRoute: typeof ApiMessagingProcessAutoRoute
 }
@@ -991,6 +1018,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/receipts/acks': {
+      id: '/_authenticated/receipts/acks'
+      path: '/receipts/acks'
+      fullPath: '/receipts/acks'
+      preLoaderRoute: typeof AuthenticatedReceiptsAcksRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/receipts/$paymentId': {
       id: '/_authenticated/receipts/$paymentId'
       path: '/receipts/$paymentId'
@@ -1052,6 +1086,13 @@ declare module '@tanstack/react-router' {
       path: '/api/messaging/enqueue-absences'
       fullPath: '/api/messaging/enqueue-absences'
       preLoaderRoute: typeof ApiMessagingEnqueueAbsencesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/messaging/enqueue-fee-paid': {
+      id: '/api/messaging/enqueue-fee-paid'
+      path: '/api/messaging/enqueue-fee-paid'
+      fullPath: '/api/messaging/enqueue-fee-paid'
+      preLoaderRoute: typeof ApiMessagingEnqueueFeePaidRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/messaging/mark-sent': {
@@ -1134,6 +1175,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
+  AuthenticatedReceiptsAcksRoute: typeof AuthenticatedReceiptsAcksRoute
   AuthenticatedReceiptsPaymentIdRoute: typeof AuthenticatedReceiptsPaymentIdRoute
 }
 
@@ -1151,6 +1193,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
+  AuthenticatedReceiptsAcksRoute: AuthenticatedReceiptsAcksRoute,
   AuthenticatedReceiptsPaymentIdRoute: AuthenticatedReceiptsPaymentIdRoute,
 }
 
@@ -1187,6 +1230,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBillingVerifyPaymentRoute: ApiBillingVerifyPaymentRoute,
   ApiWebhooksRazorpayRoute: ApiWebhooksRazorpayRoute,
   ApiMessagingEnqueueAbsencesRoute: ApiMessagingEnqueueAbsencesRoute,
+  ApiMessagingEnqueueFeePaidRoute: ApiMessagingEnqueueFeePaidRoute,
   ApiMessagingMarkSentRoute: ApiMessagingMarkSentRoute,
   ApiMessagingProcessAutoRoute: ApiMessagingProcessAutoRoute,
 }

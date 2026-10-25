@@ -45,3 +45,11 @@ export function callerCanReadMessages(args: {
 }): boolean {
   return callerHasResource({ ...args, resource: "messages", write: false });
 }
+
+export function callerCanWriteFees(args: {
+  userId: string;
+  centreOwnerId: string;
+  membership: { role: WorkspaceRole; permissions?: unknown } | null;
+}): boolean {
+  return callerHasResource({ ...args, resource: "fees", write: true });
+}

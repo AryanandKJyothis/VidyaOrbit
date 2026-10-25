@@ -295,9 +295,10 @@ function SettingsPageContent() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Marking a student Absent queues a WhatsApp draft. Staff tap once
-                to open it in the centre&apos;s own WhatsApp. The app does not
-                message parents by itself unless auto-send is on.
+                Marking a student Absent or recording a payment queues a
+                WhatsApp draft. Staff tap once to open it in the centre&apos;s
+                own WhatsApp. The app does not message parents by itself unless
+                auto-send is on.
               </p>
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-0.5">
