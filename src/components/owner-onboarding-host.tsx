@@ -53,6 +53,7 @@ import {
   AppGuidedTourView,
 } from "@/components/app-guided-tour";
 import { ImportStudentsDialog } from "@/components/import-students-dialog";
+import { SetupPrompt } from "@/components/setup-prompt";
 
 export function OwnerOnboardingHost() {
   const { user } = useAuth();
@@ -347,6 +348,7 @@ export function OwnerOnboardingHost() {
       )}
 
       <ImportStudentsDialog open={importOpen} onOpenChange={setImportOpen} />
+      {!staff && !wizardOpen && <SetupPrompt />}
     </>
   );
 }

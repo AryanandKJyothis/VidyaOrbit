@@ -8,6 +8,8 @@ type Props = {
   icon?: LucideIcon;
   title: string;
   description: string;
+  /** One short line under the description — never a second CTA. */
+  reassurance?: string;
   children?: React.ReactNode;
   className?: string;
 };
@@ -16,6 +18,7 @@ export function EmptyState({
   icon: Icon,
   title,
   description,
+  reassurance,
   children,
   className,
 }: Props) {
@@ -40,9 +43,14 @@ export function EmptyState({
       <h3 className="font-display text-lg font-semibold leading-tight tracking-tight text-foreground text-balance">
         {title}
       </h3>
-      <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground text-pretty">
+      <p className="mt-2 max-w-sm text-pretty text-sm leading-relaxed text-muted-foreground">
         {description}
       </p>
+      {reassurance && (
+        <p className="mt-1.5 max-w-sm text-pretty text-xs leading-relaxed text-muted-foreground/80">
+          {reassurance}
+        </p>
+      )}
       {children && (
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           {children}

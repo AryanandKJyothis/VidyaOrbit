@@ -27,6 +27,7 @@ import { useSignOut } from "@/hooks/use-sign-out";
 import { MarketingOptInCheckbox } from "@/components/marketing-opt-in-checkbox";
 import { marketingOptInMetadata } from "@/lib/marketing-opt-in";
 import { PUBLIC_PAGES, pageHead } from "@/lib/seo";
+import { authCallbackUrl } from "@/lib/auth-callback";
 
 export const Route = createFileRoute("/join/$token")({
   component: JoinPage,
@@ -217,7 +218,10 @@ function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: window.location.href,
+          emailRedirectTo: authCallbackUrl(
+            window.location.origin,
+            `/join/${token}`,
+          ),
           data: {
             joining_team: true,
             ...marketingOptInMetadata(marketingOptIn),
@@ -235,7 +239,12 @@ function SignInToAccept({ inviteEmail }: { inviteEmail: string }) {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: email.trim(),
-      options: { emailRedirectTo: window.location.href },
+      options: {
+        emailRedirectTo: authCallbackUrl(
+          window.location.origin,
+          `/join/${token}`,
+        ),
+      },
     });
     if (error) throw error;
   }

@@ -9,6 +9,7 @@ import { formatUserError } from "@/lib/format-error";
 import {
   checkEmailCopy,
   GMAIL_INBOX_URL,
+  OUTLOOK_INBOX_URL,
   remainingCooldown,
   resendLabel,
   type CheckEmailKind,
@@ -99,18 +100,37 @@ export function CheckYourEmail({
         {status}
       </p>
       <div className="mt-8 flex w-full flex-col gap-3">
-        <Button
-          asChild
-          size="lg"
-          className={cn(
-            AUTH_BTN,
-            "w-full bg-orbit-blue text-paper hover:bg-orbit-blue/90",
-          )}
-        >
-          <a href={GMAIL_INBOX_URL} target="_blank" rel="noopener noreferrer">
-            Open Gmail
-          </a>
-        </Button>
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            asChild
+            size="lg"
+            className={cn(
+              AUTH_BTN,
+              "w-full bg-orbit-blue text-paper hover:bg-orbit-blue/90",
+            )}
+          >
+            <a href={GMAIL_INBOX_URL} target="_blank" rel="noopener noreferrer">
+              Open Gmail
+            </a>
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className={cn(
+              AUTH_BTN,
+              "w-full border-ink text-ink hover:bg-ink/5",
+            )}
+          >
+            <a
+              href={OUTLOOK_INBOX_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open Outlook
+            </a>
+          </Button>
+        </div>
         <Button
           type="button"
           variant="outline"

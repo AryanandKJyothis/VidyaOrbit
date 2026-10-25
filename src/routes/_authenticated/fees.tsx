@@ -765,12 +765,21 @@ function FeesPageContent() {
                   }
                   description={
                     rows.length === 0
-                      ? "Add students with fee totals, then record payments from here."
+                      ? "Add students with a fee total, then record cash or UPI here."
                       : "Adjust filters or search to see outstanding balances."
+                  }
+                  reassurance={
+                    rows.length === 0
+                      ? "Receipts print when you record a payment. Parents pay your UPI — Vidya Orbit never takes the money."
+                      : undefined
                   }
                 >
                   <Button asChild>
-                    <Link to="/students">Manage students</Link>
+                    <Link to="/students">
+                      {rows.length === 0
+                        ? "Import students"
+                        : "Manage students"}
+                    </Link>
                   </Button>
                 </EmptyState>
               ) : (
@@ -1065,7 +1074,8 @@ function FeesPageContent() {
                   className="border-0 rounded-none bg-transparent"
                   icon={Receipt}
                   title="No payments yet"
-                  description="Record cash, UPI, or bank transfers — receipts are generated automatically."
+                  description="Record cash or UPI. Receipts are ready to print or share."
+                  reassurance="Parents pay your UPI. Vidya Orbit does not take the money."
                 >
                   <Button
                     onClick={() => {

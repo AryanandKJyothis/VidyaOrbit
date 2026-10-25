@@ -12,28 +12,60 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useInstitute, useUpdateInstitute } from "@/hooks/use-data";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { formatUserError } from "@/lib/format-error";
+import {
+  isRealInstituteName,
+  readInstituteNameFromMetadata,
+  shouldShowSetupPrompt,
+} from "@/lib/owner-onboarding";
 
 export function SetupPrompt() {
   const inst = useInstitute();
   const mut = useUpdateInstitute();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const metadata = user?.user_metadata as Record<string, unknown> | undefined;
+  const metadataName = readInstituteNameFromMetadata(metadata);
 
   useEffect(() => {
-    if (inst.data && inst.data.name === "My Institute") {
-      setOpen(true);
+    if (!inst.data) return;
+    if (
+      !shouldShowSetupPrompt({
+        instituteName: inst.data.name,
+        metadataInstituteName: metadataName,
+      })
+    ) {
+      setOpen(false);
+      return;
     }
-  }, [inst.data]);
+    setOpen(true);
+  }, [inst.data, metadataName]);
+
+  useEffect(() => {
+    if (!inst.data || !isRealInstituteName(metadataName)) return;
+    if (isRealInstituteName(inst.data.name)) return;
+    void mut
+      .mutateAsync({ name: metadataName })
+      .then(() => setOpen(false))
+      .catch(() => {
+        /* SetupPrompt stays open so they can type it */
+      });
+    // Apply signup metadata once when the placeholder row is first seen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inst.data?.id, metadataName]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
-    if (!trimmed) return toast.error("Please enter your institute name");
+    if (!isRealInstituteName(trimmed)) {
+      return toast.error("Enter the name parents will see on receipts");
+    }
     try {
       await mut.mutateAsync({ name: trimmed });
-      toast.success("Institute name saved!");
+      toast.success("Centre name saved");
       setOpen(false);
     } catch (e) {
       toast.error(formatUserError(e, "Could not save institute name."));
@@ -44,10 +76,10 @@ export function SetupPrompt() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Welcome to Vidya!</DialogTitle>
+          <DialogTitle>Name your centre</DialogTitle>
           <DialogDescription>
-            Let's set up your institute. What's the name of your coaching centre
-            or institution?
+            This is what parents see on receipts and WhatsApp drafts. You can
+            change it later in Settings.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">

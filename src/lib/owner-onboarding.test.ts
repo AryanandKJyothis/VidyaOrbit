@@ -10,12 +10,14 @@ import {
   mergeDraftWithInstitute,
   normalizeIndianMobile,
   parseOwnerSetupPersisted,
+  readInstituteNameFromMetadata,
   readJoiningTeamFlag,
   readUserIdentity,
   setupIsIncomplete,
   shouldAutoOpenTour,
   shouldAutoOpenWizard,
   shouldCaptureClicksToResume,
+  shouldShowSetupPrompt,
   setupModeFor,
   validateWizardStep,
   nextWizardStep,
@@ -57,6 +59,17 @@ describe("signup is email and password only", () => {
       password: "password1",
     });
     expect(parsed.success).toBe(true);
+  });
+
+  it("treats institute name as optional and never requires phone", () => {
+    const named = signupSchema.safeParse({
+      email: "owner@centre.in",
+      password: "password1",
+      institute_name: "Samriddhi Centre",
+    });
+    expect(named.success).toBe(true);
+    expect("institute_name" in signupSchema.shape).toBe(true);
+    expect("phone" in signupSchema.shape).toBe(false);
   });
 
   it("still requires a valid email and 8-character password", () => {
@@ -280,7 +293,7 @@ describe("invited staff get name and phone only", () => {
 });
 
 describe("getting started checklist derivation", () => {
-  it("ticks items from real counts and hides when every item is done", () => {
+  it("starts at 0/3 with Import as the primary CTA", () => {
     const empty = deriveGettingStarted({
       batchCount: 0,
       activeStudentCount: 0,
@@ -289,13 +302,18 @@ describe("getting started checklist derivation", () => {
     });
     expect(empty.doneCount).toBe(0);
     expect(empty.allDone).toBe(false);
-    expect(empty.items.map((i) => i.done)).toEqual([
-      false,
-      false,
-      false,
-      false,
+    expect(empty.items).toHaveLength(3);
+    expect(empty.items.map((i) => i.id)).toEqual([
+      "student",
+      "batch",
+      "action",
     ]);
+    expect(empty.items.map((i) => i.done)).toEqual([false, false, false]);
+    expect(empty.items[0]?.label).toBe("Import");
+    expect(empty.items[0]?.primary).toBe(true);
+  });
 
+  it("ticks items from real counts and treats attendance or a fee as one step", () => {
     const partial = deriveGettingStarted({
       batchCount: 1,
       activeStudentCount: 2,
@@ -305,8 +323,18 @@ describe("getting started checklist derivation", () => {
     expect(partial.doneCount).toBe(2);
     expect(partial.items.find((i) => i.id === "batch")?.done).toBe(true);
     expect(partial.items.find((i) => i.id === "student")?.done).toBe(true);
-    expect(partial.items.find((i) => i.id === "fee")?.done).toBe(false);
+    expect(partial.items.find((i) => i.id === "action")?.done).toBe(false);
     expect(partial.allDone).toBe(false);
+
+    const feeOnly = deriveGettingStarted({
+      batchCount: 1,
+      activeStudentCount: 1,
+      paymentCount: 1,
+      attendanceStarted: false,
+    });
+    expect(feeOnly.items.find((i) => i.id === "action")?.done).toBe(true);
+    expect(feeOnly.doneCount).toBe(3);
+    expect(feeOnly.allDone).toBe(true);
 
     const done = deriveGettingStarted({
       batchCount: 1,
@@ -315,7 +343,7 @@ describe("getting started checklist derivation", () => {
       attendanceStarted: true,
     });
     expect(done.allDone).toBe(true);
-    expect(done.doneCount).toBe(4);
+    expect(done.doneCount).toBe(3);
   });
 
   it("does not count archived-only centres as having students", () => {
@@ -327,6 +355,37 @@ describe("getting started checklist derivation", () => {
     });
     expect(result.items.find((i) => i.id === "student")?.done).toBe(false);
     expect(result.allDone).toBe(false);
+    expect(result.doneCount).toBe(2);
+  });
+
+  it("does not bump progress just because the centre is named", () => {
+    const named = deriveGettingStarted({
+      batchCount: 0,
+      activeStudentCount: 0,
+      paymentCount: 0,
+      attendanceStarted: false,
+    });
+    expect(named.doneCount).toBe(0);
+    expect(shouldShowSetupPrompt({ instituteName: "Samriddhi Centre" })).toBe(
+      false,
+    );
+  });
+});
+
+describe("SetupPrompt institute-name path", () => {
+  it("prompts only for the placeholder or a blank name", () => {
+    expect(shouldShowSetupPrompt({ instituteName: "My Institute" })).toBe(true);
+    expect(shouldShowSetupPrompt({ instituteName: "" })).toBe(true);
+    expect(shouldShowSetupPrompt({ instituteName: "Samriddhi Centre" })).toBe(
+      false,
+    );
+    expect(
+      shouldShowSetupPrompt({
+        instituteName: "My Institute",
+        metadataInstituteName: "Samriddhi Centre",
+      }),
+    ).toBe(false);
+    expect(readInstituteNameFromMetadata({ institute_name: "X" })).toBe("X");
   });
 });
 

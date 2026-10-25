@@ -153,6 +153,10 @@ function SettingsPageContent() {
                     setForm({ ...form, contact_phone: e.target.value })
                   }
                 />
+                <p className="text-xs text-muted-foreground">
+                  Optional for now. Add it here before you send WhatsApp from
+                  this centre.
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label>Contact email</Label>

@@ -175,7 +175,7 @@ export const credentialsSchema = z.object({
     }),
 });
 
-/** Required phone for signup — validated strict. */
+/** Kept for settings / later collection — never required on signup. */
 export function requiredPhone() {
   return z.preprocess((v) => {
     if (v === null || v === undefined) return undefined;
@@ -184,8 +184,14 @@ export function requiredPhone() {
   }, z.string().min(1, "Phone number is required").regex(phoneRegex, "Enter a valid phone number (6–20 digits)").max(20));
 }
 
-/** Signup asks only for email + password. Name, phone, and centre are collected after. */
-export const signupSchema = credentialsSchema;
+/**
+ * Signup required fields: email + password only.
+ * Phone is deferred (settings or before first WhatsApp send).
+ * Institute name is optional here; if omitted, SetupPrompt collects it once.
+ */
+export const signupSchema = credentialsSchema.extend({
+  institute_name: optionalText(160),
+});
 
 export const emailSchema = z.object({
   email: z.string().trim().email("Enter a valid email address").max(255),

@@ -1,6 +1,13 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
+import {
+  deriveGettingStarted,
+  type GettingStartedItem,
+} from "@/lib/owner-onboarding";
 
 const STORAGE_KEY = "vidya:onboarding:v1";
+
+/** Wave 1 checklist is exactly these 3 value steps, starting at 0/3. */
+export const ONBOARDING_CHECKLIST_TOTAL = 3;
 
 export type OnboardingState = {
   dismissedChecklist: boolean;
@@ -71,12 +78,40 @@ export function useOnboarding() {
     });
   }, []);
 
+  const checklistFromCounts = useCallback(
+    (input: {
+      batchCount: number;
+      activeStudentCount: number;
+      paymentCount: number;
+      attendanceStarted: boolean;
+    }): {
+      items: GettingStartedItem[];
+      doneCount: number;
+      allDone: boolean;
+      total: number;
+    } => {
+      const derived = deriveGettingStarted(input);
+      return {
+        ...derived,
+        total: ONBOARDING_CHECKLIST_TOTAL,
+      };
+    },
+    [],
+  );
+
   return useMemo(
     () => ({
       dismissedChecklist: state.dismissedChecklist,
       dismissChecklist,
       resetChecklist,
+      checklistFromCounts,
+      total: ONBOARDING_CHECKLIST_TOTAL,
     }),
-    [state.dismissedChecklist, dismissChecklist, resetChecklist],
+    [
+      state.dismissedChecklist,
+      dismissChecklist,
+      resetChecklist,
+      checklistFromCounts,
+    ],
   );
 }
