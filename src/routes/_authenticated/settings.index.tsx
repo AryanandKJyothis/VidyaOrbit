@@ -326,7 +326,10 @@ function SettingsPageContent() {
                       )
                       .catch((e) =>
                         toast.error(
-                          formatUserError(e, "Could not save WhatsApp setting."),
+                          formatUserError(
+                            e,
+                            "Could not save WhatsApp setting.",
+                          ),
                         ),
                       );
                   }}

@@ -10,10 +10,7 @@ import { parseBearerUserId } from "@/server/require-bearer-user";
 import { assertAttendanceWrite } from "@/server/messaging-access";
 import { allowRequest, clientAddress, tooManyRequests } from "@/lib/rate-limit";
 import { resolveParentWhatsAppPhone } from "@/lib/messaging/phone";
-import {
-  planAbsenceOutbox,
-  settingsFromRow,
-} from "@/lib/messaging/policy";
+import { planAbsenceOutbox, settingsFromRow } from "@/lib/messaging/policy";
 import { summarizeOutboxRows } from "@/lib/messaging/summarize";
 import type { MessageOutboxRow } from "@/lib/messaging/types";
 
@@ -56,7 +53,10 @@ export const Route = createFileRoute("/api/messaging/enqueue-absences")({
         }
 
         try {
-          const forbidden = await assertAttendanceWrite(body.ownerId, auth.userId);
+          const forbidden = await assertAttendanceWrite(
+            body.ownerId,
+            auth.userId,
+          );
           if (forbidden) return forbidden;
 
           const { data: session, error: sessionErr } = await supabaseAdmin
@@ -68,7 +68,11 @@ export const Route = createFileRoute("/api/messaging/enqueue-absences")({
           if (sessionErr) throw sessionErr;
           if (!session) {
             return Response.json(
-              { ok: false, code: "NOT_FOUND", message: "Attendance session not found." },
+              {
+                ok: false,
+                code: "NOT_FOUND",
+                message: "Attendance session not found.",
+              },
               { status: 404 },
             );
           }
@@ -80,17 +84,19 @@ export const Route = createFileRoute("/api/messaging/enqueue-absences")({
             .eq("owner_id", body.ownerId);
           if (recErr) throw recErr;
 
-          const studentIds = [...new Set((records ?? []).map((r) => r.student_id))];
+          const studentIds = [
+            ...new Set((records ?? []).map((r) => r.student_id)),
+          ];
           const students =
             studentIds.length === 0
               ? []
-              : (
+              : ((
                   await supabaseAdmin
                     .from("students")
                     .select("id, full_name, guardian_phone, phone, status")
                     .eq("owner_id", body.ownerId)
                     .in("id", studentIds)
-                ).data ?? [];
+                ).data ?? []);
 
           const { data: batch } = await supabaseAdmin
             .from("batches")

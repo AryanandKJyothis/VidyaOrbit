@@ -40,7 +40,10 @@ export const Route = createFileRoute("/api/messaging/mark-sent")({
         }
 
         try {
-          const forbidden = await assertMessagesWrite(body.ownerId, auth.userId);
+          const forbidden = await assertMessagesWrite(
+            body.ownerId,
+            auth.userId,
+          );
           if (forbidden) return forbidden;
 
           const { data: row, error } = await supabaseAdmin

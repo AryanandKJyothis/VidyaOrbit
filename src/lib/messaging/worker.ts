@@ -40,7 +40,9 @@ export function readWhatsAppWorkerConfig(
   };
 }
 
-export function isWhatsAppWorkerConfigured(config: WhatsAppWorkerConfig): boolean {
+export function isWhatsAppWorkerConfigured(
+  config: WhatsAppWorkerConfig,
+): boolean {
   return Boolean(config.accessToken && config.phoneNumberId);
 }
 

@@ -37,9 +37,9 @@ export async function enqueueAbsencesAfterSave(input: {
       },
       body: JSON.stringify(input),
     });
-    const body = (await res.json().catch(() => null)) as
-      | EnqueueAbsencesResponse
-      | null;
+    const body = (await res
+      .json()
+      .catch(() => null)) as EnqueueAbsencesResponse | null;
     if (!body) {
       return {
         ok: false,
@@ -74,7 +74,9 @@ export async function markOutboxSent(input: {
       },
       body: JSON.stringify(input),
     });
-    const body = (await res.json().catch(() => null)) as MarkSentResponse | null;
+    const body = (await res
+      .json()
+      .catch(() => null)) as MarkSentResponse | null;
     if (!body) {
       return {
         ok: false,

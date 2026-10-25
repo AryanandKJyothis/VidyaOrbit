@@ -207,7 +207,9 @@ describe("GET /api/messaging/process-auto", () => {
     });
     const { Route } = await import("@/routes/api/messaging/process-auto");
     const GET = handlerOf(Route, "GET");
-    const res = await GET(new Request("http://localhost/api/messaging/process-auto"));
+    const res = await GET(
+      new Request("http://localhost/api/messaging/process-auto"),
+    );
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.processed).toBe(0);

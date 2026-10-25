@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/messaging/process-auto",
-      "schedule": "20 * * * *"
+      "schedule": "20 4 * * *"
     }
   ]
 }

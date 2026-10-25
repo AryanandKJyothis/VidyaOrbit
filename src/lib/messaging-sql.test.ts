@@ -16,7 +16,9 @@ describe("parent absence WhatsApp migration lock", () => {
     expect(sql).toContain("UNIQUE (owner_id, dedupe_key)");
     expect(sql).toContain("'absence', 'fee_overdue', 'fee_paid'");
     expect(sql).toContain("'queued', 'sent', 'failed', 'skipped'");
-    expect(sql).toContain("absence:' || NEW.session_id::text || ':' || NEW.student_id::text");
+    expect(sql).toContain(
+      "absence:' || NEW.session_id::text || ':' || NEW.student_id::text",
+    );
   });
 
   it("keeps wa_auto off by default and does not grant client writes on the outbox", () => {

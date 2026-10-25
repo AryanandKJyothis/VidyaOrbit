@@ -7,7 +7,10 @@ import {
   planAbsenceOutbox,
   summarizeAbsencePlan,
 } from "./messaging/policy";
-import { formatAbsenceQueueToast, summarizeOutboxRows } from "./messaging/summarize";
+import {
+  formatAbsenceQueueToast,
+  summarizeOutboxRows,
+} from "./messaging/summarize";
 import { buildAssistedWhatsAppHref } from "./messaging/wa-me";
 import {
   createWhatsAppWorker,
@@ -144,9 +147,15 @@ describe("absence outbox plan", () => {
       })),
     });
     expect(second.inserts).toEqual([]);
-    expect(summarizeAbsencePlan(second, [
-      { dedupe_key: first.inserts[0]!.dedupeKey, status: "queued", skip_reason: null },
-    ]).already).toBe(1);
+    expect(
+      summarizeAbsencePlan(second, [
+        {
+          dedupe_key: first.inserts[0]!.dedupeKey,
+          status: "queued",
+          skip_reason: null,
+        },
+      ]).already,
+    ).toBe(1);
   });
 
   it("skips a queued row when the student is flipped back to Present", () => {

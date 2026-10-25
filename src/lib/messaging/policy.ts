@@ -171,10 +171,12 @@ export function canMarkOutboxSent(status: OutboxStatus): boolean {
   return status === "queued" || status === "failed";
 }
 
-export function settingsFromRow(row: {
-  wa_auto?: boolean | null;
-  locale?: string | null;
-} | null): MessagingSettings {
+export function settingsFromRow(
+  row: {
+    wa_auto?: boolean | null;
+    locale?: string | null;
+  } | null,
+): MessagingSettings {
   return normalizeMessagingSettings({
     waAuto: row?.wa_auto === true,
     locale: row?.locale === "ml" ? "ml" : DEFAULT_MESSAGING_SETTINGS.locale,

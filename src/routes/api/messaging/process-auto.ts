@@ -3,6 +3,10 @@
  * Tier 2 cron stub. Only centres with wa_auto=true are considered.
  * Assisted wa.me remains the main path. Never marks sent without a
  * live provider ack.
+ *
+ * Vercel Hobby allows one cron run per day. vercel.json schedules this at
+ * 04:20 UTC (`20 4 * * *`). Hourly (`20 * * * *`) needs Pro and can return
+ * when a centre actually turns wa_auto on.
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";

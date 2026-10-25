@@ -231,7 +231,9 @@ function AbsenteesPage() {
                           onClick={() => void sendOne(row)}
                         >
                           <MessageCircle className="mr-1.5 h-4 w-4" />
-                          {row.status === "sent" ? "Open again" : "Send to parent"}
+                          {row.status === "sent"
+                            ? "Open again"
+                            : "Send to parent"}
                         </Button>
                       )}
                     </li>

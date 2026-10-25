@@ -65,10 +65,7 @@ export const listMyWorkspaces = createServerFn({ method: "GET" })
     return (members ?? []).map((m) => ({
       ownerId: m.owner_id,
       role: m.role as WorkspaceRole,
-      permissions: normalizePermissions(
-        m.permissions,
-        m.role as WorkspaceRole,
-      ),
+      permissions: normalizePermissions(m.permissions, m.role as WorkspaceRole),
       name: names[m.owner_id] ?? "Workspace",
       isOwn: m.owner_id === userId,
     }));
@@ -159,10 +156,7 @@ export const listTeam = createServerFn({ method: "POST" })
       id: m.id,
       email: emails[m.user_id] ?? "",
       role: m.role as WorkspaceRole,
-      permissions: normalizePermissions(
-        m.permissions,
-        m.role as WorkspaceRole,
-      ),
+      permissions: normalizePermissions(m.permissions, m.role as WorkspaceRole),
       status: "active" as const,
       lastActive: lastSignIn[m.user_id] ?? null,
       createdAt: m.created_at,
