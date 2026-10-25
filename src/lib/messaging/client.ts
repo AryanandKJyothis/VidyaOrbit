@@ -1,5 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { AbsenceQueueSummary, FeePaidQueueSummary } from "./types";
+import type {
+  AbsenceQueueSummary,
+  FeeOverdueQueueSummary,
+  FeePaidQueueSummary,
+} from "./types";
 
 export type EnqueueAbsencesResponse = {
   ok: boolean;
@@ -13,6 +17,13 @@ export type EnqueueFeePaidResponse = {
   code?: string;
   message?: string;
   summary?: FeePaidQueueSummary;
+};
+
+export type EnqueueFeeOverdueResponse = {
+  ok: boolean;
+  code?: string;
+  message?: string;
+  summary?: FeeOverdueQueueSummary;
 };
 
 export type MarkSentResponse = {
@@ -97,6 +108,43 @@ export async function enqueueFeePaidAfterPayment(input: {
       ok: false,
       code: "NETWORK",
       message: "Could not queue the receipt acknowledgement.",
+    };
+  }
+}
+
+export async function enqueueFeeOverdueReminders(input: {
+  ownerId: string;
+  studentIds?: string[];
+}): Promise<EnqueueFeeOverdueResponse> {
+  const token = await bearerToken();
+  if (!token) {
+    return { ok: false, code: "UNAUTHORIZED", message: "Sign in again." };
+  }
+  try {
+    const res = await fetch("/api/messaging/enqueue-fee-overdue", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    });
+    const body = (await res
+      .json()
+      .catch(() => null)) as EnqueueFeeOverdueResponse | null;
+    if (!body) {
+      return {
+        ok: false,
+        code: "BAD_RESPONSE",
+        message: "Could not queue overdue reminders.",
+      };
+    }
+    return body;
+  } catch {
+    return {
+      ok: false,
+      code: "NETWORK",
+      message: "Could not queue overdue reminders.",
     };
   }
 }

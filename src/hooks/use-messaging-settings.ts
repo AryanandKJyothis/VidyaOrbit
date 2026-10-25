@@ -15,11 +15,20 @@ export function useMessagingSettings() {
     enabled: !!ownerId,
     staleTime: 60_000,
     queryFn: async (): Promise<MessagingSettings> => {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("institute_messaging_settings")
-        .select("wa_auto, locale")
+        .select("wa_auto, locale, fee_overdue_dedupe_days")
         .eq("owner_id", ownerId!)
         .maybeSingle();
+      if (error && /fee_overdue_dedupe_days/i.test(error.message)) {
+        const fallback = await supabase
+          .from("institute_messaging_settings")
+          .select("wa_auto, locale")
+          .eq("owner_id", ownerId!)
+          .maybeSingle();
+        data = fallback.data;
+        error = fallback.error;
+      }
       if (error) {
         if (
           error.code === "42P01" ||
@@ -47,6 +56,8 @@ export function useUpdateMessagingSettings() {
       const merged = {
         wa_auto: next.waAuto ?? current.waAuto,
         locale: next.locale ?? current.locale,
+        fee_overdue_dedupe_days:
+          next.feeOverdueDedupeDays ?? current.feeOverdueDedupeDays,
       };
       const { error } = await supabase
         .from("institute_messaging_settings")
@@ -54,8 +65,22 @@ export function useUpdateMessagingSettings() {
           owner_id: ownerId,
           wa_auto: merged.wa_auto,
           locale: merged.locale,
+          fee_overdue_dedupe_days: merged.fee_overdue_dedupe_days,
         });
-      if (error) throw error;
+      if (error) {
+        if (/fee_overdue_dedupe_days/i.test(error.message)) {
+          const retry = await supabase
+            .from("institute_messaging_settings")
+            .upsert({
+              owner_id: ownerId,
+              wa_auto: merged.wa_auto,
+              locale: merged.locale,
+            });
+          if (retry.error) throw retry.error;
+          return;
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["messaging-settings", ownerId] });

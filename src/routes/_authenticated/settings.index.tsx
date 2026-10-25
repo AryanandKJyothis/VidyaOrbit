@@ -295,10 +295,10 @@ function SettingsPageContent() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Marking a student Absent or recording a payment queues a
-                WhatsApp draft. Staff tap once to open it in the centre&apos;s
-                own WhatsApp. The app does not message parents by itself unless
-                auto-send is on.
+                Marking a student Absent, recording a payment, or tapping Remind
+                overdue queues a WhatsApp draft. Staff tap once to open it in
+                the centre&apos;s own WhatsApp. The app does not message parents
+                by itself unless auto-send is on.
               </p>
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-0.5">
@@ -336,6 +336,51 @@ function SettingsPageContent() {
                   }}
                   className="shrink-0 mt-1"
                 />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="overdue-dedupe-days" className="text-sm">
+                  Overdue reminder spacing (days)
+                </Label>
+                <Input
+                  id="overdue-dedupe-days"
+                  type="number"
+                  min={1}
+                  max={30}
+                  className="w-28"
+                  key={
+                    (messaging.data ?? DEFAULT_MESSAGING_SETTINGS)
+                      .feeOverdueDedupeDays
+                  }
+                  defaultValue={
+                    (messaging.data ?? DEFAULT_MESSAGING_SETTINGS)
+                      .feeOverdueDedupeDays
+                  }
+                  disabled={!canWriteSettings || saveMessaging.isPending}
+                  onBlur={(e) => {
+                    const days = Number(e.target.value);
+                    const current = (
+                      messaging.data ?? DEFAULT_MESSAGING_SETTINGS
+                    ).feeOverdueDedupeDays;
+                    if (!Number.isFinite(days) || days === current) return;
+                    void saveMessaging
+                      .mutateAsync({ feeOverdueDedupeDays: days })
+                      .then(() =>
+                        toast.success("Overdue reminder spacing saved."),
+                      )
+                      .catch((err) =>
+                        toast.error(
+                          formatUserError(
+                            err,
+                            "Could not save reminder spacing.",
+                          ),
+                        ),
+                      );
+                  }}
+                />
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  One overdue WhatsApp draft per student inside this window.
+                  Default 3 days. No UPI link in the reminder.
+                </p>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Public receipt links expire after 180 days. You can turn a link

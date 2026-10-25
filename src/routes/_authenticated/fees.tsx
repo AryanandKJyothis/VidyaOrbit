@@ -36,37 +36,24 @@ import {
 import { EmptyState } from "@/components/empty-state";
 import { QueryErrorState } from "@/components/query-state";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  useStudents,
-  useBatches,
-  usePayments,
-  useInstitute,
-} from "@/hooks/use-data";
+import { useStudents, useBatches, usePayments } from "@/hooks/use-data";
 import { PaymentDialog } from "@/components/payment-dialog";
 import {
-  FeeReminderQueue,
-  type ReminderQueueItem,
-} from "@/components/fee-reminder-queue";
+  FeeOverdueQueue,
+  type OverdueQueueItem,
+} from "@/components/fee-overdue-queue";
 import {
   formatINR,
   formatDate,
   isPastIstDate,
   istMonthStartISO,
   istPrevMonthRangeISO,
-  todayISO,
 } from "@/lib/format";
 import { exportToExcel, exportToCsv } from "@/lib/export";
 import {
-  buildFeeReminder,
   canSendFeeReminders,
   feeCollectionStatus,
   feeStatusLabel,
-  markReminderOpened,
-  openWhatsApp,
-  parseOpenedReminderKeys,
-  reminderOpenedKey,
-  REMINDER_OPENED_STORAGE_KEY,
-  serializeOpenedReminderKeys,
   type FeeCollectionStatus,
 } from "@/lib/fee-reminder";
 import { toast } from "sonner";
@@ -79,6 +66,22 @@ import {
 import { FilterChips } from "@/components/app/filter-chips";
 import { InitialsAvatar } from "@/components/app/initials-avatar";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  enqueueFeeOverdueReminders,
+  markOutboxSent,
+} from "@/lib/messaging/client";
+import {
+  canSendFeeOverdue,
+  lastRemindedByStudent,
+  listOverdueFeeStudents,
+  type ExistingFeeOverdueRow,
+} from "@/lib/messaging/policy";
+import { formatFeeOverdueQueueToast } from "@/lib/messaging/summarize";
+import type { MessageOutboxRow, OutboxStatus } from "@/lib/messaging/types";
+import {
+  buildAssistedWhatsAppHref,
+  openAssistedWhatsApp,
+} from "@/lib/messaging/wa-me";
 
 const FEE_STATUSES = ["all", "pending", "partial", "overdue", "paid"] as const;
 type FeeStatusFilter = (typeof FEE_STATUSES)[number];
@@ -111,10 +114,10 @@ function FeesPageContent() {
   const students = useStudents();
   const batches = useBatches();
   const payments = usePayments();
-  const institute = useInstitute();
   const canWriteFees = useCan("fees", "write");
   const canExport = useCanExport();
-  const canRemind = canSendFeeReminders(canWriteFees);
+  const canQueueOverdue = canSendFeeReminders(canWriteFees);
+  const canSendOverdue = canSendFeeOverdue(useCan("messages", "write"));
   const { active } = useActiveWorkspace();
   const qc = useQueryClient();
   const search = useSearch({ from: "/_authenticated/fees" });
@@ -137,6 +140,39 @@ function FeesPageContent() {
       return count ?? 0;
     },
   });
+  const feeOverdueOutbox = useQuery({
+    queryKey: ["message-outbox", "fee_overdue", active?.ownerId],
+    enabled: !!active?.ownerId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("message_outbox")
+        .select(
+          "id, student_id, dedupe_key, status, skip_reason, sent_at, created_at, phone, body",
+        )
+        .eq("owner_id", active!.ownerId)
+        .eq("kind", "fee_overdue")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) {
+        if (error.code === "42P01" || /message_outbox/i.test(error.message)) {
+          return [];
+        }
+        throw error;
+      }
+      return (data ?? []) as Pick<
+        MessageOutboxRow,
+        | "id"
+        | "student_id"
+        | "dedupe_key"
+        | "status"
+        | "skip_reason"
+        | "sent_at"
+        | "created_at"
+        | "phone"
+        | "body"
+      >[];
+    },
+  });
 
   const [open, setOpen] = useState(false);
   const [paymentDefaults, setPaymentDefaults] = useState<{
@@ -151,7 +187,8 @@ function FeesPageContent() {
   );
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [queueOpen, setQueueOpen] = useState(false);
-  const [queue, setQueue] = useState<ReminderQueueItem[]>([]);
+  const [queueing, setQueueing] = useState(false);
+  const [sendingId, setSendingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (search.status) setStatusFilter(search.status);
@@ -221,91 +258,126 @@ function FeesPageContent() {
     [students.data],
   );
 
-  const centreName = institute.data?.name ?? "your centre";
-  const upiVpa = institute.data?.upi_vpa;
-
-  const remindRows = (
-    targets: { s: (typeof rows)[number]["s"]; balance: number }[],
-  ) => {
-    if (!canRemind) {
-      toast.error("You need permission to send fee reminders.");
-      return;
-    }
-    if (!upiVpa?.trim()) {
-      toast.error(
-        "Add your centre UPI ID in Settings before sending reminders.",
-      );
-      return;
-    }
-    if (targets.length === 0) {
-      toast.error("Select at least one student.");
-      return;
-    }
-    const items: ReminderQueueItem[] = targets.map(({ s, balance }) => ({
-      studentId: s.id,
-      studentName: s.full_name,
-      feeDueDate: s.fee_due_date,
-      result: buildFeeReminder({
-        centreName,
-        upiVpa,
-        studentName: s.full_name,
-        guardianPhone: s.guardian_phone,
-        studentPhone: s.phone,
-        feeDueDate: s.fee_due_date,
-        balance,
-      }),
-    }));
-    if (items.length === 1 && items[0].result.ok) {
-      if (!openWhatsApp(items[0].result.href)) {
-        toast.error("Allow pop-ups to open WhatsApp.");
-        return;
-      }
-      try {
-        const key = reminderOpenedKey(
-          items[0].studentId,
-          items[0].feeDueDate ?? null,
-          todayISO(),
-        );
-        const next = markReminderOpened(
-          parseOpenedReminderKeys(
-            window.localStorage.getItem(REMINDER_OPENED_STORAGE_KEY),
-          ),
-          key,
-        );
-        window.localStorage.setItem(
-          REMINDER_OPENED_STORAGE_KEY,
-          serializeOpenedReminderKeys(next),
-        );
-      } catch {
-        /* ignore */
-      }
-      return;
-    }
-    setQueue(items);
-    setQueueOpen(true);
-  };
-
-  const selectOverdueInBatch = () => {
-    setQ("");
-    setStatusFilter("overdue");
-    setSelected(
-      new Set(
-        rows
-          .filter(
-            (r) =>
-              r.overdue &&
-              (batchFilter === "all" || r.s.batch_id === batchFilter),
-          )
-          .map((r) => r.s.id),
+  const lastReminded = useMemo(
+    () =>
+      lastRemindedByStudent(
+        (feeOverdueOutbox.data ?? []) as ExistingFeeOverdueRow[],
       ),
+    [feeOverdueOutbox.data],
+  );
+
+  const latestOutboxByStudent = useMemo(() => {
+    const map = new Map<
+      string,
+      NonNullable<typeof feeOverdueOutbox.data>[number]
+    >();
+    for (const row of feeOverdueOutbox.data ?? []) {
+      if (!row.student_id) continue;
+      if (!map.has(row.student_id)) map.set(row.student_id, row);
+    }
+    return map;
+  }, [feeOverdueOutbox.data]);
+
+  const overdueStudents = useMemo(
+    () =>
+      listOverdueFeeStudents(
+        rows.map(({ s, paid }) => ({
+          id: s.id,
+          fullName: s.full_name,
+          feeTotal: Number(s.fee_total),
+          paidTotal: paid,
+          feeDueDate: s.fee_due_date,
+          status: s.status,
+          guardianPhone: s.guardian_phone,
+          studentPhone: s.phone,
+        })),
+      ),
+    [rows],
+  );
+
+  const overdueQueueItems = useMemo<OverdueQueueItem[]>(() => {
+    return overdueStudents.map((student) => {
+      const latest = latestOutboxByStudent.get(student.id);
+      const last = lastReminded.get(student.id);
+      return {
+        studentId: student.id,
+        studentName: student.fullName,
+        balance: student.balance,
+        dueDate: student.feeDueDate,
+        lastRemindedAt: last?.at ?? null,
+        outboxId: latest?.id ?? null,
+        status: (latest?.status as OutboxStatus | undefined) ?? null,
+        skipReason: latest?.skip_reason ?? null,
+      };
+    });
+  }, [overdueStudents, latestOutboxByStudent, lastReminded]);
+
+  const overdueQueuedCount = (feeOverdueOutbox.data ?? []).filter(
+    (row) => row.status === "queued",
+  ).length;
+
+  const queueOverdue = async (studentIds?: string[]) => {
+    if (!active?.ownerId) return;
+    if (!canQueueOverdue) {
+      toast.error("You need permission to queue fee reminders.");
+      return;
+    }
+    setQueueing(true);
+    const result = await enqueueFeeOverdueReminders({
+      ownerId: active.ownerId,
+      studentIds,
+    });
+    setQueueing(false);
+    if (!result.ok) {
+      toast.error(result.message ?? "Could not queue overdue reminders.");
+      return;
+    }
+    const toastCopy = formatFeeOverdueQueueToast(
+      result.summary ?? {
+        queued: 0,
+        sent: 0,
+        skippedNoPhone: 0,
+        skippedNotAbsent: 0,
+        failed: 0,
+        already: 0,
+      },
     );
+    toast.success(toastCopy.title, { description: toastCopy.description });
+    void qc.invalidateQueries({ queryKey: ["message-outbox"] });
   };
 
-  const selectAllOverdue = () => {
-    setQ("");
-    setBatchFilter("all");
+  const sendOverdue = async (item: OverdueQueueItem) => {
+    if (!active?.ownerId || !item.outboxId) return;
+    const latest = latestOutboxByStudent.get(item.studentId);
+    const href = buildAssistedWhatsAppHref(latest?.phone, latest?.body);
+    if (item.status === "skipped" && item.skipReason === "no_phone") {
+      toast.error("Add a parent phone on the student record first.");
+      return;
+    }
+    if (!href) {
+      toast.error("This draft has no WhatsApp number.");
+      return;
+    }
+    if (!openAssistedWhatsApp(href)) {
+      toast.error("Allow pop-ups to open WhatsApp.");
+      return;
+    }
+    setSendingId(item.outboxId);
+    const result = await markOutboxSent({
+      ownerId: active.ownerId,
+      outboxId: item.outboxId,
+    });
+    setSendingId(null);
+    if (!result.ok && result.code !== "ALREADY_PROCESSED") {
+      toast.error(result.message ?? "Could not mark this message sent.");
+      return;
+    }
+    void qc.invalidateQueries({ queryKey: ["message-outbox"] });
+  };
+
+  const openOverdueList = () => {
     setStatusFilter("overdue");
-    setSelected(new Set(rows.filter((r) => r.overdue).map((r) => r.s.id)));
+    setQueueOpen(true);
   };
 
   const markReceived = (studentId: string, balance: number) => {
@@ -440,6 +512,12 @@ function FeesPageContent() {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+            {overdueQueuedCount > 0 && (
+              <Button type="button" variant="outline" onClick={openOverdueList}>
+                <MessageCircle className="mr-1.5 h-4 w-4" />
+                Send overdue ({overdueQueuedCount})
+              </Button>
+            )}
             {(feePaidQueue.data ?? 0) > 0 && (
               <Button asChild variant="outline">
                 <Link to="/receipts/acks">
@@ -461,6 +539,21 @@ function FeesPageContent() {
           </div>
         }
       />
+
+      {overdueQueuedCount > 0 && (
+        <Card className="mb-4 border-primary/30 bg-primary-soft">
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm">
+              {overdueQueuedCount} overdue reminder
+              {overdueQueuedCount === 1 ? "" : "s"} waiting to send to parents
+              from your WhatsApp.
+            </p>
+            <Button type="button" size="sm" onClick={openOverdueList}>
+              Send overdue reminders
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {(feePaidQueue.data ?? 0) > 0 && (
         <Card className="mb-4 border-primary/30 bg-primary-soft">
@@ -614,22 +707,27 @@ function FeesPageContent() {
             </div>
           </div>
 
-          {!upiVpa?.trim() && (
-            <div className="mb-4 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm">
-              Add your centre UPI ID so reminders include a pay link. Parents
-              pay that ID directly.{" "}
-              <Link to="/settings" className="font-medium underline">
-                Open settings
-              </Link>
-            </div>
-          )}
-
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <Button
               type="button"
               size="sm"
               variant="outline"
-              onClick={selectOverdueInBatch}
+              onClick={() => {
+                setQ("");
+                setStatusFilter("overdue");
+                setSelected(
+                  new Set(
+                    rows
+                      .filter(
+                        (r) =>
+                          r.overdue &&
+                          (batchFilter === "all" ||
+                            r.s.batch_id === batchFilter),
+                      )
+                      .map((r) => r.s.id),
+                  ),
+                );
+              }}
             >
               Select overdue in this batch
             </Button>
@@ -637,27 +735,22 @@ function FeesPageContent() {
               type="button"
               size="sm"
               variant="outline"
-              onClick={selectAllOverdue}
+              onClick={() => {
+                setQ("");
+                setBatchFilter("all");
+                setStatusFilter("overdue");
+                setSelected(
+                  new Set(rows.filter((r) => r.overdue).map((r) => r.s.id)),
+                );
+              }}
             >
               Select all overdue
             </Button>
-            {canRemind && (
-              <Button
-                type="button"
-                size="sm"
-                onClick={() =>
-                  remindRows(
-                    rows
-                      .filter((r) => selected.has(r.s.id))
-                      .map((r) => ({ s: r.s, balance: r.balance })),
-                  )
-                }
-              >
-                <MessageCircle className="mr-1.5 h-4 w-4" />
-                Remind on WhatsApp
-                {selected.size > 0 ? ` (${selected.size})` : ""}
-              </Button>
-            )}
+            <Button type="button" size="sm" onClick={openOverdueList}>
+              <MessageCircle className="mr-1.5 h-4 w-4" />
+              Remind overdue
+              {overdueCount > 0 ? ` (${overdueCount})` : ""}
+            </Button>
           </div>
 
           <Card>
@@ -762,6 +855,9 @@ function FeesPageContent() {
                               {s.fee_due_date && balance > 0 && (
                                 <p className="mt-1 text-xs text-muted-foreground">
                                   Due {formatDate(s.fee_due_date)}
+                                  {overdue && lastReminded.get(s.id)
+                                    ? ` · last reminded ${formatDate(lastReminded.get(s.id)!.at)}`
+                                    : ""}
                                 </p>
                               )}
                               {balance > 0 && (
@@ -774,15 +870,16 @@ function FeesPageContent() {
                                   >
                                     Record {formatINR(balance)}
                                   </Button>
-                                  {canRemind && (
+                                  {overdue && canQueueOverdue && (
                                     <Button
                                       type="button"
                                       size="sm"
                                       variant="outline"
                                       className="h-11"
-                                      onClick={() =>
-                                        remindRows([{ s, balance }])
-                                      }
+                                      onClick={() => {
+                                        setQueueOpen(true);
+                                        void queueOverdue([s.id]);
+                                      }}
                                     >
                                       Send reminder
                                     </Button>
@@ -850,7 +947,13 @@ function FeesPageContent() {
                               {s.batch_id ? batchById[s.batch_id] : "—"}
                             </td>
                             <td className="px-4 py-3 text-muted-foreground">
-                              {formatDate(s.fee_due_date)}
+                              <div>{formatDate(s.fee_due_date)}</div>
+                              {overdue && lastReminded.get(s.id) && (
+                                <div className="text-xs">
+                                  last reminded{" "}
+                                  {formatDate(lastReminded.get(s.id)!.at)}
+                                </div>
+                              )}
                             </td>
                             <td className="px-4 py-3 text-right font-mono">
                               {formatINR(Number(s.fee_total))}
@@ -867,14 +970,15 @@ function FeesPageContent() {
                             <td className="px-4 py-3 text-right">
                               {balance > 0 ? (
                                 <div className="flex justify-end gap-1">
-                                  {canRemind && (
+                                  {overdue && canQueueOverdue && (
                                     <Button
                                       type="button"
                                       size="sm"
                                       variant="ghost"
-                                      onClick={() =>
-                                        remindRows([{ s, balance }])
-                                      }
+                                      onClick={() => {
+                                        setQueueOpen(true);
+                                        void queueOverdue([s.id]);
+                                      }}
                                     >
                                       Remind
                                     </Button>
@@ -1038,10 +1142,16 @@ function FeesPageContent() {
         defaultAmount={paymentDefaults.amount}
         defaultMethod={paymentDefaults.method}
       />
-      <FeeReminderQueue
+      <FeeOverdueQueue
         open={queueOpen}
         onOpenChange={setQueueOpen}
-        items={queue}
+        items={overdueQueueItems}
+        canQueue={canQueueOverdue}
+        canSend={canSendOverdue}
+        queueing={queueing}
+        sendingId={sendingId}
+        onQueueAll={() => void queueOverdue()}
+        onSend={(item) => void sendOverdue(item)}
       />
     </div>
   );

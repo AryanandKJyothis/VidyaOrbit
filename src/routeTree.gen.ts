@@ -61,6 +61,7 @@ import { Route as ApiBillingPricingRouteImport } from './routes/api/billing/pric
 import { Route as ApiBillingVerifyPaymentRouteImport } from './routes/api/billing/verify-payment'
 import { Route as ApiWebhooksRazorpayRouteImport } from './routes/api/webhooks/razorpay'
 import { Route as ApiMessagingEnqueueAbsencesRouteImport } from './routes/api/messaging/enqueue-absences'
+import { Route as ApiMessagingEnqueueFeeOverdueRouteImport } from './routes/api/messaging/enqueue-fee-overdue'
 import { Route as ApiMessagingEnqueueFeePaidRouteImport } from './routes/api/messaging/enqueue-fee-paid'
 import { Route as ApiMessagingMarkSentRouteImport } from './routes/api/messaging/mark-sent'
 import { Route as ApiMessagingProcessAutoRouteImport } from './routes/api/messaging/process-auto'
@@ -333,6 +334,12 @@ const ApiMessagingEnqueueAbsencesRoute =
     path: '/api/messaging/enqueue-absences',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiMessagingEnqueueFeeOverdueRoute =
+  ApiMessagingEnqueueFeeOverdueRouteImport.update({
+    id: '/api/messaging/enqueue-fee-overdue',
+    path: '/api/messaging/enqueue-fee-overdue',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiMessagingEnqueueFeePaidRoute =
   ApiMessagingEnqueueFeePaidRouteImport.update({
     id: '/api/messaging/enqueue-fee-paid',
@@ -400,6 +407,7 @@ export interface FileRoutesByFullPath {
   '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
   '/api/messaging/enqueue-absences': typeof ApiMessagingEnqueueAbsencesRoute
+  '/api/messaging/enqueue-fee-overdue': typeof ApiMessagingEnqueueFeeOverdueRoute
   '/api/messaging/enqueue-fee-paid': typeof ApiMessagingEnqueueFeePaidRoute
   '/api/messaging/mark-sent': typeof ApiMessagingMarkSentRoute
   '/api/messaging/process-auto': typeof ApiMessagingProcessAutoRoute
@@ -454,6 +462,7 @@ export interface FileRoutesByTo {
   '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
   '/api/messaging/enqueue-absences': typeof ApiMessagingEnqueueAbsencesRoute
+  '/api/messaging/enqueue-fee-overdue': typeof ApiMessagingEnqueueFeeOverdueRoute
   '/api/messaging/enqueue-fee-paid': typeof ApiMessagingEnqueueFeePaidRoute
   '/api/messaging/mark-sent': typeof ApiMessagingMarkSentRoute
   '/api/messaging/process-auto': typeof ApiMessagingProcessAutoRoute
@@ -512,6 +521,7 @@ export interface FileRoutesById {
   '/api/billing/verify-payment': typeof ApiBillingVerifyPaymentRoute
   '/api/webhooks/razorpay': typeof ApiWebhooksRazorpayRoute
   '/api/messaging/enqueue-absences': typeof ApiMessagingEnqueueAbsencesRoute
+  '/api/messaging/enqueue-fee-overdue': typeof ApiMessagingEnqueueFeeOverdueRoute
   '/api/messaging/enqueue-fee-paid': typeof ApiMessagingEnqueueFeePaidRoute
   '/api/messaging/mark-sent': typeof ApiMessagingMarkSentRoute
   '/api/messaging/process-auto': typeof ApiMessagingProcessAutoRoute
@@ -570,6 +580,7 @@ export interface FileRouteTypes {
     | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
     | '/api/messaging/enqueue-absences'
+    | '/api/messaging/enqueue-fee-overdue'
     | '/api/messaging/enqueue-fee-paid'
     | '/api/messaging/mark-sent'
     | '/api/messaging/process-auto'
@@ -624,6 +635,7 @@ export interface FileRouteTypes {
     | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
     | '/api/messaging/enqueue-absences'
+    | '/api/messaging/enqueue-fee-overdue'
     | '/api/messaging/enqueue-fee-paid'
     | '/api/messaging/mark-sent'
     | '/api/messaging/process-auto'
@@ -681,6 +693,7 @@ export interface FileRouteTypes {
     | '/api/billing/verify-payment'
     | '/api/webhooks/razorpay'
     | '/api/messaging/enqueue-absences'
+    | '/api/messaging/enqueue-fee-overdue'
     | '/api/messaging/enqueue-fee-paid'
     | '/api/messaging/mark-sent'
     | '/api/messaging/process-auto'
@@ -717,6 +730,7 @@ export interface RootRouteChildren {
   ApiBillingVerifyPaymentRoute: typeof ApiBillingVerifyPaymentRoute
   ApiWebhooksRazorpayRoute: typeof ApiWebhooksRazorpayRoute
   ApiMessagingEnqueueAbsencesRoute: typeof ApiMessagingEnqueueAbsencesRoute
+  ApiMessagingEnqueueFeeOverdueRoute: typeof ApiMessagingEnqueueFeeOverdueRoute
   ApiMessagingEnqueueFeePaidRoute: typeof ApiMessagingEnqueueFeePaidRoute
   ApiMessagingMarkSentRoute: typeof ApiMessagingMarkSentRoute
   ApiMessagingProcessAutoRoute: typeof ApiMessagingProcessAutoRoute
@@ -1088,6 +1102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMessagingEnqueueAbsencesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/messaging/enqueue-fee-overdue': {
+      id: '/api/messaging/enqueue-fee-overdue'
+      path: '/api/messaging/enqueue-fee-overdue'
+      fullPath: '/api/messaging/enqueue-fee-overdue'
+      preLoaderRoute: typeof ApiMessagingEnqueueFeeOverdueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/messaging/enqueue-fee-paid': {
       id: '/api/messaging/enqueue-fee-paid'
       path: '/api/messaging/enqueue-fee-paid'
@@ -1230,6 +1251,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBillingVerifyPaymentRoute: ApiBillingVerifyPaymentRoute,
   ApiWebhooksRazorpayRoute: ApiWebhooksRazorpayRoute,
   ApiMessagingEnqueueAbsencesRoute: ApiMessagingEnqueueAbsencesRoute,
+  ApiMessagingEnqueueFeeOverdueRoute: ApiMessagingEnqueueFeeOverdueRoute,
   ApiMessagingEnqueueFeePaidRoute: ApiMessagingEnqueueFeePaidRoute,
   ApiMessagingMarkSentRoute: ApiMessagingMarkSentRoute,
   ApiMessagingProcessAutoRoute: ApiMessagingProcessAutoRoute,
