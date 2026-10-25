@@ -48,7 +48,8 @@ function PublicReportPage() {
         />
       ) : lookup.isLoading ? (
         <Skeleton className="h-96 rounded-2xl" />
-      ) : lookup.isError || report?.reason === "unavailable" ? (
+      ) : lookup.isError ||
+        (report && !report.ok && report.reason === "unavailable") ? (
         <ShareUnavailable
           title="Could not open this report"
           body="Try again in a moment, or ask the centre to send the link again."
