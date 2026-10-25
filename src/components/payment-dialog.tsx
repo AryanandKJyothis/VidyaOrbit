@@ -18,11 +18,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useStudents, useAddPayment } from "@/hooks/use-data";
+import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatUserError } from "@/lib/format-error";
 import { useNavigate } from "@tanstack/react-router";
 import { todayISO } from "@/lib/format";
+import { enqueueFeePaidAfterPayment } from "@/lib/messaging/client";
+import { formatFeePaidQueueToast } from "@/lib/messaging/summarize";
 
 export function PaymentDialog({
   open,
@@ -40,6 +43,7 @@ export function PaymentDialog({
   const students = useStudents();
   const mut = useAddPayment();
   const navigate = useNavigate();
+  const { active } = useActiveWorkspace();
   const [form, setForm] = useState({
     student_id: defaultStudentId ?? "",
     amount: "",
@@ -76,8 +80,29 @@ export function PaymentDialog({
         reference: form.reference || null,
         notes: form.notes || null,
       });
-      toast.success("Payment recorded");
       onOpenChange(false);
+      const ownerId = active?.ownerId;
+      const notify = ownerId
+        ? await enqueueFeePaidAfterPayment({
+            ownerId,
+            paymentId: p.id,
+          })
+        : { ok: false as const };
+      if (notify.ok && notify.summary) {
+        const copy = formatFeePaidQueueToast(notify.summary);
+        toast.success(copy.title, {
+          description: copy.description,
+          action:
+            notify.summary.queued > 0
+              ? {
+                  label: "Send",
+                  onClick: () => void navigate({ to: "/receipts/acks" }),
+                }
+              : undefined,
+        });
+      } else {
+        toast.success("Payment recorded");
+      }
       navigate({ to: "/receipts/$paymentId", params: { paymentId: p.id } });
     } catch (error: unknown) {
       toast.error(

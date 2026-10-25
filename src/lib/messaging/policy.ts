@@ -1,5 +1,6 @@
 import type {
   AbsencePayload,
+  FeePaidPayload,
   MessagingSettings,
   MessageOutboxRow,
   OutboxStatus,
@@ -7,11 +8,18 @@ import type {
   SkipReason,
 } from "./types";
 import { DEFAULT_MESSAGING_SETTINGS } from "./types";
-import { renderAbsenceTemplate } from "./templates";
+import { renderAbsenceTemplate, renderFeePaidTemplate } from "./templates";
+import { publicReceiptUrl } from "@/lib/share-links";
+import { SITE_URL } from "@/lib/site";
 
 /** Absence uniqueness: one row per student per attendance session. */
 export function absenceDedupeKey(sessionId: string, studentId: string): string {
   return `absence:${sessionId}:${studentId}`;
+}
+
+/** Fee-paid uniqueness: one ack row per payment. Webhook replay is a no-op. */
+export function feePaidDedupeKey(paymentId: string): string {
+  return `fee_paid:${paymentId}`;
 }
 
 export function normalizeMessagingSettings(
@@ -169,6 +177,116 @@ function inputStillCounts(
 
 export function canMarkOutboxSent(status: OutboxStatus): boolean {
   return status === "queued" || status === "failed";
+}
+
+/** Assisted send is messages:write. fees:read alone is not enough. */
+export function canSendFeePaidAck(
+  messages: "none" | "read" | "write" | boolean | undefined,
+): boolean {
+  return messages === true || messages === "write";
+}
+
+export type PlannedFeePaidRow = {
+  studentId: string;
+  kind: "fee_paid";
+  phone: string | null;
+  body: string | null;
+  status: "queued" | "skipped";
+  skipReason: SkipReason | null;
+  dedupeKey: string;
+  payload: FeePaidPayload;
+};
+
+export type FeePaidPlan = {
+  insert: PlannedFeePaidRow | null;
+  already: boolean;
+};
+
+export function remainingFeeBalance(
+  feeTotal: number,
+  paidTotal: number,
+): number {
+  const total = Number.isFinite(feeTotal) ? feeTotal : 0;
+  const paid = Number.isFinite(paidTotal) ? paidTotal : 0;
+  return Math.max(0, total - paid);
+}
+
+/**
+ * Recording a payment → one fee_paid outbox row.
+ * Dedupe is payment_id, so a webhook replay never inserts a second row.
+ */
+export function planFeePaidOutbox(input: {
+  paymentId: string;
+  studentId: string;
+  studentName: string;
+  amount: number;
+  paymentDate: string;
+  receiptNumber: string | null;
+  shareToken: string;
+  feeTotal: number;
+  paidTotal: number;
+  locale?: string;
+  phone: ResolvedParentPhone | null;
+  existing: Pick<MessageOutboxRow, "dedupe_key" | "status">[];
+}): FeePaidPlan {
+  const key = feePaidDedupeKey(input.paymentId);
+  if (input.existing.some((row) => row.dedupe_key === key)) {
+    return { insert: null, already: true };
+  }
+
+  const balance = remainingFeeBalance(input.feeTotal, input.paidTotal);
+  const rendered = renderFeePaidTemplate(
+    {
+      studentName: input.studentName,
+      amount: input.amount,
+      paymentDate: input.paymentDate,
+      receiptNumber: input.receiptNumber,
+      shareToken: input.shareToken,
+      balance,
+    },
+    input.locale,
+  );
+  const payload: FeePaidPayload = {
+    paymentId: input.paymentId,
+    studentName: input.studentName,
+    amount: input.amount,
+    paymentDate: input.paymentDate,
+    receiptNumber: input.receiptNumber,
+    receiptUrl: publicReceiptUrl(input.shareToken, SITE_URL),
+    shareToken: input.shareToken,
+    balance,
+    phoneSource: input.phone?.source ?? null,
+  };
+
+  if (!input.phone) {
+    return {
+      insert: {
+        studentId: input.studentId,
+        kind: "fee_paid",
+        phone: null,
+        body: rendered.body,
+        status: "skipped",
+        skipReason: "no_phone",
+        dedupeKey: key,
+        payload,
+      },
+      already: false,
+    };
+  }
+
+  return {
+    insert: {
+      studentId: input.studentId,
+      kind: "fee_paid",
+      phone: input.phone.e164,
+      body: rendered.body,
+      status: "queued",
+      skipReason: null,
+      dedupeKey: key,
+      payload,
+    },
+    already: false,
+  };
 }
 
 export function settingsFromRow(
