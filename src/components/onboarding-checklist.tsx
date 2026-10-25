@@ -9,7 +9,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 import { useBatches, usePayments, useStudents } from "@/hooks/use-data";
 import { useOnboarding } from "@/hooks/use-onboarding";
-import { useOwnerOnboarding } from "@/hooks/use-owner-onboarding";
 import { supabase } from "@/integrations/supabase/client";
 import {
   isInvitedStaff,
@@ -141,7 +140,7 @@ export function OnboardingChecklist({
   );
 }
 
-/** Dashboard-only Getting started card. Hidden until setup is complete. */
+/** Dashboard Getting started card. First-win for new owners — not behind the wizard. */
 export function OwnerGettingStartedCard() {
   const { user } = useAuth();
   const { active } = useActiveWorkspace();
@@ -150,7 +149,6 @@ export function OwnerGettingStartedCard() {
   const payments = usePayments();
   const { dismissedChecklist, dismissChecklist, checklistFromCounts } =
     useOnboarding();
-  const onboarding = useOwnerOnboarding(user?.id ?? null);
   const metadata = user?.user_metadata as Record<string, unknown> | undefined;
   const staff = isInvitedStaff({
     joiningTeam: readJoiningTeamFlag(metadata),
@@ -165,8 +163,7 @@ export function OwnerGettingStartedCard() {
 
   const attendanceStarted = useQuery({
     queryKey: ["onboarding-attendance", active?.ownerId],
-    enabled:
-      !!user && !!active?.ownerId && !staff && onboarding.state.completed,
+    enabled: !!user && !!active?.ownerId && !staff,
     queryFn: async () => {
       const { count, error } = await supabase
         .from("attendance_sessions")
@@ -185,7 +182,6 @@ export function OwnerGettingStartedCard() {
   });
 
   if (staff) return null;
-  if (!onboarding.state.completed) return null;
   if (dismissedChecklist) return null;
   if (!active) return null;
 

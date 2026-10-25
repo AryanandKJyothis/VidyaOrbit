@@ -14,9 +14,11 @@ import {
   readJoiningTeamFlag,
   readUserIdentity,
   setupIsIncomplete,
+  shouldAutoOpenOwnerWizard,
   shouldAutoOpenTour,
   shouldAutoOpenWizard,
   shouldCaptureClicksToResume,
+  shouldCaptureOwnerClicksToResume,
   shouldShowSetupPrompt,
   setupModeFor,
   validateWizardStep,
@@ -94,12 +96,12 @@ describe("Google auth flag", () => {
 });
 
 describe("wizard step validation", () => {
-  it("requires name, Indian mobile, and centre name on the owner you-step", () => {
+  it("requires name and centre name on the owner you-step; phone is optional", () => {
     expect(validateWizardStep("you", draft())).toMatchObject({
       ownerName: "Enter your name",
       name: "Enter your centre name",
-      contactPhone: "Contact phone is required",
     });
+    expect(validateWizardStep("you", draft()).contactPhone).toBeUndefined();
     expect(
       validateWizardStep(
         "you",
@@ -128,6 +130,15 @@ describe("wizard step validation", () => {
           name: "Samriddhi Centre",
           contactPhone: "+91 9876543210",
           address: "Kottayam",
+        }),
+      ),
+    ).toEqual({});
+    expect(
+      validateWizardStep(
+        "you",
+        draft({
+          ownerName: "Anjali Krishnan",
+          name: "Samriddhi Centre",
         }),
       ),
     ).toEqual({});
@@ -390,7 +401,7 @@ describe("SetupPrompt institute-name path", () => {
 });
 
 describe("resume, dismiss, and first-run gates", () => {
-  it("opens the wizard for a new centre, not for a settled one", () => {
+  it("treats empty or unnamed workspaces as new; a named centre with students is settled without a phone", () => {
     expect(
       looksLikeNewCentre({
         instituteName: "My Institute",
@@ -403,6 +414,14 @@ describe("resume, dismiss, and first-run gates", () => {
       looksLikeNewCentre({
         instituteName: "Samriddhi Centre",
         contactPhone: "9876543210",
+        batchCount: 3,
+        activeStudentCount: 40,
+      }),
+    ).toBe(false);
+    expect(
+      looksLikeNewCentre({
+        instituteName: "Samriddhi Centre",
+        contactPhone: null,
         batchCount: 3,
         activeStudentCount: 40,
       }),
@@ -444,6 +463,41 @@ describe("resume, dismiss, and first-run gates", () => {
         setupComplete: true,
         resumeRequested: true,
         looksIncomplete: true,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not auto-open or click-capture a new owner who has no phone", () => {
+    for (const instituteName of ["My Institute", "Samriddhi Centre"] as const) {
+      expect(
+        shouldAutoOpenOwnerWizard({
+          setupComplete: false,
+          resumeRequested: false,
+        }),
+      ).toBe(false);
+      expect(shouldCaptureOwnerClicksToResume()).toBe(false);
+      const checklist = deriveGettingStarted({
+        batchCount: 0,
+        activeStudentCount: 0,
+        paymentCount: 0,
+        attendanceStarted: false,
+      });
+      expect(checklist.doneCount).toBe(0);
+      expect(checklist.items).toHaveLength(3);
+      expect(checklist.items[0]?.label).toBe("Import");
+      expect(
+        looksLikeNewCentre({
+          instituteName,
+          contactPhone: null,
+          batchCount: 0,
+          activeStudentCount: 0,
+        }),
+      ).toBe(true);
+    }
+    expect(
+      shouldAutoOpenOwnerWizard({
+        setupComplete: false,
+        resumeRequested: true,
       }),
     ).toBe(true);
   });

@@ -330,9 +330,17 @@ export function validateWizardStep(
     } else if (draft.ownerName.trim().length > 120) {
       errors.ownerName = "Keep the name under 120 characters";
     }
-    if (!draft.contactPhone.trim()) {
-      errors.contactPhone = "Contact phone is required";
-    } else if (!isIndianMobile(draft.contactPhone)) {
+    if (mode === "staff") {
+      if (!draft.contactPhone.trim()) {
+        errors.contactPhone = "Contact phone is required";
+      } else if (!isIndianMobile(draft.contactPhone)) {
+        errors.contactPhone =
+          "Enter a 10-digit Indian mobile starting with 6–9";
+      }
+    } else if (
+      draft.contactPhone.trim() &&
+      !isIndianMobile(draft.contactPhone)
+    ) {
       errors.contactPhone = "Enter a 10-digit Indian mobile starting with 6–9";
     }
     if (mode === "owner") {
@@ -450,7 +458,10 @@ export function mergeDraftWithInstitute(
   };
 }
 
-/** Empty workspace that still needs the owner walk-through. */
+/**
+ * Empty / unnamed workspace. Phone is Settings / before-WA only — it is
+ * never a "new centre" signal and must not auto-open the wizard.
+ */
 export function looksLikeNewCentre(input: {
   instituteName?: string | null;
   contactPhone?: string | null;
@@ -458,9 +469,30 @@ export function looksLikeNewCentre(input: {
   activeStudentCount: number;
 }): boolean {
   const unnamed = !isRealInstituteName(input.instituteName);
-  const noPhone = !isIndianMobile(input.contactPhone ?? "");
   const emptyOps = input.batchCount === 0 && input.activeStudentCount === 0;
-  return unnamed || noPhone || emptyOps;
+  return unnamed || emptyOps;
+}
+
+/**
+ * First-run owners are not walled by the multi-step wizard.
+ * SetupPrompt (name) + checklist Import win. Wizard is resume-only.
+ */
+export function shouldAutoOpenOwnerWizard(input: {
+  setupComplete: boolean;
+  resumeRequested: boolean;
+  dismissedUntilInteraction?: boolean;
+}): boolean {
+  return shouldAutoOpenWizard({
+    setupComplete: input.setupComplete,
+    resumeRequested: input.resumeRequested,
+    looksIncomplete: false,
+    dismissedUntilInteraction: input.dismissedUntilInteraction,
+  });
+}
+
+/** Owners never get the click-capture trap. Dismiss stays dismissed. */
+export function shouldCaptureOwnerClicksToResume(): boolean {
+  return false;
 }
 
 export function firstIncompleteStep(input: {

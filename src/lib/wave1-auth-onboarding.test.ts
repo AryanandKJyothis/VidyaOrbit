@@ -96,6 +96,19 @@ describe("W1.6 empty states", () => {
   });
 });
 
+describe("W1 first-run owner is not walled by the wizard", () => {
+  it("keeps the wizard resume-only and shows the checklist without setup.completed", () => {
+    expect(host).toContain("shouldAutoOpenOwnerWizard");
+    expect(host).toContain("shouldCaptureOwnerClicksToResume");
+    expect(host).not.toMatch(/looksLikeNewCentre\(/);
+    expect(checklist).not.toContain("onboarding.state.completed");
+    expect(onboardingLib).toContain("looksIncomplete: false");
+    expect(onboardingLib).not.toMatch(
+      /const noPhone = !isIndianMobile\(input\.contactPhone/,
+    );
+  });
+});
+
 describe("W1.7 no full-screen loader gate", () => {
   it("uses inline pending on the router and authenticated shell", () => {
     expect(router).toContain("InlinePending");
