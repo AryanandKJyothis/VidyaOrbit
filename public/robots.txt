@@ -23,6 +23,8 @@ Disallow: /settings
 Disallow: /invites
 Disallow: /admin
 Disallow: /receipts
+Disallow: /r/
+Disallow: /report
 Disallow: /api
 Disallow: /join
 Disallow: /auth
@@ -41,6 +43,8 @@ Disallow: /settings
 Disallow: /invites
 Disallow: /admin
 Disallow: /receipts
+Disallow: /r/
+Disallow: /report
 Disallow: /api
 Disallow: /join
 Disallow: /auth

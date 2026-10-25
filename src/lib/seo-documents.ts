@@ -31,7 +31,8 @@ export const AI_CRAWLERS = [
   "Applebot",
 ] as const;
 
-/** Authenticated app, invite tokens, and API — not for search or AI indexes. */
+/** Authenticated app, invite tokens, public share links, and API — not for search or AI indexes.
+ *  `/r/` (trailing slash) is required so `/refund-policy` stays crawlable. */
 export const ROBOTS_DISALLOW = [
   "/dashboard",
   "/students",
@@ -45,6 +46,8 @@ export const ROBOTS_DISALLOW = [
   "/invites",
   "/admin",
   "/receipts",
+  "/r/",
+  "/report",
   "/api",
   "/join",
   "/auth",

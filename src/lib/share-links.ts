@@ -106,8 +106,18 @@ export type PublicReport = {
 
 export type PublicShareMiss = {
   ok: false;
-  reason: "not_found" | "revoked";
+  reason: "not_found" | "revoked" | "unavailable";
 };
+
+function parsePublicShareMiss(row: Record<string, unknown>): PublicShareMiss {
+  if (row.reason === "revoked") {
+    return { ok: false, reason: "revoked" };
+  }
+  if (row.reason === "unavailable" || row.reason === "rate_limited") {
+    return { ok: false, reason: "unavailable" };
+  }
+  return { ok: false, reason: "not_found" };
+}
 
 export function parsePublicReceipt(
   raw: unknown,
@@ -117,10 +127,7 @@ export function parsePublicReceipt(
   }
   const row = raw as Record<string, unknown>;
   if (row.ok !== true) {
-    return {
-      ok: false,
-      reason: row.reason === "revoked" ? "revoked" : "not_found",
-    };
+    return parsePublicShareMiss(row);
   }
   return {
     ok: true,
@@ -144,10 +151,7 @@ export function parsePublicReport(
   }
   const row = raw as Record<string, unknown>;
   if (row.ok !== true) {
-    return {
-      ok: false,
-      reason: row.reason === "revoked" ? "revoked" : "not_found",
-    };
+    return parsePublicShareMiss(row);
   }
   return {
     ok: true,

@@ -97,15 +97,32 @@ function loadMigration() {
   );
 }
 
+function loadA7Migration() {
+  return readFileSync(
+    "supabase/migrations/20261025100000_harden_public_share_links.sql",
+    "utf8",
+  );
+}
+
 describe("public share RPCs (PGlite)", () => {
   let db: PGlite;
+  let ipSeq = 0;
 
   async function asUser(uid: string | null, role = "authenticated") {
     await db.exec(`SELECT set_config('test.uid', '${uid ?? ""}', false)`);
     await db.exec(`SELECT set_config('test.role', '${role}', false)`);
   }
 
-  async function receipt(token: string) {
+  async function setClient(ip?: string, ua = "VidyaOrbit-PGlite/1.0") {
+    const clientIp = ip ?? `203.0.113.${(ipSeq++ % 200) + 1}`;
+    await db.query(`SELECT set_config('request.headers', $1, false)`, [
+      JSON.stringify({ "x-real-ip": clientIp, "user-agent": ua }),
+    ]);
+    return clientIp;
+  }
+
+  async function receipt(token: string, ip?: string) {
+    await setClient(ip);
     const r = await db.query<{ j: Record<string, unknown> }>(
       `SELECT public.get_public_receipt($1) AS j`,
       [token],
@@ -113,7 +130,8 @@ describe("public share RPCs (PGlite)", () => {
     return r.rows[0].j;
   }
 
-  async function report(token: string) {
+  async function report(token: string, ip?: string) {
+    await setClient(ip);
     const r = await db.query<{ j: Record<string, unknown> }>(
       `SELECT public.get_public_report($1) AS j`,
       [token],
@@ -129,6 +147,7 @@ describe("public share RPCs (PGlite)", () => {
       "-- pgcrypto unavailable in PGlite; generate_share_token falls back",
     );
     await db.exec(migration);
+    await db.exec(loadA7Migration());
 
     await db.query(`INSERT INTO auth.users (id) VALUES ($1), ($2), ($3)`, [
       OWNER_A,
@@ -286,5 +305,150 @@ describe("public share RPCs (PGlite)", () => {
       ok: false,
       reason: "not_found",
     });
+  });
+
+  it("issues receipts with a 180-day expiry and treats expired as not_found", async () => {
+    const row = await db.query<{
+      share_token: string;
+      expires_at: string;
+    }>(
+      `SELECT share_token, expires_at FROM public.receipt_shares WHERE payment_id = $1`,
+      [PAYMENT_A],
+    );
+    const token = row.rows[0].share_token;
+    const ttlDays =
+      (new Date(row.rows[0].expires_at).getTime() - Date.now()) /
+      (1000 * 60 * 60 * 24);
+    expect(ttlDays).toBeGreaterThan(179);
+    expect(ttlDays).toBeLessThan(181);
+
+    await db.query(
+      `UPDATE public.receipt_shares SET expires_at = clock_timestamp() - interval '1 hour' WHERE payment_id = $1`,
+      [PAYMENT_A],
+    );
+    await asUser(null, "anon");
+    expect(await receipt(token)).toEqual({ ok: false, reason: "not_found" });
+
+    const log = await db.query<{ result: string; token_hash: string }>(
+      `SELECT result, token_hash FROM public.public_share_access_log
+       WHERE share_kind = 'receipt' ORDER BY id DESC LIMIT 1`,
+    );
+    expect(log.rows[0].result).toBe("expired");
+    expect(log.rows[0].token_hash).not.toBe(token);
+    expect(log.rows[0].token_hash.length).toBeGreaterThanOrEqual(32);
+
+    await asUser(OWNER_A);
+    await db.query(
+      `UPDATE public.receipt_shares SET expires_at = clock_timestamp() + interval '180 days' WHERE payment_id = $1`,
+      [PAYMENT_A],
+    );
+  });
+
+  it("lets revoke work before expiry and regenerate reset the clock", async () => {
+    await asUser(OWNER_A);
+    await db.query(
+      `UPDATE public.receipt_shares
+       SET revoked_at = NULL, expires_at = clock_timestamp() + interval '2 days'
+       WHERE payment_id = $1`,
+      [PAYMENT_A],
+    );
+    const before = (
+      await db.query<{ share_token: string }>(
+        `SELECT share_token FROM public.receipt_shares WHERE payment_id = $1`,
+        [PAYMENT_A],
+      )
+    ).rows[0].share_token;
+
+    await db.query(`SELECT public.revoke_receipt_share($1)`, [PAYMENT_A]);
+    await asUser(null, "anon");
+    expect(await receipt(before)).toEqual({ ok: false, reason: "revoked" });
+
+    await asUser(OWNER_A);
+    const regen = await db.query<{ j: Record<string, unknown> }>(
+      `SELECT public.regenerate_receipt_share($1) AS j`,
+      [PAYMENT_A],
+    );
+    const next = String(regen.rows[0].j.token);
+    expect(next).not.toBe(before);
+
+    const ttl = await db.query<{ days: number }>(
+      `SELECT EXTRACT(EPOCH FROM (expires_at - clock_timestamp())) / 86400 AS days
+       FROM public.receipt_shares WHERE payment_id = $1`,
+      [PAYMENT_A],
+    );
+    expect(Number(ttl.rows[0].days)).toBeGreaterThan(179);
+    expect(Number(ttl.rows[0].days)).toBeLessThan(181);
+
+    await asUser(null, "anon");
+    expect((await receipt(before)).ok).toBe(false);
+    expect((await receipt(next)).ok).toBe(true);
+  });
+
+  it("rate-limits a hammered IP and returns generic unavailable", async () => {
+    const token = (
+      await db.query<{ share_token: string }>(
+        `SELECT share_token FROM public.receipt_shares WHERE payment_id = $1`,
+        [PAYMENT_A],
+      )
+    ).rows[0].share_token;
+    const ip = "198.51.100.21";
+    await asUser(null, "anon");
+    let last: Record<string, unknown> = {};
+    for (let i = 0; i < 21; i += 1) {
+      last = await receipt(token, ip);
+    }
+    expect(last).toEqual({ ok: false, reason: "unavailable" });
+    expect(JSON.stringify(last)).not.toContain("rate_limited");
+    expect(JSON.stringify(last)).not.toContain("expired");
+
+    const limited = await db.query<{ n: string }>(
+      `SELECT COUNT(*)::text AS n FROM public.public_share_access_log
+       WHERE result = 'rate_limited' AND share_kind = 'receipt'`,
+    );
+    expect(Number(limited.rows[0].n)).toBeGreaterThanOrEqual(1);
+  });
+
+  it("writes an access log on hit and returns workspace aggregates", async () => {
+    const token = (
+      await db.query<{ share_token: string }>(
+        `SELECT share_token FROM public.receipt_shares WHERE payment_id = $1`,
+        [PAYMENT_A],
+      )
+    ).rows[0].share_token;
+    await asUser(null, "anon");
+    const payload = await receipt(token, "198.51.100.88");
+    expect(payload.ok).toBe(true);
+
+    const raw = await db.query<{
+      token_hash: string;
+      ip_hash: string;
+      ua_hash: string;
+      result: string;
+    }>(
+      `SELECT token_hash, ip_hash, ua_hash, result
+       FROM public.public_share_access_log
+       WHERE share_kind = 'receipt' AND result = 'ok'
+       ORDER BY id DESC LIMIT 1`,
+    );
+    expect(raw.rows[0].result).toBe("ok");
+    expect(raw.rows[0].token_hash).not.toBe(token);
+    expect(raw.rows[0].ip_hash).not.toBe("198.51.100.88");
+    expect(raw.rows[0].ua_hash).not.toBe("VidyaOrbit-PGlite/1.0");
+
+    await asUser(OWNER_A);
+    const summary = await db.query<{ j: Record<string, unknown> }>(
+      `SELECT public.public_share_access_summary($1, 30) AS j`,
+      [OWNER_A],
+    );
+    const blob = JSON.stringify(summary.rows[0].j);
+    expect(summary.rows[0].j.ok).toBe(true);
+    expect(blob).not.toContain(token);
+    expect(blob).not.toContain("token_hash");
+    expect(blob).not.toContain("198.51.100.88");
+
+    await asUser(OWNER_B);
+    await expect(
+      db.query(`SELECT public.public_share_access_summary($1, 30)`, [OWNER_A]),
+    ).rejects.toThrow(/Forbidden/i);
   });
 });

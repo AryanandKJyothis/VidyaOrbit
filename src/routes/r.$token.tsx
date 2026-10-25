@@ -34,7 +34,10 @@ function PublicReceiptPage() {
   return (
     <SharePageShell title="Fee receipt" canPrint={receipt?.ok === true}>
       {!isShareTokenShape(token) ||
-      (lookup.isSuccess && receipt && !receipt.ok) ? (
+      (lookup.isSuccess &&
+        receipt &&
+        !receipt.ok &&
+        receipt.reason !== "unavailable") ? (
         <ShareUnavailable
           title={
             receipt && !receipt.ok && receipt.reason === "revoked"
@@ -45,7 +48,7 @@ function PublicReceiptPage() {
         />
       ) : lookup.isLoading ? (
         <Skeleton className="h-96 rounded-2xl" />
-      ) : lookup.isError ? (
+      ) : lookup.isError || receipt?.reason === "unavailable" ? (
         <ShareUnavailable
           title="Could not open this receipt"
           body="Try again in a moment, or ask the centre to send the link again."

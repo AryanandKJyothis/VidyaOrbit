@@ -46,6 +46,25 @@ describe("share link helpers", () => {
     });
   });
 
+  it("treats expired as not found and rate-limited as unavailable", () => {
+    expect(parsePublicReceipt({ ok: false, reason: "expired" })).toEqual({
+      ok: false,
+      reason: "not_found",
+    });
+    expect(parsePublicReport({ ok: false, reason: "expired" })).toEqual({
+      ok: false,
+      reason: "not_found",
+    });
+    expect(parsePublicReceipt({ ok: false, reason: "unavailable" })).toEqual({
+      ok: false,
+      reason: "unavailable",
+    });
+    expect(parsePublicReceipt({ ok: false, reason: "rate_limited" })).toEqual({
+      ok: false,
+      reason: "unavailable",
+    });
+  });
+
   it("builds a parent WhatsApp summary with the report URL", () => {
     const share = buildReportShareMessage({
       centreName: "Orbit Coaching",
