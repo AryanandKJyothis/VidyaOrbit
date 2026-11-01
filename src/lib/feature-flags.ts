@@ -27,7 +27,7 @@ export function isOnboardingV2Enabled(
 export const ONBOARDING_V2_ENABLED = isOnboardingV2Enabled();
 
 /**
- * Sample-data toggle needs migration 20261101090000_add_is_sample.sql applied.
+ * Sample-data toggle needs migration 20261101100000_add_is_sample.sql applied.
  * Default OFF; only the exact string "true" shows the toggle.
  */
 export function isSampleDataEnabled(

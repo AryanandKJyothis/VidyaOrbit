@@ -22,6 +22,10 @@ import {
 } from "lucide-react";
 import { ImportStudentsDialog } from "@/components/import-students-dialog";
 import { feeBadgeKind } from "@/lib/onboarding-v2";
+import {
+  ClearSampleDataButton,
+  MissingPhonesNudge,
+} from "@/components/onboarding/student-list-nudges";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -293,6 +297,9 @@ function StudentsList() {
                 >
                   <FileDown className="mr-1.5 h-4 w-4" /> Download template
                 </Button>
+                {active?.role === "owner" && (
+                  <ClearSampleDataButton ownerId={active.ownerId} />
+                )}
                 <Button
                   variant="outline"
                   onClick={() => setImportOpen(true)}
@@ -321,6 +328,7 @@ function StudentsList() {
       />
 
       <OverLimitBanner />
+      <MissingPhonesNudge students={students.data ?? []} />
 
       {sub.data && !unlimited && !sub.data.over_limit && pct >= 80 && (
         <Card

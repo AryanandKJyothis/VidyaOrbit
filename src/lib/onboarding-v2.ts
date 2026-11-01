@@ -85,9 +85,12 @@ export function segmentFor(students: number): Segment {
   return "small";
 }
 
-/** Under-25 owners never see the staff question. */
+/**
+ * Small centres (≤50) never see the staff question, so a solo tutor reaches
+ * attendance in ≤4 screens (students → timings → goal → names).
+ */
 export function shouldAskStaff(students: number | null): boolean {
-  return students === null || students >= 25;
+  return students === null || students > 50;
 }
 
 export type PlanRecommendation = {
@@ -161,7 +164,8 @@ export type QuickStep =
 
 /** Ordered steps for the answers so far. Branch steps follow the 4 questions. */
 export function quickStepsFor(students: number | null): QuickStep[] {
-  const steps: QuickStep[] = ["name", "students"];
+  // Centre name is prefilled and edited inline in the header — no own screen.
+  const steps: QuickStep[] = ["students"];
   if (shouldAskStaff(students)) steps.push("staff");
   steps.push("timings", "goal");
   const seg = students === null ? "small" : segmentFor(students);
@@ -521,4 +525,20 @@ export function feeBadgeKind(input: {
   if (input.overdue) return "overdue";
   if (input.balance === 0) return "paid";
   return input.dueSoon ? "due" : "balance";
+}
+
+/** Active students with neither a student nor guardian phone. */
+export function countMissingParentPhones(
+  students: readonly {
+    phone?: string | null;
+    guardian_phone?: string | null;
+    status?: string | null;
+  }[],
+): number {
+  return students.filter(
+    (s) =>
+      s.status !== "archived" &&
+      !(s.phone ?? "").trim() &&
+      !(s.guardian_phone ?? "").trim(),
+  ).length;
 }

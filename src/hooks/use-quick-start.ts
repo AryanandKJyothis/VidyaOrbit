@@ -13,7 +13,7 @@ export type QuickStartState = {
 };
 
 export const EMPTY_QUICK_START: QuickStartState = {
-  step: "name",
+  step: "students",
   students: null,
   staff: null,
   chips: [],
@@ -35,7 +35,7 @@ export function parseQuickStart(raw: unknown): QuickStartState {
   if (!raw || typeof raw !== "object") return EMPTY_QUICK_START;
   const p = raw as Partial<QuickStartState>;
   return {
-    step: typeof p.step === "string" ? p.step : "name",
+    step: typeof p.step === "string" && p.step !== "name" ? p.step : "students",
     students: isAnswer(p.students) ? p.students : null,
     staff: isAnswer(p.staff) ? p.staff : null,
     chips: Array.isArray(p.chips)

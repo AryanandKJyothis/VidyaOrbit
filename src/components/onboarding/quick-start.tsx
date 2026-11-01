@@ -171,10 +171,25 @@ export function QuickStartDialog({
   const [staffPhone, setStaffPhone] = useState("");
   const [staffEmail, setStaffEmail] = useState("");
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [savedName, setSavedName] = useState(initialCentreName);
+
+  /** Centre name is prefilled silently; saved on blur and again on finish. */
+  const saveName = async () => {
+    const name = centreName.trim();
+    if (name.length < 2 || name === savedName) return;
+    const { error } = await supabase
+      .from("institutes")
+      .update({ name } as never)
+      .eq("owner_id", ownerId);
+    if (error) throw error;
+    setSavedName(name);
+    qc.invalidateQueries({ queryKey: ["institute"] });
+  };
 
   const students = answerValue(STUDENT_BUCKETS, state.students);
   const steps = quickStepsFor(students);
-  const step: QuickStep = steps.includes(state.step) ? state.step : "name";
+  const step: QuickStep = steps.includes(state.step) ? state.step : "students";
   const stepNo = steps.indexOf(step) + 1;
   const parsedNames = useMemo(() => parsePastedNames(pasted), [pasted]);
   const seg = students === null ? "small" : segmentFor(students);
@@ -240,6 +255,7 @@ export function QuickStartDialog({
   };
 
   const finish = async (batchId: string | null) => {
+    await saveName();
     patch({ completed: true, step: "done" });
     if (batchId) {
       try {
@@ -295,21 +311,7 @@ export function QuickStartDialog({
     });
 
   const body: Record<QuickStep, ReactNode> = {
-    name: (
-      <div className="space-y-2">
-        <Label htmlFor="qs-centre">Centre name</Label>
-        <Input
-          id="qs-centre"
-          className="h-12"
-          value={centreName}
-          placeholder="Bright Future Tuition"
-          onChange={(e) => setCentreName(e.target.value)}
-        />
-        <p className="text-xs text-muted-foreground">
-          You can change this any time in Settings.
-        </p>
-      </div>
-    ),
+    name: null,
     students: (
       <div className="space-y-3">
         <ChoiceGrid
@@ -503,11 +505,15 @@ export function QuickStartDialog({
             value={staffPhone}
             onChange={(e) => setStaffPhone(e.target.value)}
           />
+          <Label htmlFor="qs-staff-email" className="text-xs">
+            Email (required — staff sign in with it)
+          </Label>
           <Input
+            id="qs-staff-email"
             className="h-11"
-            aria-label="Staff email"
+            aria-label="Staff email (required for sign-in)"
             type="email"
-            placeholder="Their email (for sign-in)"
+            placeholder="Their email — needed for sign-in"
             value={staffEmail}
             onChange={(e) => setStaffEmail(e.target.value)}
           />
@@ -628,20 +634,6 @@ export function QuickStartDialog({
       parseOtherNumber(state.staff.other) === null);
 
   const onContinue = () => {
-    if (step === "name") {
-      return run(async () => {
-        const name = centreName.trim();
-        if (name.length >= 2) {
-          const { error } = await supabase
-            .from("institutes")
-            .update({ name } as never)
-            .eq("owner_id", ownerId);
-          if (error) throw error;
-          qc.invalidateQueries({ queryKey: ["institute"] });
-        }
-        advance();
-      });
-    }
     if (step === "names") return saveNamesAndFinish();
     const next = nextQuickStep(step, students);
     if (next === "done" || (step === "invite" && seg === "large")) {
@@ -673,9 +665,39 @@ export function QuickStartDialog({
       }}
     >
       <DialogContent className="max-h-[min(92dvh,760px)] overflow-y-auto sm:max-w-[28rem]">
-        <p className="text-xs font-medium text-muted-foreground">
-          Step {stepNo} of {steps.length - 1} · about 2 minutes
-        </p>
+        <div className="flex min-h-11 items-center justify-between gap-2 text-xs text-muted-foreground">
+          {editingName ? (
+            <Input
+              autoFocus
+              aria-label="Centre name"
+              className="h-11 flex-1"
+              value={centreName}
+              placeholder="Your centre's name"
+              onChange={(e) => setCentreName(e.target.value)}
+              onBlur={() => {
+                setEditingName(false);
+                void saveName().catch((e) =>
+                  toast.error(formatUserError(e, "Could not save the name.")),
+                );
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              }}
+            />
+          ) : (
+            <button
+              type="button"
+              className="min-h-11 truncate text-left font-medium text-foreground underline decoration-dotted underline-offset-4"
+              onClick={() => setEditingName(true)}
+              aria-label="Edit centre name"
+            >
+              {centreName.trim() || "Name your centre"} ✎
+            </button>
+          )}
+          <span className="shrink-0">
+            Step {stepNo} of {steps.length - 1}
+          </span>
+        </div>
         <DialogTitle className="font-display text-lg leading-snug">
           <Copy c={titles[step]} />
         </DialogTitle>

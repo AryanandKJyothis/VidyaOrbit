@@ -20,6 +20,7 @@ import {
   QS_COPY,
   checklistDataReady,
   feeBadgeKind,
+  countMissingParentPhones,
   isDuplicateStudentName,
 } from "./onboarding-v2";
 import { isOnboardingV2Enabled, isSampleDataEnabled } from "./feature-flags";
@@ -66,7 +67,6 @@ describe("branching", () => {
   it("under 25 skips the staff question", () => {
     expect(shouldAskStaff(20)).toBe(false);
     expect(quickStepsFor(20)).toEqual([
-      "name",
       "students",
       "timings",
       "goal",
@@ -74,11 +74,9 @@ describe("branching", () => {
       "done",
     ]);
   });
-  it("25–50 asks staff, no invite step", () => {
+  it("25–50 skips staff (small), no invite step", () => {
     expect(quickStepsFor(50)).toEqual([
-      "name",
       "students",
-      "staff",
       "timings",
       "goal",
       "names",
@@ -87,7 +85,6 @@ describe("branching", () => {
   });
   it("mid gets invite-staff then names", () => {
     expect(quickStepsFor(150)).toEqual([
-      "name",
       "students",
       "staff",
       "timings",
@@ -99,7 +96,6 @@ describe("branching", () => {
   });
   it("large gets guided import offer then invite", () => {
     expect(quickStepsFor(401)).toEqual([
-      "name",
       "students",
       "staff",
       "timings",
@@ -302,7 +298,7 @@ describe("quick start visibility", () => {
     expect(shouldShowQuickStart({ ...base, ...o })).toBe(false),
   );
   it("persisted state parses old/garbage safely", () => {
-    expect(parseQuickStart(null).step).toBe("name");
+    expect(parseQuickStart(null).step).toBe("students");
     expect(
       parseQuickStart({ chips: ["a", 1], goal: "nope", completed: 1 }),
     ).toMatchObject({ chips: ["a"], goal: null, completed: true });
@@ -354,7 +350,7 @@ describe("flags, checklist, copy", () => {
   });
   it("migration is additive only", () => {
     const sql = readFileSync(
-      "supabase/migrations/20261101090000_add_is_sample.sql",
+      "supabase/migrations/20261101100000_add_is_sample.sql",
       "utf8",
     )
       .split("\n")
@@ -412,5 +408,43 @@ describe("audit fixes", () => {
         dueSoon: false,
       }),
     ).toBe("overdue");
+  });
+});
+
+describe("product decisions 2026-11-01", () => {
+  it("AC2: every small path is <=4 screens before attendance, no name screen", () => {
+    for (const n of [0, 20, 24, 25, 50]) {
+      const screens = quickStepsFor(n).filter((x) => x !== "done");
+      expect(screens).not.toContain("name");
+      expect(screens.length).toBeLessThanOrEqual(4);
+    }
+    expect(quickStepsFor(20)).toEqual([
+      "students",
+      "timings",
+      "goal",
+      "names",
+      "done",
+    ]);
+  });
+  it("staff question only above 50", () => {
+    expect(shouldAskStaff(50)).toBe(false);
+    expect(shouldAskStaff(51)).toBe(true);
+  });
+  it("old persisted 'name' step resumes at students", () => {
+    expect(parseQuickStart({ step: "name" }).step).toBe("students");
+  });
+  it("missing parent phones nudge count", () => {
+    expect(
+      countMissingParentPhones([
+        { phone: null, guardian_phone: null, status: "active" },
+        { phone: "", guardian_phone: "9876543210", status: "active" },
+        { phone: null, guardian_phone: null, status: "archived" },
+      ]),
+    ).toBe(1);
+  });
+  it("normal add-student form still requires a phone", () => {
+    const dialog = readFileSync("src/components/student-dialog.tsx", "utf8");
+    expect(dialog).toMatch(/one is needed/);
+    expect(dialog).toContain("useUpsertStudent");
   });
 });
