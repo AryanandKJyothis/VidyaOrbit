@@ -63,7 +63,7 @@ function PaidPlanCtas({
 
 export function PublicPricingGrid() {
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {APPROVED_PRICING.map((plan) => {
         const isRecommended = plan.code === "growth";
         const savingsLabel = getAnnualSavingsLabel(plan);
@@ -105,7 +105,7 @@ export function PublicPricingGrid() {
               {plan.monthlyPrice > 0 && (
                 <>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {formatIndianPrice(plan.annualPrice)}/year
+                    or {formatIndianPrice(plan.annualPrice)}/year
                   </p>
                   {savingsLabel && (
                     <p className="mt-0.5 text-xs font-medium text-[color:var(--brand-teal)]">
@@ -114,8 +114,8 @@ export function PublicPricingGrid() {
                   )}
                   {plan.setupFee > 0 && (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {formatIndianPrice(plan.setupFee)} optional DFY setup on
-                      first monthly invoice (waived on annual)
+                      {formatIndianPrice(plan.setupFee)} setup on first monthly
+                      invoice (waived on yearly)
                     </p>
                   )}
                 </>

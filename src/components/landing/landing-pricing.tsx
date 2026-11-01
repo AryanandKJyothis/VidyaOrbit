@@ -51,7 +51,7 @@ export function LandingPricing() {
         </div>
       </div>
 
-      <div className="mt-10 grid border-t border-ink/20 md:grid-cols-3">
+      <div className="mt-10 grid border-t border-ink/20 md:grid-cols-2 xl:grid-cols-4">
         {PAID_PLANS.map((plan) => (
           <PlanColumn key={plan.code} plan={plan} annual={annual} />
         ))}

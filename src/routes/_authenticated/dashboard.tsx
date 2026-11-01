@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { greetingName } from "@/lib/onboarding-v2";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -73,7 +74,6 @@ import { OverLimitBanner } from "@/components/over-limit-banner";
 import { ExpiryBanner } from "@/components/expiry-banner";
 import { WelcomeBackBanner } from "@/components/welcome-back-banner";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
-import { useOnboarding } from "@/hooks/use-onboarding";
 import { useAuth } from "@/hooks/use-auth";
 import {
   istNowMinutes,
@@ -95,7 +95,6 @@ function Dashboard() {
   const canViewFees = useCan("fees", "read");
   const canStudents = useCan("students");
   const canAttendance = useCan("attendance");
-  const { dismissedChecklist } = useOnboarding();
   const { reducedMotion } = usePrefers();
   const itemTransition = reducedMotion ? fadeOnly : springDefault;
 
@@ -287,6 +286,26 @@ function Dashboard() {
   }, [attendance.data]);
 
   const loading = useOwnerDataPending(students, batches, payments);
+  const workspaceEmpty =
+    !loading &&
+    !students.isError &&
+    !batches.isError &&
+    (students.data?.length ?? 0) === 0 &&
+    (batches.data?.length ?? 0) === 0;
+  const emptyKey = active?.ownerId
+    ? `vidya:dash-known-empty:${active.ownerId}`
+    : null;
+  const [knownEmpty, setKnownEmpty] = useState(() => readKnownEmpty(emptyKey));
+  useEffect(() => {
+    setKnownEmpty(readKnownEmpty(emptyKey));
+  }, [emptyKey]);
+  useEffect(() => {
+    if (loading || !emptyKey) return;
+    writeKnownEmpty(emptyKey, workspaceEmpty);
+    setKnownEmpty(workspaceEmpty);
+  }, [loading, workspaceEmpty, emptyKey]);
+  // Empty workspace: one teaching state, no zero-filled cards, no skeletons.
+  const showTeachingEmpty = workspaceEmpty;
   const studentById = useMemo(() => {
     const map: Record<string, string> = {};
     for (const s of students.data ?? []) map[s.id] = s.full_name;
@@ -379,10 +398,10 @@ function Dashboard() {
   }, [payments.data, studentById]);
 
   const { user } = useAuth();
-  const firstName =
-    ((user?.user_metadata?.full_name as string | undefined) ?? "")
-      .trim()
-      .split(/\s+/)[0] || "there";
+  const firstName = greetingName(
+    user?.user_metadata?.full_name as string | undefined,
+    institute.data?.name,
+  );
   const hour = new Date().getHours();
   const greeting =
     hour < 5
@@ -414,6 +433,7 @@ function Dashboard() {
           displayName={firstName}
           instituteName={institute.data?.name ?? null}
           classesToday={stats.todaysBatches.length}
+          batchCount={batches.isSuccess ? batches.data.length : undefined}
         />
         <QuickActions
           canViewFees={canViewFees}
@@ -422,27 +442,24 @@ function Dashboard() {
         />
       </div>
 
-      {!loading &&
-        dismissedChecklist &&
-        !students.isError &&
-        stats.totalStudents === 0 &&
-        (batches.data?.length ?? 0) === 0 && (
-          <EmptyState
-            className="mb-6"
-            icon={Users}
-            title="Your institute is ready"
-            description="Add a batch, then enrol students. The dashboard fills in as you run attendance and collect fees."
-          >
-            <Button asChild>
-              <Link to="/batches">Create a batch</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/students">Add students</Link>
-            </Button>
-          </EmptyState>
-        )}
+      {showTeachingEmpty && (
+        <EmptyState
+          className="mb-6"
+          icon={Users}
+          title="Add your first batch and students"
+          description="Once you do, this page shows today's attendance, fees collected and who still owes. Most centres finish in about 2 minutes."
+          reassurance="ആദ്യം ഒരു ബാച്ചും കുട്ടികളെയും ചേർക്കുക — ഏകദേശം 2 മിനിറ്റ്."
+        >
+          <Button asChild>
+            <Link to="/batches">Create a batch</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/students">Add students</Link>
+          </Button>
+        </EmptyState>
+      )}
 
-      {loading && (
+      {loading && !knownEmpty && (
         <div className="mt-4 space-y-3">
           <Skeleton className="h-36 rounded-2xl" />
           <Skeleton className="h-48 rounded-2xl" />
@@ -450,7 +467,7 @@ function Dashboard() {
         </div>
       )}
 
-      {!loading && (
+      {!loading && !showTeachingEmpty && (
         <div className="mt-4 space-y-3 sm:mt-5 sm:space-y-4">
           <TodayAttendanceCard
             enrolled={todayAtt.enrolled}
@@ -477,401 +494,429 @@ function Dashboard() {
         </div>
       )}
 
-      {/* KPI strip — desktop density */}
-      <div className="mt-6 hidden grid-cols-2 gap-4 md:grid lg:grid-cols-5">
-        {loading ? (
-          Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton
-              key={i}
-              className="h-32 sm:h-[148px] rounded-xl skeleton-shimmer"
-            />
-          ))
-        ) : students.isError || batches.isError || payments.isError ? (
-          <QueryErrorState
-            error={
-              students.isError
-                ? (students.error as Error)
-                : batches.isError
-                  ? (batches.error as Error)
-                  : (payments.error as Error)
-            }
-            title="Failed to load statistics"
-            onRetry={() => {
-              void qc.invalidateQueries({ queryKey: ["students"] });
-              void qc.invalidateQueries({ queryKey: ["batches"] });
-              void qc.invalidateQueries({ queryKey: ["payments"] });
-            }}
-          />
-        ) : (
-          <>
-            <StatCard
-              index={0}
-              label="Students"
-              value={String(stats.totalStudents)}
-              hint="Active"
-              icon={Users}
-            />
-            <StatCard
-              index={1}
-              label="Batches"
-              value={String(stats.activeBatches)}
-              hint={`${stats.todaysBatches.length} today`}
-              icon={Layers}
-            />
-            {canViewFees && (
+      {!showTeachingEmpty && !(loading && knownEmpty) && (
+        <>
+          {/* KPI strip — desktop density */}
+          <div className="mt-6 hidden grid-cols-2 gap-4 md:grid lg:grid-cols-5">
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton
+                  key={i}
+                  className="h-32 sm:h-[148px] rounded-xl skeleton-shimmer"
+                />
+              ))
+            ) : students.isError || batches.isError || payments.isError ? (
+              <QueryErrorState
+                error={
+                  students.isError
+                    ? (students.error as Error)
+                    : batches.isError
+                      ? (batches.error as Error)
+                      : (payments.error as Error)
+                }
+                title="Failed to load statistics"
+                onRetry={() => {
+                  void qc.invalidateQueries({ queryKey: ["students"] });
+                  void qc.invalidateQueries({ queryKey: ["batches"] });
+                  void qc.invalidateQueries({ queryKey: ["payments"] });
+                }}
+              />
+            ) : (
               <>
                 <StatCard
-                  index={2}
-                  label="Collected"
-                  value={formatINR(stats.monthCollected)}
-                  hint="This month"
-                  icon={Wallet}
-                  tone="success"
-                  sparkline={collectionSpark}
-                  deltaPct={stats.collectionDelta}
+                  index={0}
+                  label="Students"
+                  value={String(stats.totalStudents)}
+                  hint="Active"
+                  icon={Users}
                 />
                 <StatCard
-                  index={3}
-                  label="Dues"
-                  value={formatINR(stats.totalDues)}
-                  hint={`${stats.overdue.length} overdue · ${stats.partialCount} partial`}
-                  icon={AlertCircle}
-                  tone={stats.overdue.length ? "destructive" : "default"}
+                  index={1}
+                  label="Batches"
+                  value={String(stats.activeBatches)}
+                  hint={`${stats.todaysBatches.length} today`}
+                  icon={Layers}
+                />
+                {canViewFees && (
+                  <>
+                    <StatCard
+                      index={2}
+                      label="Collected"
+                      value={formatINR(stats.monthCollected)}
+                      hint="This month"
+                      icon={Wallet}
+                      tone="success"
+                      sparkline={collectionSpark}
+                      deltaPct={stats.collectionDelta}
+                    />
+                    <StatCard
+                      index={3}
+                      label="Dues"
+                      value={formatINR(stats.totalDues)}
+                      hint={`${stats.overdue.length} overdue · ${stats.partialCount} partial`}
+                      icon={AlertCircle}
+                      tone={stats.overdue.length ? "destructive" : "default"}
+                    />
+                  </>
+                )}
+                <StatCard
+                  index={canViewFees ? 4 : 2}
+                  label="Attendance"
+                  value={`${stats.attRate}%`}
+                  hint="Last 30 days"
+                  icon={CalendarCheck}
+                  sparkline={attendanceSpark}
                 />
               </>
             )}
-            <StatCard
-              index={canViewFees ? 4 : 2}
-              label="Attendance"
-              value={`${stats.attRate}%`}
-              hint="Last 30 days"
-              icon={CalendarCheck}
-              sparkline={attendanceSpark}
-            />
-          </>
-        )}
-      </div>
+          </div>
 
-      {/* Fee collection chart */}
-      {canViewFees && (
-        <div className="mt-6 sm:mt-8">
-          <Card className="card-premium">
-            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4">
-              <div className="min-w-0">
-                <CardTitle className="text-base sm:text-lg">
-                  Fee collection
-                </CardTitle>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Last 14 days
-                </p>
-              </div>
-              <TrendingUp
-                className="h-5 w-5 text-muted-foreground mt-2 sm:mt-0 shrink-0"
-                aria-hidden
-              />
-            </CardHeader>
-            <CardContent>
-              {payments.isError ? (
-                <QueryErrorState
-                  error={payments.error as Error}
-                  onRetry={() =>
-                    qc.invalidateQueries({ queryKey: ["payments"] })
-                  }
-                />
-              ) : loading ? (
-                <QueryLoadingSkeleton
-                  count={1}
-                  className="h-[200px] sm:h-[240px]"
-                />
-              ) : (
-                <div className="h-[200px] sm:h-[240px] w-full -mx-4 sm:mx-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={collectionSeries}
-                      margin={{ left: -10, right: 6, top: 6, bottom: 0 }}
-                    >
-                      <defs>
-                        <linearGradient
-                          id="collectArea"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset="0%"
-                            stopColor="oklch(0.55 0.14 220)"
-                            stopOpacity={0.35}
-                          />
-                          <stop
-                            offset="100%"
-                            stopColor="oklch(0.55 0.14 220)"
-                            stopOpacity={0}
-                          />
-                        </linearGradient>
-                        <linearGradient
-                          id="collectStroke"
-                          x1="0"
-                          y1="0"
-                          x2="1"
-                          y2="0"
-                        >
-                          <stop offset="0%" stopColor="oklch(0.7 0.12 185)" />
-                          <stop
-                            offset="100%"
-                            stopColor="oklch(0.32 0.10 255)"
-                          />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="oklch(0.92 0.008 245)"
-                        vertical={false}
-                      />
-                      <XAxis
-                        dataKey="label"
-                        tick={{ fontSize: 10 }}
-                        stroke="oklch(0.52 0.03 255)"
-                      />
-                      <YAxis
-                        tick={{ fontSize: 10 }}
-                        stroke="oklch(0.52 0.03 255)"
-                        tickFormatter={(v) =>
-                          v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v
-                        }
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          background: "white",
-                          border: "1px solid oklch(0.92 0.008 245)",
-                          borderRadius: 10,
-                          fontSize: 11,
-                          boxShadow: "0 8px 24px -8px rgba(15,42,72,0.18)",
-                        }}
-                        formatter={(v) => formatINR(Number(v))}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="amount"
-                        stroke="url(#collectStroke)"
-                        strokeWidth={2.5}
-                        fill="url(#collectArea)"
-                        dot={false}
-                        activeDot={{ r: 5, fill: "oklch(0.32 0.10 255)" }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Today's batches */}
-      <div className="mt-6 sm:mt-8">
-        <Card className="card-premium">
-          <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <div className="min-w-0">
-              <CardTitle className="text-base sm:text-lg">
-                Today's batches
-              </CardTitle>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                {istWeekdayLong()}
-              </p>
-            </div>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/batches">All</Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {loading ? (
-              <QueryLoadingSkeleton count={3} className="h-14" />
-            ) : stats.todaysBatches.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-subtle p-5 text-center text-xs sm:text-sm text-muted-foreground">
-                {(batches.data ?? []).length === 0
-                  ? "No batches yet — create one to schedule classes."
-                  : "No classes scheduled for today."}
-              </div>
-            ) : (
-              stats.todaysBatches.slice(0, 5).map((b, i) => {
-                const count = (students.data ?? []).filter(
-                  (s) => s.batch_id === b.id && s.status !== "archived",
-                ).length;
-                return (
-                  <motion.div
-                    key={b.id}
-                    initial={
-                      reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }
-                    }
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      ...itemTransition,
-                      delay: reducedMotion ? 0 : i * 0.04,
-                    }}
-                    className="group flex items-center justify-between gap-3 rounded-lg border border-subtle bg-card p-3 transition-[background-color] duration-100 hover:bg-muted/40"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-semibold">
-                        {b.name}
-                      </div>
-                      <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                        {b.timing && (
-                          <span className="inline-flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {b.timing}
-                          </span>
-                        )}
-                        <span>·</span>
-                        <span>
-                          {count}/{b.capacity}
-                        </span>
-                      </div>
-                    </div>
-                    <Button
-                      asChild
-                      size="sm"
-                      variant="ghost"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity gap-1"
-                    >
-                      <Link to="/attendance">
-                        Mark
-                        <ArrowRight className="h-3 w-3" />
-                      </Link>
-                    </Button>
-                  </motion.div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Overdue + Recent payments */}
-      {canViewFees && (
-        <div className="mt-6 sm:mt-8 grid gap-6 lg:grid-cols-2 auto-rows-max">
-          <Card className="card-premium">
-            <CardHeader className="flex flex-row items-center justify-between pb-4">
-              <div>
-                <CardTitle className="text-base sm:text-lg">
-                  Overdue dues
-                </CardTitle>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {loading
-                    ? "Loading…"
-                    : stats.overdue.length === 0
-                      ? "All clear"
-                      : `${stats.overdue.length} students · ${formatINR(stats.overdueAmount)}`}
-                </p>
-              </div>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/fees" search={{ status: "overdue" }}>
-                  Collect
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {loading ? (
-                <QueryLoadingSkeleton count={3} className="h-14" />
-              ) : stats.overdue.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-subtle p-5 text-center text-xs sm:text-sm text-muted-foreground">
-                  {stats.totalStudents === 0
-                    ? "Add students with fee totals to track dues here."
-                    : "No overdue dues right now."}
-                </div>
-              ) : (
-                stats.overdue.slice(0, 6).map((s, i) => {
-                  const balance =
-                    Number(s.fee_total) - (stats.totalPaidByStudent[s.id] ?? 0);
-                  return (
-                    <motion.div
-                      key={s.id}
-                      initial={
-                        reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }
+          {/* Fee collection chart */}
+          {canViewFees && (
+            <div className="mt-6 sm:mt-8">
+              <Card className="card-premium">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4">
+                  <div className="min-w-0">
+                    <CardTitle className="text-base sm:text-lg">
+                      Fee collection
+                    </CardTitle>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                      Last 14 days
+                    </p>
+                  </div>
+                  <TrendingUp
+                    className="h-5 w-5 text-muted-foreground mt-2 sm:mt-0 shrink-0"
+                    aria-hidden
+                  />
+                </CardHeader>
+                <CardContent>
+                  {payments.isError ? (
+                    <QueryErrorState
+                      error={payments.error as Error}
+                      onRetry={() =>
+                        qc.invalidateQueries({ queryKey: ["payments"] })
                       }
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        ...itemTransition,
-                        delay: reducedMotion ? 0 : i * 0.03,
-                      }}
-                      className="flex items-center justify-between rounded-lg border border-subtle bg-card p-3 transition-colors duration-100 hover:bg-muted/40"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <Link
-                          to="/students/$id"
-                          params={{ id: s.id }}
-                          className="block truncate text-sm font-medium hover:underline"
+                    />
+                  ) : loading ? (
+                    <QueryLoadingSkeleton
+                      count={1}
+                      className="h-[200px] sm:h-[240px]"
+                    />
+                  ) : (
+                    <div className="h-[200px] sm:h-[240px] w-full -mx-4 sm:mx-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart
+                          data={collectionSeries}
+                          margin={{ left: -10, right: 6, top: 6, bottom: 0 }}
                         >
-                          {s.full_name}
-                        </Link>
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          Due {formatDate(s.fee_due_date)}
-                        </div>
-                      </div>
-                      <Badge
-                        variant="destructive"
-                        className="font-mono text-xs ml-2 shrink-0"
-                      >
-                        {formatINR(balance)}
-                      </Badge>
-                    </motion.div>
-                  );
-                })
-              )}
-            </CardContent>
-          </Card>
+                          <defs>
+                            <linearGradient
+                              id="collectArea"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="0%"
+                                stopColor="oklch(0.55 0.14 220)"
+                                stopOpacity={0.35}
+                              />
+                              <stop
+                                offset="100%"
+                                stopColor="oklch(0.55 0.14 220)"
+                                stopOpacity={0}
+                              />
+                            </linearGradient>
+                            <linearGradient
+                              id="collectStroke"
+                              x1="0"
+                              y1="0"
+                              x2="1"
+                              y2="0"
+                            >
+                              <stop
+                                offset="0%"
+                                stopColor="oklch(0.7 0.12 185)"
+                              />
+                              <stop
+                                offset="100%"
+                                stopColor="oklch(0.32 0.10 255)"
+                              />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="oklch(0.92 0.008 245)"
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="label"
+                            tick={{ fontSize: 10 }}
+                            stroke="oklch(0.52 0.03 255)"
+                          />
+                          <YAxis
+                            tick={{ fontSize: 10 }}
+                            stroke="oklch(0.52 0.03 255)"
+                            tickFormatter={(v) =>
+                              v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v
+                            }
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              background: "white",
+                              border: "1px solid oklch(0.92 0.008 245)",
+                              borderRadius: 10,
+                              fontSize: 11,
+                              boxShadow: "0 8px 24px -8px rgba(15,42,72,0.18)",
+                            }}
+                            formatter={(v) => formatINR(Number(v))}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="amount"
+                            stroke="url(#collectStroke)"
+                            strokeWidth={2.5}
+                            fill="url(#collectArea)"
+                            dot={false}
+                            activeDot={{ r: 5, fill: "oklch(0.32 0.10 255)" }}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-          <Card className="card-premium">
-            <CardHeader className="flex flex-row items-center justify-between pb-4">
-              <CardTitle className="text-base sm:text-lg">
-                Recent payments
-              </CardTitle>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/fees">View all</Link>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <QueryLoadingSkeleton count={3} className="h-12" />
-              ) : (payments.data?.length ?? 0) === 0 ? (
-                <EmptyState
-                  className="border-0 bg-transparent py-8"
-                  title="No payments yet"
-                  description="Record the first fee collection to see receipts and recent activity here."
-                >
-                  <Button asChild size="sm">
-                    <Link to="/fees">Record a payment</Link>
-                  </Button>
-                </EmptyState>
-              ) : (
-                <div className="divide-y divide-border space-y-1">
-                  {payments.data!.slice(0, 6).map((p) => (
-                    <Link
-                      key={p.id}
-                      to="/receipts/$paymentId"
-                      params={{ paymentId: p.id }}
-                      className="flex items-center justify-between py-3 hover:bg-muted/40 -mx-2 px-2 rounded-md transition-colors text-sm"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium text-sm">
-                          {studentById[p.student_id] ?? "Student"}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          {formatDate(p.payment_date)} ·{" "}
-                          {p.method.toUpperCase()}
-                        </div>
-                      </div>
-                      <div className="font-mono text-sm font-semibold ml-2 shrink-0 tabular-nums">
-                        {formatINR(Number(p.amount))}
-                      </div>
-                    </Link>
-                  ))}
+          {/* Today's batches */}
+          <div className="mt-6 sm:mt-8">
+            <Card className="card-premium">
+              <CardHeader className="flex flex-row items-center justify-between pb-4">
+                <div className="min-w-0">
+                  <CardTitle className="text-base sm:text-lg">
+                    Today's batches
+                  </CardTitle>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                    {istWeekdayLong()}
+                  </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/batches">All</Link>
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {loading ? (
+                  <QueryLoadingSkeleton count={3} className="h-14" />
+                ) : stats.todaysBatches.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-subtle p-5 text-center text-xs sm:text-sm text-muted-foreground">
+                    {(batches.data ?? []).length === 0
+                      ? "No batches yet — create one to schedule classes."
+                      : "No classes scheduled for today."}
+                  </div>
+                ) : (
+                  stats.todaysBatches.slice(0, 5).map((b, i) => {
+                    const count = (students.data ?? []).filter(
+                      (s) => s.batch_id === b.id && s.status !== "archived",
+                    ).length;
+                    return (
+                      <motion.div
+                        key={b.id}
+                        initial={
+                          reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }
+                        }
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          ...itemTransition,
+                          delay: reducedMotion ? 0 : i * 0.04,
+                        }}
+                        className="group flex items-center justify-between gap-3 rounded-lg border border-subtle bg-card p-3 transition-[background-color] duration-100 hover:bg-muted/40"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-semibold">
+                            {b.name}
+                          </div>
+                          <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                            {b.timing && (
+                              <span className="inline-flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {b.timing}
+                              </span>
+                            )}
+                            <span>·</span>
+                            <span>
+                              {count}/{b.capacity}
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="ghost"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity gap-1"
+                        >
+                          <Link to="/attendance">
+                            Mark
+                            <ArrowRight className="h-3 w-3" />
+                          </Link>
+                        </Button>
+                      </motion.div>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Overdue + Recent payments */}
+          {canViewFees && (
+            <div className="mt-6 sm:mt-8 grid gap-6 lg:grid-cols-2 auto-rows-max">
+              <Card className="card-premium">
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                  <div>
+                    <CardTitle className="text-base sm:text-lg">
+                      Overdue dues
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {loading
+                        ? "Loading…"
+                        : stats.overdue.length === 0
+                          ? "All clear"
+                          : `${stats.overdue.length} students · ${formatINR(stats.overdueAmount)}`}
+                    </p>
+                  </div>
+                  <Button asChild variant="ghost" size="sm">
+                    <Link to="/fees" search={{ status: "overdue" }}>
+                      Collect
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {loading ? (
+                    <QueryLoadingSkeleton count={3} className="h-14" />
+                  ) : stats.overdue.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-subtle p-5 text-center text-xs sm:text-sm text-muted-foreground">
+                      {stats.totalStudents === 0
+                        ? "Add students with fee totals to track dues here."
+                        : "No overdue dues right now."}
+                    </div>
+                  ) : (
+                    stats.overdue.slice(0, 6).map((s, i) => {
+                      const balance =
+                        Number(s.fee_total) -
+                        (stats.totalPaidByStudent[s.id] ?? 0);
+                      return (
+                        <motion.div
+                          key={s.id}
+                          initial={
+                            reducedMotion
+                              ? { opacity: 0 }
+                              : { opacity: 0, y: 8 }
+                          }
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            ...itemTransition,
+                            delay: reducedMotion ? 0 : i * 0.03,
+                          }}
+                          className="flex items-center justify-between rounded-lg border border-subtle bg-card p-3 transition-colors duration-100 hover:bg-muted/40"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <Link
+                              to="/students/$id"
+                              params={{ id: s.id }}
+                              className="block truncate text-sm font-medium hover:underline"
+                            >
+                              {s.full_name}
+                            </Link>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              Due {formatDate(s.fee_due_date)}
+                            </div>
+                          </div>
+                          <Badge
+                            variant="destructive"
+                            className="font-mono text-xs ml-2 shrink-0"
+                          >
+                            {formatINR(balance)}
+                          </Badge>
+                        </motion.div>
+                      );
+                    })
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="card-premium">
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                  <CardTitle className="text-base sm:text-lg">
+                    Recent payments
+                  </CardTitle>
+                  <Button asChild variant="ghost" size="sm">
+                    <Link to="/fees">View all</Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <QueryLoadingSkeleton count={3} className="h-12" />
+                  ) : (payments.data?.length ?? 0) === 0 ? (
+                    <EmptyState
+                      className="border-0 bg-transparent py-8"
+                      title="No payments yet"
+                      description="Record the first fee collection to see receipts and recent activity here."
+                    >
+                      <Button asChild size="sm">
+                        <Link to="/fees">Record a payment</Link>
+                      </Button>
+                    </EmptyState>
+                  ) : (
+                    <div className="divide-y divide-border space-y-1">
+                      {payments.data!.slice(0, 6).map((p) => (
+                        <Link
+                          key={p.id}
+                          to="/receipts/$paymentId"
+                          params={{ paymentId: p.id }}
+                          className="flex items-center justify-between py-3 hover:bg-muted/40 -mx-2 px-2 rounded-md transition-colors text-sm"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate font-medium text-sm">
+                              {studentById[p.student_id] ?? "Student"}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {formatDate(p.payment_date)} ·{" "}
+                              {p.method.toUpperCase()}
+                            </div>
+                          </div>
+                          <div className="font-mono text-sm font-semibold ml-2 shrink-0 tabular-nums">
+                            {formatINR(Number(p.amount))}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
+}
+
+function readKnownEmpty(key: string | null): boolean {
+  if (!key || typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeKnownEmpty(key: string, empty: boolean) {
+  try {
+    if (empty) localStorage.setItem(key, "1");
+    else localStorage.removeItem(key);
+  } catch {
+    /* ignore */
+  }
 }

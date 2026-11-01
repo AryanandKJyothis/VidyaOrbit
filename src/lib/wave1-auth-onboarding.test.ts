@@ -85,7 +85,8 @@ describe("W1.5 checklist is three value steps", () => {
 
 describe("W1.6 empty states", () => {
   it("gives each list one primary CTA and no LMS / parent-app / biometric sell", () => {
-    expect(students).toContain("Import students");
+    expect(students).toContain("Add a student");
+    expect(students).toContain("Import from Excel");
     expect(students).toContain("reassurance=");
     expect(students).not.toMatch(/parent app|biometric|LMS|live class/i);
     expect(batches).toContain("New batch");

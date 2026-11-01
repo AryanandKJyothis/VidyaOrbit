@@ -50,9 +50,10 @@ function RefundPolicyPage() {
 
       <LegalSection title="4. Setup fee">
         <p>
-          Optional done for you setup is ₹5,000 on the first monthly Orbit or
-          Centre payment. It is non-refundable after onboarding is delivered. It
-          is waived on annual plans. Spark and Free do not include it.
+          The done for you setup is free on Spark and Orbit. Centre has a ₹2,000
+          and Campus a ₹3,000 setup fee on the first monthly payment. It is
+          non-refundable after onboarding is delivered. It is waived on yearly
+          plans. Free is self-serve with no setup.
         </p>
       </LegalSection>
 

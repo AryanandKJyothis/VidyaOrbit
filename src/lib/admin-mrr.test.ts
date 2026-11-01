@@ -31,12 +31,17 @@ describe("admin MRR", () => {
     expect(ADMIN_LIST_PRICE_PAISE.growth.annual).toBe(
       TIER_CONFIGS.growth.annual_price_paise,
     );
-    // Founder MRR SQL still uses the last migrated pro list price (₹2,499).
-    // Public checkout is Centre at ₹1,499. No admin SQL migration in this wave.
-    expect(ADMIN_LIST_PRICE_PAISE.pro.monthly).toBe(249900);
-    expect(ADMIN_LIST_PRICE_PAISE.pro.annual).toBe(2500000);
+    // Nov 1 2026: pro = Centre ₹1,499 (matches checkout), campus ₹2,499.
+    expect(ADMIN_LIST_PRICE_PAISE.pro.monthly).toBe(
+      TIER_CONFIGS.large.monthly_price_paise,
+    );
+    expect(ADMIN_LIST_PRICE_PAISE.pro.annual).toBe(
+      TIER_CONFIGS.large.annual_price_paise,
+    );
     expect(TIER_CONFIGS.large.monthly_price_paise).toBe(149900);
-    expect(TIER_CONFIGS.large.annual_price_paise).toBe(1500000);
+    expect(TIER_CONFIGS.large.annual_price_paise).toBe(1499000);
+    expect(ADMIN_LIST_PRICE_PAISE.campus.monthly).toBe(249900);
+    expect(ADMIN_LIST_PRICE_PAISE.campus.annual).toBe(2499000);
   });
 
   it("uses monthly list price for active paid centres without a cycle", () => {
@@ -52,9 +57,9 @@ describe("admin MRR", () => {
   });
 
   it("annualizes annual list price with the same round as SQL", () => {
-    expect(annualMrrPaise(499900)).toBe(Math.round(499900 / 12));
-    expect(annualMrrPaise(1000000)).toBe(Math.round(1000000 / 12));
-    expect(annualMrrPaise(2500000)).toBe(Math.round(2500000 / 12));
+    expect(annualMrrPaise(499000)).toBe(Math.round(499000 / 12));
+    expect(annualMrrPaise(999000)).toBe(Math.round(999000 / 12));
+    expect(annualMrrPaise(1499000)).toBe(Math.round(1499000 / 12));
     expect(
       mrrPaiseForCentre({
         plan: "pro",
@@ -63,7 +68,7 @@ describe("admin MRR", () => {
         cycle: "annual",
         now,
       }),
-    ).toBe(Math.round(2500000 / 12));
+    ).toBe(Math.round(1499000 / 12));
   });
 
   it("excludes free, trialing, canceled, and expired centres", () => {
@@ -129,7 +134,7 @@ describe("admin MRR", () => {
         ],
         now,
       ),
-    ).toBe(49900 + Math.round(1000000 / 12));
+    ).toBe(49900 + Math.round(999000 / 12));
   });
 
   it("converts paise to whole rupees", () => {

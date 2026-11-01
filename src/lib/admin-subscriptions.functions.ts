@@ -132,7 +132,7 @@ export const getSubscriptionDetail = createServerFn({ method: "POST" })
     return { sub, inst, audit: audit ?? [], reviews: reviews ?? [] };
   });
 
-const planEnum = z.enum(["free", "starter", "growth", "pro"]);
+const planEnum = z.enum(["free", "starter", "growth", "pro", "campus"]);
 const statusEnum = z.enum([
   "active",
   "trialing",

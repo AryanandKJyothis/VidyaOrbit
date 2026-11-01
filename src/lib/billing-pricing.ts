@@ -42,31 +42,47 @@ export type TierConfig = {
 export const TIER_CONFIGS: Record<PlanTier, TierConfig> = {
   starter: {
     tier: "starter",
-    student_limit: PLAN_STUDENT_LIMITS.starter ?? 100,
-    setup_fee_paise: 0,
+    student_limit: PLAN_STUDENT_LIMITS.starter ?? 50,
+    setup_fee_paise: 0, // free setup (import + training bonus)
     monthly_price_paise: 49900, // ₹499
-    annual_price_paise: 499900, // ₹4,999
+    annual_price_paise: 499000, // ₹4,990 (pay 10 months)
     display_name: "Spark",
-    description: "Up to 100 students",
+    description: "Up to 50 students",
   },
   growth: {
     tier: "growth",
-    student_limit: PLAN_STUDENT_LIMITS.growth ?? 500,
-    setup_fee_paise: 500000, // ₹5,000 first monthly only
+    student_limit: PLAN_STUDENT_LIMITS.growth ?? 150,
+    setup_fee_paise: 0, // free setup (import + training bonus)
     monthly_price_paise: 99900, // ₹999
-    annual_price_paise: 1000000, // ₹10,000
+    annual_price_paise: 999000, // ₹9,990 (pay 10 months)
     display_name: "Orbit",
-    description: "Up to 500 students",
+    description: "Up to 150 students",
   },
   large: {
     tier: "large",
-    student_limit: UNLIMITED_STUDENT_SENTINEL,
-    setup_fee_paise: 500000, // ₹5,000 first monthly only
+    student_limit: PLAN_STUDENT_LIMITS.pro ?? 400,
+    setup_fee_paise: 200000, // ₹2,000 first monthly only, waived on yearly
     monthly_price_paise: 149900, // ₹1,499
-    annual_price_paise: 1500000, // ₹15,000
+    annual_price_paise: 1499000, // ₹14,990 (pay 10 months)
     display_name: "Centre",
-    description: "Unlimited students",
+    description: "Up to 400 students",
   },
+};
+
+/**
+ * Campus (400+ students, plan_code `campus`, unlimited) — Nov 1 2026.
+ * Not a self-serve checkout tier yet: billing_orders.tier CHECK and the
+ * activation RPC only know starter/growth/large. Sold by quote and
+ * assigned in the admin panel until the follow-up migration lands.
+ */
+export const CAMPUS_CONFIG = {
+  plan_code: "campus" as const,
+  student_limit: UNLIMITED_STUDENT_SENTINEL,
+  setup_fee_paise: 300000, // ₹3,000 if monthly, waived on yearly
+  monthly_price_paise: 249900, // ₹2,499
+  annual_price_paise: 2499000, // ₹24,990 (pay 10 months)
+  display_name: "Campus",
+  description: "400+ students",
 };
 
 /**
@@ -93,7 +109,7 @@ export function isValidCycle(cycle: string): cycle is BillingCycle {
 /**
  * Compute pricing for a plan purchase.
  * Setup is a one-time onboarding fee: charged only when there is no prior
- * captured payment, and only on monthly Orbit/Centre. Annual first orders
+ * captured payment, and only on monthly Centre (Campus is quote-only). Annual first orders
  * do not include a setup line, but that capture still counts as paid so a
  * later monthly switch is not charged setup.
  * @param hasPriorPaidOrder Whether the workspace has any captured *live* paid

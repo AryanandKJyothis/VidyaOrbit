@@ -589,21 +589,21 @@ export function deriveGettingStarted(input: {
   const actionDone = input.attendanceStarted || input.paymentCount > 0;
   const items: GettingStartedItem[] = [
     {
-      id: "student",
-      title: "Import or add students",
-      hint: "Bring in your register from Excel, or add names one by one.",
-      to: "/students",
-      label: "Import",
-      done: input.activeStudentCount > 0,
-      primary: true,
-    },
-    {
       id: "batch",
       title: "Create a batch",
       hint: "Group students by class or timing.",
       to: "/batches",
       label: "Create batch",
       done: input.batchCount > 0,
+      primary: true,
+    },
+    {
+      id: "student",
+      title: "Import or add students",
+      hint: "Bring in your register from Excel, or add names one by one.",
+      to: "/students",
+      label: "Import",
+      done: input.activeStudentCount > 0,
     },
     {
       id: "action",

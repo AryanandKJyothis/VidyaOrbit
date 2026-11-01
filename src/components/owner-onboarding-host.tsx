@@ -4,7 +4,9 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 import {
+  useBatches,
   useInstitute,
+  useStudents,
   useUpdateInstitute,
   useUpsertBatch,
   useUpsertStudent,
@@ -53,6 +55,11 @@ import {
 } from "@/components/app-guided-tour";
 import { ImportStudentsDialog } from "@/components/import-students-dialog";
 import { SetupPrompt } from "@/components/setup-prompt";
+import { QuickStartDialog } from "@/components/onboarding/quick-start";
+import { useQuickStart } from "@/hooks/use-quick-start";
+import { ONBOARDING_V2_ENABLED } from "@/lib/feature-flags";
+import { defaultCentreName, shouldShowQuickStart } from "@/lib/onboarding-v2";
+import { isRealInstituteName } from "@/lib/owner-onboarding";
 
 export function OwnerOnboardingHost() {
   const { user } = useAuth();
@@ -73,6 +80,10 @@ export function OwnerOnboardingHost() {
   const [importOpen, setImportOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<WizardFieldErrors>({});
+  const batches = useBatches();
+  const students = useStudents();
+  const quickStart = useQuickStart(user?.id ?? null);
+  const [quickStartClosed, setQuickStartClosed] = useState(false);
 
   const metadata = user?.user_metadata as Record<string, unknown> | undefined;
   const identity = readUserIdentity(metadata);
@@ -105,7 +116,36 @@ export function OwnerOnboardingHost() {
     started: onboarding.state.started,
   });
 
+  const showQuickStart =
+    !quickStartClosed &&
+    shouldShowQuickStart({
+      enabled: ONBOARDING_V2_ENABLED,
+      isStaff: staff,
+      isOwnWorkspace: active?.isOwn ?? null,
+      dataLoaded:
+        !workspacesLoading &&
+        !!active &&
+        !institute.isLoading &&
+        batches.isSuccess &&
+        students.isSuccess,
+      batchCount: batches.data?.length ?? 0,
+      studentCount: students.data?.length ?? 0,
+      completed: quickStart.state.completed,
+      dismissed: quickStart.state.dismissed,
+      legacyWizardStarted:
+        onboarding.state.started || onboarding.state.completed,
+    });
+
+  // Latch: once open, keep it mounted while the flow creates batches/students.
+  const [quickStartLatched, setQuickStartLatched] = useState(false);
+  useEffect(() => {
+    if (showQuickStart) setQuickStartLatched(true);
+  }, [showQuickStart]);
+  const quickStartOpen =
+    !quickStartClosed && (showQuickStart || quickStartLatched);
+
   const autoWizard =
+    !quickStartOpen &&
     !workspacesLoading &&
     !!active &&
     !institute.isLoading &&
@@ -345,7 +385,30 @@ export function OwnerOnboardingHost() {
       )}
 
       <ImportStudentsDialog open={importOpen} onOpenChange={setImportOpen} />
-      {!staff && !wizardOpen && <SetupPrompt />}
+      {quickStartOpen && user && active && (
+        <QuickStartDialog
+          open
+          userId={user.id}
+          ownerId={active.ownerId}
+          currentCentreName={institute.data?.name ?? null}
+          initialCentreName={
+            isRealInstituteName(institute.data?.name)
+              ? institute.data!.name
+              : defaultCentreName(identity.fullName)
+          }
+          onClose={() => setQuickStartClosed(true)}
+          onImport={() => {
+            setQuickStartClosed(true);
+            setImportOpen(true);
+          }}
+        />
+      )}
+      {!staff &&
+        !wizardOpen &&
+        !quickStartOpen &&
+        !quickStart.state.completed &&
+        !quickStart.state.dismissed &&
+        !(ONBOARDING_V2_ENABLED && showQuickStart) && <SetupPrompt />}
     </>
   );
 }

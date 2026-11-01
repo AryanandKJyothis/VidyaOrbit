@@ -1,3 +1,4 @@
+import { DEFAULT_BATCH_DAYS } from "@/lib/onboarding-v2";
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -339,7 +340,10 @@ function BatchDialog({
         subject: batch?.subject ?? "",
         teacher_name: batch?.teacher_name ?? "",
         timing: batch?.timing ?? "",
-        days_of_week: batch?.days_of_week ?? [],
+        // New batches default to Mon–Sat so they show up in attendance.
+        days_of_week: batch
+          ? (batch.days_of_week ?? [])
+          : [...DEFAULT_BATCH_DAYS],
         capacity: String(batch?.capacity ?? 30),
         is_active: batch?.is_active ?? true,
         notes: batch?.notes ?? "",
@@ -349,6 +353,10 @@ function BatchDialog({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return toast.error("Batch name is required");
+    if (form.days_of_week.length === 0)
+      return toast.error(
+        "Pick at least one day so this batch shows in attendance",
+      );
     try {
       await mut.mutateAsync({
         id: batch?.id,
@@ -382,7 +390,7 @@ function BatchDialog({
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
-              placeholder="Class 10 — Morning"
+              placeholder="e.g. Class 10 morning"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -391,7 +399,7 @@ function BatchDialog({
               <Input
                 value={form.subject}
                 onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                placeholder="Mathematics"
+                placeholder="e.g. Maths"
               />
             </div>
             <div className="space-y-1.5">
@@ -410,7 +418,7 @@ function BatchDialog({
               <Input
                 value={form.timing}
                 onChange={(e) => setForm({ ...form, timing: e.target.value })}
-                placeholder="6:00 AM - 8:00 AM"
+                placeholder="e.g. 5–6 PM"
               />
             </div>
             <div className="space-y-1.5">
@@ -431,7 +439,7 @@ function BatchDialog({
                 return (
                   <label
                     key={d}
-                    className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs ${checked ? "border-accent bg-accent/10 text-accent" : "border-border"}`}
+                    className={`flex cursor-pointer items-center gap-1.5 min-h-11 min-w-11 rounded-md border px-3 py-2 text-sm ${checked ? "border-accent bg-accent/10 text-accent" : "border-border"}`}
                   >
                     <Checkbox
                       checked={checked}

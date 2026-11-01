@@ -975,7 +975,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user";
       invite_status: "pending" | "accepted" | "revoked" | "expired";
-      plan_code: "free" | "starter" | "growth" | "pro";
+      plan_code: "free" | "starter" | "growth" | "pro" | "campus";
       workspace_role: "owner" | "manager" | "staff" | "viewer";
     };
     CompositeTypes: {
@@ -1109,7 +1109,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       invite_status: ["pending", "accepted", "revoked", "expired"],
-      plan_code: ["free", "starter", "growth", "pro"],
+      plan_code: ["free", "starter", "growth", "pro", "campus"],
       workspace_role: ["owner", "manager", "staff", "viewer"],
     },
   },

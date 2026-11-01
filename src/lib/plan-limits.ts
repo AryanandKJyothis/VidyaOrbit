@@ -1,24 +1,28 @@
 /**
  * Single source of truth for plan student caps used by the admin UI
  * and the client subscription hook. Matches public.plan_student_limit
- * after 20261008093000_pro_plan_unlimited.sql (pro is unlimited).
+ * after 20261101090000_pricing_2026_11_01_plan_caps.sql
+ * (Nov 1 2026 pricing: free 25, Spark 50, Orbit 150, Centre 400, Campus unlimited).
+ * NOTE: until that migration is applied, the DB still enforces the old caps.
  */
 
-export type PlanCode = "free" | "starter" | "growth" | "pro";
+export type PlanCode = "free" | "starter" | "growth" | "pro" | "campus";
 export type PlanTier = "starter" | "growth" | "large";
 
 /** Postgres integer sentinel used by plan_student_limit for unlimited pro. */
 export const UNLIMITED_STUDENT_SENTINEL = 2147483647;
 
 /**
- * Cap per plan_code. `null` means unlimited (pro / Centre).
+ * Cap per plan_code. `null` means unlimited (campus / Campus).
+ * Above ~800 students or multi-branch is a custom quote (still `campus`).
  * Do not override these from env — the DB function is authoritative.
  */
 export const PLAN_STUDENT_LIMITS: Record<PlanCode, number | null> = {
   free: 25,
-  starter: 100,
-  growth: 500,
-  pro: null,
+  starter: 50,
+  growth: 150,
+  pro: 400,
+  campus: null,
 };
 
 export const PLAN_DISPLAY_NAMES: Record<PlanCode, string> = {
@@ -26,9 +30,10 @@ export const PLAN_DISPLAY_NAMES: Record<PlanCode, string> = {
   starter: "Spark",
   growth: "Orbit",
   pro: "Centre",
+  campus: "Campus",
 };
 
-export function planCodeForTier(tier: PlanTier): Exclude<PlanCode, "free"> {
+export function planCodeForTier(tier: PlanTier): "starter" | "growth" | "pro" {
   if (tier === "starter") return "starter";
   if (tier === "growth") return "growth";
   return "pro";
@@ -112,3 +117,40 @@ export function formatLimit(limit: number | null | undefined): string {
 
 /** @deprecated Use formatLimit */
 export const formatStudentLimit = formatLimit;
+
+/** Pre Nov 1 2026 caps — only used to seed grandfathered overrides. */
+export const LEGACY_PLAN_STUDENT_LIMITS: Record<PlanCode, number | null> = {
+  free: 25,
+  starter: 100,
+  growth: 500,
+  pro: null,
+  campus: null,
+};
+
+/**
+ * Mirrors public.effective_student_limit: a grandfathered override applies
+ * only while the centre is still on the plan it was grandfathered on, and
+ * never lowers the plan cap. `null` = unlimited.
+ */
+export function effectiveStudentLimit(input: {
+  plan: PlanCode;
+  override?: number | null;
+  grandfatheredPlan?: PlanCode | null;
+}): number | null {
+  const base = studentLimitForPlan(input.plan);
+  const o = input.override;
+  if (o == null || input.grandfatheredPlan !== input.plan) return base;
+  if (base === null || isUnlimited(o)) return null;
+  return Math.max(base, o);
+}
+
+/** Mirrors the grandfather seed: who gets an override, and how big. */
+export function grandfatherOverrideFor(
+  plan: PlanCode,
+  activeStudents: number,
+): number | null {
+  if (plan !== "starter" && plan !== "growth" && plan !== "pro") return null;
+  const cap = studentLimitForPlan(plan);
+  if (cap === null || activeStudents <= cap) return null;
+  return LEGACY_PLAN_STUDENT_LIMITS[plan] ?? UNLIMITED_STUDENT_SENTINEL;
+}
