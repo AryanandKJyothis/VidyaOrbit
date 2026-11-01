@@ -542,3 +542,45 @@ export function countMissingParentPhones(
       !(s.guardian_phone ?? "").trim(),
   ).length;
 }
+
+/**
+ * Step counter. Before the size question is answered we assume the small
+ * path (the most common), so a solo tutor sees 1/4 → 2/4 → 3/4 → 4/4.
+ */
+export function quickStepPosition(
+  step: QuickStep,
+  students: number | null,
+): { index: number; total: number } {
+  const steps = quickStepsFor(students ?? 0).filter((s) => s !== "done");
+  const i = (steps as QuickStep[]).indexOf(step);
+  return { index: i < 0 ? 1 : i + 1, total: steps.length };
+}
+
+/**
+ * Pre-fill for an unsaved attendance session: during the guided first run
+ * every roster student starts Present; otherwise nothing is pre-marked.
+ * Saved sessions always show exactly what was saved.
+ */
+export function prefillAttendanceMarks<S extends string>(input: {
+  rosterIds: readonly string[];
+  savedRecords: Record<string, S>;
+  guided: boolean;
+  present: S;
+}): Record<string, S> {
+  if (Object.keys(input.savedRecords).length > 0) return input.savedRecords;
+  if (!input.guided) return {};
+  const out: Record<string, S> = {};
+  for (const id of input.rosterIds) out[id] = input.present;
+  return out;
+}
+
+/** Greeting name: first name, else centre name, else none (never "there"). */
+export function greetingName(
+  fullName: string | null | undefined,
+  centreName?: string | null,
+): string {
+  const first = (fullName ?? "").trim().split(/\s+/)[0];
+  if (first) return first;
+  const c = (centreName ?? "").trim();
+  return c && c !== "My Institute" ? c : "";
+}

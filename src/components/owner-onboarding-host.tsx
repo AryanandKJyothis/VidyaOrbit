@@ -390,6 +390,7 @@ export function OwnerOnboardingHost() {
           open
           userId={user.id}
           ownerId={active.ownerId}
+          currentCentreName={institute.data?.name ?? null}
           initialCentreName={
             isRealInstituteName(institute.data?.name)
               ? institute.data!.name
@@ -402,7 +403,12 @@ export function OwnerOnboardingHost() {
           }}
         />
       )}
-      {!staff && !wizardOpen && !quickStartOpen && <SetupPrompt />}
+      {!staff &&
+        !wizardOpen &&
+        !quickStartOpen &&
+        !quickStart.state.completed &&
+        !quickStart.state.dismissed &&
+        !(ONBOARDING_V2_ENABLED && showQuickStart) && <SetupPrompt />}
     </>
   );
 }

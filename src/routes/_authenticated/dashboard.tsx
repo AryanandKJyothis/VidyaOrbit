@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { greetingName } from "@/lib/onboarding-v2";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -397,10 +398,10 @@ function Dashboard() {
   }, [payments.data, studentById]);
 
   const { user } = useAuth();
-  const firstName =
-    ((user?.user_metadata?.full_name as string | undefined) ?? "")
-      .trim()
-      .split(/\s+/)[0] || "there";
+  const firstName = greetingName(
+    user?.user_metadata?.full_name as string | undefined,
+    institute.data?.name,
+  );
   const hour = new Date().getHours();
   const greeting =
     hour < 5

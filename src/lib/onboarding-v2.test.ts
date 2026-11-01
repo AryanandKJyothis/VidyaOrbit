@@ -20,6 +20,9 @@ import {
   QS_COPY,
   checklistDataReady,
   feeBadgeKind,
+  greetingName,
+  prefillAttendanceMarks,
+  quickStepPosition,
   countMissingParentPhones,
   isDuplicateStudentName,
 } from "./onboarding-v2";
@@ -464,5 +467,110 @@ describe("plan hint matches pricing-display (merged pricing caps)", () => {
       expect(rec.name).toBe(name);
       expect(rec.monthlyPrice).toBe(plan.monthlyPrice);
     }
+  });
+});
+
+describe("browser-run fixes 2026-11-01", () => {
+  it("small path counter is 1/4..4/4 and includes timings", () => {
+    expect(quickStepPosition("students", null)).toEqual({ index: 1, total: 4 });
+    expect(quickStepPosition("students", 20)).toEqual({ index: 1, total: 4 });
+    expect(quickStepPosition("timings", 20)).toEqual({ index: 2, total: 4 });
+    expect(quickStepPosition("goal", 20)).toEqual({ index: 3, total: 4 });
+    expect(quickStepPosition("names", 20)).toEqual({ index: 4, total: 4 });
+    expect(nextQuickStep("students", 20)).toBe("timings");
+    expect(quickStepsFor(20)).toContain("timings");
+  });
+  it("counter only ever moves by one step on the small path", () => {
+    let step = "students" as Parameters<typeof nextQuickStep>[0];
+    let last = 0;
+    while (step !== "done") {
+      const { index } = quickStepPosition(step, 20);
+      expect(index).toBe(last + 1);
+      last = index;
+      step = nextQuickStep(step, 20);
+    }
+  });
+  it("choices never auto-advance (no ghost-click skips)", () => {
+    const src = readFileSync(
+      "src/components/onboarding/quick-start.tsx",
+      "utf8",
+    );
+    expect(src).not.toMatch(/if \(auto\)/);
+  });
+  it("guided pre-fill is consistent across reloads and never overrides saved", () => {
+    const ids = ["a", "b"];
+    const pre = prefillAttendanceMarks({
+      rosterIds: ids,
+      savedRecords: {},
+      guided: true,
+      present: "present",
+    });
+    expect(pre).toEqual({ a: "present", b: "present" });
+    // navigating to another unsaved day gives the same pre-fill
+    expect(
+      prefillAttendanceMarks({
+        rosterIds: ids,
+        savedRecords: {},
+        guided: true,
+        present: "present",
+      }),
+    ).toEqual(pre);
+    expect(
+      prefillAttendanceMarks({
+        rosterIds: ids,
+        savedRecords: { a: "absent" },
+        guided: true,
+        present: "present",
+      }),
+    ).toEqual({ a: "absent" });
+    expect(
+      prefillAttendanceMarks({
+        rosterIds: ids,
+        savedRecords: {},
+        guided: false,
+        present: "present",
+      }),
+    ).toEqual({});
+  });
+  it("attendance save does not await parent-alert queueing", () => {
+    const src = readFileSync(
+      "src/routes/_authenticated/attendance.tsx",
+      "utf8",
+    );
+    expect(src).not.toMatch(/await enqueueAbsencesAfterSave/);
+    expect(src).toMatch(/void enqueueAbsencesAfterSave/);
+    expect(src).toContain('"onboarding-attendance"');
+  });
+  it("quick start uses one insert round trip for batches and refreshes dashboard queries", () => {
+    const src = readFileSync(
+      "src/components/onboarding/quick-start.tsx",
+      "utf8",
+    );
+    expect(src).toMatch(/\.insert\([\s\S]*?\)\s*\.select\("id, name"\)/);
+    expect(src).not.toMatch(/order\("created_at"/);
+    for (const k of [
+      "batches",
+      "students",
+      "institute",
+      "onboarding-attendance",
+    ])
+      expect(src).toContain(`"${k}"`);
+    expect(src).toContain("onOpenAutoFocus");
+  });
+  it("Name-your-centre prompt is suppressed during/after quick start", () => {
+    const host = readFileSync(
+      "src/components/owner-onboarding-host.tsx",
+      "utf8",
+    );
+    expect(host).toMatch(
+      /!quickStart\.state\.completed &&[\s\S]*<SetupPrompt \/>/,
+    );
+    expect(host).toContain("currentCentreName=");
+  });
+  it("greeting never says 'there'", () => {
+    expect(greetingName("", "")).toBe("");
+    expect(greetingName(null, "My Institute")).toBe("");
+    expect(greetingName("", "Bright Tuition")).toBe("Bright Tuition");
+    expect(greetingName("Aryanand K", "X")).toBe("Aryanand");
   });
 });

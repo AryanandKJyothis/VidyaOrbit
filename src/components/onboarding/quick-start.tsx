@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Check, MessageCircle } from "lucide-react";
+import { Check, MessageCircle, Pencil } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,7 @@ import {
   batchesFromTimings,
   newBatchSeeds,
   nextQuickStep,
+  quickStepPosition,
   parseOtherNumber,
   parsePastedNames,
   prevQuickStep,
@@ -148,6 +149,7 @@ export function QuickStartDialog({
   userId,
   ownerId,
   initialCentreName,
+  currentCentreName,
   onClose,
   onImport,
 }: {
@@ -155,6 +157,8 @@ export function QuickStartDialog({
   userId: string;
   ownerId: string;
   initialCentreName: string;
+  /** Name stored on the institute now (may be the placeholder). */
+  currentCentreName?: string | null;
   onClose: () => void;
   onImport: () => void;
 }) {
@@ -172,7 +176,7 @@ export function QuickStartDialog({
   const [staffEmail, setStaffEmail] = useState("");
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
-  const [savedName, setSavedName] = useState(initialCentreName);
+  const [savedName, setSavedName] = useState(currentCentreName ?? "");
 
   /** Centre name is prefilled silently; saved on blur and again on finish. */
   const saveName = async () => {
@@ -190,7 +194,7 @@ export function QuickStartDialog({
   const students = answerValue(STUDENT_BUCKETS, state.students);
   const steps = quickStepsFor(students);
   const step: QuickStep = steps.includes(state.step) ? state.step : "students";
-  const stepNo = steps.indexOf(step) + 1;
+  const pos = quickStepPosition(step, students);
   const parsedNames = useMemo(() => parsePastedNames(pasted), [pasted]);
   const seg = students === null ? "small" : segmentFor(students);
   const plan = students === null ? null : recommendedPlan(students);
@@ -217,28 +221,28 @@ export function QuickStartDialog({
           ],
       (existing ?? []).map((b) => b.name),
     );
+    // One round trip for the insert; ids come back with it (no re-select).
+    let inserted: { id: string; name: string }[] = [];
     if (toAdd.length) {
-      const { error: insErr } = await supabase.from("batches").insert(
-        toAdd.map((s) => ({
-          owner_id: ownerId,
-          name: s.name,
-          timing: s.timing,
-          days_of_week: s.days_of_week,
-        })) as never,
-      );
+      const { data: ins, error: insErr } = await supabase
+        .from("batches")
+        .insert(
+          toAdd.map((s) => ({
+            owner_id: ownerId,
+            name: s.name,
+            timing: s.timing,
+            days_of_week: s.days_of_week,
+          })) as never,
+        )
+        .select("id, name");
       if (insErr) throw insErr;
+      inserted = (ins ?? []) as { id: string; name: string }[];
     }
-    const { data: all, error: e2 } = await supabase
-      .from("batches")
-      .select("id, name")
-      .eq("owner_id", ownerId)
-      .order("created_at", { ascending: true });
-    if (e2) throw e2;
-    qc.invalidateQueries({ queryKey: ["batches"] });
+    const all = [...(existing ?? []), ...inserted];
     const firstName = (seeds[0]?.name ?? "Main batch").toLowerCase();
     return (
-      (all ?? []).find((b) => b.name.toLowerCase() === firstName)?.id ??
-      all?.[0]?.id ??
+      all.find((b) => b.name.toLowerCase() === firstName)?.id ??
+      all[0]?.id ??
       null
     );
   };
@@ -255,8 +259,16 @@ export function QuickStartDialog({
   };
 
   const finish = async (batchId: string | null) => {
-    await saveName();
     patch({ completed: true, step: "done" });
+    // Refresh everything the dashboard / checklist read (bug: stale 0/3).
+    for (const key of [
+      "batches",
+      "students",
+      "institute",
+      "onboarding-attendance",
+      "subscription",
+    ])
+      void qc.invalidateQueries({ queryKey: [key] });
     if (batchId) {
       try {
         localStorage.setItem(ATT_BATCH_KEY, batchId);
@@ -271,7 +283,7 @@ export function QuickStartDialog({
 
   const saveNamesAndFinish = () =>
     run(async () => {
-      const batchId = await ensureBatches();
+      const [batchId] = await Promise.all([ensureBatches(), saveName()]);
       const rows = parsedNames.map((n) => ({
         owner_id: ownerId,
         full_name: n.name,
@@ -302,7 +314,6 @@ export function QuickStartDialog({
       if (rows.length) {
         const { error } = await supabase.from("students").insert(rows as never);
         if (error) throw error;
-        qc.invalidateQueries({ queryKey: ["students"] });
         toast.success(
           `${rows.length} student${rows.length === 1 ? "" : "s"} added`,
         );
@@ -318,14 +329,8 @@ export function QuickStartDialog({
           options={STUDENT_BUCKETS}
           answer={state.students}
           onPick={(a, auto) => {
+            void auto;
             patch({ students: a });
-            if (auto)
-              patch({
-                step: nextQuickStep(
-                  "students",
-                  answerValue(STUDENT_BUCKETS, a),
-                ),
-              });
           }}
         />
       </div>
@@ -335,8 +340,8 @@ export function QuickStartDialog({
         options={STAFF_BUCKETS}
         answer={state.staff}
         onPick={(a, auto) => {
+          void auto;
           patch({ staff: a });
-          if (auto) advance();
         }}
       />
     ),
@@ -419,7 +424,6 @@ export function QuickStartDialog({
             aria-pressed={state.goal === g.id}
             onClick={() => {
               patch({ goal: g.id });
-              advance();
             }}
             className={cn(
               "min-h-12 rounded-xl border px-4 py-2 text-left text-sm font-medium",
@@ -637,7 +641,10 @@ export function QuickStartDialog({
     if (step === "names") return saveNamesAndFinish();
     const next = nextQuickStep(step, students);
     if (next === "done" || (step === "invite" && seg === "large")) {
-      return run(async () => finish(await ensureBatches()));
+      return run(async () => {
+        const [batchId] = await Promise.all([ensureBatches(), saveName()]);
+        await finish(batchId);
+      });
     }
     advance();
   };
@@ -664,7 +671,10 @@ export function QuickStartDialog({
         }
       }}
     >
-      <DialogContent className="max-h-[min(92dvh,760px)] overflow-y-auto sm:max-w-[28rem]">
+      <DialogContent
+        className="max-h-[min(92dvh,760px)] overflow-y-auto sm:max-w-[28rem]"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <div className="flex min-h-11 items-center justify-between gap-2 text-xs text-muted-foreground">
           {editingName ? (
             <Input
@@ -687,15 +697,21 @@ export function QuickStartDialog({
           ) : (
             <button
               type="button"
-              className="min-h-11 truncate text-left font-medium text-foreground underline decoration-dotted underline-offset-4"
+              className="inline-flex min-h-11 max-w-[70%] items-center gap-1.5 truncate rounded-md px-1 text-left text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => setEditingName(true)}
               aria-label="Edit centre name"
             >
-              {centreName.trim() || "Name your centre"} ✎
+              <span className="truncate">
+                {centreName.trim() || "Name your centre"}
+              </span>
+              <Pencil
+                className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                aria-hidden
+              />
             </button>
           )}
           <span className="shrink-0">
-            Step {stepNo} of {steps.length - 1}
+            Step {pos.index} of {pos.total}
           </span>
         </div>
         <DialogTitle className="font-display text-lg leading-snug">

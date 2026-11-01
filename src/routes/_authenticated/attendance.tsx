@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { GUIDED_ATTENDANCE_KEY, QS_COPY } from "@/lib/onboarding-v2";
+import {
+  GUIDED_ATTENDANCE_KEY,
+  QS_COPY,
+  prefillAttendanceMarks,
+} from "@/lib/onboarding-v2";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Save,
@@ -147,10 +151,6 @@ function AttendancePage() {
     },
   });
 
-  useEffect(() => {
-    if (session.data) setMarks(session.data.records);
-  }, [session.data]);
-
   const roster = useMemo(
     () =>
       (students.data ?? []).filter(
@@ -166,7 +166,7 @@ function AttendancePage() {
   };
 
   // Onboarding v2 guided first attendance: everyone starts Present once.
-  const [guidedBatch, setGuidedBatch] = useState<string | null>(() => {
+  const [guidedBatch] = useState<string | null>(() => {
     try {
       return typeof window === "undefined"
         ? null
@@ -175,18 +175,23 @@ function AttendancePage() {
       return null;
     }
   });
-  const [guidedPrefilled, setGuidedPrefilled] = useState(false);
   const [firstWin, setFirstWin] = useState(false);
   const guided = !!guidedBatch && guidedBatch === batchId;
+  // Every time a session loads (batch/date change, refetch): saved sessions
+  // show what was saved; unsaved ones get the same pre-fill (guided = all
+  // Present). Fixes marks resetting to Unmarked after changing days.
+  const rosterKey = roster.map((r) => r.id).join(",");
   useEffect(() => {
-    if (!guided || guidedPrefilled || !session.isSuccess) return;
-    if (roster.length === 0) return;
-    if (Object.keys(session.data?.records ?? {}).length > 0) return;
-    const next: Record<string, Status> = {};
-    for (const s of roster) next[s.id] = "present";
-    setMarks(next);
-    setGuidedPrefilled(true);
-  }, [guided, guidedPrefilled, session.isSuccess, session.data, roster]);
+    if (!session.data) return;
+    setMarks(
+      prefillAttendanceMarks<Status>({
+        rosterIds: rosterKey ? rosterKey.split(",") : [],
+        savedRecords: session.data.records,
+        guided,
+        present: "present",
+      }),
+    );
+  }, [session.data, guided, rosterKey]);
 
   const save = async () => {
     if (!canWriteAttendance) return;
@@ -244,45 +249,46 @@ function AttendancePage() {
       }
       const rows = plan.upsertRows;
       const unmarked = roster.length - rows.length;
-      const notify = await enqueueAbsencesAfterSave({
-        ownerId,
-        sessionId,
-      });
       if (guided) {
+        // Keep guidedBatch in state so the refetched (saved) session shows;
+        // saved records always win over the pre-fill.
         setFirstWin(true);
-        setGuidedBatch(null);
         try {
           localStorage.removeItem(GUIDED_ATTENDANCE_KEY);
         } catch {
           /* ignore */
         }
       }
-      qc.invalidateQueries({ queryKey: ["att-session"] });
-      qc.invalidateQueries({ queryKey: ["att-summary"] });
-      qc.invalidateQueries({ queryKey: ["att-all"] });
-      qc.invalidateQueries({ queryKey: ["message-outbox"] });
-      if (notify.ok && notify.summary) {
-        const copy = formatAbsenceQueueToast(notify.summary);
-        toast.success(copy.title, {
-          description:
-            unmarked > 0
-              ? `${unmarked} unmarked student${unmarked === 1 ? " was" : "s were"} not recorded.${copy.description ? ` ${copy.description}` : ""}`
-              : copy.description,
-          action:
-            notify.summary.queued > 0
-              ? {
-                  label: "Send",
-                  onClick: () => void navigate({ to: "/absentees" }),
-                }
-              : undefined,
-        });
-      } else {
-        toast.success(
-          unmarked > 0
-            ? `Attendance saved. ${unmarked} unmarked student${unmarked === 1 ? " was" : "s were"} not recorded.`
-            : "Attendance saved",
-        );
-      }
+      for (const key of [
+        "att-session",
+        "att-summary",
+        "att-all",
+        "onboarding-attendance",
+      ])
+        void qc.invalidateQueries({ queryKey: [key] });
+      // Records are saved: stop the spinner now. Parent-alert queueing is a
+      // separate server call (can cold-start) — run it in the background.
+      setSaving(false);
+      const unmarkedNote =
+        unmarked > 0
+          ? `${unmarked} unmarked student${unmarked === 1 ? " was" : "s were"} not recorded.`
+          : "";
+      toast.success(
+        unmarkedNote ? `Attendance saved. ${unmarkedNote}` : "Attendance saved",
+      );
+      void enqueueAbsencesAfterSave({ ownerId, sessionId }).then((notify) => {
+        void qc.invalidateQueries({ queryKey: ["message-outbox"] });
+        if (notify.ok && notify.summary && notify.summary.queued > 0) {
+          const copy = formatAbsenceQueueToast(notify.summary);
+          toast.success(copy.title, {
+            description: copy.description,
+            action: {
+              label: "Send",
+              onClick: () => void navigate({ to: "/absentees" }),
+            },
+          });
+        }
+      });
     } catch (e) {
       toast.error(formatUserError(e, "Could not save attendance."));
     } finally {

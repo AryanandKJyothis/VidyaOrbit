@@ -40,7 +40,7 @@ export function GreetingBanner({
             {format(new Date(), "d MMM yyyy")} · {format(new Date(), "EEEE")}
           </p>
           <h1 className="mt-1 font-display text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
-            {greeting}, {displayName}
+            {displayName ? `${greeting}, ${displayName}` : greeting}
           </h1>
           <p className="mt-0.5 truncate text-sm text-muted-foreground">
             {instituteName ? `${instituteName} · ` : ""}
