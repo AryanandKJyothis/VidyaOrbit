@@ -151,7 +151,7 @@ function PlanColumn({ plan, annual }: { plan: PlanDisplay; annual: boolean }) {
             highlight ? "text-paper/80" : "text-slate",
           )}
         >
-          Optional DFY setup {formatIndianPrice(plan.setupFee)} on first monthly
+          One-time {formatIndianPrice(plan.setupFee)} setup on the first monthly
           invoice. Waived on annual.
         </p>
       )}
@@ -162,7 +162,7 @@ function PlanColumn({ plan, annual }: { plan: PlanDisplay; annual: boolean }) {
             highlight ? "text-paper/80" : "text-slate",
           )}
         >
-          Optional DFY setup waived on annual billing.
+          One-time setup waived on annual billing.
         </p>
       )}
       <ul className="mt-6 flex-1 space-y-2 text-sm">
