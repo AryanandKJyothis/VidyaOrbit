@@ -9,6 +9,7 @@ import {
   instituteSchema,
 } from "@/lib/validation";
 import { fetchAllRows } from "@/lib/fetch-all-rows";
+import { isOwnerDataPending } from "@/lib/query-readiness";
 
 export type Student = {
   id: string;
@@ -77,6 +78,21 @@ export type Institute = {
 function useOwnerId() {
   const { active } = useActiveWorkspace();
   return active?.ownerId ?? null;
+}
+
+/**
+ * True until the active workspace is resolved AND every given owner-scoped
+ * query has settled. Use instead of `q.isLoading`, which is false while a
+ * query is disabled (no owner id yet) and causes empty/zero flashes.
+ */
+export function useOwnerDataPending(
+  ...queries: ReadonlyArray<{ isPending: boolean }>
+): boolean {
+  const { active, loading, workspaces } = useActiveWorkspace();
+  return isOwnerDataPending(
+    { loading, hasActive: !!active, workspaceCount: workspaces.length },
+    queries,
+  );
 }
 
 // Read in bounded pages so Supabase's response cap can never silently truncate

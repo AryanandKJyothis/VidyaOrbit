@@ -52,6 +52,7 @@ import {
   useStudents,
   useBatches,
   usePayments,
+  useOwnerDataPending,
   useInstitute,
 } from "@/hooks/use-data";
 import { supabase } from "@/integrations/supabase/client";
@@ -278,7 +279,7 @@ function Dashboard() {
     );
   }, [attendance.data]);
 
-  const loading = students.isLoading || batches.isLoading || payments.isLoading;
+  const loading = useOwnerDataPending(students, batches, payments);
   const studentById = useMemo(() => {
     const map: Record<string, string> = {};
     for (const s of students.data ?? []) map[s.id] = s.full_name;
@@ -570,7 +571,7 @@ function Dashboard() {
                     qc.invalidateQueries({ queryKey: ["payments"] })
                   }
                 />
-              ) : payments.isLoading ? (
+              ) : loading ? (
                 <QueryLoadingSkeleton
                   count={1}
                   className="h-[200px] sm:h-[240px]"
@@ -677,7 +678,7 @@ function Dashboard() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-2">
-            {batches.isLoading ? (
+            {loading ? (
               <QueryLoadingSkeleton count={3} className="h-14" />
             ) : stats.todaysBatches.length === 0 ? (
               <div className="rounded-lg border border-dashed border-subtle p-5 text-center text-xs sm:text-sm text-muted-foreground">
@@ -749,9 +750,11 @@ function Dashboard() {
                   Overdue dues
                 </CardTitle>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {stats.overdue.length === 0
-                    ? "All clear"
-                    : `${stats.overdue.length} students · ${formatINR(stats.overdueAmount)}`}
+                  {loading
+                    ? "Loading…"
+                    : stats.overdue.length === 0
+                      ? "All clear"
+                      : `${stats.overdue.length} students · ${formatINR(stats.overdueAmount)}`}
                 </p>
               </div>
               <Button asChild variant="ghost" size="sm">
@@ -761,7 +764,9 @@ function Dashboard() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-2">
-              {stats.overdue.length === 0 ? (
+              {loading ? (
+                <QueryLoadingSkeleton count={3} className="h-14" />
+              ) : stats.overdue.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-subtle p-5 text-center text-xs sm:text-sm text-muted-foreground">
                   {stats.totalStudents === 0
                     ? "Add students with fee totals to track dues here."
@@ -819,7 +824,9 @@ function Dashboard() {
               </Button>
             </CardHeader>
             <CardContent>
-              {(payments.data?.length ?? 0) === 0 ? (
+              {loading ? (
+                <QueryLoadingSkeleton count={3} className="h-12" />
+              ) : (payments.data?.length ?? 0) === 0 ? (
                 <EmptyState
                   className="border-0 bg-transparent py-8"
                   title="No payments yet"

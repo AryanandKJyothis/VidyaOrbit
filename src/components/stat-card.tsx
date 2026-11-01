@@ -5,6 +5,7 @@ import { ArrowDownRight, ArrowUpRight, type LucideIcon } from "lucide-react";
 import { usePrefers } from "@/hooks/use-prefers";
 import { fadeOnly, springDefault } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { countUpFrame, parseCountUpTarget } from "@/lib/count-up";
 
 type Props = {
   label: string;
@@ -17,6 +18,8 @@ type Props = {
   sparkline?: number[];
   /** Optional delta vs previous period in percent, e.g. +12 or -8. */
   deltaPct?: number;
+  /** Animate the number counting up. Off for money totals that must never show interim values. */
+  countUp?: boolean;
 };
 
 const toneIcon: Record<string, string> = {
@@ -79,42 +82,43 @@ function Sparkline({
   );
 }
 
+const COUNT_UP_MS = 700;
+
 function useCountUp(target: string, enabled: boolean): string {
   const [display, setDisplay] = useState(target);
   useEffect(() => {
-    if (!enabled) {
+    // Hidden tabs throttle rAF; never animate there or we could strand an
+    // interim number on screen.
+    const hidden = typeof document !== "undefined" && document.hidden;
+    if (!enabled || hidden || !parseCountUpTarget(target)) {
       setDisplay(target);
       return;
     }
-    const match = target.match(/-?[\d,]+(?:\.\d+)?/);
-    if (!match) {
-      setDisplay(target);
-      return;
-    }
-    const raw = match[0].replace(/,/g, "");
-    const end = Number(raw);
-    if (!Number.isFinite(end)) {
-      setDisplay(target);
-      return;
-    }
-    const prefix = target.slice(0, match.index!);
-    const suffix = target.slice(match.index! + match[0].length);
     const startTs = performance.now();
-    const duration = 700;
     let raf = 0;
     const tick = (now: number) => {
-      const t = Math.min(1, (now - startTs) / duration);
-      const eased = 1 - Math.pow(1 - t, 3);
-      const cur = end * eased;
-      const isInt = !raw.includes(".");
-      const formatted = isInt
-        ? Math.round(cur).toLocaleString("en-IN")
-        : cur.toFixed(raw.split(".")[1]?.length ?? 1);
-      setDisplay(`${prefix}${formatted}${suffix}`);
+      const t = Math.min(1, (now - startTs) / COUNT_UP_MS);
+      setDisplay(countUpFrame(target, t));
       if (t < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    // Safety net: land on the exact value even if frames stop firing.
+    const settle = window.setTimeout(() => {
+      cancelAnimationFrame(raf);
+      setDisplay(target);
+    }, COUNT_UP_MS + 100);
+    const onVisibility = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(raf);
+        setDisplay(target);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(settle);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [target, enabled]);
   return display;
 }
@@ -128,11 +132,12 @@ export function StatCard({
   index = 0,
   sparkline,
   deltaPct,
+  countUp = true,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-40px" });
   const { reducedMotion } = usePrefers();
-  const displayValue = useCountUp(value, inView && !reducedMotion);
+  const displayValue = useCountUp(value, countUp && inView && !reducedMotion);
   const deltaUp = (deltaPct ?? 0) >= 0;
 
   return (
@@ -162,7 +167,10 @@ export function StatCard({
           <div className="flex items-start justify-between gap-3 min-w-0">
             <div className="min-w-0 flex-1">
               <div className="type-kicker text-muted-foreground">{label}</div>
-              <div className="mt-2 sm:mt-3 font-display text-2xl sm:text-[1.75rem] font-bold leading-none tracking-tight tabular-nums break-words">
+              <div
+                className="mt-2 sm:mt-3 font-display text-2xl sm:text-[1.75rem] font-bold leading-none tracking-tight tabular-nums break-words"
+                aria-label={value}
+              >
                 {displayValue}
               </div>
             </div>
