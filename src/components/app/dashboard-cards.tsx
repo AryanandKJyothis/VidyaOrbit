@@ -23,11 +23,14 @@ export function GreetingBanner({
   displayName,
   instituteName,
   classesToday,
+  batchCount,
 }: {
   greeting: string;
   displayName: string;
   instituteName?: string | null;
   classesToday: number;
+  /** When known to be 0, don't say "No batches scheduled today". */
+  batchCount?: number;
 }) {
   return (
     <section className="relative overflow-hidden rounded-2xl bg-primary-soft/70 p-4 sm:p-5">
@@ -41,9 +44,11 @@ export function GreetingBanner({
           </h1>
           <p className="mt-0.5 truncate text-sm text-muted-foreground">
             {instituteName ? `${instituteName} · ` : ""}
-            {classesToday === 0
-              ? "No batches scheduled today"
-              : `${classesToday} ${classesToday === 1 ? "batch" : "batches"} active today`}
+            {batchCount === 0
+              ? "Let's set up your first batch"
+              : classesToday === 0
+                ? "No batches scheduled today"
+                : `${classesToday} ${classesToday === 1 ? "batch" : "batches"} active today`}
           </p>
         </div>
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-card text-primary shadow-xs">

@@ -10,6 +10,7 @@ import { useActiveWorkspace } from "@/hooks/use-active-workspace";
 import { useBatches, usePayments, useStudents } from "@/hooks/use-data";
 import { useOnboarding } from "@/hooks/use-onboarding";
 import { supabase } from "@/integrations/supabase/client";
+import { checklistDataReady } from "@/lib/onboarding-v2";
 import {
   isInvitedStaff,
   readJoiningTeamFlag,
@@ -46,7 +47,7 @@ export function OnboardingChecklist({
             Getting started
           </CardTitle>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {doneCount}/{items.length} complete — import students, make a batch,
+            {doneCount}/{items.length} complete — make a batch, add students,
             then mark a day or take a fee.
           </p>
         </div>
@@ -81,46 +82,51 @@ export function OnboardingChecklist({
             </Button>
           )}
           <ul className="space-y-2">
-            {items.map((step, idx) => (
-              <li
-                key={step.id}
-                className={cn(
-                  "flex flex-col gap-2 rounded-lg border border-border/80 bg-card p-3 sm:flex-row sm:items-center sm:justify-between",
-                  step.done && "opacity-70 bg-muted/30",
-                )}
-              >
-                <div className="flex min-w-0 items-start gap-3">
-                  <span
-                    className={cn(
-                      "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
-                      step.done
-                        ? "border-success bg-success/15 text-success"
-                        : "border-muted-foreground/30 text-muted-foreground",
-                    )}
-                  >
-                    {step.done ? <Check className="h-3.5 w-3.5" /> : idx + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium leading-snug">
-                      {step.title}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {step.hint}
+            {items.map((step, idx) => {
+              const isNext = items.find((i) => !i.done)?.id === step.id;
+              return (
+                <li
+                  key={step.id}
+                  className={cn(
+                    "flex items-center justify-between gap-2 rounded-lg border border-border/80 bg-card px-3 py-2",
+                    step.done && "opacity-70 bg-muted/30",
+                  )}
+                >
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span
+                      className={cn(
+                        "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
+                        step.done
+                          ? "border-success bg-success/15 text-success"
+                          : "border-muted-foreground/30 text-muted-foreground",
+                      )}
+                    >
+                      {step.done ? <Check className="h-3.5 w-3.5" /> : idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium leading-snug">
+                        {step.title}
+                      </div>
+                      {isNext && (
+                        <div className="text-xs text-muted-foreground">
+                          {step.hint}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-                {!step.done && (
-                  <Button
-                    asChild
-                    size="sm"
-                    variant={step.primary ? "default" : "secondary"}
-                    className="shrink-0 self-start sm:self-center"
-                  >
-                    <Link to={step.to}>{step.label}</Link>
-                  </Button>
-                )}
-              </li>
-            ))}
+                  {!step.done && (
+                    <Button
+                      asChild
+                      size="sm"
+                      variant={step.primary ? "default" : "secondary"}
+                      className="h-11 shrink-0"
+                    >
+                      <Link to={step.to}>{step.label}</Link>
+                    </Button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
           {onDismiss && (
             <div className="flex justify-end pt-1">
@@ -184,6 +190,16 @@ export function OwnerGettingStartedCard() {
   if (staff) return null;
   if (dismissedChecklist) return null;
   if (!active) return null;
+  // No "0/3" flash: render only once every count it depends on is known.
+  if (
+    !checklistDataReady({
+      batches: batches.isSuccess,
+      students: students.isSuccess,
+      payments: payments.isSuccess,
+      attendance: attendanceStarted.isSuccess,
+    })
+  )
+    return null;
 
   return (
     <OnboardingChecklist

@@ -21,6 +21,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { ImportStudentsDialog } from "@/components/import-students-dialog";
+import { feeBadgeKind } from "@/lib/onboarding-v2";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -193,12 +194,12 @@ function StudentsList() {
   };
 
   return (
-    <div>
+    <div className="min-w-0">
       <PageHeader
         title="Students"
         description="Manage all students, their batches and fee plans."
         actions={
-          <div className="flex gap-2">
+          <div className="flex min-w-0 flex-wrap gap-2">
             {canExport && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -448,9 +449,26 @@ function StudentsList() {
               reassurance="You can add or edit anyone afterwards. Nothing is sent to parents until you tap WhatsApp."
             >
               {canWriteStudents && (
-                <Button onClick={() => setImportOpen(true)} disabled={atLimit}>
-                  <Upload className="mr-1.5 h-4 w-4" /> Import students
-                </Button>
+                <>
+                  <Button
+                    className="h-11"
+                    onClick={() => {
+                      setEditing(undefined);
+                      setOpen(true);
+                    }}
+                    disabled={atLimit}
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" /> Add a student
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-11"
+                    onClick={() => setImportOpen(true)}
+                    disabled={atLimit}
+                  >
+                    <Upload className="mr-1.5 h-4 w-4" /> Import from Excel
+                  </Button>
+                </>
               )}
             </EmptyState>
           ) : filtered.length === 0 ? (
@@ -534,7 +552,14 @@ function StudentsList() {
                       </div>
                       {canViewFees && (
                         <div className="mt-3 flex items-center justify-between gap-2">
-                          {overdue ? (
+                          {feeBadgeKind({
+                            feeTotal: s.fee_total,
+                            balance: bal,
+                            overdue,
+                            dueSoon: !!dueSoon,
+                          }) === "none" ? (
+                            <span className="pill pill-muted">No fee set</span>
+                          ) : overdue ? (
                             <span className="pill pill-danger">
                               Overdue {formatINR(bal)}
                             </span>
@@ -590,7 +615,12 @@ function StudentsList() {
         </button>
       )}
 
-      <StudentDialog open={open} onOpenChange={setOpen} student={editing} />
+      <StudentDialog
+        open={open}
+        onOpenChange={setOpen}
+        student={editing}
+        defaultBatchId={batchFilter !== "all" ? batchFilter : undefined}
+      />
       <ImportStudentsDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );

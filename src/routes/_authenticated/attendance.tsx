@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { GUIDED_ATTENDANCE_KEY, QS_COPY } from "@/lib/onboarding-v2";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Save,
@@ -164,6 +165,29 @@ function AttendancePage() {
     setMarks(next);
   };
 
+  // Onboarding v2 guided first attendance: everyone starts Present once.
+  const [guidedBatch, setGuidedBatch] = useState<string | null>(() => {
+    try {
+      return typeof window === "undefined"
+        ? null
+        : localStorage.getItem(GUIDED_ATTENDANCE_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const [guidedPrefilled, setGuidedPrefilled] = useState(false);
+  const [firstWin, setFirstWin] = useState(false);
+  const guided = !!guidedBatch && guidedBatch === batchId;
+  useEffect(() => {
+    if (!guided || guidedPrefilled || !session.isSuccess) return;
+    if (roster.length === 0) return;
+    if (Object.keys(session.data?.records ?? {}).length > 0) return;
+    const next: Record<string, Status> = {};
+    for (const s of roster) next[s.id] = "present";
+    setMarks(next);
+    setGuidedPrefilled(true);
+  }, [guided, guidedPrefilled, session.isSuccess, session.data, roster]);
+
   const save = async () => {
     if (!canWriteAttendance) return;
     if (!batchId || !user || !ownerId) return;
@@ -224,6 +248,15 @@ function AttendancePage() {
         ownerId,
         sessionId,
       });
+      if (guided) {
+        setFirstWin(true);
+        setGuidedBatch(null);
+        try {
+          localStorage.removeItem(GUIDED_ATTENDANCE_KEY);
+        } catch {
+          /* ignore */
+        }
+      }
       qc.invalidateQueries({ queryKey: ["att-session"] });
       qc.invalidateQueries({ queryKey: ["att-summary"] });
       qc.invalidateQueries({ queryKey: ["att-all"] });
@@ -315,6 +348,31 @@ function AttendancePage() {
           </Button>
         }
       />
+
+      {(guided || firstWin) && (
+        <div
+          role="status"
+          className={
+            firstWin
+              ? "mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
+              : "mb-4 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm"
+          }
+        >
+          {firstWin ? QS_COPY.firstWin.en : QS_COPY.guidedAttendance.en}
+          <span lang="ml" className="block text-xs opacity-80">
+            {firstWin ? QS_COPY.firstWin.ml : QS_COPY.guidedAttendance.ml}
+          </span>
+          {guided && roster.length === 0 && (
+            <span className="mt-1 block text-xs text-muted-foreground">
+              No students in this batch yet —{" "}
+              <Link to="/students" className="underline">
+                add a few names
+              </Link>{" "}
+              first.
+            </span>
+          )}
+        </div>
+      )}
 
       {noBatches ? (
         <EmptyState

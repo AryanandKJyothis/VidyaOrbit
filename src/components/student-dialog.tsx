@@ -17,23 +17,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useBatches, useUpsertStudent, type Student } from "@/hooks/use-data";
+import {
+  useBatches,
+  useStudents,
+  useUpsertStudent,
+  type Student,
+} from "@/hooks/use-data";
 import { useCan } from "@/hooks/use-active-workspace";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatUserError } from "@/lib/format-error";
 import { todayISO } from "@/lib/format";
+import { isDuplicateStudentName } from "@/lib/onboarding-v2";
 
 export function StudentDialog({
   open,
   onOpenChange,
   student,
+  defaultBatchId,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   student?: Student;
+  /** New students default to the batch the list is filtered by. */
+  defaultBatchId?: string;
 }) {
   const batches = useBatches();
+  const allStudents = useStudents();
+  const [showMore, setShowMore] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const mut = useUpsertStudent();
   const canSeeFees = useCan("fees", "read");
 
@@ -61,17 +73,32 @@ export function StudentDialog({
         address: student?.address ?? "",
         joining_date: student?.joining_date ?? todayISO(),
         status: student?.status ?? "active",
-        batch_id: student?.batch_id ?? "",
+        batch_id: student ? (student.batch_id ?? "") : (defaultBatchId ?? ""),
         fee_total: student?.fee_total != null ? String(student.fee_total) : "",
         fee_due_date: student?.fee_due_date ?? "",
         notes: student?.notes ?? "",
       });
+      setShowMore(!!student);
+      setPhoneError(null);
     }
-  }, [open, student]);
+  }, [open, student, defaultBatchId]);
+
+  const duplicateName = isDuplicateStudentName(
+    form.full_name,
+    (allStudents.data ?? [])
+      .filter((s) => s.id !== student?.id && s.status !== "archived")
+      .map((s) => s.full_name),
+  );
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.full_name.trim()) return toast.error("Name is required");
+    if (!form.phone.trim() && !form.guardian_phone.trim()) {
+      setPhoneError(
+        "Add the student's phone or a guardian phone — one is needed.",
+      );
+      return;
+    }
     try {
       const payload: Parameters<typeof mut.mutateAsync>[0] = {
         id: student?.id,
@@ -96,7 +123,9 @@ export function StudentDialog({
       toast.success(student ? "Student updated" : "Student added");
       onOpenChange(false);
     } catch (e: unknown) {
-      toast.error(formatUserError(e));
+      const msg = formatUserError(e);
+      if (/phone/i.test(msg)) setPhoneError(msg);
+      else toast.error(msg);
     }
   };
 
@@ -117,15 +146,31 @@ export function StudentDialog({
               onChange={(e) => setForm({ ...form, full_name: e.target.value })}
               required
             />
+            {duplicateName && (
+              <p className="text-xs text-amber-700" role="status">
+                A student with this name already exists. Add a surname or class
+                to tell them apart.
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
-            <Label>Phone (optional if guardian phone is set)</Label>
+            <Label>Phone (student or guardian — one is needed)</Label>
             <Input
+              inputMode="tel"
               value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              aria-invalid={!!phoneError}
+              onChange={(e) => {
+                setPhoneError(null);
+                setForm({ ...form, phone: e.target.value });
+              }}
             />
+            {phoneError && (
+              <p className="text-xs text-destructive" role="alert">
+                {phoneError}
+              </p>
+            )}
           </div>
-          <div className="space-y-1.5">
+          <div className={`space-y-1.5 ${showMore ? "" : "hidden"}`}>
             <Label>Guardian name (optional)</Label>
             <Input
               value={form.guardian_name}
@@ -138,12 +183,13 @@ export function StudentDialog({
             <Label>Guardian phone (optional)</Label>
             <Input
               value={form.guardian_phone}
-              onChange={(e) =>
-                setForm({ ...form, guardian_phone: e.target.value })
-              }
+              onChange={(e) => {
+                setPhoneError(null);
+                setForm({ ...form, guardian_phone: e.target.value });
+              }}
             />
           </div>
-          <div className="space-y-1.5">
+          <div className={`space-y-1.5 ${showMore ? "" : "hidden"}`}>
             <Label>Joining date</Label>
             <Input
               type="date"
@@ -153,7 +199,9 @@ export function StudentDialog({
               }
             />
           </div>
-          <div className="space-y-1.5 sm:col-span-2">
+          <div
+            className={`space-y-1.5 sm:col-span-2 ${showMore ? "" : "hidden"}`}
+          >
             <Label>Address (optional)</Label>
             <Input
               value={form.address}
@@ -181,7 +229,7 @@ export function StudentDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
+          <div className={`space-y-1.5 ${showMore ? "" : "hidden"}`}>
             <Label>Status</Label>
             <Select
               value={form.status}
@@ -211,7 +259,7 @@ export function StudentDialog({
                   }
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className={`space-y-1.5 ${showMore ? "" : "hidden"}`}>
                 <Label>Fee due date (optional)</Label>
                 <Input
                   type="date"
@@ -223,7 +271,9 @@ export function StudentDialog({
               </div>
             </>
           )}
-          <div className="space-y-1.5 sm:col-span-2">
+          <div
+            className={`space-y-1.5 sm:col-span-2 ${showMore ? "" : "hidden"}`}
+          >
             <Label>Notes (optional)</Label>
             <Textarea
               rows={2}
@@ -231,7 +281,17 @@ export function StudentDialog({
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
             />
           </div>
-          <DialogFooter className="sm:col-span-2 mt-2">
+          {!showMore && (
+            <Button
+              type="button"
+              variant="link"
+              className="h-11 justify-start px-0 sm:col-span-2"
+              onClick={() => setShowMore(true)}
+            >
+              More details (guardian, address, notes…)
+            </Button>
+          )}
+          <DialogFooter className="sticky bottom-0 -mx-6 -mb-6 mt-2 border-t bg-background px-6 py-3 sm:col-span-2">
             <Button
               type="button"
               variant="outline"

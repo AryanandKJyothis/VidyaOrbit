@@ -304,7 +304,7 @@ describe("invited staff get name and phone only", () => {
 });
 
 describe("getting started checklist derivation", () => {
-  it("starts at 0/3 with Import as the primary CTA", () => {
+  it("starts at 0/3 with Create batch first and primary (audit: batch before students)", () => {
     const empty = deriveGettingStarted({
       batchCount: 0,
       activeStudentCount: 0,
@@ -315,13 +315,14 @@ describe("getting started checklist derivation", () => {
     expect(empty.allDone).toBe(false);
     expect(empty.items).toHaveLength(3);
     expect(empty.items.map((i) => i.id)).toEqual([
-      "student",
       "batch",
+      "student",
       "action",
     ]);
     expect(empty.items.map((i) => i.done)).toEqual([false, false, false]);
-    expect(empty.items[0]?.label).toBe("Import");
+    expect(empty.items[0]?.label).toBe("Create batch");
     expect(empty.items[0]?.primary).toBe(true);
+    expect(empty.items[1]?.label).toBe("Import");
   });
 
   it("ticks items from real counts and treats attendance or a fee as one step", () => {
@@ -484,7 +485,7 @@ describe("resume, dismiss, and first-run gates", () => {
       });
       expect(checklist.doneCount).toBe(0);
       expect(checklist.items).toHaveLength(3);
-      expect(checklist.items[0]?.label).toBe("Import");
+      expect(checklist.items[1]?.label).toBe("Import");
       expect(
         looksLikeNewCentre({
           instituteName,
