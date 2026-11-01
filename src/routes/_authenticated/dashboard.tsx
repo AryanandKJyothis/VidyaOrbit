@@ -75,6 +75,11 @@ import { WelcomeBackBanner } from "@/components/welcome-back-banner";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
 import { useOnboarding } from "@/hooks/use-onboarding";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  istNowMinutes,
+  pickNextBatch,
+  sortBatchesByTime,
+} from "@/lib/batch-time";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -191,10 +196,12 @@ function Dashboard() {
 
     // Today's batches based on days_of_week
     const dowKey = istWeekdayKey();
-    const todaysBatches = b.filter(
-      (x) =>
-        x.is_active &&
-        (x.days_of_week ?? []).map((d) => d.toLowerCase()).includes(dowKey),
+    const todaysBatches = sortBatchesByTime(
+      b.filter(
+        (x) =>
+          x.is_active &&
+          (x.days_of_week ?? []).map((d) => d.toLowerCase()).includes(dowKey),
+      ),
     );
 
     // New admissions: this month vs previous month (by joining_date)
@@ -306,7 +313,7 @@ function Dashboard() {
     }
     const marked = present + absent;
     const pending = Math.max(0, enrolled.length - marked);
-    const next = stats.todaysBatches[0];
+    const next = pickNextBatch(stats.todaysBatches, istNowMinutes());
     const nextStudents = next
       ? (students.data ?? []).filter(
           (st) => st.batch_id === next.id && st.status !== "archived",

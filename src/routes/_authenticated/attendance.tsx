@@ -46,6 +46,7 @@ import { QueryErrorState } from "@/components/query-state";
 import { enqueueAbsencesAfterSave } from "@/lib/messaging/client";
 import { formatAbsenceQueueToast } from "@/lib/messaging/summarize";
 import { hasValidParentPhone } from "@/lib/messaging/phone";
+import { batchLabel, sortBatchesByTime } from "@/lib/batch-time";
 
 export const Route = createFileRoute("/_authenticated/attendance")({
   component: () => (
@@ -337,9 +338,9 @@ function AttendancePage() {
                     <SelectValue placeholder="Select batch" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(batches.data ?? []).map((b) => (
+                    {sortBatchesByTime(batches.data ?? []).map((b) => (
                       <SelectItem key={b.id} value={b.id}>
-                        {b.name}
+                        {batchLabel(b)}
                       </SelectItem>
                     ))}
                   </SelectContent>
