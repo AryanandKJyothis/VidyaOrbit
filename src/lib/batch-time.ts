@@ -69,3 +69,37 @@ export function batchLabel(b: {
 }): string {
   return b.timing ? `${b.name} · ${b.timing}` : b.name;
 }
+
+/** Active batches scheduled on `dowKey` (`sun`…`sat`), sorted by start time. */
+export function batchesScheduledOn<
+  T extends {
+    timing?: string | null;
+    name: string;
+    is_active?: boolean | null;
+    days_of_week?: readonly string[] | null;
+  },
+>(batches: readonly T[], dowKey: string): T[] {
+  const key = dowKey.toLowerCase();
+  return sortBatchesByTime(
+    batches.filter(
+      (b) =>
+        b.is_active &&
+        (b.days_of_week ?? []).map((d) => d.toLowerCase()).includes(key),
+    ),
+  );
+}
+
+/**
+ * The batch the dashboard treats as "today's": among active batches scheduled
+ * today, the next one by clock (else the first). Undefined if none today.
+ */
+export function pickTodayBatch<
+  T extends {
+    timing?: string | null;
+    name: string;
+    is_active?: boolean | null;
+    days_of_week?: readonly string[] | null;
+  },
+>(batches: readonly T[], dowKey: string, nowMinutes: number): T | undefined {
+  return pickNextBatch(batchesScheduledOn(batches, dowKey), nowMinutes);
+}

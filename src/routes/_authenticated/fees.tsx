@@ -1,3 +1,4 @@
+import { monthDeltaPct } from "@/lib/month-over-month";
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import {
@@ -400,12 +401,7 @@ function FeesPageContent() {
       (x) => x.payment_date >= prevMonthStart && x.payment_date <= prevMonthEnd,
     )
     .reduce((sum, x) => sum + Number(x.amount), 0);
-  const monthDelta =
-    prevMonthCollected > 0
-      ? Math.round(
-          ((monthCollected - prevMonthCollected) / prevMonthCollected) * 100,
-        )
-      : undefined;
+  const monthDelta = monthDeltaPct(monthCollected, prevMonthCollected);
   const pendingDueCount = rows.filter(
     (r) => r.balance > 0 && !r.overdue,
   ).length;

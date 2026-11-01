@@ -51,7 +51,13 @@ import { QueryErrorState } from "@/components/query-state";
 import { enqueueAbsencesAfterSave } from "@/lib/messaging/client";
 import { formatAbsenceQueueToast } from "@/lib/messaging/summarize";
 import { hasValidParentPhone } from "@/lib/messaging/phone";
-import { batchLabel, sortBatchesByTime } from "@/lib/batch-time";
+import {
+  batchLabel,
+  istNowMinutes,
+  pickTodayBatch,
+  sortBatchesByTime,
+} from "@/lib/batch-time";
+import { istWeekdayKey } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/attendance")({
   component: () => (
@@ -83,6 +89,16 @@ function AttendancePage() {
 
   useEffect(() => {
     if (!batches.data?.length) return;
+    // Default to the batch scheduled today (same rule as the dashboard).
+    const today = pickTodayBatch(
+      batches.data,
+      istWeekdayKey(),
+      istNowMinutes(),
+    );
+    if (today) {
+      setBatchId(today.id);
+      return;
+    }
     try {
       const savedBatch = localStorage.getItem(ATT_BATCH_KEY);
       if (savedBatch && batches.data.some((b) => b.id === savedBatch)) {

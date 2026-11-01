@@ -1,3 +1,4 @@
+import { monthDeltaPct } from "@/lib/month-over-month";
 import { useEffect, useMemo, useState } from "react";
 import { greetingName } from "@/lib/onboarding-v2";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -78,6 +79,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   istNowMinutes,
   pickNextBatch,
+  batchesScheduledOn,
   sortBatchesByTime,
 } from "@/lib/batch-time";
 
@@ -187,21 +189,11 @@ function Dashboard() {
           x.payment_date >= prevMonthStart && x.payment_date <= prevMonthEnd,
       )
       .reduce((sum, x) => sum + Number(x.amount), 0);
-    const collectionDelta = prevMonthCollected
-      ? Math.round(
-          ((monthCollected - prevMonthCollected) / prevMonthCollected) * 100,
-        )
-      : undefined;
+    const collectionDelta = monthDeltaPct(monthCollected, prevMonthCollected);
 
     // Today's batches based on days_of_week
     const dowKey = istWeekdayKey();
-    const todaysBatches = sortBatchesByTime(
-      b.filter(
-        (x) =>
-          x.is_active &&
-          (x.days_of_week ?? []).map((d) => d.toLowerCase()).includes(dowKey),
-      ),
-    );
+    const todaysBatches = batchesScheduledOn(b, dowKey);
 
     // New admissions: this month vs previous month (by joining_date)
     const thisMonthStart = monthStart;
