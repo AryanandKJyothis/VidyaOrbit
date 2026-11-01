@@ -36,7 +36,12 @@ import {
 import { EmptyState } from "@/components/empty-state";
 import { QueryErrorState } from "@/components/query-state";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useStudents, useBatches, usePayments } from "@/hooks/use-data";
+import {
+  useStudents,
+  useBatches,
+  usePayments,
+  useOwnerDataPending,
+} from "@/hooks/use-data";
 import { PaymentDialog } from "@/components/payment-dialog";
 import {
   FeeOverdueQueue,
@@ -407,7 +412,7 @@ function FeesPageContent() {
   const overdueCount = rows.filter((r) => r.overdue).length;
   const paidCount = rows.filter((r) => r.balance <= 0).length;
 
-  const loading = students.isLoading || batches.isLoading || payments.isLoading;
+  const loading = useOwnerDataPending(students, batches, payments);
   const loadError =
     students.isError || batches.isError || payments.isError
       ? ((students.error ?? batches.error ?? payments.error) as Error)
@@ -633,23 +638,27 @@ function FeesPageContent() {
       <div className="mt-4 hidden grid-cols-2 gap-4 md:grid lg:grid-cols-4">
         <StatCard
           label="Total fee"
+          countUp={false}
           value={formatINR(totals.totalFee)}
           icon={Wallet}
         />
         <StatCard
           label="Collected"
+          countUp={false}
           value={formatINR(totals.paid)}
           icon={CheckCircle2}
           tone="success"
         />
         <StatCard
           label="Pending"
+          countUp={false}
           value={formatINR(totals.due)}
           icon={AlertCircle}
           tone="warning"
         />
         <StatCard
           label="Overdue"
+          countUp={false}
           value={formatINR(totals.overdue)}
           icon={AlertCircle}
           tone={totals.overdue ? "destructive" : "default"}

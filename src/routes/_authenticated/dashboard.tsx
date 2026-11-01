@@ -52,6 +52,7 @@ import {
   useStudents,
   useBatches,
   usePayments,
+  useOwnerDataPending,
   useInstitute,
 } from "@/hooks/use-data";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,6 +75,11 @@ import { WelcomeBackBanner } from "@/components/welcome-back-banner";
 import { useActiveWorkspace, useCan } from "@/hooks/use-active-workspace";
 import { useOnboarding } from "@/hooks/use-onboarding";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  istNowMinutes,
+  pickNextBatch,
+  sortBatchesByTime,
+} from "@/lib/batch-time";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -190,10 +196,12 @@ function Dashboard() {
 
     // Today's batches based on days_of_week
     const dowKey = istWeekdayKey();
-    const todaysBatches = b.filter(
-      (x) =>
-        x.is_active &&
-        (x.days_of_week ?? []).map((d) => d.toLowerCase()).includes(dowKey),
+    const todaysBatches = sortBatchesByTime(
+      b.filter(
+        (x) =>
+          x.is_active &&
+          (x.days_of_week ?? []).map((d) => d.toLowerCase()).includes(dowKey),
+      ),
     );
 
     // New admissions: this month vs previous month (by joining_date)
@@ -278,7 +286,7 @@ function Dashboard() {
     );
   }, [attendance.data]);
 
-  const loading = students.isLoading || batches.isLoading || payments.isLoading;
+  const loading = useOwnerDataPending(students, batches, payments);
   const studentById = useMemo(() => {
     const map: Record<string, string> = {};
     for (const s of students.data ?? []) map[s.id] = s.full_name;
@@ -305,7 +313,7 @@ function Dashboard() {
     }
     const marked = present + absent;
     const pending = Math.max(0, enrolled.length - marked);
-    const next = stats.todaysBatches[0];
+    const next = pickNextBatch(stats.todaysBatches, istNowMinutes());
     const nextStudents = next
       ? (students.data ?? []).filter(
           (st) => st.batch_id === next.id && st.status !== "archived",
@@ -570,7 +578,7 @@ function Dashboard() {
                     qc.invalidateQueries({ queryKey: ["payments"] })
                   }
                 />
-              ) : payments.isLoading ? (
+              ) : loading ? (
                 <QueryLoadingSkeleton
                   count={1}
                   className="h-[200px] sm:h-[240px]"
@@ -677,7 +685,7 @@ function Dashboard() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-2">
-            {batches.isLoading ? (
+            {loading ? (
               <QueryLoadingSkeleton count={3} className="h-14" />
             ) : stats.todaysBatches.length === 0 ? (
               <div className="rounded-lg border border-dashed border-subtle p-5 text-center text-xs sm:text-sm text-muted-foreground">
@@ -749,9 +757,11 @@ function Dashboard() {
                   Overdue dues
                 </CardTitle>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {stats.overdue.length === 0
-                    ? "All clear"
-                    : `${stats.overdue.length} students · ${formatINR(stats.overdueAmount)}`}
+                  {loading
+                    ? "Loading…"
+                    : stats.overdue.length === 0
+                      ? "All clear"
+                      : `${stats.overdue.length} students · ${formatINR(stats.overdueAmount)}`}
                 </p>
               </div>
               <Button asChild variant="ghost" size="sm">
@@ -761,7 +771,9 @@ function Dashboard() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-2">
-              {stats.overdue.length === 0 ? (
+              {loading ? (
+                <QueryLoadingSkeleton count={3} className="h-14" />
+              ) : stats.overdue.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-subtle p-5 text-center text-xs sm:text-sm text-muted-foreground">
                   {stats.totalStudents === 0
                     ? "Add students with fee totals to track dues here."
@@ -819,7 +831,9 @@ function Dashboard() {
               </Button>
             </CardHeader>
             <CardContent>
-              {(payments.data?.length ?? 0) === 0 ? (
+              {loading ? (
+                <QueryLoadingSkeleton count={3} className="h-12" />
+              ) : (payments.data?.length ?? 0) === 0 ? (
                 <EmptyState
                   className="border-0 bg-transparent py-8"
                   title="No payments yet"
