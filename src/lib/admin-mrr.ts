@@ -4,13 +4,17 @@
  * admin_platform_overview SQL (paise). Annual MRR is round(annual / 12).
  */
 
-export type AdminPlanCode = "free" | "starter" | "growth" | "pro";
+export type AdminPlanCode = "free" | "starter" | "growth" | "pro" | "campus";
 export type AdminBillingCycle = "monthly" | "annual";
 
 export const ADMIN_LIST_PRICE_PAISE = {
-  starter: { monthly: 49900, annual: 499900 },
-  growth: { monthly: 99900, annual: 1000000 },
-  pro: { monthly: 249900, annual: 2500000 },
+  // Nov 1 2026 list prices. Yearly = pay 10 months.
+  // NOTE: admin_platform_overview SQL still has the old constants; see
+  // 20261101090000_pricing_2026_11_01_plan_caps.sql follow-up notes.
+  starter: { monthly: 49900, annual: 499000 },
+  growth: { monthly: 99900, annual: 999000 },
+  pro: { monthly: 149900, annual: 1499000 },
+  campus: { monthly: 249900, annual: 2499000 },
 } as const;
 
 export function annualMrrPaise(annualPaise: number): number {

@@ -12,6 +12,7 @@ export type { PlanCode };
 
 function toPlanCode(code: PlanDisplay["code"]): PlanCode {
   return code === "large" ? "pro" : code;
+  // "campus" display code is also the DB plan_code.
 }
 
 // ── Trial mode ──────────────────────────────────────────────────────
@@ -24,7 +25,8 @@ export const PLAN_LIMITS: Record<PlanCode, number> = {
   free: toClientLimit(PLAN_STUDENT_LIMITS.free),
   starter: toClientLimit(PLAN_STUDENT_LIMITS.starter),
   growth: toClientLimit(PLAN_STUDENT_LIMITS.growth),
-  pro: Infinity,
+  pro: toClientLimit(PLAN_STUDENT_LIMITS.pro),
+  campus: Infinity,
 };
 
 export const PLAN_RANK: Record<PlanCode, number> = {
@@ -32,6 +34,7 @@ export const PLAN_RANK: Record<PlanCode, number> = {
   starter: 1,
   growth: 2,
   pro: 3,
+  campus: 4,
 };
 
 export const PLANS: {

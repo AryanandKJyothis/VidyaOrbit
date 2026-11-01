@@ -1,24 +1,28 @@
 /**
  * Single source of truth for plan student caps used by the admin UI
  * and the client subscription hook. Matches public.plan_student_limit
- * after 20261008093000_pro_plan_unlimited.sql (pro is unlimited).
+ * after 20261101090000_pricing_2026_11_01_plan_caps.sql
+ * (Nov 1 2026 pricing: free 25, Spark 50, Orbit 150, Centre 400, Campus unlimited).
+ * NOTE: until that migration is applied, the DB still enforces the old caps.
  */
 
-export type PlanCode = "free" | "starter" | "growth" | "pro";
+export type PlanCode = "free" | "starter" | "growth" | "pro" | "campus";
 export type PlanTier = "starter" | "growth" | "large";
 
 /** Postgres integer sentinel used by plan_student_limit for unlimited pro. */
 export const UNLIMITED_STUDENT_SENTINEL = 2147483647;
 
 /**
- * Cap per plan_code. `null` means unlimited (pro / Centre).
+ * Cap per plan_code. `null` means unlimited (campus / Campus).
+ * Above ~800 students or multi-branch is a custom quote (still `campus`).
  * Do not override these from env — the DB function is authoritative.
  */
 export const PLAN_STUDENT_LIMITS: Record<PlanCode, number | null> = {
   free: 25,
-  starter: 100,
-  growth: 500,
-  pro: null,
+  starter: 50,
+  growth: 150,
+  pro: 400,
+  campus: null,
 };
 
 export const PLAN_DISPLAY_NAMES: Record<PlanCode, string> = {
@@ -26,9 +30,10 @@ export const PLAN_DISPLAY_NAMES: Record<PlanCode, string> = {
   starter: "Spark",
   growth: "Orbit",
   pro: "Centre",
+  campus: "Campus",
 };
 
-export function planCodeForTier(tier: PlanTier): Exclude<PlanCode, "free"> {
+export function planCodeForTier(tier: PlanTier): "starter" | "growth" | "pro" {
   if (tier === "starter") return "starter";
   if (tier === "growth") return "growth";
   return "pro";

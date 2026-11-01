@@ -30,10 +30,11 @@ VidyaOrbit prepares a WhatsApp fee reminder with the centre UPI link. The owner 
 
 Prices below are the public plans in the product. Pay in the app on the Plan page with UPI or cards through Razorpay.
 
-- Free: ₹0/month — Up to 25 students. For trying things out.
-- Spark: ₹499/month or ₹4,999/year — Up to 100 students. Save ₹989.
-- Orbit: ₹999/month or ₹10,000/year — Up to 500 students. First monthly invoice includes optional ₹5,000 done for you setup (waived on annual). Save ₹1,988 · DFY setup waived.
-- Centre: ₹1,499/month or ₹15,000/year — Unlimited students. First monthly invoice includes optional ₹5,000 done for you setup (waived on annual). Save ₹2,988 · DFY setup waived.
+- Free: ₹0/month — Up to 25 students. Small centres, self-serve.
+- Spark: ₹499/month or ₹4,990/year — Up to 50 students. 2 months free.
+- Orbit: ₹999/month or ₹9,990/year — Up to 150 students. 2 months free.
+- Centre: ₹1,499/month or ₹14,990/year — Up to 400 students. First monthly invoice includes ₹2,000 done for you setup (waived on yearly). 2 months free · setup waived.
+- Campus: ₹2,499/month or ₹24,990/year — 400+ students. First monthly invoice includes ₹3,000 done for you setup (waived on yearly). 2 months free · setup waived.
 
 ## Location and contact
 

@@ -94,7 +94,7 @@ function planLlmsLine(p: (typeof APPROVED_PRICING)[number]): string {
   const save = getAnnualSavingsLabel(p);
   const setup =
     p.setupFee > 0
-      ? ` First monthly invoice includes optional ${formatIndianPrice(p.setupFee)} done for you setup (waived on annual).`
+      ? ` First monthly invoice includes ${formatIndianPrice(p.setupFee)} done for you setup (waived on yearly).`
       : "";
   const saveBit = save ? ` ${save}.` : "";
   return `- ${p.displayName}: ${monthly}/month or ${annual}/year — ${p.studentLimit}.${setup}${saveBit}`;

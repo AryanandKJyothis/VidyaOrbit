@@ -105,10 +105,10 @@ describe("fetchSubscriptionForOwner", () => {
     expect(result.isOwner).toBe(false);
   });
 
-  it("maps Large/pro to Infinity and any limit >= 2147483647 to Infinity", async () => {
-    expect(PLAN_LIMITS.pro).toBe(Infinity);
-    expect(PLAN_LIMITS.pro).not.toBe(1000);
-    expect(PLAN_LIMITS.pro).not.toBe(UNLIMITED_STUDENT_SENTINEL);
+  it("maps Campus to Infinity and any limit >= 2147483647 to Infinity", async () => {
+    expect(PLAN_LIMITS.campus).toBe(Infinity);
+    expect(PLAN_LIMITS.pro).toBe(400);
+    expect(PLAN_LIMITS.campus).not.toBe(UNLIMITED_STUDENT_SENTINEL);
 
     const rpc = vi.fn().mockResolvedValue({
       data: {

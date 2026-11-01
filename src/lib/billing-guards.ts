@@ -130,7 +130,7 @@ export const TIER_CHANGE_HELD_MESSAGE =
   "Payment received. We'll contact you to switch your plan and adjust your remaining time";
 
 export const SETUP_ALREADY_PAID_MESSAGE =
-  "Your plan is active. We'll refund the extra ₹5,000 setup fee.";
+  "Your plan is active. We'll refund the extra setup fee.";
 
 /** Duplicate-setup review (plan applied). False when a tier hold is also present. */
 export function isSetupRefundReview(reviewReason?: string | null): boolean {

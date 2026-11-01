@@ -3,7 +3,11 @@ import { JsonLd } from "@/components/json-ld";
 import { Button } from "@/components/ui/button";
 import { getContactConfig } from "@/lib/contact-config";
 import { PRICING_FAQS } from "@/lib/public-faqs";
-import { dfySetupLine } from "@/lib/pricing-display";
+import {
+  CUSTOM_QUOTE_LINE,
+  WHATSAPP_COMING_SOON_LINE,
+  dfySetupLine,
+} from "@/lib/pricing-display";
 import { PUBLIC_PAGES, pageHead, pricingJsonLd } from "@/lib/seo";
 import { ShieldCheck, MessageCircle, Mail } from "lucide-react";
 import { PublicPricingGrid } from "@/components/public/pricing-grid";
@@ -75,9 +79,9 @@ function PricingPage() {
                 Simple, INR-first pricing
               </h1>
               <p className="mt-4 text-muted-foreground sm:text-lg">
-                Spark ₹499, Orbit ₹999, Centre ₹1,499 a month. Start free, then
-                upgrade when your centre grows. {dfySetupLine()} Pay in the app
-                on the Plan page with UPI or cards through Razorpay.
+                Free up to 25 students. Spark ₹499, Orbit ₹999, Centre ₹1,499,
+                Campus ₹2,499 a month. Pay yearly and get 2 months free.{" "}
+                {dfySetupLine()} {CUSTOM_QUOTE_LINE}
               </p>
             </div>
           </div>
@@ -88,7 +92,7 @@ function PricingPage() {
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Paid plans can be paid in the app on the Plan page with UPI or cards
-            through Razorpay (monthly or annual).{" "}
+            through Razorpay (monthly or yearly).{" "}
             <Link
               to="/refund-policy"
               className="font-medium text-foreground underline-offset-4 hover:underline"
@@ -104,6 +108,7 @@ function PricingPage() {
             </span>
             <span>Multi-level permissions</span>
             <span>Export data anytime</span>
+            <span>{WHATSAPP_COMING_SOON_LINE}</span>
           </div>
         </section>
 

@@ -153,7 +153,11 @@ describe("landing copy", () => {
   });
 
   it("avoids known false or fake-social phrases", () => {
-    const blob = haystack();
+    // Locked Nov 1 2026 line is the one allowed "coming soon".
+    const blob = haystack().replaceAll(
+      "whatsapp alerts coming soon, free when they arrive.",
+      "",
+    );
     for (const phrase of BANNED_LANDING_PHRASES) {
       expect(blob).not.toContain(phrase);
     }

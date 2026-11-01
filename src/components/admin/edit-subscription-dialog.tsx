@@ -218,7 +218,7 @@ export function EditSubscriptionDialog({
       const res = await updateFn({
         data: {
           owner_id: ownerId,
-          plan: plan as "free" | "starter" | "growth" | "pro",
+          plan: plan as "free" | "starter" | "growth" | "pro" | "campus",
           status: normalizeStatus(status),
           start_date: startDate ? new Date(startDate).toISOString() : null,
           expiry_date: expiryDate ? new Date(expiryDate).toISOString() : null,
@@ -495,6 +495,9 @@ export function EditSubscriptionDialog({
                     <SelectItem value="pro">
                       {PLANS.find((p) => p.code === "pro")?.name ?? "Centre"}
                     </SelectItem>
+                    <SelectItem value="campus">
+                      {PLANS.find((p) => p.code === "campus")?.name ?? "Campus"}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -546,7 +549,7 @@ export function EditSubscriptionDialog({
                   <p className="text-xs text-muted-foreground">
                     Any captured online payment or an invoice you mark paid.
                     When on, checkout will not charge{" "}
-                    {formatIndianPrice(getPlanByCode("growth")!.setupFee)} setup
+                    {formatIndianPrice(getPlanByCode("large")!.setupFee)} setup
                     again. Turning this off will not make setup chargeable again
                     once an online payment has been captured.
                   </p>

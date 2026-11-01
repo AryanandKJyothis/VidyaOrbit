@@ -92,17 +92,24 @@ describe("admin platform RPC migration lock", () => {
   });
 
   it("MRR list prices in SQL match TS constants", () => {
-    expect(sql).toContain(String(ADMIN_LIST_PRICE_PAISE.starter.monthly));
-    expect(sql).toContain(String(ADMIN_LIST_PRICE_PAISE.growth.monthly));
-    expect(sql).toContain(String(ADMIN_LIST_PRICE_PAISE.pro.monthly));
-    expect(sql).toContain(String(ADMIN_LIST_PRICE_PAISE.starter.annual));
-    expect(sql).toContain(String(ADMIN_LIST_PRICE_PAISE.growth.annual));
-    expect(sql).toContain(String(ADMIN_LIST_PRICE_PAISE.pro.annual));
-    expect(sql).toContain("round(499900::numeric / 12)");
-    expect(sql).toContain("round(1000000::numeric / 12)");
-    expect(sql).toContain("round(2500000::numeric / 12)");
+    // Nov 1 2026 prices live in the newest admin_platform_overview migration.
+    const priceSql = readFileSync(
+      "supabase/migrations/20261101090100_pricing_2026_11_01_plan_caps.sql",
+      "utf8",
+    );
+    expect(priceSql).toContain(String(ADMIN_LIST_PRICE_PAISE.campus.monthly));
+    expect(priceSql).toContain("round(2499000::numeric / 12)");
+    expect(priceSql).toContain(String(ADMIN_LIST_PRICE_PAISE.starter.monthly));
+    expect(priceSql).toContain(String(ADMIN_LIST_PRICE_PAISE.growth.monthly));
+    expect(priceSql).toContain(String(ADMIN_LIST_PRICE_PAISE.pro.monthly));
+    expect(priceSql).toContain(String(ADMIN_LIST_PRICE_PAISE.starter.annual));
+    expect(priceSql).toContain(String(ADMIN_LIST_PRICE_PAISE.growth.annual));
+    expect(priceSql).toContain(String(ADMIN_LIST_PRICE_PAISE.pro.annual));
+    expect(priceSql).toContain("round(499000::numeric / 12)");
+    expect(priceSql).toContain("round(999000::numeric / 12)");
+    expect(priceSql).toContain("round(1499000::numeric / 12)");
     expect(annualMrrPaise(ADMIN_LIST_PRICE_PAISE.growth.annual)).toBe(
-      Math.round(1000000 / 12),
+      Math.round(999000 / 12),
     );
   });
 

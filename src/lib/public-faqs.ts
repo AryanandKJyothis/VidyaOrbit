@@ -5,6 +5,9 @@
 
 import {
   APPROVED_PRICING,
+  CUSTOM_QUOTE_LINE,
+  WHATSAPP_COMING_SOON_LINE,
+  dfySetupLine,
   formatIndianPrice,
   getPlanByCode,
 } from "@/lib/pricing-display";
@@ -13,17 +16,17 @@ export type FaqItem = { q: string; a: string };
 
 function landingPricingAnswer(): string {
   const free = getPlanByCode("free")!;
-  const starter = getPlanByCode("starter")!;
-  const growth = getPlanByCode("growth")!;
-  const large = getPlanByCode("large")!;
-  return `${free.displayName} is ${formatIndianPrice(free.monthlyPrice)} for ${free.studentLimit.toLowerCase()}. ${starter.displayName} is ${formatIndianPrice(starter.monthlyPrice)}/month (${formatIndianPrice(starter.annualPrice)}/year) for ${starter.studentLimit.toLowerCase()}. ${growth.displayName} is ${formatIndianPrice(growth.monthlyPrice)}/month (${formatIndianPrice(growth.annualPrice)}/year); ${large.displayName} is ${formatIndianPrice(large.monthlyPrice)}/month (${formatIndianPrice(large.annualPrice)}/year). Pay a paid plan in the app on the Plan page with UPI or cards through Razorpay.`;
+  const paid = APPROVED_PRICING.filter((p) => p.code !== "free")
+    .map(
+      (p) =>
+        `${p.displayName} ${formatIndianPrice(p.monthlyPrice)}/month or ${formatIndianPrice(p.annualPrice)}/year (${p.studentLimit.toLowerCase()})`,
+    )
+    .join("; ");
+  return `${free.displayName} is ${formatIndianPrice(free.monthlyPrice)} for ${free.studentLimit.toLowerCase()}. ${paid}. Yearly is 10 months' price for 12. ${CUSTOM_QUOTE_LINE} Pay a paid plan in the app on the Plan page with UPI or cards through Razorpay.`;
 }
 
 function setupFeeAnswer(): string {
-  const growth = getPlanByCode("growth")!;
-  const large = getPlanByCode("large")!;
-  const starter = getPlanByCode("starter")!;
-  return `Optional done for you setup is ${formatIndianPrice(growth.setupFee)}. ${growth.displayName} and ${large.displayName} add it on the first monthly invoice. It is waived on annual plans. ${starter.displayName} and Free do not include it. You can start without it.`;
+  return `${dfySetupLine()} You can start without it.`;
 }
 
 /** Landing-page owner FAQ. Prices are read from APPROVED_PRICING. */
@@ -34,7 +37,7 @@ export const LANDING_FAQS: FaqItem[] = [
   },
   {
     q: "What does setup include?",
-    a: "Book a free demo on WhatsApp. Optional done for you setup is paid separately. We import your Excel or CSV, set up batches and fees, add staff, and train your team for 30 minutes.",
+    a: "Book a free demo on WhatsApp. We import your Excel or CSV, set up batches and fees, add staff, and train your team for 30 minutes. Free on Spark and Orbit; Centre and Campus add a one-time fee on monthly billing, waived on yearly.",
   },
   {
     q: "Can I switch plans?",
@@ -70,7 +73,7 @@ export const LANDING_FAQS: FaqItem[] = [
   },
   {
     q: "Can it send receipts, report cards or absentee alerts on WhatsApp?",
-    a: "Yes, as an assisted send from the centre's own phone. One tap opens a wa.me draft with the receipt, report card, absentee alert or fee reminder. You send it. The app never messages parents by itself, and parents install nothing.",
+    a: `Yes, as an assisted send from the centre's own phone. One tap opens a wa.me draft with the receipt, report card, absentee alert or fee reminder. You send it. The app never messages parents by itself, and parents install nothing. ${WHATSAPP_COMING_SOON_LINE}`,
   },
 ];
 

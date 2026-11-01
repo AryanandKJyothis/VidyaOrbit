@@ -13,10 +13,20 @@ import {
 } from "@/lib/plan-limits";
 
 describe("plan-limits", () => {
-  it("treats pro/Large and any cap >= 2147483647 as Infinity", () => {
-    expect(PLAN_STUDENT_LIMITS.pro).toBeNull();
-    expect(studentLimitForPlan("pro")).toBeNull();
-    expect(toClientLimit(PLAN_STUDENT_LIMITS.pro)).toBe(Infinity);
+  it("Nov 1 2026 caps: free 25, Spark 50, Orbit 150, Centre 400, Campus unlimited", () => {
+    expect(PLAN_STUDENT_LIMITS).toEqual({
+      free: 25,
+      starter: 50,
+      growth: 150,
+      pro: 400,
+      campus: null,
+    });
+  });
+
+  it("treats campus and any cap >= 2147483647 as Infinity", () => {
+    expect(PLAN_STUDENT_LIMITS.campus).toBeNull();
+    expect(studentLimitForPlan("campus")).toBeNull();
+    expect(toClientLimit(PLAN_STUDENT_LIMITS.campus)).toBe(Infinity);
     expect(toClientLimit(UNLIMITED_STUDENT_SENTINEL)).toBe(Infinity);
     expect(toClientLimit(UNLIMITED_STUDENT_SENTINEL + 8)).toBe(Infinity);
     expect(toClientLimit(500)).toBe(500);
@@ -35,9 +45,9 @@ describe("plan-limits", () => {
     );
   });
 
-  it("does not stop Large imports at 1,000 students", () => {
+  it("does not stop Campus imports at 1,000 students", () => {
     expect(
-      remainingStudentSlots(toClientLimit(PLAN_STUDENT_LIMITS.pro), 1000),
+      remainingStudentSlots(toClientLimit(PLAN_STUDENT_LIMITS.campus), 1000),
     ).toBe(Infinity);
     expect(
       remainingStudentSlots(toClientLimit(UNLIMITED_STUDENT_SENTINEL), 1000),

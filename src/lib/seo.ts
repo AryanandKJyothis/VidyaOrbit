@@ -46,7 +46,7 @@ export const PUBLIC_PAGES = {
   pricing: {
     title: "Vidya Orbit Pricing — Tuition centre software in INR",
     description:
-      "INR plans for coaching and tuition centres in Kerala. Spark ₹499, Orbit ₹999, Centre ₹1,499 a month, plus optional ₹5,000 done for you setup. Built in Valanchery, Malappuram.",
+      "INR plans for coaching and tuition centres in Kerala. Free up to 25 students. Spark ₹499, Orbit ₹999, Centre ₹1,499, Campus ₹2,499 a month; yearly is 10 months for 12. Built in Valanchery, Malappuram.",
     path: "/pricing",
   },
   login: {

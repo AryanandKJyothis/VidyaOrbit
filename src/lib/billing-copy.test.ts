@@ -37,7 +37,11 @@ function haystack() {
 
 describe("public billing copy (VO-060 / VO-061)", () => {
   it("does not say online payment is coming soon or not live", () => {
-    const blob = haystack();
+    // The only allowed "coming soon" is the locked WhatsApp alerts line.
+    const blob = haystack().replaceAll(
+      "whatsapp alerts coming soon, free when they arrive.",
+      "",
+    );
     expect(blob).not.toContain("coming soon");
     expect(blob).not.toContain("checkout is not live");
     expect(blob).not.toContain("plan to add online payment");
@@ -75,16 +79,17 @@ describe("public billing copy (VO-060 / VO-061)", () => {
     ).toContain("razorpay");
   });
 
-  it("uses Spark / Orbit / Centre and optional DFY setup", () => {
+  it("uses Spark / Orbit / Centre / Campus and Nov 1 2026 setup fees", () => {
     const blob = haystack();
     expect(blob).toContain("spark");
     expect(blob).toContain("₹499");
     expect(blob).toContain("₹999");
     expect(blob).toContain("₹1,499");
-    expect(blob).toContain("₹5,000");
-    expect(blob).toContain("done for you");
+    expect(blob).toContain("₹2,499");
+    expect(blob).toContain("₹2,000");
+    expect(blob).toContain("₹3,000");
+    expect(blob).not.toContain("₹5,000");
     expect(blob).not.toContain("no setup fees");
     expect(blob).not.toContain("starter, growth and large");
-    expect(blob).not.toContain("₹2,499");
   });
 });

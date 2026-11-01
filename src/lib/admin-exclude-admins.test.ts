@@ -262,7 +262,7 @@ describe("founder metrics drop admin Pro ₹2,499 and every other admin row", ()
   });
 
   it("excludes the admin Pro plan from MRR, paying, centres, revenue, and trials", () => {
-    expect(paiseToRupees(ADMIN_LIST_PRICE_PAISE.pro.monthly)).toBe(2499);
+    expect(paiseToRupees(ADMIN_LIST_PRICE_PAISE.pro.monthly)).toBe(1499);
 
     const onlyAdmin = founderOverviewFromFacts(
       {
@@ -283,7 +283,7 @@ describe("founder metrics drop admin Pro ₹2,499 and every other admin row", ()
     expect(onlyAdmin.trials).toBe(0);
     expect(onlyAdmin.alerts).toBe(0);
     expect(onlyAdmin.recent_activity).toBe(0);
-    expect(paiseToRupees(onlyAdmin.mrr_paise)).not.toBe(2499);
+    expect(paiseToRupees(onlyAdmin.mrr_paise)).not.toBe(1499);
 
     const mixed = founderOverviewFromFacts(
       {
@@ -304,7 +304,7 @@ describe("founder metrics drop admin Pro ₹2,499 and every other admin row", ()
     expect(mixed.paying).toBe(1);
     expect(mixed.mrr_paise).toBe(ADMIN_LIST_PRICE_PAISE.starter.monthly);
     expect(paiseToRupees(mixed.mrr_paise)).toBe(499);
-    expect(paiseToRupees(mixed.mrr_paise)).not.toBe(2499);
+    expect(paiseToRupees(mixed.mrr_paise)).not.toBe(1499);
     expect(mixed.revenue_30d_paise).toBe(
       ADMIN_LIST_PRICE_PAISE.starter.monthly,
     );

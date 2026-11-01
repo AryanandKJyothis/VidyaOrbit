@@ -140,12 +140,13 @@ describe("GET /api/billing/pricing", () => {
     expect(body.tiers).toHaveLength(3);
     expect(
       body.tiers.find((t: { tier: string }) => t.tier === "large").studentLimit,
-    ).toBeNull();
+    ).toBe(400);
     expect(
       body.tiers.find((t: { tier: string }) => t.tier === "growth").features,
     ).toEqual([
-      "Up to 500 students",
+      "Up to 150 students",
       "Everything in Spark",
+      "Free setup: Excel import + staff training",
       "Email & WhatsApp support",
     ]);
   });
@@ -253,7 +254,7 @@ describe("POST /api/billing/create-order", () => {
     expect((await res.json()).code).toBe("FORBIDDEN_BILLING");
   });
 
-  it("stores the server-computed amount (growth monthly first order includes setup)", async () => {
+  it("stores the server-computed amount (Centre monthly first order includes setup)", async () => {
     let inserted: {
       amount_paise?: number;
       tier?: string;
@@ -279,21 +280,21 @@ describe("POST /api/billing/create-order", () => {
       }
       return thenable({ data: null, error: null });
     });
-    const res = await postCreate({ tier: "growth", cycle: "monthly" });
+    const res = await postCreate({ tier: "large", cycle: "monthly" });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.amount).toBe(599900);
+    expect(body.amount).toBe(349900);
     const saved = inserted as {
       amount_paise?: number;
       tier?: string;
       cycle?: string;
     } | null;
-    expect(saved?.amount_paise).toBe(599900);
-    expect(saved?.tier).toBe("growth");
+    expect(saved?.amount_paise).toBe(349900);
+    expect(saved?.tier).toBe("large");
     expect(saved?.cycle).toBe("monthly");
     expect((saved as { key_mode?: string } | null)?.key_mode).toBe("test");
     expect(ordersCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 599900, currency: "INR" }),
+      expect.objectContaining({ amount: 349900, currency: "INR" }),
     );
   });
 
@@ -350,7 +351,7 @@ describe("POST /api/billing/create-order", () => {
     });
     const res = await postCreate({ tier: "growth", cycle: "annual" });
     expect(res.status).toBe(200);
-    expect((await res.json()).amount).toBe(1000000);
+    expect((await res.json()).amount).toBe(999000);
   });
 
   it("refuses a different tier while more than 7 days remain", async () => {
@@ -478,16 +479,16 @@ describe("POST /api/billing/create-order", () => {
       return thenable({ data: null, error: null });
     });
     const res = await postCreate({
-      tier: "growth",
+      tier: "large",
       cycle: "monthly",
       amount: 1,
     });
     expect(res.status).toBe(200);
-    expect((await res.json()).amount).toBe(599900);
+    expect((await res.json()).amount).toBe(349900);
     const savedAmt = inserted as { amount_paise?: number } | null;
-    expect(savedAmt?.amount_paise).toBe(599900);
+    expect(savedAmt?.amount_paise).toBe(349900);
     expect(ordersCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 599900 }),
+      expect.objectContaining({ amount: 349900 }),
     );
   });
 
@@ -532,8 +533,8 @@ describe("POST /api/billing/create-order", () => {
       if (table === "subscriptions")
         return thenable({
           data: {
-            plan: "growth",
-            plan_price: 999,
+            plan: "pro",
+            plan_price: 1499,
             expiry_date: "2026-12-01",
             setup_fee_paid: false,
           },
@@ -547,9 +548,9 @@ describe("POST /api/billing/create-order", () => {
         return thenable({ data: [], error: null, count: 0 });
       return thenable({ data: null, error: null });
     });
-    const res = await postCreate({ tier: "growth", cycle: "monthly" });
+    const res = await postCreate({ tier: "large", cycle: "monthly" });
     expect(res.status).toBe(200);
-    expect((await res.json()).amount).toBe(599900);
+    expect((await res.json()).amount).toBe(349900);
   });
 
   it("does not charge setup on Growth monthly after a captured Starter monthly", async () => {
@@ -769,7 +770,7 @@ describe("POST /api/billing/verify-payment", () => {
     const body = await res.json();
     expect(body.ok).toBe(true);
     expect(body.setupRefund).toBe(true);
-    expect(body.message).toMatch(/refund the extra ₹5,000 setup fee/i);
+    expect(body.message).toMatch(/refund the extra setup fee/i);
     expect(body.message).not.toMatch(/switch your plan/i);
   });
 

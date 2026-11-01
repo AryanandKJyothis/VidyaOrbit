@@ -184,26 +184,20 @@ describe("Billing Pricing (Tier + Cycle)", () => {
     it("should compute annual without setup (setup is ₹0)", () => {
       const result = computePricing("starter", "annual", false);
 
-      expect(result.total).toBe(499900); // ₹4,999
+      expect(result.total).toBe(499000); // ₹4,990
       expect(result.line_items).toHaveLength(1);
       expect(result.months).toBe(12);
     });
   });
 
   describe("Growth tier", () => {
-    it("should compute monthly with setup on first order", () => {
+    it("should compute monthly with no setup (Orbit setup is free)", () => {
       const result = computePricing("growth", "monthly", false);
 
-      expect(result.total).toBe(599900); // ₹5,999 (₹999 + ₹5,000)
-      expect(result.line_items).toHaveLength(2);
-      expect(result.line_items[0]).toEqual({
-        item: "setup_fee",
-        amount: 500000, // ₹5,000
-      });
-      expect(result.line_items[1]).toEqual({
-        item: "subscription_charge",
-        amount: 99900, // ₹999
-      });
+      expect(result.total).toBe(99900); // ₹999
+      expect(result.line_items).toEqual([
+        { item: "subscription_charge", amount: 99900 },
+      ]);
     });
 
     it("should compute monthly without setup if already paid", () => {
@@ -217,11 +211,11 @@ describe("Billing Pricing (Tier + Cycle)", () => {
     it("should compute annual without setup (waived)", () => {
       const result = computePricing("growth", "annual", false);
 
-      expect(result.total).toBe(1000000); // ₹10,000 only
+      expect(result.total).toBe(999000); // ₹9,990 only
       expect(result.line_items).toHaveLength(1);
       expect(result.line_items[0]).toEqual({
         item: "subscription_charge",
-        amount: 1000000,
+        amount: 999000,
       });
       expect(result.months).toBe(12);
     });
@@ -229,7 +223,7 @@ describe("Billing Pricing (Tier + Cycle)", () => {
     it("should compute annual without setup even if already paid", () => {
       const result = computePricing("growth", "annual", true);
 
-      expect(result.total).toBe(1000000); // ₹10,000 only
+      expect(result.total).toBe(999000); // ₹9,990 only
       expect(result.line_items).toHaveLength(1);
     });
   });
@@ -238,11 +232,11 @@ describe("Billing Pricing (Tier + Cycle)", () => {
     it("should compute monthly with setup on first order", () => {
       const result = computePricing("large", "monthly", false);
 
-      expect(result.total).toBe(649900); // ₹6,499 (₹1,499 + ₹5,000)
+      expect(result.total).toBe(349900); // ₹3,499 (₹1,499 + ₹2,000)
       expect(result.line_items).toHaveLength(2);
       expect(result.line_items[0]).toEqual({
         item: "setup_fee",
-        amount: 500000, // ₹5,000
+        amount: 200000, // ₹2,000
       });
       expect(result.line_items[1]).toEqual({
         item: "subscription_charge",
@@ -260,7 +254,7 @@ describe("Billing Pricing (Tier + Cycle)", () => {
     it("should compute annual without setup (waived)", () => {
       const result = computePricing("large", "annual", false);
 
-      expect(result.total).toBe(1500000); // ₹15,000 only
+      expect(result.total).toBe(1499000); // ₹14,990 only
       expect(result.line_items).toHaveLength(1);
       expect(result.months).toBe(12);
     });
@@ -281,8 +275,8 @@ describe("Billing Pricing (Tier + Cycle)", () => {
     });
 
     it("monthly charges setup only once", () => {
-      const firstOrder = computePricing("growth", "monthly", false);
-      const renewOrder = computePricing("growth", "monthly", true);
+      const firstOrder = computePricing("large", "monthly", false);
+      const renewOrder = computePricing("large", "monthly", true);
 
       expect(firstOrder.line_items.some((i) => i.item === "setup_fee")).toBe(
         true,
@@ -315,8 +309,8 @@ describe("Billing Pricing (Tier + Cycle)", () => {
 
     it("monthly to annual: smooth upgrade", () => {
       // Scenario: user starts with monthly (setup paid), then upgrades to annual
-      const monthly = computePricing("growth", "monthly", false);
-      const annual = computePricing("growth", "annual", true);
+      const monthly = computePricing("large", "monthly", false);
+      const annual = computePricing("large", "annual", true);
 
       expect(monthly.line_items.some((i) => i.item === "setup_fee")).toBe(true);
       expect(annual.line_items.some((i) => i.item === "setup_fee")).toBe(false);
@@ -327,9 +321,9 @@ describe("Billing Pricing (Tier + Cycle)", () => {
     it("should show correct savings for annual vs monthly", () => {
       const tiers: PlanTier[] = ["starter", "growth", "large"];
       const expectedSavings = [
-        989, // Spark: 12×499 − 4,999 = 5,988 − 4,999 = 989
-        1988, // Orbit: 12×999 − 10,000 = 11,988 − 10,000 = 1,988
-        2988, // Centre: 12×1,499 − 15,000 = 17,988 − 15,000 = 2,988
+        998, // Spark: 2 × 499 (yearly = pay 10 months)
+        1998, // Orbit: 2 × 999
+        2998, // Centre: 2 × 1,499
       ];
 
       tiers.forEach((tier, i) => {

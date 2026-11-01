@@ -44,7 +44,7 @@ export const RAZORPAY_LIVE_LINE =
   "Pay in the app with UPI or cards through Razorpay.";
 
 export const WHATSAPP_SHARE_LINE =
-  "Send receipts, report cards and absentee alerts on WhatsApp in one tap. Ready made links and PDFs for your parent groups. You send an assisted draft from the centre's own phone. The app never messages parents by itself. Parents install nothing.";
+  "Share receipts, report cards and absentee notices as WhatsApp drafts in one tap. Ready made links and PDFs for your parent groups. You send each assisted draft from the centre's own phone. The app never messages parents by itself. Parents install nothing. WhatsApp alerts coming soon, free when they arrive.";
 
 export const HERO_SCREENSHOT = {
   src: "/landing/preview-attendance.webp",
