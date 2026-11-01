@@ -117,3 +117,40 @@ export function formatLimit(limit: number | null | undefined): string {
 
 /** @deprecated Use formatLimit */
 export const formatStudentLimit = formatLimit;
+
+/** Pre Nov 1 2026 caps — only used to seed grandfathered overrides. */
+export const LEGACY_PLAN_STUDENT_LIMITS: Record<PlanCode, number | null> = {
+  free: 25,
+  starter: 100,
+  growth: 500,
+  pro: null,
+  campus: null,
+};
+
+/**
+ * Mirrors public.effective_student_limit: a grandfathered override applies
+ * only while the centre is still on the plan it was grandfathered on, and
+ * never lowers the plan cap. `null` = unlimited.
+ */
+export function effectiveStudentLimit(input: {
+  plan: PlanCode;
+  override?: number | null;
+  grandfatheredPlan?: PlanCode | null;
+}): number | null {
+  const base = studentLimitForPlan(input.plan);
+  const o = input.override;
+  if (o == null || input.grandfatheredPlan !== input.plan) return base;
+  if (base === null || isUnlimited(o)) return null;
+  return Math.max(base, o);
+}
+
+/** Mirrors the grandfather seed: who gets an override, and how big. */
+export function grandfatherOverrideFor(
+  plan: PlanCode,
+  activeStudents: number,
+): number | null {
+  if (plan !== "starter" && plan !== "growth" && plan !== "pro") return null;
+  const cap = studentLimitForPlan(plan);
+  if (cap === null || activeStudents <= cap) return null;
+  return LEGACY_PLAN_STUDENT_LIMITS[plan] ?? UNLIMITED_STUDENT_SENTINEL;
+}

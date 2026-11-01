@@ -7,7 +7,7 @@
 -- enforce_student_limit blocks NEW adds above the cap; existing students are
 -- never deleted. Before applying, check for paying centres already above the
 -- new cap (query at the bottom) and move them up (e.g. pro → campus) or
--- grandfather them, otherwise they can no longer add students.
+-- grandfather them (done by 20261101090200_..._grandfather_caps.sql), otherwise they can no longer add students.
 --
 -- Not covered here (follow-up if Campus becomes self-serve checkout):
 -- billing_orders_tier_check and activate RPC tier→plan CASE (only know

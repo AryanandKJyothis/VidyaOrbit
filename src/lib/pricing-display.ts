@@ -109,7 +109,7 @@ export const APPROVED_PRICING: PlanDisplay[] = [
   {
     code: "campus",
     displayName: "Campus",
-    tagline: "Large institutes",
+    tagline: "Large institutes, up to ~800 students",
     studentLimit: "400+ students",
     monthlyPrice: 2499,
     annualPrice: 24990,
@@ -121,7 +121,7 @@ export const APPROVED_PRICING: PlanDisplay[] = [
       "Done for you setup",
       "Priority WhatsApp support",
     ],
-    ctaLabel: "Talk to us",
+    ctaLabel: "Choose Campus",
   },
 ];
 

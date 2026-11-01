@@ -37,7 +37,7 @@ import {
   WORK_STRIP,
   landingSignupCta,
 } from "@/lib/landing-copy";
-import { dfySetupLine } from "@/lib/pricing-display";
+import { CUSTOM_QUOTE_LINE, dfySetupLine } from "@/lib/pricing-display";
 import { SAMPLE_CENTRE, SAMPLE_LABEL } from "@/lib/landing-sample";
 import { LANDING_FAQS } from "@/lib/public-faqs";
 import { cn } from "@/lib/utils";
@@ -426,8 +426,8 @@ function Pricing() {
           One price per plan. Monthly or annual.
         </h2>
         <p className="mt-4 max-w-xl text-pretty text-base leading-relaxed text-slate">
-          Spark, Orbit and Centre. {dfySetupLine()} Same figures as the pricing
-          page.
+          Spark, Orbit, Centre and Campus. {dfySetupLine()} {CUSTOM_QUOTE_LINE}{" "}
+          Same figures as the pricing page.
         </p>
         <div className="mt-12">
           <LandingPricing />

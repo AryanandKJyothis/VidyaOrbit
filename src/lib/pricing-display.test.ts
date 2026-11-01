@@ -119,3 +119,39 @@ describe("approved public prices", () => {
     expect(line.toLowerCase()).toContain("yearly plans waive setup");
   });
 });
+
+describe("North decisions 2026-11-01", () => {
+  it("Campus is a public priced plan; custom quote only for 800+ / multi-branch", async () => {
+    const m = await import("./pricing-display");
+    const campus = m.APPROVED_PRICING.find((p) => p.code === "campus")!;
+    expect(campus.monthlyPrice).toBe(2499);
+    expect(campus.setupFee).toBe(3000);
+    expect(campus.annualPrice).toBe(24990);
+    expect(campus.annualSetupFee).toBe(0);
+    expect(campus.ctaLabel).not.toMatch(/talk|quote/i);
+    expect(m.CUSTOM_QUOTE_LINE).toMatch(/800/);
+    expect(m.CUSTOM_QUOTE_LINE).toMatch(/branch/);
+  });
+  it("money-back line is never rendered", async () => {
+    const { readFileSync } = await import("node:fs");
+    for (const f of [
+      "src/components/public/pricing-grid.tsx",
+      "src/components/landing/landing-pricing.tsx",
+      "src/components/landing/landing-page.tsx",
+      "src/routes/pricing.tsx",
+    ]) {
+      expect(readFileSync(f, "utf8")).not.toMatch(
+        /MONEY_BACK_LINE|money-back/i,
+      );
+    }
+  });
+  it("landing shows Campus alongside the other paid plans", async () => {
+    const { readFileSync } = await import("node:fs");
+    expect(
+      readFileSync("src/components/landing/landing-page.tsx", "utf8"),
+    ).toMatch(/Campus/);
+    expect(
+      readFileSync("src/components/landing/landing-pricing.tsx", "utf8"),
+    ).toMatch(/xl:grid-cols-4/);
+  });
+});
