@@ -19,7 +19,16 @@ import { cn } from "@/lib/utils";
 
 const PAID_PLANS = APPROVED_PRICING.filter((p) => p.code !== "free");
 
-export function LandingPricing() {
+/**
+ * Shared pricing cards + monthly/annual toggle. Rendered on the landing page
+ * (#pricing) and on /pricing so both always show the same cards and figures.
+ */
+export function LandingPricing({
+  showFullPlanLink = true,
+}: {
+  /** Hide the "Full plan list" link when already on /pricing. */
+  showFullPlanLink?: boolean;
+} = {}) {
   const [cycle, setCycle] = useState<"monthly" | "annual">("monthly");
   const annual = cycle === "annual";
 
@@ -59,11 +68,19 @@ export function LandingPricing() {
 
       <p className="mt-8 max-w-2xl text-sm leading-relaxed text-slate">
         Free for up to 25 students if you want to look around first, no card
-        required. {RAZORPAY_LIVE_LINE}{" "}
-        <Link to="/pricing" className="text-ink underline underline-offset-4">
-          Full plan list
-        </Link>
-        .
+        required. {RAZORPAY_LIVE_LINE}
+        {showFullPlanLink && (
+          <>
+            {" "}
+            <Link
+              to="/pricing"
+              className="text-ink underline underline-offset-4"
+            >
+              Full plan list
+            </Link>
+            .
+          </>
+        )}
       </p>
     </div>
   );
