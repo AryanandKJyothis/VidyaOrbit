@@ -448,3 +448,21 @@ describe("product decisions 2026-11-01", () => {
     expect(dialog).toContain("useUpsertStudent");
   });
 });
+
+describe("plan hint matches pricing-display (merged pricing caps)", () => {
+  it("same names and monthly prices", async () => {
+    const { APPROVED_PRICING } = await import("./pricing-display");
+    for (const [n, name] of [
+      [10, "Free"],
+      [40, "Spark"],
+      [100, "Orbit"],
+      [300, "Centre"],
+      [500, "Campus"],
+    ] as const) {
+      const rec = recommendedPlan(n);
+      const plan = APPROVED_PRICING.find((p) => p.displayName === name)!;
+      expect(rec.name).toBe(name);
+      expect(rec.monthlyPrice).toBe(plan.monthlyPrice);
+    }
+  });
+});
