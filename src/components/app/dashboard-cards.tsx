@@ -1,3 +1,4 @@
+import { NO_PAYMENTS_YET_LINE, compareMonths } from "@/lib/month-over-month";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -275,7 +276,9 @@ export function CollectionCard({
   prevMonthCollected: number;
   collectionDeltaPct?: number;
 }) {
-  const ahead = monthCollected - prevMonthCollected;
+  const cmp = compareMonths(monthCollected, prevMonthCollected);
+  const ahead = cmp.kind === "compare" ? cmp.diff : 0;
+  const pct = cmp.kind === "compare" ? cmp.deltaPct : (collectionDeltaPct ?? 0);
   return (
     <Card>
       <CardContent className="flex flex-col justify-between gap-4 p-4 sm:p-5">
@@ -292,7 +295,7 @@ export function CollectionCard({
             <Wallet className="h-5 w-5" aria-hidden />
           </div>
         </div>
-        {prevMonthCollected > 0 && typeof collectionDeltaPct === "number" ? (
+        {cmp.kind === "compare" ? (
           <p
             className={cn(
               "flex items-center gap-1 text-xs font-medium",
@@ -305,12 +308,13 @@ export function CollectionCard({
               <TrendingDown className="h-3.5 w-3.5" aria-hidden />
             )}
             {formatINR(Math.abs(ahead))} {ahead >= 0 ? "ahead of" : "behind"}{" "}
-            last month ({collectionDeltaPct}
-            %)
+            last month ({pct}%)
           </p>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Last month: {formatINR(prevMonthCollected)}
+            {cmp.kind === "no-current"
+              ? NO_PAYMENTS_YET_LINE
+              : "No payments last month to compare"}
           </p>
         )}
       </CardContent>

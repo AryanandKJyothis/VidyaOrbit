@@ -137,6 +137,7 @@ function pickSpotlight(i: SpotlightInput): Spotlight {
   // Priority 3 — Collection slowing month-over-month (>20% drop)
   if (
     i.prevMonthCollected > 0 &&
+    i.monthCollected > 0 &&
     typeof i.collectionDeltaPct === "number" &&
     i.collectionDeltaPct <= -20
   ) {
@@ -162,6 +163,7 @@ function pickSpotlight(i: SpotlightInput): Spotlight {
   // Priority 4 — Strong revenue growth (celebrate)
   if (
     i.prevMonthCollected > 0 &&
+    i.monthCollected > 0 &&
     typeof i.collectionDeltaPct === "number" &&
     i.collectionDeltaPct >= 20
   ) {
