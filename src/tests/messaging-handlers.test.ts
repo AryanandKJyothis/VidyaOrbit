@@ -341,6 +341,7 @@ describe("POST /api/messaging/enqueue-fee-overdue", () => {
   });
 
   it("does not insert a second row inside the 3-day window", async () => {
+    vi.setSystemTime(new Date("2026-10-25T10:00:00.000Z"));
     parseBearerMock.mockResolvedValue({ ok: true, userId: OWNER });
     const upsertFn = vi.fn(() => thenable({ data: null, error: null }));
     fromMock.mockImplementation((table: string) => {
