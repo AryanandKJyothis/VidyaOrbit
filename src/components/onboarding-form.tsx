@@ -175,7 +175,10 @@ export function OnboardingForm({
 
       <div className="space-y-4">
         {/* Honeypot field - hidden from users, traps bots */}
-        <div className="absolute opacity-0 pointer-events-none" aria-hidden="true">
+        <div
+          className="absolute opacity-0 pointer-events-none"
+          aria-hidden="true"
+        >
           <input
             type="text"
             name="website"
