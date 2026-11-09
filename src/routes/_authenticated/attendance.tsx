@@ -12,6 +12,7 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { InitialsAvatar } from "@/components/app/initials-avatar";
 import { addCalendarDaysISO } from "@/lib/format";
@@ -29,6 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useBatches, useStudents } from "@/hooks/use-data";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -311,7 +318,7 @@ function AttendancePage() {
       toast.error(
         formatUserError(
           e,
-          "Couldn't save attendance. Check your connection and try again. If this keeps happening, your marks are saved locally — close and reopen the app.",
+          "Couldn't save attendance. Check your connection and try again. Your marks weren't saved.",
         ),
       );
     } finally {

@@ -335,9 +335,22 @@ export function RazorpayCheckout({
 
       rzp.on("payment.failed", (res: RazorpayError) => {
         setLoading(false);
-        const errorMsg =
-          res?.error?.description ||
-          "Payment failed. Your card might have been declined. Check your card details or try another payment method.";
+        // Map Razorpay errors to friendly messages (never show technical codes)
+        const rawError = res?.error?.description?.toLowerCase() || "";
+        let errorMsg = "Payment failed. Check your card details and try again.";
+        
+        if (rawError.includes("insufficient") || rawError.includes("balance")) {
+          errorMsg = "Payment failed. Your card has insufficient funds. Try another card or payment method.";
+        } else if (rawError.includes("declined") || rawError.includes("card declined")) {
+          errorMsg = "Payment failed. Your card was declined by your bank. Contact your bank or try another card.";
+        } else if (rawError.includes("expired")) {
+          errorMsg = "Payment failed. Your card has expired. Use a different card.";
+        } else if (rawError.includes("invalid") || rawError.includes("incorrect")) {
+          errorMsg = "Payment failed. Card details are incorrect. Check the card number, expiry and CVV.";
+        } else if (rawError.includes("timeout") || rawError.includes("network")) {
+          errorMsg = "Payment timed out. Check your connection and try again.";
+        }
+        
         toast.error(errorMsg);
         onError?.(new Error(errorMsg));
       });

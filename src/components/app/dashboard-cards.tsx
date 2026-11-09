@@ -101,8 +101,6 @@ export function QuickActions({
 
   if (tiles.length === 0) return null;
 
-  if (tiles.length === 0) return null;
-
   const primaryTile = tiles.find((t) => t.primary);
   const secondaryTiles = tiles.filter((t) => !t.primary);
 
