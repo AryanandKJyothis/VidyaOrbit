@@ -530,7 +530,7 @@ describe("browser-run fixes 2026-11-01", () => {
         guided: false,
         present: "present",
       }),
-    ).toEqual({});
+    ).toEqual({ a: "present", b: "present" });
   });
   it("attendance save does not await parent-alert queueing", () => {
     const src = readFileSync(
