@@ -47,6 +47,8 @@ export function OnboardingForm({
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Honeypot for spam protection
+  const [honeypot, setHoneypot] = useState("");
 
   // Validation rules
   const validateField = useCallback(
@@ -121,6 +123,12 @@ export function OnboardingForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Honeypot check - if filled, it's a bot
+    if (honeypot) {
+      console.log("Spam detected (honeypot filled)");
+      return;
+    }
+
     // Validate all fields
     const newErrors: Record<string, string> = {};
     fields.forEach((field) => {
@@ -166,6 +174,18 @@ export function OnboardingForm({
       )}
 
       <div className="space-y-4">
+        {/* Honeypot field - hidden from users, traps bots */}
+        <div className="absolute opacity-0 pointer-events-none" aria-hidden="true">
+          <input
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+          />
+        </div>
+
         <AnimatePresence mode="popLayout">
           {fields.map((field, index) => {
             const value = formData[field.id];
