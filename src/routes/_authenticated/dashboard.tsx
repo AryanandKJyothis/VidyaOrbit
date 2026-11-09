@@ -761,7 +761,7 @@ function Dashboard() {
           {/* Overdue + Recent payments */}
           {canViewFees && (
             <div className="mt-6 sm:mt-8 grid gap-6 lg:grid-cols-2 auto-rows-max">
-              <Card className="card-premium">
+              <Card className="card-premium" data-tour="dashboard-dues">
                 <CardHeader className="flex flex-row items-center justify-between pb-4">
                   <div>
                     <CardTitle className="text-base sm:text-lg">

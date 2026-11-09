@@ -114,7 +114,10 @@ export function SpotlightTour({
         className="fixed z-50 w-full max-w-sm animate-in fade-in zoom-in-95"
         style={{
           top: placeAbove ? targetRect.top - 16 : tooltipTop,
-          left: Math.max(16, Math.min(window.innerWidth - 400, targetRect.left)),
+          left: Math.max(
+            16,
+            Math.min(window.innerWidth - 400, targetRect.left),
+          ),
           transform: placeAbove ? "translateY(-100%)" : undefined,
         }}
       >

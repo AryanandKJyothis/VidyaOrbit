@@ -53,7 +53,6 @@ export const UPDATES_STEP = {
     "Optional. Unchecked unless you want product updates and tips by email.",
 };
 
-
 export const TOUR_STEPS = [
   {
     id: "batches",
@@ -61,7 +60,7 @@ export const TOUR_STEPS = [
     body: "Group students by class or timing — like 'Class 10 Morning' or 'Physics Evening'.",
     to: "/batches" as const,
     cta: "Go to batches",
-    target: "[data-tour-batches-new]",
+    target: '[data-tour="create-batch"]',
   },
   {
     id: "students",
@@ -69,7 +68,7 @@ export const TOUR_STEPS = [
     body: "Add learners one by one, or import your full register from Excel.",
     to: "/students" as const,
     cta: "Go to students",
-    target: "[data-tour-students-add]",
+    target: '[data-tour="add-student"]',
   },
   {
     id: "attendance",
@@ -77,7 +76,7 @@ export const TOUR_STEPS = [
     body: "Pick a batch, tap Present or Absent for each student, then save.",
     to: "/attendance" as const,
     cta: "Mark attendance",
-    target: "[data-tour-attendance-save]",
+    target: '[data-tour="save-attendance"]',
   },
   {
     id: "fees",
@@ -85,7 +84,7 @@ export const TOUR_STEPS = [
     body: "Log cash or UPI payments and print receipts. Parents pay your UPI directly.",
     to: "/fees" as const,
     cta: "Record payment",
-    target: "[data-tour-fees-record]",
+    target: '[data-tour="record-payment"]',
   },
   {
     id: "dashboard",
@@ -93,7 +92,7 @@ export const TOUR_STEPS = [
     body: "Your dashboard shows today's attendance, fees collected, and outstanding dues.",
     to: "/dashboard" as const,
     cta: "View dashboard",
-    target: "[data-tour-dashboard-dues]",
+    target: '[data-tour="dashboard-dues"]',
   },
 ] as const;
 
