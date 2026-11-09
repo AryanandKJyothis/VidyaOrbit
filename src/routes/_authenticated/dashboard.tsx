@@ -6,11 +6,6 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { usePrefers } from "@/hooks/use-prefers";
 import { fadeOnly, springDefault } from "@/lib/motion";
-import { SpotlightTour } from "@/components/spotlight-tour";
-import {
-  useSpotlightTour,
-  getOnboardingSteps,
-} from "@/hooks/use-spotlight-tour";
 import {
   Users,
   Layers,
@@ -104,9 +99,6 @@ function Dashboard() {
   const canAttendance = useCan("attendance");
   const { reducedMotion } = usePrefers();
   const itemTransition = reducedMotion ? fadeOnly : springDefault;
-
-  // Spotlight tour
-  const { shouldShowTour, completeTour, skipTour } = useSpotlightTour();
 
   const attendance = useQuery({
     queryKey: ["att-summary", active?.ownerId],
@@ -416,13 +408,6 @@ function Dashboard() {
 
   return (
     <div>
-      {shouldShowTour && (
-        <SpotlightTour
-          steps={getOnboardingSteps()}
-          onComplete={completeTour}
-          onSkip={skipTour}
-        />
-      )}
       <DigestReminderBootstrap
         overdueCount={stats.overdue.length}
         overdueAmount={stats.overdueAmount}
