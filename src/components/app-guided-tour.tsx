@@ -7,21 +7,21 @@ import { usePrefers } from "@/hooks/use-prefers";
 import { fadeOnly, springDefault } from "@/lib/motion";
 import { motion } from "framer-motion";
 import {
+  BookOpen,
   CalendarCheck,
-  LayoutDashboard,
+  Sparkles,
   Users,
   Wallet,
-  Sparkles,
   ArrowRight,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 const TOUR_ICONS: Record<TourStepId, LucideIcon> = {
-  dashboard: LayoutDashboard,
+  batches: BookOpen,
+  students: Users,
   attendance: CalendarCheck,
   fees: Wallet,
-  students: Users,
-  plan: Sparkles,
+  dashboard: Sparkles,
 };
 
 export function AppGuidedTourView({

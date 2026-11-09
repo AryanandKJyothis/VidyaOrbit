@@ -61,6 +61,12 @@ import { ONBOARDING_V2_ENABLED } from "@/lib/feature-flags";
 import { defaultCentreName, shouldShowQuickStart } from "@/lib/onboarding-v2";
 import { isRealInstituteName } from "@/lib/owner-onboarding";
 
+export function replayOwnerTour() {
+  if (typeof window === "undefined") return;
+  const event = new CustomEvent("replay-owner-tour");
+  window.dispatchEvent(event);
+}
+
 export function OwnerOnboardingHost() {
   const { user } = useAuth();
   const { active, loading: workspacesLoading } = useActiveWorkspace();
@@ -333,6 +339,17 @@ export function OwnerOnboardingHost() {
     setWizardOpen(true);
     if (!onboarding.state.started) onboarding.markStarted();
   };
+
+  const handleReplayTour = () => {
+    setTourIndex(0);
+    setTourOpen(true);
+  };
+
+  useEffect(() => {
+    const handler = () => handleReplayTour();
+    window.addEventListener("replay-owner-tour", handler);
+    return () => window.removeEventListener("replay-owner-tour", handler);
+  }, []);
 
   return (
     <>
