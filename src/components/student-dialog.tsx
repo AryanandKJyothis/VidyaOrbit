@@ -92,10 +92,15 @@ export function StudentDialog({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.full_name.trim()) return toast.error("Name is required");
+    if (!form.full_name.trim()) {
+      toast.error(
+        "Student name is required. Enter the full name as it should appear on receipts.",
+      );
+      return;
+    }
     if (!form.phone.trim() && !form.guardian_phone.trim()) {
       setPhoneError(
-        "Add the student's phone or a guardian phone — one is needed.",
+        "Add at least one phone number. We need the student's phone or a guardian phone to send receipts and reminders.",
       );
       return;
     }
@@ -123,7 +128,12 @@ export function StudentDialog({
       toast.success(student ? "Student updated" : "Student added");
       onOpenChange(false);
     } catch (e: unknown) {
-      const msg = formatUserError(e);
+      const msg = formatUserError(
+        e,
+        student
+          ? "Couldn't update this student. Check your connection and try again."
+          : "Couldn't add this student. Check your connection and try again.",
+      );
       if (/phone/i.test(msg)) setPhoneError(msg);
       else toast.error(msg);
     }

@@ -47,13 +47,9 @@ function PaidPlanCtas({
         <a
           href={`mailto:${email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(message)}`}
         >
-          <Button
-            className="w-full gap-1.5"
-            variant={wa ? "ghost" : isRecommended ? "default" : "outline"}
-            size="default"
-          >
+          <Button className="w-full gap-1.5" variant="link" size="sm">
             <Mail className="h-3.5 w-3.5" />
-            Email us
+            or Email
           </Button>
         </a>
       )}

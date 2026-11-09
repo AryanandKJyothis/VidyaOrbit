@@ -87,7 +87,7 @@ function BatchesPage() {
 
   const toggle = async (b: Batch) => {
     if (!active?.ownerId) {
-      toast.error("No active workspace selected.");
+      toast.error("No workspace selected. Reload the page and try again.");
       return;
     }
     const { error } = await supabase
@@ -95,9 +95,18 @@ function BatchesPage() {
       .update({ is_active: !b.is_active })
       .eq("id", b.id)
       .eq("owner_id", active.ownerId);
-    if (error)
-      toast.error(formatUserError(error, "Could not update batch status."));
-    else qc.invalidateQueries({ queryKey: ["batches"] });
+    if (error) {
+      toast.error(
+        formatUserError(
+          error,
+          b.is_active
+            ? "Couldn't pause this batch. Check your connection and try again."
+            : "Couldn't activate this batch. Check your connection and try again.",
+        ),
+      );
+    } else {
+      qc.invalidateQueries({ queryKey: ["batches"] });
+    }
   };
 
   return (
@@ -107,11 +116,21 @@ function BatchesPage() {
         description="Create class batches and manage capacity."
         actions={
           <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => {
+                setEditing(undefined);
+                setOpen(true);
+              }}
+              disabled={!canWriteBatches}
+            >
+              <Plus className="mr-1.5 h-4 w-4" /> New batch
+            </Button>
             {canExport && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant="ghost"
+                    size="sm"
                     disabled={!(batches.data ?? []).length}
                   >
                     <Download className="mr-1.5 h-4 w-4" /> Export{" "}
@@ -158,15 +177,6 @@ function BatchesPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            <Button
-              onClick={() => {
-                setEditing(undefined);
-                setOpen(true);
-              }}
-              disabled={!canWriteBatches}
-            >
-              <Plus className="mr-1.5 h-4 w-4" /> New batch
-            </Button>
           </div>
         }
       />
@@ -263,41 +273,52 @@ function BatchesPage() {
                       )}
                     </div>
                     <div className="mt-4 flex gap-2">
-                      <Button
-                        asChild
-                        size="sm"
-                        variant="outline"
-                        className="h-11"
-                      >
-                        <Link to="/reports" search={{ batch: b.id }}>
-                          Report cards
-                        </Link>
-                      </Button>
-                      {canWriteBatches && (
+                      {canWriteBatches ? (
                         <>
                           <Button
                             size="sm"
-                            variant="outline"
                             className="h-11 flex-1"
                             onClick={() => {
                               setEditing(b);
                               setOpen(true);
                             }}
                           >
-                            <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                            <Pencil className="mr-1 h-3.5 w-3.5" /> Edit batch
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-11"
-                            onClick={() => toggle(b)}
-                            title={
-                              b.is_active ? "Pause batch" : "Activate batch"
-                            }
-                          >
-                            <Power className="h-3.5 w-3.5" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-11 w-11"
+                                aria-label="More options"
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link to="/reports" search={{ batch: b.id }}>
+                                  Report cards
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => toggle(b)}>
+                                {b.is_active ? "Pause batch" : "Activate batch"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </>
+                      ) : (
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="h-11 w-full"
+                        >
+                          <Link to="/reports" search={{ batch: b.id }}>
+                            Report cards
+                          </Link>
+                        </Button>
                       )}
                     </div>
                   </CardContent>
@@ -352,11 +373,18 @@ function BatchDialog({
   }, [open, batch]);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) return toast.error("Batch name is required");
-    if (form.days_of_week.length === 0)
-      return toast.error(
-        "Pick at least one day so this batch shows in attendance",
+    if (!form.name.trim()) {
+      toast.error(
+        "Batch name is required. Enter a name like 'Class 10 Morning' or 'Science Batch A'.",
       );
+      return;
+    }
+    if (form.days_of_week.length === 0) {
+      toast.error(
+        "Pick at least one day. Choose which days this batch meets so it appears in attendance.",
+      );
+      return;
+    }
     try {
       await mut.mutateAsync({
         id: batch?.id,
@@ -373,7 +401,12 @@ function BatchDialog({
       onOpenChange(false);
     } catch (error: unknown) {
       toast.error(
-        formatUserError(error, "Could not save batch. Please try again."),
+        formatUserError(
+          error,
+          batch
+            ? "Couldn't update this batch. Check your connection and try again."
+            : "Couldn't create this batch. Check your connection and try again.",
+        ),
       );
     }
   };

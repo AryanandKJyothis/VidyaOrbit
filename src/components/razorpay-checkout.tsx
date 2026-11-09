@@ -336,7 +336,8 @@ export function RazorpayCheckout({
       rzp.on("payment.failed", (res: RazorpayError) => {
         setLoading(false);
         const errorMsg =
-          res?.error?.description || "Payment failed. Please try again.";
+          res?.error?.description ||
+          "Payment failed. Your card might have been declined. Check your card details or try another payment method.";
         toast.error(errorMsg);
         onError?.(new Error(errorMsg));
       });
@@ -344,8 +345,16 @@ export function RazorpayCheckout({
       rzp.open();
     } catch (e) {
       const error = e as Error;
-      console.error("[Razorpay checkout] Error:", error);
-      toast.error(error?.message || "Could not start checkout");
+      if (
+        typeof window !== "undefined" &&
+        process.env.NODE_ENV === "development"
+      ) {
+        console.error("[Razorpay checkout] Error:", error);
+      }
+      toast.error(
+        error?.message ||
+          "Checkout couldn't start. Refresh the page and try again, or contact support if this keeps happening.",
+      );
       onError?.(error);
       setLoading(false);
     }

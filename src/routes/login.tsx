@@ -96,7 +96,10 @@ function LoginPage() {
     setSubmitting(false);
     if (error) {
       setLoginErrors({
-        form: formatUserError(error, "Sign-in failed. Please try again."),
+        form: formatUserError(
+          error,
+          "Couldn't sign you in. Check your email and password, or reset your password if you've forgotten it.",
+        ),
       });
       return;
     }
@@ -127,8 +130,14 @@ function LoginPage() {
       },
     });
 
-    if (error)
-      throw new Error(formatUserError(error, "Could not create account"));
+    if (error) {
+      throw new Error(
+        formatUserError(
+          error,
+          "Couldn't create your account. Check your details and try again. If that email is already registered, try signing in instead.",
+        ),
+      );
+    }
     setPendingEmail(parsed.data.email);
   };
 
@@ -149,7 +158,12 @@ function LoginPage() {
     const { error } = await signInWithGoogle(postLoginPath);
     if (error) {
       setOauthLoading(false);
-      toast.error(formatUserError(error, "Google sign-in failed"));
+      toast.error(
+        formatUserError(
+          error,
+          "Couldn't sign in with Google. Try again, or use email and password instead.",
+        ),
+      );
     }
   };
 

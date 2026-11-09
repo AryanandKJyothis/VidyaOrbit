@@ -90,12 +90,12 @@ function LandingCtas({
     ? `${BTN} w-full bg-paper text-ink hover:bg-paper/90 sm:w-auto`
     : `${BTN} w-full bg-orbit-blue text-paper hover:bg-orbit-blue/90 sm:w-auto`;
   const secondaryClass = inverted
-    ? `${BTN} w-full border border-paper/40 bg-transparent text-paper hover:bg-paper/10 sm:w-auto`
-    : `${BTN} w-full border border-ink bg-transparent text-ink hover:bg-ink/5 sm:w-auto`;
+    ? `${BTN} w-full text-paper/80 hover:text-paper hover:underline sm:w-auto`
+    : `${BTN} w-full text-ink/70 hover:text-ink hover:underline sm:w-auto`;
 
   const demo = wa ? (
     <a key="demo" href={wa} target="_blank" rel="noreferrer">
-      <Button size="lg" variant="outline" className={secondaryClass}>
+      <Button size="lg" variant="link" className={secondaryClass}>
         {whatsappLabel}
       </Button>
     </a>

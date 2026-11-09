@@ -101,40 +101,49 @@ export function QuickActions({
 
   if (tiles.length === 0) return null;
 
+  if (tiles.length === 0) return null;
+
+  const primaryTile = tiles.find((t) => t.primary);
+  const secondaryTiles = tiles.filter((t) => !t.primary);
+
   return (
-    <div
-      className={cn(
-        "grid gap-2",
-        tiles.length === 3 ? "grid-cols-3" : "grid-cols-2",
+    <div className="space-y-2">
+      {primaryTile && (
+        <Link
+          to={primaryTile.to}
+          className={cn(
+            "flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold",
+            "transition-[transform,background-color] duration-150 [transition-timing-function:var(--ease-out)]",
+            "active:scale-[0.97] motion-reduce:active:scale-100",
+            "bg-primary text-primary-foreground shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:bg-primary/90",
+          )}
+        >
+          <primaryTile.icon className="h-5 w-5" aria-hidden />
+          {primaryTile.label}
+        </Link>
       )}
-    >
-      {tiles.map((tile) => {
-        const Icon = tile.icon;
-        return (
-          <Link
-            key={tile.to}
-            to={tile.to}
-            className={cn(
-              "flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-2xl px-2 py-3 text-center text-xs font-semibold leading-tight",
-              "transition-[transform,background-color] duration-150 [transition-timing-function:var(--ease-out)]",
-              "active:scale-[0.97] motion-reduce:active:scale-100",
-              tile.primary
-                ? "bg-primary text-primary-foreground shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:bg-primary/90"
-                : "bg-card text-foreground shadow-[var(--shadow-card)] ring-1 ring-border/80 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/50",
-            )}
-          >
-            <span
-              className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-full",
-                tile.primary ? "bg-white/15" : "bg-primary-soft",
-              )}
-            >
-              <Icon className="h-4 w-4" aria-hidden />
-            </span>
-            {tile.label}
-          </Link>
-        );
-      })}
+      {secondaryTiles.length > 0 && (
+        <div className="grid grid-cols-2 gap-2">
+          {secondaryTiles.map((tile) => {
+            const Icon = tile.icon;
+            return (
+              <Link
+                key={tile.to}
+                to={tile.to}
+                className={cn(
+                  "flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-2xl px-2 py-3 text-center text-xs font-semibold leading-tight",
+                  "transition-[transform,background-color] duration-150 [transition-timing-function:var(--ease-out)]",
+                  "active:scale-[0.97] motion-reduce:active:scale-100",
+                  "border border-border bg-card text-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/50",
+                )}
+              >
+                <Icon className="h-4 w-4 text-primary" aria-hidden />
+                {tile.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
