@@ -319,7 +319,9 @@ export function RazorpayCheckout({
           } catch (e) {
             const error = e as Error;
             console.error("[Razorpay checkout] Verification error:", error);
-            toast.error(error?.message || "Payment verification failed");
+            toast.error(
+              "Payment verification failed. If the amount was deducted, contact support with your payment ID.",
+            );
             onError?.(error);
           } finally {
             setLoading(false);
@@ -365,8 +367,7 @@ export function RazorpayCheckout({
         console.error("[Razorpay checkout] Error:", error);
       }
       toast.error(
-        error?.message ||
-          "Checkout couldn't start. Refresh the page and try again, or contact support if this keeps happening.",
+        "Checkout couldn't start. Refresh the page and try again, or contact support if this keeps happening.",
       );
       onError?.(error);
       setLoading(false);
