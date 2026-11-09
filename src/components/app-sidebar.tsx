@@ -15,6 +15,7 @@ import {
   Users2,
   Mail,
   Globe,
+  GraduationCap,
 } from "lucide-react";
 import {
   Sidebar,
@@ -39,6 +40,7 @@ import { listMyPendingInvites } from "@/lib/workspace.functions";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { APP_WEBSITE_LABEL } from "@/lib/landing-copy";
+import { useSpotlightTour } from "@/hooks/use-spotlight-tour";
 
 type NavItem = {
   title: string;
@@ -92,6 +94,7 @@ export function AppSidebar() {
   const canAttendance = useCan("attendance");
   const canSettings = useCan("settings");
   const canBilling = useCan("billing");
+  const { startTour } = useSpotlightTour();
   const permsMap: Record<string, boolean> = {
     students: canStudents,
     batches: canBatches,
@@ -206,6 +209,16 @@ export function AppSidebar() {
                 <Globe className="h-4 w-4" />
                 {!collapsed && <span>{APP_WEBSITE_LABEL}</span>}
               </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="Take the tour"
+              onClick={startTour}
+              className="group text-sidebar-foreground/80 hover:text-sidebar-foreground"
+            >
+              <GraduationCap className="h-4 w-4" />
+              {!collapsed && <span>Take the tour</span>}
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>

@@ -221,6 +221,7 @@ function StudentsList() {
                     setOpen(true);
                   }}
                   disabled={atLimit}
+                  data-tour="add-student"
                   title={
                     atLimit
                       ? `You've reached the ${formatLimit(planLimit)}-student limit`
@@ -466,20 +467,31 @@ function StudentsList() {
             <EmptyState
               icon={Users}
               title="No students yet"
-              description="Add your first student — name and at least one phone number."
-              reassurance="You can import a full register from Excel afterwards."
+              description="Import your register from Excel — names, phones, and batches in one go."
+              reassurance="You can add or edit anyone afterwards. Nothing is sent to parents until you tap WhatsApp."
             >
               {canWriteStudents && (
-                <Button
-                  className="h-11"
-                  onClick={() => {
-                    setEditing(undefined);
-                    setOpen(true);
-                  }}
-                  disabled={atLimit}
-                >
-                  <Plus className="mr-1.5 h-4 w-4" /> Add a student
-                </Button>
+                <>
+                  <Button
+                    className="h-11"
+                    onClick={() => {
+                      setEditing(undefined);
+                      setOpen(true);
+                    }}
+                    disabled={atLimit}
+                    data-tour="add-student"
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" /> Add a student
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-11"
+                    onClick={() => setImportOpen(true)}
+                    disabled={atLimit}
+                  >
+                    <Upload className="mr-1.5 h-4 w-4" /> Import from Excel
+                  </Button>
+                </>
               )}
             </EmptyState>
           ) : filtered.length === 0 ? (
