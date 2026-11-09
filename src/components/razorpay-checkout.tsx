@@ -237,7 +237,11 @@ export function RazorpayCheckout({
             (typeof errorData.contactLink === "string" &&
               errorData.contactLink) ||
             getContactLink();
-          toast.error(errorData.message || TIER_CHANGE_MESSAGE, {
+          const friendlyMessage = formatUserError(
+            new Error(errorData.message || "tier_change_failed"),
+            TIER_CHANGE_MESSAGE,
+          );
+          toast.error(friendlyMessage, {
             action: link
               ? {
                   label: getContactLabel(),
