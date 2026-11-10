@@ -13,13 +13,15 @@ import {
   GoogleAuthDivider,
   GoogleContinueButton,
 } from "@/components/google-continue-button";
+import { AppleContinueButton } from "@/components/apple-continue-button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { credentialsSchema, signupSchema } from "@/lib/validation";
 import { formatUserError } from "@/lib/format-error";
-import { GOOGLE_AUTH_ENABLED } from "@/lib/feature-flags";
+import { GOOGLE_AUTH_ENABLED, APPLE_AUTH_ENABLED } from "@/lib/feature-flags";
 import { signInWithGoogle } from "@/lib/google-auth";
+import { signInWithApple } from "@/lib/apple-auth";
 import { authCallbackUrl } from "@/lib/auth-callback";
 import { isRealInstituteName } from "@/lib/owner-onboarding";
 import { marketingOptInMetadata } from "@/lib/marketing-opt-in";
@@ -167,6 +169,20 @@ function LoginPage() {
     }
   };
 
+  const handleApple = async () => {
+    setOauthLoading(true);
+    const { error } = await signInWithApple(postLoginPath);
+    if (error) {
+      setOauthLoading(false);
+      toast.error(
+        formatUserError(
+          error,
+          "Couldn't sign in with Apple. Try again, or use email and password instead.",
+        ),
+      );
+    }
+  };
+
   const signupFields = [
     {
       id: "email",
@@ -261,12 +277,22 @@ function LoginPage() {
             <TabsContent value="login" className="mt-8">
               <h3 className="sr-only">Sign in</h3>
 
-              {GOOGLE_AUTH_ENABLED && (
+              {(GOOGLE_AUTH_ENABLED || APPLE_AUTH_ENABLED) && (
                 <>
-                  <GoogleContinueButton
-                    onClick={handleGoogle}
-                    loading={oauthLoading}
-                  />
+                  <div className="space-y-3">
+                    {GOOGLE_AUTH_ENABLED && (
+                      <GoogleContinueButton
+                        onClick={handleGoogle}
+                        loading={oauthLoading}
+                      />
+                    )}
+                    {APPLE_AUTH_ENABLED && (
+                      <AppleContinueButton
+                        onClick={handleApple}
+                        loading={oauthLoading}
+                      />
+                    )}
+                  </div>
                   <GoogleAuthDivider />
                 </>
               )}
@@ -378,12 +404,22 @@ function LoginPage() {
             </TabsContent>
 
             <TabsContent value="signup" className="mt-8">
-              {GOOGLE_AUTH_ENABLED && (
+              {(GOOGLE_AUTH_ENABLED || APPLE_AUTH_ENABLED) && (
                 <>
-                  <GoogleContinueButton
-                    onClick={handleGoogle}
-                    loading={oauthLoading}
-                  />
+                  <div className="space-y-3">
+                    {GOOGLE_AUTH_ENABLED && (
+                      <GoogleContinueButton
+                        onClick={handleGoogle}
+                        loading={oauthLoading}
+                      />
+                    )}
+                    {APPLE_AUTH_ENABLED && (
+                      <AppleContinueButton
+                        onClick={handleApple}
+                        loading={oauthLoading}
+                      />
+                    )}
+                  </div>
                   <GoogleAuthDivider />
                 </>
               )}

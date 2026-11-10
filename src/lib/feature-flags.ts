@@ -13,6 +13,20 @@ export function isGoogleAuthEnabled(
 export const GOOGLE_AUTH_ENABLED = isGoogleAuthEnabled();
 
 /**
+ * Apple OAuth is wired through supabase.auth.signInWithOAuth({ provider: "apple" })
+ * on login and signup. Keep this off until Authentication → Providers → Apple
+ * is enabled on the Supabase project. Only the exact string "true" shows the
+ * Continue with Apple buttons.
+ */
+export function isAppleAuthEnabled(
+  value: unknown = import.meta.env.VITE_APPLE_AUTH_ENABLED,
+): boolean {
+  return value === "true";
+}
+
+export const APPLE_AUTH_ENABLED = isAppleAuthEnabled();
+
+/**
  * Onboarding v2 quick start (4 one-tap questions → batches → names → first
  * attendance). Default ON; set VITE_ONBOARDING_V2="false" to fall back to the
  * legacy owner wizard. Only shown to owners whose workspace has no batches and
