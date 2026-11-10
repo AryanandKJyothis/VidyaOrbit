@@ -22,11 +22,13 @@ import {
   RAZORPAY_LIVE_LINE,
   STARTER_ROI_LINE,
   WHATSAPP_SHARE_LINE,
+  WHATSAPP_DEMO_PREFILL,
   landingLoginCta,
   landingSignupCta,
   marketingHomePath,
 } from "./landing-copy";
 import { SITE_URL } from "./site";
+import { getWhatsAppHref } from "./contact-config";
 
 function haystack() {
   return [
@@ -172,5 +174,13 @@ describe("landing copy", () => {
     for (const claim of LANDING_CLAIMS) {
       expect(claim.source.length).toBeGreaterThan(8);
     }
+  });
+
+  it("prefills WhatsApp demo links with a greeting message", () => {
+    expect(WHATSAPP_DEMO_PREFILL).toContain("Hi Aryanand");
+    expect(WHATSAPP_DEMO_PREFILL).toContain("free demo");
+    const href = getWhatsAppHref(WHATSAPP_DEMO_PREFILL);
+    expect(href).toContain("?text=");
+    expect(href).toContain(encodeURIComponent(WHATSAPP_DEMO_PREFILL));
   });
 });

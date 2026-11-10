@@ -10,7 +10,7 @@ import {
   WHATSAPP_COMING_SOON_LINE,
   dfySetupLine,
 } from "@/lib/pricing-display";
-import { landingSignupCta } from "@/lib/landing-copy";
+import { landingSignupCta, WHATSAPP_DEMO_PREFILL } from "@/lib/landing-copy";
 import { useAuth } from "@/hooks/use-auth";
 import { PUBLIC_PAGES, pageHead, pricingJsonLd } from "@/lib/seo";
 import { SiteHeader } from "@/components/public/site-header";
@@ -113,8 +113,9 @@ function FreeAndCustom() {
 }
 
 function ContactBlock() {
-  const { whatsappUrl, email } = getContactConfig();
-  if (!whatsappUrl && !email) return null;
+  const { email } = getContactConfig();
+  const wa = getWhatsAppHref(WHATSAPP_DEMO_PREFILL);
+  if (!wa && !email) return null;
 
   return (
     <div className="mt-12 border-t border-ink/20 pt-8">
@@ -125,8 +126,8 @@ function ContactBlock() {
         Message us and we'll help you pick a plan.
       </p>
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-        {whatsappUrl && (
-          <a href={whatsappUrl} target="_blank" rel="noreferrer">
+        {wa && (
+          <a href={wa} target="_blank" rel="noreferrer">
             <Button
               className={`${BTN} w-full bg-orbit-blue text-paper hover:bg-orbit-blue/90 sm:w-auto`}
             >

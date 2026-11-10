@@ -9,7 +9,7 @@ import {
 } from "@/lib/contact-config";
 import { useAuth } from "@/hooks/use-auth";
 import {
-  WHATSAPP_PREFILL,
+  WHATSAPP_DEMO_PREFILL,
   landingLoginCta,
   landingSignupCta,
   marketingHomePath,
@@ -18,7 +18,7 @@ import {
 export function SiteFooter() {
   const { email, phone } = getContactConfig();
   const tel = getTelHref();
-  const wa = getWhatsAppHref(WHATSAPP_PREFILL);
+  const wa = getWhatsAppHref(WHATSAPP_DEMO_PREFILL);
   const { session } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const homeTo = marketingHomePath(pathname);

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { getWhatsAppHref } from "@/lib/contact-config";
 import {
   CTA_BOOK_DEMO,
-  WHATSAPP_PREFILL,
+  WHATSAPP_DEMO_PREFILL,
   landingLoginCta,
   landingSignupCta,
   marketingHomePath,
@@ -39,7 +39,7 @@ export function SiteHeader({
 }: {
   nav?: "landing" | "pricing";
 }) {
-  const wa = getWhatsAppHref(WHATSAPP_PREFILL);
+  const wa = getWhatsAppHref(WHATSAPP_DEMO_PREFILL);
   const [open, setOpen] = useState(false);
   const { reducedMotion } = usePrefers();
   const { session } = useAuth();
