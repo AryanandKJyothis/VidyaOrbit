@@ -27,6 +27,8 @@ import { todayISO } from "@/lib/format";
 import { enqueueFeePaidAfterPayment } from "@/lib/messaging/client";
 import { formatFeePaidQueueToast } from "@/lib/messaging/summarize";
 
+const PAYMENT_METHOD_KEY = "vidya:payment:last-method";
+
 export function PaymentDialog({
   open,
   onOpenChange,
@@ -55,11 +57,22 @@ export function PaymentDialog({
 
   useEffect(() => {
     if (open) {
+      // Remember last payment method
+      let rememberedMethod = defaultMethod;
+      if (!defaultMethod || defaultMethod === "cash") {
+        try {
+          const saved = localStorage.getItem(PAYMENT_METHOD_KEY);
+          if (saved) rememberedMethod = saved;
+        } catch {
+          /* ignore */
+        }
+      }
+
       setForm({
         student_id: defaultStudentId ?? "",
         amount: defaultAmount && defaultAmount > 0 ? String(defaultAmount) : "",
         payment_date: todayISO(),
-        method: defaultMethod,
+        method: rememberedMethod,
         reference: "",
         notes: "",
       });
@@ -90,6 +103,14 @@ export function PaymentDialog({
         reference: form.reference || null,
         notes: form.notes || null,
       });
+
+      // Remember payment method for next time
+      try {
+        localStorage.setItem(PAYMENT_METHOD_KEY, form.method);
+      } catch {
+        /* ignore */
+      }
+
       onOpenChange(false);
       const ownerId = active?.ownerId;
       const notify = ownerId

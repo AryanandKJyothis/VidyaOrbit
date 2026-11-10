@@ -30,6 +30,8 @@ import { formatUserError } from "@/lib/format-error";
 import { todayISO } from "@/lib/format";
 import { isDuplicateStudentName } from "@/lib/onboarding-v2";
 
+const STUDENT_BATCH_KEY = "vidya:student:last-batch";
+
 export function StudentDialog({
   open,
   onOpenChange,
@@ -65,6 +67,22 @@ export function StudentDialog({
 
   useEffect(() => {
     if (open) {
+      // For new students, remember last batch used
+      let rememberedBatch = defaultBatchId ?? "";
+      if (!student && !rememberedBatch) {
+        try {
+          const saved = localStorage.getItem(STUDENT_BATCH_KEY);
+          if (
+            saved &&
+            batches.data?.some((b) => b.id === saved && b.is_active)
+          ) {
+            rememberedBatch = saved;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
       setForm({
         full_name: student?.full_name ?? "",
         phone: student?.phone ?? "",
@@ -73,7 +91,7 @@ export function StudentDialog({
         address: student?.address ?? "",
         joining_date: student?.joining_date ?? todayISO(),
         status: student?.status ?? "active",
-        batch_id: student ? (student.batch_id ?? "") : (defaultBatchId ?? ""),
+        batch_id: student ? (student.batch_id ?? "") : rememberedBatch,
         fee_total: student?.fee_total != null ? String(student.fee_total) : "",
         fee_due_date: student?.fee_due_date ?? "",
         notes: student?.notes ?? "",
@@ -81,7 +99,7 @@ export function StudentDialog({
       setShowMore(!!student);
       setPhoneError(null);
     }
-  }, [open, student, defaultBatchId]);
+  }, [open, student, defaultBatchId, batches.data]);
 
   const duplicateName = isDuplicateStudentName(
     form.full_name,
@@ -125,6 +143,16 @@ export function StudentDialog({
       }
 
       await mut.mutateAsync(payload);
+
+      // Remember batch for next time (new students only)
+      if (!student && form.batch_id) {
+        try {
+          localStorage.setItem(STUDENT_BATCH_KEY, form.batch_id);
+        } catch {
+          /* ignore */
+        }
+      }
+
       toast.success(student ? "Student updated" : "Student added");
       onOpenChange(false);
     } catch (e: unknown) {

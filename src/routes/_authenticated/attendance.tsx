@@ -483,7 +483,8 @@ function AttendancePage() {
                   ) : (
                     <Save className="mr-2 h-4 w-4" />
                   )}
-                  Save attendance
+                  Save: {summary.present} present, {summary.absent} absent
+                  {summary.unmarked > 0 ? `, ${summary.unmarked} unmarked` : ""}
                 </Button>
               )}
             </CardContent>

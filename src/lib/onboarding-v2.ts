@@ -557,8 +557,8 @@ export function quickStepPosition(
 }
 
 /**
- * Pre-fill for an unsaved attendance session: during the guided first run
- * every roster student starts Present; otherwise nothing is pre-marked.
+ * Pre-fill for an unsaved attendance session: everyone defaults to Present
+ * so staff only need to tap absentees (Tesler's law - absorb complexity).
  * Saved sessions always show exactly what was saved.
  */
 export function prefillAttendanceMarks<S extends string>(input: {
@@ -568,7 +568,7 @@ export function prefillAttendanceMarks<S extends string>(input: {
   present: S;
 }): Record<string, S> {
   if (Object.keys(input.savedRecords).length > 0) return input.savedRecords;
-  if (!input.guided) return {};
+  // Always default to present (not just in guided mode)
   const out: Record<string, S> = {};
   for (const id of input.rosterIds) out[id] = input.present;
   return out;
