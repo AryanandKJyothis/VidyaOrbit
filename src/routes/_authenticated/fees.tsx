@@ -465,6 +465,7 @@ function FeesPageContent() {
                   setPaymentDefaults({});
                   setOpen(true);
                 }}
+                data-tour="record-payment"
               >
                 <Plus className="mr-1.5 h-4 w-4" /> Record payment
               </Button>
@@ -631,6 +632,7 @@ function FeesPageContent() {
               setPaymentDefaults({});
               setOpen(true);
             }}
+            data-tour="record-payment"
           >
             <Plus className="mr-1.5 h-4 w-4" /> Record payment
           </Button>
@@ -684,23 +686,25 @@ function FeesPageContent() {
                 className="h-12 rounded-2xl pl-9"
               />
             </div>
-            <FilterChips
-              ariaLabel="Fee status"
-              value={statusFilter}
-              onChange={(id) => setStatusFilter(id as FeeStatusFilter)}
-              chips={[
-                {
-                  id: "overdue",
-                  label: "Overdue",
-                  count: overdueCount,
-                  tone: "danger",
-                },
-                { id: "pending", label: "Pending", count: pendingDueCount },
-                { id: "paid", label: "Paid", count: paidCount },
-                { id: "all", label: "All" },
-                { id: "partial", label: "Partial" },
-              ]}
-            />
+            <div data-tour="view-dues">
+              <FilterChips
+                ariaLabel="Fee status"
+                value={statusFilter}
+                onChange={(id) => setStatusFilter(id as FeeStatusFilter)}
+                chips={[
+                  {
+                    id: "overdue",
+                    label: "Overdue",
+                    count: overdueCount,
+                    tone: "danger",
+                  },
+                  { id: "pending", label: "Pending", count: pendingDueCount },
+                  { id: "paid", label: "Paid", count: paidCount },
+                  { id: "all", label: "All" },
+                  { id: "partial", label: "Partial" },
+                ]}
+              />
+            </div>
             <div className="hidden sm:block">
               <Select value={batchFilter} onValueChange={setBatchFilter}>
                 <SelectTrigger className="h-11 w-full sm:w-[220px]">

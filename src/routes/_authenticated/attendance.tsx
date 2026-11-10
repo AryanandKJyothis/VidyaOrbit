@@ -476,6 +476,7 @@ function AttendancePage() {
                   onClick={save}
                   disabled={!batchId || saving || roster.length === 0}
                   className="hidden md:inline-flex min-h-11 shrink-0"
+                  data-tour="save-attendance"
                 >
                   {saving ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -643,6 +644,7 @@ function AttendancePage() {
                   className="h-12 w-full touch-manipulation text-sm font-semibold shadow-[var(--shadow-elevated)]"
                   onClick={save}
                   disabled={saving}
+                  data-tour="save-attendance"
                 >
                   {saving ? (
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />

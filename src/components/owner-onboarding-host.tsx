@@ -49,10 +49,7 @@ import {
   OwnerSetupWizardModal,
   OwnerSetupWizardView,
 } from "@/components/owner-setup-wizard";
-import {
-  AppGuidedTourOverlay,
-  AppGuidedTourView,
-} from "@/components/app-guided-tour";
+import { SpotlightTour } from "@/components/spotlight-tour";
 import { ImportStudentsDialog } from "@/components/import-students-dialog";
 import { SetupPrompt } from "@/components/setup-prompt";
 import { QuickStartDialog } from "@/components/onboarding/quick-start";
@@ -60,6 +57,12 @@ import { useQuickStart } from "@/hooks/use-quick-start";
 import { ONBOARDING_V2_ENABLED } from "@/lib/feature-flags";
 import { defaultCentreName, shouldShowQuickStart } from "@/lib/onboarding-v2";
 import { isRealInstituteName } from "@/lib/owner-onboarding";
+
+export function replayOwnerTour() {
+  if (typeof window === "undefined") return;
+  const event = new CustomEvent("replay-owner-tour");
+  window.dispatchEvent(event);
+}
 
 export function OwnerOnboardingHost() {
   const { user } = useAuth();
@@ -334,6 +337,17 @@ export function OwnerOnboardingHost() {
     if (!onboarding.state.started) onboarding.markStarted();
   };
 
+  const handleReplayTour = () => {
+    setTourIndex(0);
+    setTourOpen(true);
+  };
+
+  useEffect(() => {
+    const handler = () => handleReplayTour();
+    window.addEventListener("replay-owner-tour", handler);
+    return () => window.removeEventListener("replay-owner-tour", handler);
+  }, []);
+
   return (
     <>
       {captureClicks && <OwnerSetupCaptureOverlay onResume={handleResume} />}
@@ -359,29 +373,19 @@ export function OwnerOnboardingHost() {
       </OwnerSetupWizardModal>
 
       {tourOpen && (
-        <AppGuidedTourOverlay>
-          <AppGuidedTourView
-            stepIndex={tourIndex}
-            onBack={() => setTourIndex((i) => Math.max(0, i - 1))}
-            onNext={() => {
-              if (tourIndex >= TOUR_STEPS.length - 1) {
-                onboarding.completeTour();
-                setTourOpen(false);
-                return;
-              }
-              setTourIndex((i) => i + 1);
-            }}
-            onSkip={() => {
-              onboarding.dismissTour();
-              setTourOpen(false);
-            }}
-            onGoToPage={(to) => {
-              setTourOpen(false);
-              onboarding.completeTour();
-              void navigate({ to });
-            }}
-          />
-        </AppGuidedTourOverlay>
+        <SpotlightTour
+          stepIndex={tourIndex}
+          onBack={() => setTourIndex((i) => Math.max(0, i - 1))}
+          onNext={() => setTourIndex((i) => i + 1)}
+          onSkip={() => {
+            onboarding.dismissTour();
+            setTourOpen(false);
+          }}
+          onComplete={() => {
+            onboarding.completeTour();
+            setTourOpen(false);
+          }}
+        />
       )}
 
       <ImportStudentsDialog open={importOpen} onOpenChange={setImportOpen} />

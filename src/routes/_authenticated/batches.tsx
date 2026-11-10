@@ -122,6 +122,7 @@ function BatchesPage() {
                 setOpen(true);
               }}
               disabled={!canWriteBatches}
+              data-tour="create-batch"
             >
               <Plus className="mr-1.5 h-4 w-4" /> New batch
             </Button>
@@ -200,7 +201,11 @@ function BatchesPage() {
           description="Group students by class or timing so attendance and fees stay in one place."
           reassurance="You can add more batches later. One is enough to start."
         >
-          <Button onClick={() => setOpen(true)} disabled={!canWriteBatches}>
+          <Button
+            onClick={() => setOpen(true)}
+            disabled={!canWriteBatches}
+            data-tour="create-batch"
+          >
             <Plus className="mr-1.5 h-4 w-4" /> New batch
           </Button>
         </EmptyState>

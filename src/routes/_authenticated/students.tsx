@@ -221,6 +221,7 @@ function StudentsList() {
                     setOpen(true);
                   }}
                   disabled={atLimit}
+                  data-tour="add-student"
                   title={
                     atLimit
                       ? `You've reached the ${formatLimit(planLimit)}-student limit`
@@ -477,6 +478,7 @@ function StudentsList() {
                     setOpen(true);
                   }}
                   disabled={atLimit}
+                  data-tour="add-student"
                 >
                   <Plus className="mr-1.5 h-4 w-4" /> Add a student
                 </Button>

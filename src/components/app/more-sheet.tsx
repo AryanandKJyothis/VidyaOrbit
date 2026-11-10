@@ -4,6 +4,7 @@ import {
   BarChart3,
   CreditCard,
   Globe,
+  HelpCircle,
   Layers,
   LogOut,
   Mail,
@@ -11,6 +12,7 @@ import {
   Users2,
   ShieldCheck,
 } from "lucide-react";
+import { replayOwnerTour } from "@/components/owner-onboarding-host";
 import {
   Drawer,
   DrawerContent,
@@ -78,6 +80,7 @@ export function MoreSheet({
   ];
 
   const visible = items.filter((it) => it.show);
+  const showReplayTour = !!(active?.role === "owner" || active?.isOwn);
 
   return (
     <Drawer
@@ -113,6 +116,21 @@ export function MoreSheet({
               </Link>
             );
           })}
+          {showReplayTour && (
+            <button
+              type="button"
+              className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-foreground transition-[transform,background-color] duration-150 [transition-timing-function:var(--ease-out)] hover:bg-muted/70 active:scale-[0.98] motion-reduce:active:scale-100"
+              onClick={() => {
+                replayOwnerTour();
+                onOpenChange(false);
+              }}
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
+                <HelpCircle className="h-5 w-5" aria-hidden />
+              </span>
+              Replay tour
+            </button>
+          )}
           <button
             type="button"
             data-sign-out=""

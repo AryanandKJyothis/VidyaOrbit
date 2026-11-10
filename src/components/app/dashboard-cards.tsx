@@ -109,6 +109,7 @@ export function QuickActions({
       {primaryTile && (
         <Link
           to={primaryTile.to}
+          data-tour="mark-attendance"
           className={cn(
             "flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold",
             "transition-[transform,background-color] duration-150 [transition-timing-function:var(--ease-out)]",
@@ -124,10 +125,17 @@ export function QuickActions({
         <div className="grid grid-cols-2 gap-2">
           {secondaryTiles.map((tile) => {
             const Icon = tile.icon;
+            const dataTour =
+              tile.to === "/students"
+                ? "add-student"
+                : tile.to === "/fees"
+                  ? "record-payment"
+                  : undefined;
             return (
               <Link
                 key={tile.to}
                 to={tile.to}
+                data-tour={dataTour}
                 className={cn(
                   "flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-2xl px-2 py-3 text-center text-xs font-semibold leading-tight",
                   "transition-[transform,background-color] duration-150 [transition-timing-function:var(--ease-out)]",
