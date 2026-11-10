@@ -12,6 +12,7 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { InitialsAvatar } from "@/components/app/initials-avatar";
 import { addCalendarDaysISO } from "@/lib/format";
@@ -29,6 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useBatches, useStudents } from "@/hooks/use-data";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -217,7 +224,9 @@ function AttendancePage() {
       sessionId: session.data?.sessionId ?? "pending",
     });
     if (plannedRows.length === 0) {
-      toast.error("Mark at least one student before saving.");
+      toast.error(
+        "Mark at least one student. Tap Present, Late or Absent for each student you want to record.",
+      );
       return;
     }
     setSaving(true);
@@ -306,7 +315,12 @@ function AttendancePage() {
         }
       });
     } catch (e) {
-      toast.error(formatUserError(e, "Could not save attendance."));
+      toast.error(
+        formatUserError(
+          e,
+          "Couldn't save attendance. Check your connection and try again. Your marks weren't saved.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -512,26 +526,27 @@ function AttendancePage() {
                       Roll call · {roster.length} shown
                     </p>
                     {canWriteAttendance && (
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="min-h-11 touch-manipulation"
-                          onClick={() => setAll("present")}
-                        >
-                          All present
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="min-h-11 touch-manipulation"
-                          onClick={() => setAll("absent")}
-                        >
-                          All absent
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="min-h-11 touch-manipulation"
+                          >
+                            Quick mark{" "}
+                            <ChevronDown className="ml-1 h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setAll("present")}>
+                            Mark all present
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setAll("absent")}>
+                            Mark all absent
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </div>
                 </div>

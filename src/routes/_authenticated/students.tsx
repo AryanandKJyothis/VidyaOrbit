@@ -172,7 +172,7 @@ function StudentsList() {
   const archive = async (s: Student) => {
     const next = s.status === "archived" ? "active" : "archived";
     if (!active?.ownerId) {
-      toast.error("No active workspace selected.");
+      toast.error("No workspace selected. Reload the page and try again.");
       return;
     }
     if (
@@ -180,7 +180,7 @@ function StudentsList() {
       !canRestoreArchivedStudent(currentCount, planLimit)
     ) {
       toast.error(
-        `You've reached your plan limit of ${formatLimit(planLimit)} students. Archive another student or upgrade before restoring.`,
+        `You've reached your plan limit of ${formatLimit(planLimit)} students. Archive another student first, or upgrade your plan to restore this one.`,
       );
       return;
     }
@@ -189,10 +189,19 @@ function StudentsList() {
       .update({ status: next })
       .eq("id", s.id)
       .eq("owner_id", active.ownerId);
-    if (error)
-      toast.error(formatUserError(error, "Could not update student status."));
-    else {
-      toast.success(next === "archived" ? "Archived" : "Restored");
+    if (error) {
+      toast.error(
+        formatUserError(
+          error,
+          next === "archived"
+            ? "Couldn't archive this student. Check your connection and try again."
+            : "Couldn't restore this student. Check your connection and try again.",
+        ),
+      );
+    } else {
+      toast.success(
+        next === "archived" ? "Student archived" : "Student restored",
+      );
       qc.invalidateQueries({ queryKey: ["students"] });
     }
   };
@@ -204,109 +213,8 @@ function StudentsList() {
         description="Manage all students, their batches and fee plans."
         actions={
           <div className="flex min-w-0 flex-wrap gap-2">
-            {canExport && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <Download className="mr-1.5 h-4 w-4" /> Export{" "}
-                    <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={async () => {
-                      const rows = filtered.map((s) => {
-                        const baseRow: Record<string, string | number> = {
-                          Name: s.full_name,
-                          Phone: s.phone ?? "",
-                          Guardian: s.guardian_name ?? "",
-                          "Guardian phone": s.guardian_phone ?? "",
-                          Batch: s.batch_id
-                            ? (batchById[s.batch_id] ?? "")
-                            : "",
-                          "Joining date": s.joining_date,
-                          Status: s.status,
-                        };
-
-                        // Only include fee columns if user has fees permission
-                        if (canViewFees) {
-                          baseRow["Total fee"] = Number(s.fee_total);
-                          baseRow["Paid"] = paidByStudent[s.id] ?? 0;
-                          baseRow["Balance"] = Math.max(
-                            0,
-                            Number(s.fee_total) - (paidByStudent[s.id] ?? 0),
-                          );
-                          baseRow["Due date"] = s.fee_due_date ?? "";
-                        }
-
-                        baseRow["Address"] = s.address ?? "";
-                        return baseRow;
-                      });
-                      await exportToExcel(rows, "students", "Students");
-                      toast.success(`Exported ${rows.length} students (.xlsx)`);
-                    }}
-                  >
-                    Spreadsheet (.xlsx)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      const rows = filtered.map((s) => {
-                        const baseRow: Record<string, string | number> = {
-                          Name: s.full_name,
-                          Phone: s.phone ?? "",
-                          Guardian: s.guardian_name ?? "",
-                          "Guardian phone": s.guardian_phone ?? "",
-                          Batch: s.batch_id
-                            ? (batchById[s.batch_id] ?? "")
-                            : "",
-                          "Joining date": s.joining_date,
-                          Status: s.status,
-                        };
-
-                        if (canViewFees) {
-                          baseRow["Total fee"] = Number(s.fee_total);
-                          baseRow["Paid"] = paidByStudent[s.id] ?? 0;
-                          baseRow["Balance"] = Math.max(
-                            0,
-                            Number(s.fee_total) - (paidByStudent[s.id] ?? 0),
-                          );
-                          baseRow["Due date"] = s.fee_due_date ?? "";
-                        }
-
-                        baseRow["Address"] = s.address ?? "";
-                        return baseRow;
-                      });
-                      exportToCsv(rows, "students");
-                      toast.success(`Exported ${rows.length} students (.csv)`);
-                    }}
-                  >
-                    CSV (.csv)
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
             {canWriteStudents && (
               <>
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    void downloadStudentImportTemplate(
-                      (batches.data ?? []).map((b) => b.name),
-                    )
-                  }
-                >
-                  <FileDown className="mr-1.5 h-4 w-4" /> Download template
-                </Button>
-                {active?.role === "owner" && (
-                  <ClearSampleDataButton ownerId={active.ownerId} />
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => setImportOpen(true)}
-                  disabled={atLimit}
-                >
-                  <Upload className="mr-1.5 h-4 w-4" /> Import from Excel
-                </Button>
                 <Button
                   onClick={() => {
                     setEditing(undefined);
@@ -321,6 +229,111 @@ function StudentsList() {
                 >
                   <Plus className="mr-1.5 h-4 w-4" /> Add student
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      More options <ChevronDown className="ml-1 h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => setImportOpen(true)}
+                      disabled={atLimit}
+                    >
+                      <Upload className="mr-1.5 h-4 w-4" /> Import from Excel
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        void downloadStudentImportTemplate(
+                          (batches.data ?? []).map((b) => b.name),
+                        )
+                      }
+                    >
+                      <FileDown className="mr-1.5 h-4 w-4" /> Download template
+                    </DropdownMenuItem>
+                    {canExport && (
+                      <>
+                        <DropdownMenuItem
+                          onClick={async () => {
+                            const rows = filtered.map((s) => {
+                              const baseRow: Record<string, string | number> = {
+                                Name: s.full_name,
+                                Phone: s.phone ?? "",
+                                Guardian: s.guardian_name ?? "",
+                                "Guardian phone": s.guardian_phone ?? "",
+                                Batch: s.batch_id
+                                  ? (batchById[s.batch_id] ?? "")
+                                  : "",
+                                "Joining date": s.joining_date,
+                                Status: s.status,
+                              };
+
+                              if (canViewFees) {
+                                baseRow["Total fee"] = Number(s.fee_total);
+                                baseRow["Paid"] = paidByStudent[s.id] ?? 0;
+                                baseRow["Balance"] = Math.max(
+                                  0,
+                                  Number(s.fee_total) -
+                                    (paidByStudent[s.id] ?? 0),
+                                );
+                                baseRow["Due date"] = s.fee_due_date ?? "";
+                              }
+
+                              baseRow["Address"] = s.address ?? "";
+                              return baseRow;
+                            });
+                            await exportToExcel(rows, "students", "Students");
+                            toast.success(
+                              `Exported ${rows.length} students (.xlsx)`,
+                            );
+                          }}
+                        >
+                          <Download className="mr-1.5 h-4 w-4" /> Export (.xlsx)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const rows = filtered.map((s) => {
+                              const baseRow: Record<string, string | number> = {
+                                Name: s.full_name,
+                                Phone: s.phone ?? "",
+                                Guardian: s.guardian_name ?? "",
+                                "Guardian phone": s.guardian_phone ?? "",
+                                Batch: s.batch_id
+                                  ? (batchById[s.batch_id] ?? "")
+                                  : "",
+                                "Joining date": s.joining_date,
+                                Status: s.status,
+                              };
+
+                              if (canViewFees) {
+                                baseRow["Total fee"] = Number(s.fee_total);
+                                baseRow["Paid"] = paidByStudent[s.id] ?? 0;
+                                baseRow["Balance"] = Math.max(
+                                  0,
+                                  Number(s.fee_total) -
+                                    (paidByStudent[s.id] ?? 0),
+                                );
+                                baseRow["Due date"] = s.fee_due_date ?? "";
+                              }
+
+                              baseRow["Address"] = s.address ?? "";
+                              return baseRow;
+                            });
+                            exportToCsv(rows, "students");
+                            toast.success(
+                              `Exported ${rows.length} students (.csv)`,
+                            );
+                          }}
+                        >
+                          <Download className="mr-1.5 h-4 w-4" /> Export (.csv)
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {active?.role === "owner" && (
+                      <ClearSampleDataButton ownerId={active.ownerId} />
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
           </div>
@@ -453,30 +466,20 @@ function StudentsList() {
             <EmptyState
               icon={Users}
               title="No students yet"
-              description="Import your register from Excel — names, phones, and batches in one go."
-              reassurance="You can add or edit anyone afterwards. Nothing is sent to parents until you tap WhatsApp."
+              description="Add your first student — name and at least one phone number."
+              reassurance="You can import a full register from Excel afterwards."
             >
               {canWriteStudents && (
-                <>
-                  <Button
-                    className="h-11"
-                    onClick={() => {
-                      setEditing(undefined);
-                      setOpen(true);
-                    }}
-                    disabled={atLimit}
-                  >
-                    <Plus className="mr-1.5 h-4 w-4" /> Add a student
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-11"
-                    onClick={() => setImportOpen(true)}
-                    disabled={atLimit}
-                  >
-                    <Upload className="mr-1.5 h-4 w-4" /> Import from Excel
-                  </Button>
-                </>
+                <Button
+                  className="h-11"
+                  onClick={() => {
+                    setEditing(undefined);
+                    setOpen(true);
+                  }}
+                  disabled={atLimit}
+                >
+                  <Plus className="mr-1.5 h-4 w-4" /> Add a student
+                </Button>
               )}
             </EmptyState>
           ) : filtered.length === 0 ? (

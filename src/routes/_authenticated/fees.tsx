@@ -459,74 +459,6 @@ function FeesPageContent() {
         description="Collect payments, track dues and view recent receipts."
         actions={
           <div className="flex gap-2">
-            {canExport && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <Download className="mr-1.5 h-4 w-4" /> Export dues{" "}
-                    <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={async () => {
-                      const duesRows = filtered.map(
-                        ({ s, paid, balance, overdue }) => ({
-                          Student: s.full_name,
-                          Batch: s.batch_id ? batchById[s.batch_id] : "",
-                          "Due date": s.fee_due_date ?? "",
-                          "Total fee": Number(s.fee_total),
-                          Paid: paid,
-                          Balance: balance,
-                          Status: feeStatusLabel(
-                            feeCollectionStatus({ paid, balance, overdue }),
-                          ),
-                        }),
-                      );
-                      await exportToExcel(duesRows, "fee-dues", "Dues");
-                      toast.success(`Exported ${duesRows.length} dues (.xlsx)`);
-                    }}
-                  >
-                    Dues (.xlsx)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      const duesRows = filtered.map(
-                        ({ s, paid, balance, overdue }) => ({
-                          Student: s.full_name,
-                          Batch: s.batch_id ? batchById[s.batch_id] : "",
-                          "Due date": s.fee_due_date ?? "",
-                          "Total fee": Number(s.fee_total),
-                          Paid: paid,
-                          Balance: balance,
-                          Status: feeStatusLabel(
-                            feeCollectionStatus({ paid, balance, overdue }),
-                          ),
-                        }),
-                      );
-                      exportToCsv(duesRows, "fee-dues");
-                      toast.success(`Exported ${duesRows.length} dues (.csv)`);
-                    }}
-                  >
-                    Dues (.csv)
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            {overdueQueuedCount > 0 && (
-              <Button type="button" variant="outline" onClick={openOverdueList}>
-                <MessageCircle className="mr-1.5 h-4 w-4" />
-                Send overdue ({overdueQueuedCount})
-              </Button>
-            )}
-            {(feePaidQueue.data ?? 0) > 0 && (
-              <Button asChild variant="outline">
-                <Link to="/receipts/acks">
-                  <MessageCircle className="mr-1.5 h-4 w-4" />
-                  Send receipts ({feePaidQueue.data})
-                </Link>
-              </Button>
-            )}
             {canWriteFees && (
               <Button
                 onClick={() => {
@@ -537,6 +469,80 @@ function FeesPageContent() {
                 <Plus className="mr-1.5 h-4 w-4" /> Record payment
               </Button>
             )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  More options <ChevronDown className="ml-1 h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {overdueQueuedCount > 0 && (
+                  <DropdownMenuItem onClick={openOverdueList}>
+                    <MessageCircle className="mr-1.5 h-4 w-4" />
+                    Send overdue reminders ({overdueQueuedCount})
+                  </DropdownMenuItem>
+                )}
+                {(feePaidQueue.data ?? 0) > 0 && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/receipts/acks">
+                      <MessageCircle className="mr-1.5 h-4 w-4" />
+                      Send receipts ({feePaidQueue.data})
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                {canExport && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        const duesRows = filtered.map(
+                          ({ s, paid, balance, overdue }) => ({
+                            Student: s.full_name,
+                            Batch: s.batch_id ? batchById[s.batch_id] : "",
+                            "Due date": s.fee_due_date ?? "",
+                            "Total fee": Number(s.fee_total),
+                            Paid: paid,
+                            Balance: balance,
+                            Status: feeStatusLabel(
+                              feeCollectionStatus({ paid, balance, overdue }),
+                            ),
+                          }),
+                        );
+                        await exportToExcel(duesRows, "fee-dues", "Dues");
+                        toast.success(
+                          `Exported ${duesRows.length} dues (.xlsx)`,
+                        );
+                      }}
+                    >
+                      <Download className="mr-1.5 h-4 w-4" /> Export dues
+                      (.xlsx)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const duesRows = filtered.map(
+                          ({ s, paid, balance, overdue }) => ({
+                            Student: s.full_name,
+                            Batch: s.batch_id ? batchById[s.batch_id] : "",
+                            "Due date": s.fee_due_date ?? "",
+                            "Total fee": Number(s.fee_total),
+                            Paid: paid,
+                            Balance: balance,
+                            Status: feeStatusLabel(
+                              feeCollectionStatus({ paid, balance, overdue }),
+                            ),
+                          }),
+                        );
+                        exportToCsv(duesRows, "fee-dues");
+                        toast.success(
+                          `Exported ${duesRows.length} dues (.csv)`,
+                        );
+                      }}
+                    >
+                      <Download className="mr-1.5 h-4 w-4" /> Export dues (.csv)
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         }
       />
@@ -875,11 +881,11 @@ function FeesPageContent() {
                                 </p>
                               )}
                               {balance > 0 && (
-                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                <div className="mt-3">
                                   <Button
                                     type="button"
                                     size="sm"
-                                    className="h-11"
+                                    className="h-11 w-full"
                                     onClick={() => markReceived(s.id, balance)}
                                   >
                                     Record {formatINR(balance)}
@@ -888,14 +894,14 @@ function FeesPageContent() {
                                     <Button
                                       type="button"
                                       size="sm"
-                                      variant="outline"
-                                      className="h-11"
+                                      variant="link"
+                                      className="h-9 w-full"
                                       onClick={() => {
                                         setQueueOpen(true);
                                         void queueOverdue([s.id]);
                                       }}
                                     >
-                                      Send reminder
+                                      or Send reminder
                                     </Button>
                                   )}
                                 </div>
@@ -983,12 +989,19 @@ function FeesPageContent() {
                             </td>
                             <td className="px-4 py-3 text-right">
                               {balance > 0 ? (
-                                <div className="flex justify-end gap-1">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={() => markReceived(s.id, balance)}
+                                  >
+                                    Record payment
+                                  </Button>
                                   {overdue && canQueueOverdue && (
                                     <Button
                                       type="button"
                                       size="sm"
-                                      variant="ghost"
+                                      variant="link"
                                       onClick={() => {
                                         setQueueOpen(true);
                                         void queueOverdue([s.id]);
@@ -997,14 +1010,6 @@ function FeesPageContent() {
                                       Remind
                                     </Button>
                                   )}
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => markReceived(s.id, balance)}
-                                  >
-                                    Mark received
-                                  </Button>
                                 </div>
                               ) : null}
                             </td>

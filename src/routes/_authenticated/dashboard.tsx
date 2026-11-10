@@ -438,15 +438,12 @@ function Dashboard() {
         <EmptyState
           className="mb-6"
           icon={Users}
-          title="Add your first batch and students"
-          description="Once you do, this page shows today's attendance, fees collected and who still owes. Most centres finish in about 2 minutes."
-          reassurance="ആദ്യം ഒരു ബാച്ചും കുട്ടികളെയും ചേർക്കുക — ഏകദേശം 2 മിനിറ്റ്."
+          title="Create your first batch"
+          description="Start by creating a batch — like 'Class 10 Morning'. Then you'll add students to it."
+          reassurance="ആദ്യം ഒരു ബാച്ച് ഉണ്ടാക്കുക, എന്നിട്ട് കുട്ടികളെ ചേർക്കാം."
         >
           <Button asChild>
             <Link to="/batches">Create a batch</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link to="/students">Add students</Link>
           </Button>
         </EmptyState>
       )}

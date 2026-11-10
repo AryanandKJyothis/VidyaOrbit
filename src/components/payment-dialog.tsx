@@ -68,9 +68,19 @@ export function PaymentDialog({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.student_id) return toast.error("Pick a student");
+    if (!form.student_id) {
+      toast.error(
+        "Choose a student. Pick the student who made this payment from the dropdown.",
+      );
+      return;
+    }
     const amt = Number(form.amount);
-    if (!amt || amt <= 0) return toast.error("Enter a valid amount");
+    if (!amt || amt <= 0) {
+      toast.error(
+        "Enter a valid amount. The payment amount must be greater than zero.",
+      );
+      return;
+    }
     try {
       const p = await mut.mutateAsync({
         student_id: form.student_id,
@@ -106,7 +116,10 @@ export function PaymentDialog({
       navigate({ to: "/receipts/$paymentId", params: { paymentId: p.id } });
     } catch (error: unknown) {
       toast.error(
-        formatUserError(error, "Could not record payment. Please try again."),
+        formatUserError(
+          error,
+          "Couldn't record this payment. Check your connection and try again. The payment wasn't saved.",
+        ),
       );
     }
   };

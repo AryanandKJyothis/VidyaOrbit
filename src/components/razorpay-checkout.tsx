@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getContactLabel, getContactLink } from "@/lib/contact-config";
+import { formatUserError } from "@/lib/format-error";
 import {
   evaluatePendingFollowup,
   SETUP_ALREADY_PAID_MESSAGE,
@@ -236,7 +237,11 @@ export function RazorpayCheckout({
             (typeof errorData.contactLink === "string" &&
               errorData.contactLink) ||
             getContactLink();
-          toast.error(errorData.message || TIER_CHANGE_MESSAGE, {
+          const friendlyMessage = formatUserError(
+            new Error(errorData.message || "tier_change_failed"),
+            TIER_CHANGE_MESSAGE,
+          );
+          toast.error(friendlyMessage, {
             action: link
               ? {
                   label: getContactLabel(),
@@ -287,19 +292,29 @@ export function RazorpayCheckout({
             const verifyData = await verifyRes.json();
 
             if (!verifyData.ok) {
-              throw new Error(
-                verifyData.message || "Payment verification failed",
+              const message = formatUserError(
+                new Error(verifyData.message || "verification_failed"),
+                "Payment verification failed. If amount was deducted, contact support with your payment ID.",
               );
+              throw new Error(message);
             }
 
             if (verifyData.setupRefund) {
-              toast.info(verifyData.message || SETUP_ALREADY_PAID_MESSAGE);
+              const message = formatUserError(
+                new Error(verifyData.message || "setup_refund"),
+                SETUP_ALREADY_PAID_MESSAGE,
+              );
+              toast.info(message);
               await onSuccess?.();
             } else if (verifyData.needsReview) {
               toastHeldPlanChange();
               await onSuccess?.();
             } else if (verifyData.alreadyProcessed) {
-              toast.info(verifyData.message || "Payment already processed");
+              const message = formatUserError(
+                new Error(verifyData.message || "already_processed"),
+                "Payment already processed",
+              );
+              toast.info(message);
               await onSuccess?.();
             } else if (verifyData.status === "pending") {
               toast.info(
@@ -319,7 +334,9 @@ export function RazorpayCheckout({
           } catch (e) {
             const error = e as Error;
             console.error("[Razorpay checkout] Verification error:", error);
-            toast.error(error?.message || "Payment verification failed");
+            toast.error(
+              "Payment verification failed. If the amount was deducted, contact support with your payment ID.",
+            );
             onError?.(error);
           } finally {
             setLoading(false);
@@ -335,8 +352,35 @@ export function RazorpayCheckout({
 
       rzp.on("payment.failed", (res: RazorpayError) => {
         setLoading(false);
-        const errorMsg =
-          res?.error?.description || "Payment failed. Please try again.";
+        // Map Razorpay errors to friendly messages (never show technical codes)
+        const rawError = res?.error?.description?.toLowerCase() || "";
+        let errorMsg = "Payment failed. Check your card details and try again.";
+
+        if (rawError.includes("insufficient") || rawError.includes("balance")) {
+          errorMsg =
+            "Payment failed. Your card has insufficient funds. Try another card or payment method.";
+        } else if (
+          rawError.includes("declined") ||
+          rawError.includes("card declined")
+        ) {
+          errorMsg =
+            "Payment failed. Your card was declined by your bank. Contact your bank or try another card.";
+        } else if (rawError.includes("expired")) {
+          errorMsg =
+            "Payment failed. Your card has expired. Use a different card.";
+        } else if (
+          rawError.includes("invalid") ||
+          rawError.includes("incorrect")
+        ) {
+          errorMsg =
+            "Payment failed. Card details are incorrect. Check the card number, expiry and CVV.";
+        } else if (
+          rawError.includes("timeout") ||
+          rawError.includes("network")
+        ) {
+          errorMsg = "Payment timed out. Check your connection and try again.";
+        }
+
         toast.error(errorMsg);
         onError?.(new Error(errorMsg));
       });
@@ -344,8 +388,15 @@ export function RazorpayCheckout({
       rzp.open();
     } catch (e) {
       const error = e as Error;
-      console.error("[Razorpay checkout] Error:", error);
-      toast.error(error?.message || "Could not start checkout");
+      if (
+        typeof window !== "undefined" &&
+        process.env.NODE_ENV === "development"
+      ) {
+        console.error("[Razorpay checkout] Error:", error);
+      }
+      toast.error(
+        "Checkout couldn't start. Refresh the page and try again, or contact support if this keeps happening.",
+      );
       onError?.(error);
       setLoading(false);
     }
