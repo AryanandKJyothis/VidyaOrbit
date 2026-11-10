@@ -1,6 +1,6 @@
 import { useRouterState } from "@tanstack/react-router";
 import { getWhatsAppHref } from "@/lib/contact-config";
-import { WHATSAPP_PREFILL } from "@/lib/landing-copy";
+import { WHATSAPP_DEMO_PREFILL } from "@/lib/landing-copy";
 import { isAppShellPath } from "@/lib/public-chrome";
 
 function WhatsAppMark({ className }: { className?: string }) {
@@ -19,7 +19,7 @@ function WhatsAppMark({ className }: { className?: string }) {
 /** Mobile-only WhatsApp chip. Hidden on authenticated app routes. */
 export function StickyWhatsApp() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const wa = getWhatsAppHref(WHATSAPP_PREFILL);
+  const wa = getWhatsAppHref(WHATSAPP_DEMO_PREFILL);
   if (!wa || isAppShellPath(pathname)) return null;
 
   return (

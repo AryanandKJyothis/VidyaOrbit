@@ -22,7 +22,6 @@ import {
   getWhatsAppHref,
 } from "@/lib/contact-config";
 import { AUTH_SIGNUP_SEARCH } from "@/lib/auth-aliases";
-import { WHATSAPP_PREFILL } from "@/lib/landing-copy";
 import {
   OG_IMAGE_ALT,
   OG_IMAGE_HEIGHT,

@@ -21,8 +21,8 @@ export const HERO_SUB =
 export const FOUNDER_LINE =
   "I'm Aryanand, in Valanchery. I set your centre up myself and stay on WhatsApp if anything is unclear.";
 
-export const WHATSAPP_PREFILL =
-  "Hi Aryanand, I run a coaching centre and I'd like a free demo of Vidya Orbit.";
+export const WHATSAPP_DEMO_PREFILL =
+  "Hi Aryanand, I'd like a free demo of Vidya Orbit for my tuition centre.";
 
 export const CTA_WHATSAPP = "WhatsApp Aryanand";
 export const CTA_START_FREE = "Start free";

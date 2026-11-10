@@ -33,7 +33,7 @@ import {
   HERO_SUB,
   HERO_TITLE,
   TAGLINE_LINES,
-  WHATSAPP_PREFILL,
+  WHATSAPP_DEMO_PREFILL,
   WORK_STRIP,
   landingSignupCta,
 } from "@/lib/landing-copy";
@@ -85,7 +85,7 @@ function LandingCtas({
 }) {
   const { session } = useAuth();
   const signup = landingSignupCta(Boolean(session));
-  const wa = getWhatsAppHref(WHATSAPP_PREFILL);
+  const wa = getWhatsAppHref(WHATSAPP_DEMO_PREFILL);
   const primaryClass = inverted
     ? `${BTN} w-full bg-paper text-ink hover:bg-paper/90 sm:w-auto`
     : `${BTN} w-full bg-orbit-blue text-paper hover:bg-orbit-blue/90 sm:w-auto`;
